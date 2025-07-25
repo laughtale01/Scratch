@@ -1,0 +1,51 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies for Scratch Extension
+      run: |
+        cd scratch-extension
+        npm install
+        
+    - name: Build Scratch Extension
+      run: |
+        cd scratch-extension
+        npm run build
+        
+    - name: Prepare deployment files
+      run: |
+        # publicディレクトリを作成（既存の場合はスキップ）
+        mkdir -p public
+        
+        # Scratch拡張機能をコピー
+        cp -r scratch-extension/dist public/extensions
+        
+        # その他の必要なファイルをコピー
+        cp scratch-page.html public/
+        cp simple-websocket-test.html public/
+        cp test-connection.html public/
+        
+    - name: Deploy to GitHub Pages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
+        cname: minecraft-collaboration.example.com  # カスタムドメインを使用する場合

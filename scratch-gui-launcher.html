@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch GUI - Minecraft協調学習</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            margin: 0;
+            color: #333;
+            font-size: 1.5rem;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .status {
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .iframe-container {
+            flex: 1;
+            position: relative;
+            background: white;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+        }
+        
+        .error h2 {
+            color: #d32f2f;
+            margin-top: 0;
+        }
+        
+        .error pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: left;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎮 Scratch GUI - Minecraft協調学習システム</h1>
+        <div class="controls">
+            <div id="connectionStatus" class="status status-disconnected">
+                WebSocket: 未接続
+            </div>
+            <button onclick="connectWebSocket()">WebSocket接続</button>
+            <button onclick="reloadScratch()">再読み込み</button>
+        </div>
+    </div>
+    
+    <div class="iframe-container">
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Scratch GUIを読み込んでいます...</p>
+        </div>
+        
+        <div id="error" class="error" style="display: none;">
+            <h2>⚠️ 接続エラー</h2>
+            <p>Scratch GUIサーバーに接続できません。</p>
+            <pre>http://localhost:8601</pre>
+            <p>以下の手順を確認してください：</p>
+            <ol style="text-align: left;">
+                <li>scratch-guiフォルダで <code>npm start</code> を実行</li>
+                <li>ポート8601が使用されていないか確認</li>
+                <li>ファイアウォールの設定を確認</li>
+            </ol>
+            <button onclick="retryConnection()">再試行</button>
+        </div>
+        
+        <iframe id="scratchFrame" src="" style="display: none;"></iframe>
+    </div>
+    
+    <script>
+        let ws = null;
+        const scratchFrame = document.getElementById('scratchFrame');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const statusDiv = document.getElementById('connectionStatus');
+        
+        // Scratch GUI URL
+        const SCRATCH_GUI_URL = 'http://localhost:8601';
+        const WS_URL = 'ws://localhost:14711';
+        
+        // Scratch GUI 接続確認
+        function checkScratchGUI() {
+            fetch(SCRATCH_GUI_URL)
+                .then(response => {
+                    if (response.ok) {
+                        loading.style.display = 'none';
+                        error.style.display = 'none';
+                        scratchFrame.style.display = 'block';
+                        scratchFrame.src = SCRATCH_GUI_URL;
+                    } else {
+                        showError();
+                    }
+                })
+                .catch(() => {
+                    showError();
+                });
+        }
+        
+        function showError() {
+            loading.style.display = 'none';
+            error.style.display = 'block';
+            scratchFrame.style.display = 'none';
+        }
+        
+        function retryConnection() {
+            error.style.display = 'none';
+            loading.style.display = 'block';
+            checkScratchGUI();
+        }
+        
+        function reloadScratch() {
+            if (scratchFrame.src) {
+                scratchFrame.src = scratchFrame.src;
+            }
+        }
+        
+        // WebSocket接続
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                console.log('Already connected');
+                return;
+            }
+            
+            try {
+                ws = new WebSocket(WS_URL);
+                
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    statusDiv.className = 'status status-connected';
+                    statusDiv.textContent = 'WebSocket: 接続中';
+                };
+                
+                ws.onmessage = (event) => {
+                    console.log('Received:', event.data);
+                };
+                
+                ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    statusDiv.className = 'status status-disconnected';
+                    statusDiv.textContent = 'WebSocket: 未接続';
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    statusDiv.className = 'status status-disconnected';
+                    statusDiv.textContent = 'WebSocket: エラー';
+                };
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+            }
+        }
+        
+        // ページ読み込み時に実行
+        window.onload = () => {
+            checkScratchGUI();
+        };
+        
+        // Scratch GUIとの通信設定
+        window.addEventListener('message', (event) => {
+            if (event.origin !== SCRATCH_GUI_URL) return;
+            
+            // Scratch GUIからのメッセージを処理
+            console.log('Message from Scratch:', event.data);
+            
+            // WebSocket経由でMinecraftに送信
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(event.data));
+            }
+        });
+    </script>
+</body>
+</html>

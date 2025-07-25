@@ -1,0 +1,23 @@
+{
+  "name": "scratch-gui-minecraft",
+  "version": "1.0.0",
+  "description": "Scratch GUI with Minecraft extension support",
+  "scripts": {
+    "start": "webpack-dev-server --port 8601",
+    "build": "webpack --mode production",
+    "test": "jest"
+  },
+  "dependencies": {
+    "react-split-pane": "^0.1.92"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-optional-chaining": "^7.21.0"
+  },
+  "config": {
+    "minecraft": {
+      "extensionURL": "http://localhost:8000/dist/minecraft-collaboration-extension.js",
+      "websocketPort": 14711,
+      "collaborationPort": 14712
+    }
+  }
+}

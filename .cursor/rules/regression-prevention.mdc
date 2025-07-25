@@ -1,0 +1,38 @@
+# Cursor Regression Prevention Rules
+
+## ABSOLUTE RULES
+- NEVER remove existing functionality
+- NEVER change existing method signatures
+- NEVER modify working code without tests
+- NEVER skip regression tests
+
+## Before ANY Change
+- IDENTIFY all affected components
+- LIST existing features that might break
+- WRITE tests for current behavior
+- CONFIRM with user what stays unchanged
+
+## During Development
+- PRESERVE original interfaces
+- USE feature flags for risky changes
+- RUN tests after EVERY modification
+- KEEP old code until new code verified
+
+## Protected Elements
+- WebSocket port 14711
+- Message format: command(args)
+- All existing Scratch block opcodes
+- Current API contracts
+
+## If Unsure
+- STOP and ask for clarification
+- DO NOT guess about impact
+- PREFER conservative approach
+- MAINTAIN backward compatibility
+
+## Regression Detected
+1. REVERT immediately
+2. ANALYZE root cause
+3. ADD regression tests
+4. FIX with proper testing
+5. DOCUMENT lessons learned

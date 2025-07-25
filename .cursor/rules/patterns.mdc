@@ -1,0 +1,31 @@
+# Cursor Coding Patterns
+
+## WebSocket Implementation
+- ALWAYS check library availability before using WebSocket classes
+- ALWAYS implement reconnection logic for WebSocket clients
+- ALWAYS use try-catch blocks around WebSocket operations
+
+## Error Handling
+- NEVER let exceptions propagate without logging
+- ALWAYS provide child-friendly error messages in Japanese
+- ALWAYS validate input parameters before processing
+
+## Command Processing
+- USE command pattern for message handling
+- VALIDATE command format before parsing
+- LOG all invalid commands for debugging
+
+## Minecraft Mod Development
+- USE proper Forge event handling patterns
+- AVOID blocking operations in main thread
+- ALWAYS clean up resources in mod shutdown
+
+## Scratch Extension Development
+- DEFINE blocks with clear Japanese labels and emojis
+- IMPLEMENT proper WebSocket connection management
+- PROVIDE immediate visual feedback for all actions
+
+## Testing Requirements
+- WRITE tests before implementation (TDD)
+- TEST all error cases
+- VERIFY no regression in existing features

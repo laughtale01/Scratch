@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Minecraft WebSocket Connection Test</title>
+</head>
+<body>
+    <h1>Minecraft WebSocket Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+    <button onclick="testConnection()">Connect to Minecraft</button>
+    <button onclick="sendTestMessage()">Send Test Message</button>
+    <button onclick="disconnect()">Disconnect</button>
+
+    <script>
+        let ws = null;
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+
+        function log(message) {
+            console.log(message);
+            messagesDiv.innerHTML += '<p>' + new Date().toLocaleTimeString() + ': ' + message + '</p>';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function testConnection() {
+            if (ws) {
+                ws.close();
+            }
+
+            try {
+                ws = new WebSocket('ws://localhost:14711');
+                
+                ws.onopen = function() {
+                    statusDiv.textContent = 'Connected';
+                    statusDiv.style.color = 'green';
+                    log('✅ Connected to Minecraft WebSocket server');
+                };
+
+                ws.onmessage = function(event) {
+                    log('📨 Received: ' + event.data);
+                };
+
+                ws.onclose = function() {
+                    statusDiv.textContent = 'Disconnected';
+                    statusDiv.style.color = 'red';
+                    log('❌ Connection closed');
+                };
+
+                ws.onerror = function(error) {
+                    statusDiv.textContent = 'Connection Error';
+                    statusDiv.style.color = 'red';
+                    log('❌ WebSocket error: ' + error);
+                };
+            } catch (error) {
+                log('❌ Failed to create WebSocket: ' + error);
+            }
+        }
+
+        function sendTestMessage() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const testMessage = 'chat(Hello from Web Test!)';
+                ws.send(testMessage);
+                log('📤 Sent: ' + testMessage);
+            } else {
+                log('❌ WebSocket not connected');
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        // Auto-connect on page load
+        window.onload = function() {
+            setTimeout(testConnection, 1000);
+        };
+    </script>
+</body>
+</html>

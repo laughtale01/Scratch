@@ -1,0 +1,25 @@
+# GitHub Pages設定
+theme: null
+title: Minecraft協調学習システム
+description: ScratchとMinecraftを連携した教育用プラットフォーム
+
+# ビルド設定
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# 除外ファイル
+exclude:
+  - minecraft-mod/
+  - scratch-extension/src/
+  - scratch-gui/
+  - node_modules/
+  - "*.log"
+  - .gradle/
+  - build/
+  - run/
+
+# 含めるファイル
+include:
+  - public/
+  - _redirects

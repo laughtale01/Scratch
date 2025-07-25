@@ -1,0 +1,43 @@
+/* 
+ * Scratch GUI 境界線重複修正
+ * ブロックパレットとスクリプトエリア間の重複した境界線を修正
+ */
+
+/* Option 1: injectionDivの境界線を削除（推奨） */
+.blocks .injectionDiv {
+    border: none !important;
+    /* 角丸は維持 */
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+}
+
+/* Option 2: 個別要素の境界線を削除する場合 */
+/*
+.blocks .blocklyToolboxDiv {
+    border-right: none !important;
+}
+
+.blocks .blocklyFlyout {
+    border-right: none !important;
+}
+*/
+
+/* リサイザーのスタイル調整（必要に応じて） */
+.blocks-resizer {
+    /* リサイザーの背景を透明にして境界線のみ表示 */
+    background: transparent !important;
+    border-left: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* RTL（右から左）レイアウトのサポート */
+[dir="rtl"] .blocks .injectionDiv {
+    border-top-left-radius: 0.5rem;
+    border-bottom-left-radius: 0.5rem;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+/* 使用方法:
+ * 1. Scratch GUIのHTMLファイルにこのCSSを追加
+ * 2. または、scratch-gui/src/components/blocks/blocks.css を直接編集
+ */

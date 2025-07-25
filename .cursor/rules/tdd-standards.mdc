@@ -1,0 +1,32 @@
+# Cursor TDD Standards
+
+## MANDATORY TDD WORKFLOW
+1. ALWAYS write tests BEFORE implementation
+2. ALWAYS verify tests fail before implementing
+3. ALWAYS run all tests after changes
+4. NEVER skip the RED-GREEN-REFACTOR cycle
+
+## Test Writing Rules
+- WRITE test description before test code
+- CREATE mocks/stubs before real implementation
+- TEST edge cases and error conditions
+- INCLUDE regression tests for bug fixes
+
+## Test Execution
+- RUN tests before EVERY commit
+- VERIFY 100% pass rate before proceeding
+- CHECK coverage meets minimum requirements
+- FIX failing tests immediately
+
+## Regression Prevention
+- IDENTIFY all potentially affected code
+- WRITE tests for existing functionality
+- VERIFY no behavior changes
+- DOCUMENT what should NOT change
+
+## Code Review Checklist
+- [ ] Tests written before implementation?
+- [ ] All tests passing?
+- [ ] Edge cases covered?
+- [ ] No regression in existing features?
+- [ ] Coverage meets requirements?

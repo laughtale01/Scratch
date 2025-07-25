@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft協調学習システム - Scratch連携</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+        
+        .github-link {
+            background: #24292e;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 2rem;
+        }
+        
+        .connection-status {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status-disconnected {
+            background: #fee;
+            color: #c33;
+        }
+        
+        .status-connected {
+            background: #efe;
+            color: #3c3;
+        }
+        
+        .connection-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"] {
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .quick-actions {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .action-btn {
+            padding: 0.5rem;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .action-btn:hover {
+            background: #edf2f7;
+        }
+        
+        .info-section {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f7fafc;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+        
+        .log-area {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #1a202c;
+            color: #a0aec0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>🎮 Minecraft協調学習システム</h1>
+            <a href="https://github.com/[your-username]/minecraft-collaboration" class="github-link">GitHub</a>
+        </div>
+    </header>
+    
+    <main>
+        <div class="container">
+            <div id="connectionStatus" class="connection-status status-disconnected">
+                ❌ 未接続
+            </div>
+            
+            <form class="connection-form" onsubmit="handleConnect(event)">
+                <div>
+                    <label for="serverUrl">WebSocketサーバーURL</label>
+                    <input 
+                        type="text" 
+                        id="serverUrl" 
+                        placeholder="ws://localhost:14711"
+                        value="ws://localhost:14711"
+                    >
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" class="btn-primary" id="connectBtn">
+                        接続
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="disconnect()">
+                        切断
+                    </button>
+                </div>
+            </form>
+            
+            <div class="quick-actions">
+                <h3>クイックアクション</h3>
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="sendCommand('minecraft.connect()')">
+                        接続確認
+                    </button>
+                    <button class="action-btn" onclick="sendCommand('minecraft.status()')">
+                        ステータス
+                    </button>
+                    <button class="action-btn" onclick="sendCommand('player.getPos()')">
+                        位置取得
+                    </button>
+                    <button class="action-btn" onclick="openScratchGUI()">
+                        Scratch GUI
+                    </button>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h4>📌 使い方</h4>
+                <ol>
+                    <li>Minecraftサーバーを起動（Modがインストール済み）</li>
+                    <li>WebSocketサーバーURLを入力（デフォルト: ws://localhost:14711）</li>
+                    <li>「接続」ボタンをクリック</li>
+                    <li>Scratch GUIボタンでプログラミング開始</li>
+                </ol>
+            </div>
+            
+            <div class="log-area" id="logArea">
+                // ログ出力エリア
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        let ws = null;
+        const serverUrlInput = document.getElementById('serverUrl');
+        const connectBtn = document.getElementById('connectBtn');
+        const statusDiv = document.getElementById('connectionStatus');
+        const logArea = document.getElementById('logArea');
+        
+        // 保存されたURLを読み込み
+        const savedUrl = localStorage.getItem('minecraft_ws_url');
+        if (savedUrl) {
+            serverUrlInput.value = savedUrl;
+        }
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+            logArea.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+        
+        function updateStatus(connected) {
+            if (connected) {
+                statusDiv.className = 'connection-status status-connected';
+                statusDiv.textContent = '✅ 接続中';
+                connectBtn.textContent = '再接続';
+            } else {
+                statusDiv.className = 'connection-status status-disconnected';
+                statusDiv.textContent = '❌ 未接続';
+                connectBtn.textContent = '接続';
+            }
+        }
+        
+        function handleConnect(event) {
+            event.preventDefault();
+            const url = serverUrlInput.value.trim();
+            
+            if (!url) {
+                log('URLを入力してください', 'error');
+                return;
+            }
+            
+            // URLを保存
+            localStorage.setItem('minecraft_ws_url', url);
+            
+            // 既存の接続があれば切断
+            if (ws) {
+                ws.close();
+            }
+            
+            connect(url);
+        }
+        
+        function connect(url) {
+            log(`接続中: ${url}`);
+            
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = () => {
+                    log('接続成功！', 'success');
+                    updateStatus(true);
+                };
+                
+                ws.onmessage = (event) => {
+                    log(`受信: ${event.data}`);
+                };
+                
+                ws.onclose = () => {
+                    log('接続が切断されました');
+                    updateStatus(false);
+                };
+                
+                ws.onerror = (error) => {
+                    log('接続エラー', 'error');
+                    updateStatus(false);
+                };
+                
+            } catch (error) {
+                log(`エラー: ${error.message}`, 'error');
+                updateStatus(false);
+            }
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                log('接続を切断しました');
+            }
+        }
+        
+        function sendCommand(command) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('WebSocketが接続されていません', 'error');
+                return;
+            }
+            
+            log(`送信: ${command}`);
+            ws.send(command);
+        }
+        
+        function openScratchGUI() {
+            // 実際のデプロイ時はScratch GUIのURLに変更
+            window.open('./scratch-gui.html', '_blank');
+        }
+        
+        // ページ離脱時に接続を切断
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>

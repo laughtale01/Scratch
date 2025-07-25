@@ -1,0 +1,23 @@
+# Claude Code 引き継ぎ要約
+
+## プロジェクト場所
+D:\minecraft_collaboration_project\
+
+## 現在の状況
+✅ 環境構築完了（Java 17+11, Node.js v24.4.0）
+✅ RemoteControllerMod基盤準備完了
+✅ Scratch拡張基盤準備完了（12個のブロック実装済み）
+
+## 次のステップ
+1. RemoteControllerModビルドテスト
+   cd D:\minecraft_collaboration_project\remote-controller-mod
+   .\gradlew.bat build
+
+2. Scratch拡張ビルドテスト
+   cd D:\minecraft_collaboration_project\scratch-extension
+   npm run build
+
+## 重要設定
+- Java 11: C:\Program Files\Eclipse Adoptium\jdk-11.0.26.4-hotspot
+- WebSocket: ws://localhost:14711
+- gradle.properties設定済み

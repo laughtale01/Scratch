@@ -1,0 +1,31 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+issueTrackerURL="https://github.com/yourname/minecraft-collaboration/issues"
+
+[[mods]]
+modId="minecraftcollaboration"
+version="${file.jarVersion}"
+displayName="Minecraft Collaboration Mod"
+updateJSONURL="https://yoursite.com/update.json"
+displayURL="https://github.com/yourname/minecraft-collaboration"
+logoFile="logo.png"
+credits="Based on takecx RemoteControllerMod, developed for educational collaboration"
+authors="YourName"
+description='''
+小学生向けMinecraft協調学習システム - ScratchとMinecraftを連携した教育プラットフォーム
+'''
+
+[[dependencies.minecraftcollaboration]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.minecraftcollaboration]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
