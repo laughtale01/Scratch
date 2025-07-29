@@ -155,4 +155,26 @@ lib-cov/
 
 # WebSocket test files results
 test-results/
-*.test.logscratch-gui/
+*.test.log
+
+# Scratch GUI (separate repository recommended)
+scratch-gui/
+
+# Temporary and backup files
+*~
+*.backup
+*.bak
+*.tmp
+*.temp
+-c/
+nul
+
+# Archives
+docs/archives/
+
+# Generated documentation
+docs/_site/
+
+# Lock files (keep package-lock.json)
+yarn.lock
+pnpm-lock.yaml

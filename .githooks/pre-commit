@@ -1,0 +1,115 @@
+#!/bin/sh
+# Pre-commit hook for Minecraft Collaboration Project
+# Runs quality checks before allowing commit
+
+echo "🔍 Running pre-commit checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if we're in the right directory
+if [ ! -f "minecraft-mod/build.gradle" ]; then
+    echo "${RED}Error: Not in project root directory${NC}"
+    exit 1
+fi
+
+# Function to check if changes exist in a directory
+has_changes() {
+    git diff --cached --name-only | grep -q "^$1"
+}
+
+# Run checks for Minecraft mod if there are changes
+if has_changes "minecraft-mod/"; then
+    echo "${YELLOW}📦 Checking Minecraft mod...${NC}"
+    
+    cd minecraft-mod
+    
+    # Run tests
+    echo "Running tests..."
+    ./gradlew test --quiet
+    if [ $? -ne 0 ]; then
+        echo "${RED}❌ Tests failed! Please fix before committing.${NC}"
+        cd ..
+        exit 1
+    fi
+    echo "${GREEN}✅ Tests passed${NC}"
+    
+    # Run checkstyle
+    echo "Running Checkstyle..."
+    ./gradlew checkstyleMain --quiet
+    if [ $? -ne 0 ]; then
+        echo "${YELLOW}⚠️  Checkstyle warnings found. Consider fixing them.${NC}"
+        # Don't fail on checkstyle warnings, just notify
+    fi
+    
+    # Run SpotBugs
+    echo "Running SpotBugs..."
+    ./gradlew spotbugsMain --quiet
+    if [ $? -ne 0 ]; then
+        echo "${YELLOW}⚠️  SpotBugs warnings found. Consider fixing them.${NC}"
+        # Don't fail on SpotBugs warnings, just notify
+    fi
+    
+    cd ..
+fi
+
+# Run checks for Scratch extension if there are changes
+if has_changes "scratch-extension/"; then
+    echo "${YELLOW}🧩 Checking Scratch extension...${NC}"
+    
+    cd scratch-extension
+    
+    # Check if package.json exists
+    if [ -f "package.json" ]; then
+        # Run lint if available
+        if npm run lint --if-present > /dev/null 2>&1; then
+            echo "Running ESLint..."
+            npm run lint
+            if [ $? -ne 0 ]; then
+                echo "${RED}❌ Lint errors found! Please fix before committing.${NC}"
+                cd ..
+                exit 1
+            fi
+            echo "${GREEN}✅ Lint passed${NC}"
+        fi
+        
+        # Run tests if available
+        if npm test --if-present > /dev/null 2>&1; then
+            echo "Running tests..."
+            npm test
+            if [ $? -ne 0 ]; then
+                echo "${RED}❌ Tests failed! Please fix before committing.${NC}"
+                cd ..
+                exit 1
+            fi
+            echo "${GREEN}✅ Tests passed${NC}"
+        fi
+    fi
+    
+    cd ..
+fi
+
+# Check for large files
+echo "Checking for large files..."
+for file in $(git diff --cached --name-only); do
+    if [ -f "$file" ]; then
+        size=$(wc -c < "$file")
+        if [ $size -gt 1048576 ]; then  # 1MB
+            echo "${YELLOW}⚠️  Warning: $file is larger than 1MB ($(($size / 1024))KB)${NC}"
+        fi
+    fi
+done
+
+# Check for sensitive information
+echo "Checking for sensitive information..."
+PATTERNS="password|secret|api[_-]?key|token|private[_-]?key"
+if git diff --cached --name-only -z | xargs -0 grep -E -i "$PATTERNS" > /dev/null 2>&1; then
+    echo "${YELLOW}⚠️  Warning: Possible sensitive information detected. Please review your changes.${NC}"
+    echo "Run 'git diff --cached | grep -E -i \"$PATTERNS\"' to see matches."
+fi
+
+echo "${GREEN}✅ All pre-commit checks completed!${NC}"
+exit 0

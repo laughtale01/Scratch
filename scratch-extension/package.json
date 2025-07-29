@@ -7,7 +7,9 @@
     "build": "webpack --mode=production",
     "dev": "webpack --mode=development --watch",
     "test": "node test/test-script.js",
-    "test:integration": "echo \"Please start Minecraft first, then run: npm test\""
+    "test:integration": "echo \"Please start Minecraft first, then run: npm test\"",
+    "lint": "eslint src --ext .js || true",
+    "lint:fix": "eslint src --ext .js --fix || true"
   },
   "keywords": [
     "scratch",

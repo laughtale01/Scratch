@@ -1,0 +1,182 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-minecraft-mod:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Grant execute permission for gradlew
+      run: chmod +x ./minecraft-mod/gradlew
+      
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
+    - name: Run Code Quality Checks
+      working-directory: ./minecraft-mod
+      run: ./gradlew checkstyleMain pmdMain spotbugsMain
+      continue-on-error: true
+    
+    - name: Run Unit Tests
+      working-directory: ./minecraft-mod
+      run: ./gradlew unitTest
+    
+    - name: Run Integration Tests
+      working-directory: ./minecraft-mod
+      run: ./gradlew integrationTest
+    
+    - name: Generate Test Coverage Report
+      working-directory: ./minecraft-mod
+      run: ./gradlew jacocoTestReport
+    
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./minecraft-mod/build/reports/jacoco/test/jacocoTestReport.xml
+        flags: minecraft-mod
+        name: minecraft-mod-coverage
+    
+    - name: Build Mod
+      working-directory: ./minecraft-mod
+      run: ./gradlew build
+    
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: minecraft-mod/build/test-results/
+    
+    - name: Upload Coverage Reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports
+        path: minecraft-mod/build/reports/jacoco/
+    
+    - name: Upload Code Quality Reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: quality-reports
+        path: |
+          minecraft-mod/build/reports/checkstyle/
+          minecraft-mod/build/reports/pmd/
+          minecraft-mod/build/reports/spotbugs/
+    
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: mod-jar
+        path: minecraft-mod/build/libs/*.jar
+
+  test-scratch-extension:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: scratch-extension/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./scratch-extension
+      run: npm ci
+    
+    - name: Lint
+      working-directory: ./scratch-extension
+      run: npm run lint --if-present
+    
+    - name: Test
+      working-directory: ./scratch-extension
+      run: npm test --if-present
+    
+    - name: Build
+      working-directory: ./scratch-extension
+      run: npm run build
+    
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: scratch-extension
+        path: scratch-extension/dist/
+
+  release:
+    needs: [test-minecraft-mod, test-scratch-extension]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download Mod Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: mod-jar
+        path: ./artifacts/mod
+    
+    - name: Download Extension Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: scratch-extension
+        path: ./artifacts/extension
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release ${{ github.run_number }}
+        draft: false
+        prerelease: false
+    
+    - name: Upload Mod to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/mod/minecraftcollaboration-1.0.jar
+        asset_name: minecraftcollaboration-${{ github.run_number }}.jar
+        asset_content_type: application/java-archive
+    
+    - name: Zip Extension
+      run: |
+        cd ./artifacts/extension
+        zip -r ../../scratch-extension.zip .
+    
+    - name: Upload Extension to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./scratch-extension.zip
+        asset_name: scratch-extension-${{ github.run_number }}.zip
+        asset_content_type: application/zip

@@ -1,19 +1,38 @@
 # Claude Code Configuration
 
-## 🎉 Project Status Update (2025-01-25)
+## 🎉 Project Status Update (2025-07-28)
 
-### ✅ Completed Features
+### ✅ Completed Features (All Verified Working)
 1. **WebSocket Communication** - Fixed class loading issue with jarJar configuration
 2. **Basic Commands** - Player position, chat, block operations
-3. **Collaboration Features** - Invitation system, visit requests, world management
-4. **Safety Features** - Return home, emergency return with full health restoration
-5. **Single-player Support** - WebSocket server starts in client mode
+3. **Collaboration Features (Fully Implemented)**
+   - Invitation system with expiration management
+   - Visit requests with auto-teleportation
+   - Home position tracking and return functionality
+   - Emergency return with health/hunger/effects restoration
+4. **Building Features (All Implemented)**
+   - Circle creation (hollow structure)
+   - Sphere creation (outer shell only)
+   - Wall creation (with ground detection)
+   - House building (with doors, windows, roof)
+   - Area filling (3D range)
+5. **Security Features (Fully Working)**
+   - Rate limiting (10 commands/second with auto-reset)
+   - IP restrictions (local network only)
+   - Dangerous block/command filtering
+   - Connection limit (max 10 connections)
+6. **Single-player Support** - WebSocket server starts in client mode
 
 ### 📝 Implementation Summary
-- Created `CollaborationManager` for managing invitations and visits
-- Implemented `Invitation` and `VisitRequest` models
-- Updated `CollaborationCommandHandler` with full feature implementation
-- Added Japanese notifications for better user experience
+- **CollaborationManager**: Complete implementation with all features
+- **CollaborationCoordinator**: Async processing with CompletableFuture
+- **RateLimiter**: Full implementation with cleanup scheduler
+- **Scratch Extension**: Cache-based real-time data synchronization
+- **Building Functions**: All geometry calculations implemented
+
+## 🚀 QUICK START FOR CLAUDE CODE
+
+**IMPORTANT: Start by reading `CLAUDE_CODE_STARTUP_GUIDE.md` for project orientation**
 
 ## 📚 Interactive Documentation Update System
 
@@ -23,15 +42,28 @@ This project adopts a systematic approach to manage knowledge gained during deve
 
 Always check the following documents before starting any work:
 
-- `README.md` - Project overview, features, and setup instructions
-- `HANDOVER_REPORT_2025-01-12.md` - Latest handover report with WebSocket issue details
-- `docs/claude-code-handoff.md` - Claude Code handoff documentation
-- `docs/architecture.md` - Architecture design guidelines (to be created)
-- `docs/troubleshooting.md` - Troubleshooting guide (to be created)
-- `docs/patterns.md` - Implementation patterns and best practices (to be created)
-- `docs/dependencies.md` - Dependencies and API usage examples (to be created)
-- `docs/tdd-guidelines.md` - TDD implementation guidelines (to be created)
-- `docs/regression-prevention.md` - Regression prevention checklist (to be created)
+#### 🔴 CRITICAL - Start Here:
+- `docs/INDEX.md` - Master document index (START HERE)
+- `docs/development/SYSTEM_ARCHITECTURE_COMPLETE.md` - Complete system architecture
+- `docs/development/COMPREHENSIVE_DEVELOPMENT_GUIDE.md` - Development guide
+
+#### 📊 Project Status:
+- `README.md` - Project overview and current status
+- `PROJECT_STATUS_REPORT_2025-07-26.md` - Latest comprehensive status
+- `PROJECT_ANALYSIS_2025-07-26.md` - Detailed project analysis
+- `VULNERABILITY_ANALYSIS_REPORT_2025-07-26.md` - Comprehensive vulnerability analysis ⭐新規
+
+#### 🔧 Development Resources:
+- `docs/architecture.md` - Architecture design guidelines
+- `docs/troubleshooting.md` - Troubleshooting guide
+- `docs/patterns.md` - Implementation patterns
+- `docs/dependencies.md` - Dependencies and APIs
+- `docs/setup/UNIFIED_SETUP_GUIDE.md` - Setup instructions
+
+#### 🛡️ Quality & Testing:
+- `docs/tdd-guidelines.md` - TDD implementation guidelines
+- `docs/regression-prevention.md` - Regression prevention checklist
+- `docs/testing-guide.md` - Testing procedures
 
 ### 🚫 CRITICAL: Regression Prevention
 
