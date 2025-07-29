@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Minecraft × Scratch エディター</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: #4d97ff;
+            overflow: hidden;
+        }
+        
+        .scratch-header {
+            background: #4d97ff;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            position: relative;
+        }
+        
+        .scratch-logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 30px;
+        }
+        
+        .minecraft-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        .connected { background-color: #4CAF50; }
+        .disconnected { background-color: #f44336; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+            background: white;
+        }
+        
+        .blocks-toolbox {
+            width: 300px;
+            background: #f9f9f9;
+            border-right: 1px solid #e8e8e8;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        .category-header {
+            background: #4d97ff;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            transition: background-color 0.2s;
+        }
+        
+        .category-header:hover {
+            background: #4086e8;
+        }
+        
+        .category-header.minecraft {
+            background: #4CAF50;
+        }
+        
+        .category-header.minecraft:hover {
+            background: #45a049;
+        }
+        
+        .category-header.active {
+            background: #3d7bd8;
+        }
+        
+        .blocks-section {
+            padding: 20px;
+            display: none;
+        }
+        
+        .blocks-section.active {
+            display: block;
+        }
+        
+        .scratch-block {
+            background: #ffab19;
+            color: white;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 4px;
+            cursor: grab;
+            font-size: 14px;
+            user-select: none;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .scratch-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .scratch-block.minecraft {
+            background: #4CAF50;
+        }
+        
+        .scratch-block.control {
+            background: #ffab19;
+        }
+        
+        .scratch-block.event {
+            background: #ffbf00;
+        }
+        
+        .scratch-block.looks {
+            background: #9966ff;
+        }
+        
+        .script-workspace {
+            flex: 1;
+            background: white;
+            position: relative;
+            overflow: auto;
+        }
+        
+        .workspace-canvas {
+            min-height: 100%;
+            padding: 30px;
+            background-image: 
+                radial-gradient(circle, #ddd 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: relative;
+        }
+        
+        .dropped-block {
+            position: absolute;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 6px;
+            cursor: move;
+            font-size: 14px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            user-select: none;
+            min-width: 200px;
+        }
+        
+        .dropped-block.control {
+            background: #ffab19;
+        }
+        
+        .dropped-block.event {
+            background: #ffbf00;
+        }
+        
+        .dropped-block.looks {
+            background: #9966ff;
+        }
+        
+        .run-controls {
+            position: fixed;
+            top: 80px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .run-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        
+        .run-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+        
+        .run-button:disabled {
+            background: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .stop-button {
+            background: #f44336;
+        }
+        
+        .stop-button:hover {
+            background: #d32f2f;
+        }
+        
+        .minecraft-console {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            height: 200px;
+            background: rgba(0,0,0,0.9);
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .input-inline {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #ddd;
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin: 0 4px;
+            font-size: 12px;
+            width: 60px;
+        }
+        
+        .select-inline {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #ddd;
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin: 0 4px;
+            font-size: 12px;
+        }
+        
+        .startup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(77, 151, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            color: white;
+            text-align: center;
+        }
+        
+        .startup-content {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .extension-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 20px;
+            transition: all 0.3s;
+        }
+        
+        .extension-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- スタートアップオーバーレイ -->
+    <div class="startup-overlay" id="startup-overlay">
+        <div class="startup-content">
+            <h1>🎮 Minecraft × Scratch</h1>
+            <p>Minecraftをプログラミングで操作しよう！</p>
+            <button class="extension-button" onclick="loadMinecraftExtension()">
+                📦 Minecraft拡張機能を読み込む
+            </button>
+            <p style="font-size: 14px; margin-top: 20px;">
+                ※ 事前にMinecraftを起動してワールドに入っておいてください
+            </p>
+        </div>
+    </div>
+
+    <!-- メインScratchインターフェース -->
+    <div class="scratch-header">
+        <div class="scratch-logo">🎮 Minecraft × Scratch</div>
+        <div class="minecraft-status">
+            <span class="status-indicator disconnected" id="status-indicator"></span>
+            <span id="status-text">Minecraft接続待機中</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- ブロックツールボックス -->
+        <div class="blocks-toolbox">
+            <div class="category-header event active" onclick="showCategory('events')">
+                📡 イベント
+            </div>
+            <div class="blocks-section active" id="events-section">
+                <div class="scratch-block event" draggable="true" data-type="start">
+                    🚩 緑の旗がクリックされたとき
+                </div>
+                <div class="scratch-block event" draggable="true" data-type="key-pressed">
+                    🔤 スペースキーが押されたとき
+                </div>
+            </div>
+
+            <div class="category-header minecraft" onclick="showCategory('minecraft')">
+                🎮 Minecraft
+            </div>
+            <div class="blocks-section" id="minecraft-section">
+                <div class="scratch-block minecraft" draggable="true" data-type="connect">
+                    🔌 Minecraftに接続する
+                </div>
+                <div class="scratch-block minecraft" draggable="true" data-type="place-block">
+                    🧱 <select class="select-inline">
+                        <option>stone</option>
+                        <option>dirt</option>
+                        <option>grass_block</option>
+                        <option>wood</option>
+                        <option>glass</option>
+                        <option>red_wool</option>
+                        <option>blue_wool</option>
+                        <option>diamond_block</option>
+                        <option>gold_block</option>
+                        <option>glowstone</option>
+                    </select> を X:<input class="input-inline" value="0"> Y:<input class="input-inline" value="70"> Z:<input class="input-inline" value="0"> に置く
+                </div>
+                <div class="scratch-block minecraft" draggable="true" data-type="remove-block">
+                    ⛏️ X:<input class="input-inline" value="0"> Y:<input class="input-inline" value="70"> Z:<input class="input-inline" value="0"> のブロックを壊す
+                </div>
+                <div class="scratch-block minecraft" draggable="true" data-type="chat">
+                    💬 チャット: <input class="input-inline" style="width: 120px;" placeholder="メッセージ">
+                </div>
+                <div class="scratch-block minecraft" draggable="true" data-type="get-position">
+                    📍 プレイヤーの位置を取得
+                </div>
+                <div class="scratch-block minecraft" draggable="true" data-type="teleport">
+                    🚀 X:<input class="input-inline" value="0"> Y:<input class="input-inline" value="70"> Z:<input class="input-inline" value="0"> にテレポート
+                </div>
+                <div class="scratch-block minecraft" draggable="true" data-type="weather">
+                    🌤️ 天気を <select class="select-inline">
+                        <option>clear</option>
+                        <option>rain</option>
+                        <option>thunder</option>
+                    </select> にする
+                </div>
+                <div class="scratch-block minecraft" draggable="true" data-type="time">
+                    🕐 時間を <select class="select-inline">
+                        <option>day</option>
+                        <option>night</option>
+                        <option>noon</option>
+                        <option>midnight</option>
+                    </select> にする
+                </div>
+            </div>
+
+            <div class="category-header control" onclick="showCategory('control')">
+                🔄 制御
+            </div>
+            <div class="blocks-section" id="control-section">
+                <div class="scratch-block control" draggable="true" data-type="wait">
+                    ⏳ <input class="input-inline" value="1"> 秒待つ
+                </div>
+                <div class="scratch-block control" draggable="true" data-type="repeat">
+                    🔄 <input class="input-inline" value="10"> 回繰り返す
+                </div>
+                <div class="scratch-block control" draggable="true" data-type="forever">
+                    🔄 ずっと繰り返す
+                </div>
+                <div class="scratch-block control" draggable="true" data-type="if">
+                    🔀 もし <select class="select-inline">
+                        <option>接続中</option>
+                        <option>切断中</option>
+                    </select> なら
+                </div>
+            </div>
+
+            <div class="category-header looks" onclick="showCategory('looks')">
+                👁️ 見た目
+            </div>
+            <div class="blocks-section" id="looks-section">
+                <div class="scratch-block looks" draggable="true" data-type="say">
+                    💭 <input class="input-inline" style="width: 100px;" placeholder="こんにちは！"> と言う
+                </div>
+                <div class="scratch-block looks" draggable="true" data-type="think">
+                    💭 <input class="input-inline" style="width: 100px;" placeholder="考え中..."> と考える
+                </div>
+            </div>
+        </div>
+
+        <!-- スクリプトワークスペース -->
+        <div class="script-workspace">
+            <div class="workspace-canvas" id="workspace-canvas">
+                <div style="color: #999; font-size: 24px; text-align: center; margin: 100px; font-weight: 300;">
+                    左のブロックをここにドラッグして<br>プログラムを作ろう！
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 実行コントロール -->
+    <div class="run-controls">
+        <button class="run-button" onclick="runProgram()" id="run-btn">
+            ▶️ 実行
+        </button>
+        <button class="run-button stop-button" onclick="stopProgram()" id="stop-btn" style="display: none;">
+            ⏹️ 停止
+        </button>
+    </div>
+
+    <!-- Minecraftコンソール -->
+    <div class="minecraft-console" id="minecraft-console">
+        🎮 Minecraft × Scratch Console<br>
+        Minecraft拡張機能を読み込んでください...<br>
+    </div>
+
+    <script>
+        let ws = null;
+        let connected = false;
+        let draggedElement = null;
+        let droppedBlocks = [];
+        let isRunning = false;
+        let extensionLoaded = false;
+
+        function logToConsole(message) {
+            const console = document.getElementById('minecraft-console');
+            const timestamp = new Date().toLocaleTimeString();
+            console.innerHTML += `${timestamp}: ${message}<br>`;
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function updateConnectionStatus(isConnected, message) {
+            connected = isConnected;
+            const indicator = document.getElementById('status-indicator');
+            const text = document.getElementById('status-text');
+            
+            indicator.className = 'status-indicator ' + (isConnected ? 'connected' : 'disconnected');
+            text.textContent = message;
+            
+            logToConsole(message);
+        }
+
+        function loadMinecraftExtension() {
+            logToConsole('📦 Minecraft拡張機能を読み込み中...');
+            
+            // オーバーレイを非表示
+            document.getElementById('startup-overlay').style.display = 'none';
+            
+            // Minecraftへの自動接続を試行
+            setTimeout(() => {
+                connectToMinecraft();
+                extensionLoaded = true;
+                logToConsole('✅ 拡張機能読み込み完了！');
+                logToConsole('📝 使い方: 左のブロックをドラッグして組み合わせよう');
+            }, 1000);
+        }
+
+        function connectToMinecraft() {
+            if (ws) ws.close();
+
+            try {
+                ws = new WebSocket('ws://localhost:14711');
+                
+                ws.onopen = function() {
+                    updateConnectionStatus(true, 'Minecraft接続成功！');
+                };
+                
+                ws.onmessage = function(event) {
+                    logToConsole('📨 ' + event.data);
+                    
+                    // レスポンスの処理
+                    try {
+                        const response = JSON.parse(event.data);
+                        if (response.type === 'playerPosition') {
+                            logToConsole(`📍 位置: X:${response.x} Y:${response.y} Z:${response.z}`);
+                        }
+                    } catch (e) {
+                        // JSONでない場合はそのまま表示
+                    }
+                };
+                
+                ws.onclose = function() {
+                    updateConnectionStatus(false, 'Minecraft接続切断');
+                };
+                
+                ws.onerror = function() {
+                    updateConnectionStatus(false, 'Minecraft接続エラー - Minecraftを起動してください');
+                };
+                
+            } catch (error) {
+                updateConnectionStatus(false, 'WebSocket接続失敗');
+            }
+        }
+
+        function sendMinecraftCommand(command) {
+            if (!connected || !ws) {
+                logToConsole('❌ Minecraftに接続してください');
+                return false;
+            }
+            
+            try {
+                ws.send(JSON.stringify(command));
+                logToConsole('📤 ' + JSON.stringify(command));
+                return true;
+            } catch (error) {
+                logToConsole('❌ 送信エラー: ' + error.message);
+                return false;
+            }
+        }
+
+        function showCategory(category) {
+            // すべてのカテゴリを非アクティブに
+            document.querySelectorAll('.category-header').forEach(cat => cat.classList.remove('active'));
+            document.querySelectorAll('.blocks-section').forEach(section => section.classList.remove('active'));
+            
+            // 選択されたカテゴリをアクティブに
+            event.target.classList.add('active');
+            document.getElementById(category + '-section').classList.add('active');
+        }
+
+        // ドラッグ&ドロップ機能
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.classList.contains('scratch-block')) {
+                draggedElement = e.target.cloneNode(true);
+                draggedElement.classList.remove('scratch-block');
+                draggedElement.classList.add('dropped-block');
+                draggedElement.draggable = false;
+                
+                // 実行機能を追加
+                draggedElement.addEventListener('click', function() {
+                    executeBlock(this);
+                });
+            }
+        });
+
+        document.getElementById('workspace-canvas').addEventListener('dragover', function(e) {
+            e.preventDefault();
+        });
+
+        document.getElementById('workspace-canvas').addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (draggedElement && extensionLoaded) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                draggedElement.style.left = x + 'px';
+                draggedElement.style.top = y + 'px';
+                
+                this.appendChild(draggedElement);
+                droppedBlocks.push(draggedElement);
+                
+                logToConsole('🎯 ブロック追加: ' + draggedElement.textContent.substring(0, 20) + '...');
+                draggedElement = null;
+            }
+        });
+
+        function executeBlock(block) {
+            const type = block.getAttribute('data-type');
+            
+            // ビジュアルフィードバック
+            block.style.transform = 'scale(1.05)';
+            setTimeout(() => block.style.transform = 'scale(1)', 300);
+            
+            switch(type) {
+                case 'connect':
+                    connectToMinecraft();
+                    break;
+                    
+                case 'place-block':
+                    const blockType = block.querySelector('select').value;
+                    const inputs = block.querySelectorAll('input');
+                    const x = parseInt(inputs[0].value) || 0;
+                    const y = parseInt(inputs[1].value) || 70;
+                    const z = parseInt(inputs[2].value) || 0;
+                    
+                    sendMinecraftCommand({
+                        command: 'setBlock',
+                        args: { x: x, y: y, z: z, blockType: blockType }
+                    });
+                    break;
+                    
+                case 'remove-block':
+                    const removeInputs = block.querySelectorAll('input');
+                    const rx = parseInt(removeInputs[0].value) || 0;
+                    const ry = parseInt(removeInputs[1].value) || 70;
+                    const rz = parseInt(removeInputs[2].value) || 0;
+                    
+                    sendMinecraftCommand({
+                        command: 'removeBlock',
+                        args: { x: rx, y: ry, z: rz }
+                    });
+                    break;
+                    
+                case 'chat':
+                    const message = block.querySelector('input').value;
+                    if (message) {
+                        sendMinecraftCommand({
+                            command: 'chat',
+                            args: { message: message }
+                        });
+                    }
+                    break;
+                    
+                case 'get-position':
+                    sendMinecraftCommand({
+                        command: 'getPlayerPosition',
+                        args: {}
+                    });
+                    break;
+                    
+                case 'teleport':
+                    const tpInputs = block.querySelectorAll('input');
+                    const tpX = parseInt(tpInputs[0].value) || 0;
+                    const tpY = parseInt(tpInputs[1].value) || 70;
+                    const tpZ = parseInt(tpInputs[2].value) || 0;
+                    
+                    sendMinecraftCommand({
+                        command: 'teleportPlayer',
+                        args: { x: tpX, y: tpY, z: tpZ }
+                    });
+                    break;
+                    
+                case 'weather':
+                    const weather = block.querySelector('select').value;
+                    sendMinecraftCommand({
+                        command: 'setWeather',
+                        args: { weather: weather }
+                    });
+                    break;
+                    
+                case 'time':
+                    const time = block.querySelector('select').value;
+                    sendMinecraftCommand({
+                        command: 'setTime',
+                        args: { time: time }
+                    });
+                    break;
+                    
+                case 'wait':
+                    const seconds = parseFloat(block.querySelector('input').value) || 1;
+                    logToConsole('⏳ ' + seconds + '秒待機中...');
+                    setTimeout(() => logToConsole('⏳ 待機完了'), seconds * 1000);
+                    break;
+                    
+                case 'say':
+                    const sayMessage = block.querySelector('input').value || 'こんにちは！';
+                    logToConsole('💭 ' + sayMessage);
+                    break;
+                    
+                case 'think':
+                    const thinkMessage = block.querySelector('input').value || '考え中...';
+                    logToConsole('🤔 ' + thinkMessage);
+                    break;
+            }
+        }
+
+        function runProgram() {
+            if (droppedBlocks.length === 0) {
+                logToConsole('❌ プログラムが空です');
+                return;
+            }
+            
+            if (!extensionLoaded) {
+                logToConsole('❌ 拡張機能を読み込んでください');
+                return;
+            }
+            
+            isRunning = true;
+            document.getElementById('run-btn').style.display = 'none';
+            document.getElementById('stop-btn').style.display = 'block';
+            
+            logToConsole('▶️ プログラム実行開始');
+            
+            let delay = 0;
+            droppedBlocks.forEach((block, index) => {
+                setTimeout(() => {
+                    if (isRunning) {
+                        logToConsole(`実行中 [${index + 1}/${droppedBlocks.length}]: ${block.textContent.substring(0, 30)}...`);
+                        executeBlock(block);
+                    }
+                }, delay * 1000);
+                
+                // waitブロックの場合は遅延を追加
+                if (block.getAttribute('data-type') === 'wait') {
+                    const waitTime = parseFloat(block.querySelector('input').value) || 1;
+                    delay += waitTime;
+                } else {
+                    delay += 0.5; // 通常のブロック間隔
+                }
+            });
+            
+            setTimeout(() => {
+                if (isRunning) {
+                    stopProgram();
+                    logToConsole('✅ プログラム実行完了');
+                }
+            }, delay * 1000);
+        }
+
+        function stopProgram() {
+            isRunning = false;
+            document.getElementById('run-btn').style.display = 'block';
+            document.getElementById('stop-btn').style.display = 'none';
+            logToConsole('⏹️ プログラム停止');
+        }
+
+        // 初期化
+        window.onload = function() {
+            logToConsole('🎮 Minecraft × Scratch 初期化完了');
+            logToConsole('👆 "Minecraft拡張機能を読み込む" をクリックしてください');
+        };
+
+        // ページ終了時の処理
+        window.onbeforeunload = function() {
+            if (ws) ws.close();
+        };
+
+        // キーボードショートカット
+        document.addEventListener('keydown', function(e) {
+            if (e.code === 'Space' && extensionLoaded) {
+                e.preventDefault();
+                if (!isRunning) {
+                    runProgram();
+                } else {
+                    stopProgram();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

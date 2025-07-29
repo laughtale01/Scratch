@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Minecraft × Scratch 簡単スタート</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #4CAF50;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .button {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        .button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        .status {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .connection-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .connected { background-color: #4CAF50; }
+        .disconnected { background-color: #f44336; }
+        .sample-code {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 10px 0;
+            border-left: 3px solid #FFC107;
+        }
+        .warning {
+            background: rgba(255,152,0,0.2);
+            border: 1px solid #FF9800;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Minecraft × Scratch</h1>
+            <p>簡単3ステップでプログラミング開始！</p>
+        </div>
+
+        <div class="status">
+            <span class="connection-dot disconnected" id="status-dot"></span>
+            <span id="status-text">Minecraft接続チェック中...</span>
+        </div>
+
+        <div class="step">
+            <h3>ステップ1️⃣: 準備完了確認</h3>
+            <p>✅ 拡張機能サーバーが起動していることを確認</p>
+            <p id="server-status">🔄 確認中...</p>
+        </div>
+
+        <div class="step">
+            <h3>ステップ2️⃣: Minecraftを起動</h3>
+            <p>普通にMinecraft Java版を起動してワールドに入ってください</p>
+            <div class="warning">
+                <strong>重要:</strong> Minecraft Collaboration Modが読み込まれている必要があります
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>ステップ3️⃣: Scratchでプログラミング</h3>
+            <p>以下のボタンからScratchを開いて、拡張機能を追加してください</p>
+            
+            <a href="https://scratch.mit.edu/projects/editor/" target="_blank" class="button">
+                🚀 Scratchエディターを開く
+            </a>
+            
+            <div style="margin-top: 20px;">
+                <h4>📚 拡張機能の追加方法:</h4>
+                <div class="warning">
+                    <strong>重要:</strong> Scratchでは、残念ながらカスタム拡張機能の追加が制限されています。<br>
+                    代わりに以下の方法をお試しください：
+                </div>
+                
+                <h4>🔧 代替方法1: ScratchXを使用</h4>
+                <ol>
+                    <li><a href="http://scratchx.org/" target="_blank" class="button">ScratchX</a> にアクセス</li>
+                    <li>「I understand...」にチェックを入れて「OK」をクリック</li>
+                    <li>URLの最後に以下を追加:</li>
+                    <div class="sample-code">
+                        ?url=http://localhost:8080/minecraft-collaboration-extension.js
+                    </div>
+                    <li>Minecraft Controllerブロックが使用可能になります</li>
+                </ol>
+                
+                <h4>🔧 代替方法2: ローカルWebSocket接続</h4>
+                <p>Scratchの標準ブロックでもWebSocketに接続できます（上級者向け）</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>🎨 初回プログラム例</h3>
+            <p>以下のブロックを組み合わせて試してみてください：</p>
+            
+            <div class="sample-code">
+🔌 Minecraftに接続する<br>
+🧱 [stone]を X:[0] Y:[70] Z:[0] に置く<br>
+💬 チャット: [プログラムでブロックを置いたよ！]
+            </div>
+
+            <div class="sample-code">
+🔌 Minecraftに接続する<br>
+10 回くりかえす<br>
+&nbsp;&nbsp;🧱 [stone]を X:[0] Y:[64 + カウンター] Z:[0] に置く<br>
+&nbsp;&nbsp;0.5秒待つ
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>❓ 困ったときは</h3>
+            <ul>
+                <li><strong>接続できない:</strong> Minecraftが起動しているか確認</li>
+                <li><strong>ブロックが置けない:</strong> 座標を確認（F3キーで現在位置）</li>
+                <li><strong>拡張機能が読み込めない:</strong> HTTPサーバーが起動しているか確認</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+
+        function checkMinecraftConnection() {
+            try {
+                if (ws) ws.close();
+                
+                ws = new WebSocket('ws://localhost:14711');
+                
+                ws.onopen = function() {
+                    updateStatus(true, 'Minecraft接続中 ✅ プログラミング開始できます！');
+                };
+                
+                ws.onclose = function() {
+                    updateStatus(false, 'Minecraft未接続 ❌ Minecraftを起動してください');
+                };
+                
+                ws.onerror = function() {
+                    updateStatus(false, 'Minecraft起動待ち 🎮 ワールドに入ってください');
+                };
+                
+            } catch (error) {
+                updateStatus(false, 'Minecraft起動待ち 🎮');
+            }
+        }
+
+        function updateStatus(connected, message) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            
+            dot.className = 'connection-dot ' + (connected ? 'connected' : 'disconnected');
+            text.textContent = message;
+        }
+
+        function checkExtensionServer() {
+            fetch('http://localhost:8080/minecraft-collaboration-extension.js')
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('server-status').innerHTML = '✅ 拡張機能サーバー起動中';
+                    } else {
+                        document.getElementById('server-status').innerHTML = '❌ 拡張機能サーバーが見つかりません';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('server-status').innerHTML = '❌ 拡張機能サーバーを起動してください';
+                });
+        }
+
+        // 初期化
+        window.onload = function() {
+            checkMinecraftConnection();
+            checkExtensionServer();
+            setInterval(checkMinecraftConnection, 3000);
+            setInterval(checkExtensionServer, 5000);
+        };
+
+        window.onbeforeunload = function() {
+            if (ws) ws.close();
+        };
+    </script>
+</body>
+</html>
