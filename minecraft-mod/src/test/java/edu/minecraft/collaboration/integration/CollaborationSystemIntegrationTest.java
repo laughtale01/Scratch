@@ -1,10 +1,10 @@
-package edu.minecraft.collaboration.integration;
+package com.yourname.minecraftcollaboration.integration;
 
-import edu.minecraft.collaboration.collaboration.CollaborationManager;
-import edu.minecraft.collaboration.commands.CollaborationCommandHandler;
-import edu.minecraft.collaboration.models.Invitation;
-import edu.minecraft.collaboration.network.CollaborationMessageProcessor;
-import edu.minecraft.collaboration.server.CollaborationCoordinator;
+import com.yourname.minecraftcollaboration.collaboration.CollaborationManager;
+import com.yourname.minecraftcollaboration.commands.CollaborationCommandHandler;
+import com.yourname.minecraftcollaboration.models.Invitation;
+import com.yourname.minecraftcollaboration.network.CollaborationMessageProcessor;
+import com.yourname.minecraftcollaboration.server.CollaborationCoordinator;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.junit.jupiter.api.*;
@@ -44,7 +44,7 @@ class CollaborationSystemIntegrationTest {
         collaborationManager = CollaborationManager.getInstance();
         commandHandler = new CollaborationCommandHandler();
         messageProcessor = new CollaborationMessageProcessor();
-        coordinator = new CollaborationCoordinator(mockServer);
+        coordinator = new CollaborationCoordinator();
         
         // Start coordinator
         coordinator.start();
@@ -218,6 +218,6 @@ class CollaborationSystemIntegrationTest {
     void testRateLimiting() {
         // This test would require actual rate limiter integration
         // For now, we verify the structure exists
-        assertTrue(edu.minecraft.collaboration.security.SecurityConfig.COMMAND_RATE_LIMIT_PER_SECOND > 0);
+        assertTrue(com.yourname.minecraftcollaboration.security.SecurityConfig.COMMAND_RATE_LIMIT_PER_SECOND > 0);
     }
 }

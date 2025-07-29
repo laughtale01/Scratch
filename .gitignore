@@ -1,180 +1,66 @@
-# Gradle
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-# IDE
-.idea/
-*.iws
-*.iml
-*.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-.vscode/
-*.swp
-*.swo
-*~
-
-# Eclipse
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Minecraft
-run/
-minecraft-mod/run/
-logs/
-crash-reports/
-saves/
-screenshots/
-resourcepacks/
-*.log
-
-# Node
+# 開発環境ファイル
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-.npm
-*.tsbuildinfo
 .env
 .env.local
-.env.*.local
-
-# Build outputs
-dist/
-minecraft-mod/build/
-scratch-extension/dist/
-*.jar
-!minecraft-mod/gradle/wrapper/gradle-wrapper.jar
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.backup
-*.old
-~$*
-
-# Test coverage
-coverage/
-.nyc_output/
-
-# Config files with sensitive data
-config/local.json
-config/*.local.json
-
-# User-specific files
-*.user
-*.userosscache
-*.suo
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv
-
-# Documentation build
-docs/_build/
-docs/.doctrees/
-
-# Backup files
-*.orig
-*.rej
-
-# Package files
-*.zip
-*.tar.gz
-*.rar
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Cache
-.cache/
-.parcel-cache/
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Directory for instrumented libs
-lib-cov/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Optional stylelint cache
-.stylelintcache
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variable files
-.env
 .env.development.local
 .env.test.local
 .env.production.local
-.env.local
 
-# WebSocket test files results
-test-results/
-*.test.log
+# ログファイル
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Scratch GUI (separate repository recommended)
+# Minecraft開発用一時ファイル
+minecraft-mod/run/
+minecraft-mod/build/
+minecraft-mod/gradle/
+*.jar
+!*-all.jar
+
+# scratch-gui開発用一時ファイル
+scratch-gui/build/
+scratch-gui/static/assets/
+
+# scratch-guiディレクトリ全体を除外（414MB、40,000+ファイル）
 scratch-gui/
 
-# Temporary and backup files
-*~
-*.backup
-*.bak
+# テスト用一時ファイル
+*test*.js
+!minecraft-extension.test.js
+coverage/
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
 *.tmp
 *.temp
--c/
-nul
 
-# Archives
-docs/archives/
+# エディタ設定
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Generated documentation
-docs/_site/
+# バックアップファイル
+backup_*/
+*.backup
+*~
 
-# Lock files (keep package-lock.json)
+# 画像ファイル（スクリーンショット等）
+*.jpg
+*.png
+*.gif
+!icon.png
+!logo.png
+
+# ビルド成果物
+dist/
+build/
+out/
+
+# Package manager
+package-lock.json
 yarn.lock
 pnpm-lock.yaml

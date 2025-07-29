@@ -1,7 +1,7 @@
-package edu.minecraft.collaboration.network;
+package com.yourname.minecraftcollaboration.network;
 
-import edu.minecraft.collaboration.security.RateLimiter;
-import edu.minecraft.collaboration.security.SecurityConfig;
+import com.yourname.minecraftcollaboration.security.RateLimiter;
+import com.yourname.minecraftcollaboration.security.SecurityConfig;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.junit.jupiter.api.BeforeEach;

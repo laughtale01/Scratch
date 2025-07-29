@@ -1,4 +1,4 @@
-package edu.minecraft.collaboration.monitoring;
+package com.yourname.minecraftcollaboration.monitoring;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

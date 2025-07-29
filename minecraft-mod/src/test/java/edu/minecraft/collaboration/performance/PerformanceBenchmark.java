@@ -1,8 +1,8 @@
-package edu.minecraft.collaboration.performance;
+package com.yourname.minecraftcollaboration.performance;
 
-import edu.minecraft.collaboration.monitoring.MetricsCollector;
-import edu.minecraft.collaboration.collaboration.CollaborationManager;
-import edu.minecraft.collaboration.models.Invitation;
+import com.yourname.minecraftcollaboration.monitoring.MetricsCollector;
+import com.yourname.minecraftcollaboration.collaboration.CollaborationManager;
+import com.yourname.minecraftcollaboration.models.Invitation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.BeforeEach;

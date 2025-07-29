@@ -64,7 +64,8 @@
       "Bash(mv:*)",
       "Bash(python:*)",
       "Bash(sed:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(git subtree split:*)"
     ],
     "deny": []
   }

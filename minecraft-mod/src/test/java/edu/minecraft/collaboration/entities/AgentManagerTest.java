@@ -1,4 +1,4 @@
-package edu.minecraft.collaboration.entities;
+package com.yourname.minecraftcollaboration.entities;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import net.minecraft.network.chat.Component;
 
 /**
  * Unit tests for AgentManager
@@ -40,7 +41,7 @@ public class AgentManagerTest {
         
         // Setup mock player
         when(mockPlayer.getUUID()).thenReturn(UUID.randomUUID());
-        when(mockPlayer.getName()).thenReturn(() -> "TestPlayer");
+        when(mockPlayer.getName()).thenReturn(Component.literal("TestPlayer"));
         when(mockPlayer.serverLevel()).thenReturn(mockLevel);
         when(mockPlayer.blockPosition()).thenReturn(new BlockPos(0, 64, 0));
         

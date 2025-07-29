@@ -1,8 +1,8 @@
-package edu.minecraft.collaboration.integration;
+package com.yourname.minecraftcollaboration.integration;
 
-import edu.minecraft.collaboration.collaboration.CollaborationManager;
-import edu.minecraft.collaboration.models.Invitation;
-import edu.minecraft.collaboration.models.VisitRequest;
+import com.yourname.minecraftcollaboration.collaboration.CollaborationManager;
+import com.yourname.minecraftcollaboration.models.Invitation;
+import com.yourname.minecraftcollaboration.models.VisitRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

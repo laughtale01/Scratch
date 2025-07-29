@@ -1,4 +1,4 @@
-package edu.minecraft.collaboration.error;
+package com.yourname.minecraftcollaboration.error;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

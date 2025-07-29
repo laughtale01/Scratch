@@ -1,7 +1,7 @@
-package edu.minecraft.collaboration.collaboration;
+package com.yourname.minecraftcollaboration.collaboration;
 
-import edu.minecraft.collaboration.models.Invitation;
-import edu.minecraft.collaboration.models.VisitRequest;
+import com.yourname.minecraftcollaboration.models.Invitation;
+import com.yourname.minecraftcollaboration.models.VisitRequest;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;

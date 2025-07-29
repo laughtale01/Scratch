@@ -1,9 +1,9 @@
-package edu.minecraft.collaboration.integration;
+package com.yourname.minecraftcollaboration.integration;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import edu.minecraft.collaboration.network.WebSocketHandler;
-import edu.minecraft.collaboration.server.CollaborationServer;
+import com.yourname.minecraftcollaboration.network.WebSocketHandler;
+import com.yourname.minecraftcollaboration.server.CollaborationServer;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.junit.jupiter.api.*;

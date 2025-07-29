@@ -1,4 +1,4 @@
-package edu.minecraft.collaboration.security;
+package com.yourname.minecraftcollaboration.security;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

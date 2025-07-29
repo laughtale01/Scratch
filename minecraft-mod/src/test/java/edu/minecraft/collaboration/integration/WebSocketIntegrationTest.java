@@ -1,7 +1,7 @@
-package edu.minecraft.collaboration.integration;
+package com.yourname.minecraftcollaboration.integration;
 
-import edu.minecraft.collaboration.network.WebSocketHandler;
-import edu.minecraft.collaboration.network.CollaborationMessageProcessor;
+import com.yourname.minecraftcollaboration.network.WebSocketHandler;
+import com.yourname.minecraftcollaboration.network.CollaborationMessageProcessor;
 import org.junit.jupiter.api.*;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;

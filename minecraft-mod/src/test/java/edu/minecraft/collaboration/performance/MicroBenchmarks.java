@@ -1,6 +1,6 @@
-package edu.minecraft.collaboration.performance;
+package com.yourname.minecraftcollaboration.performance;
 
-import edu.minecraft.collaboration.monitoring.MetricsCollector;
+import com.yourname.minecraftcollaboration.monitoring.MetricsCollector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

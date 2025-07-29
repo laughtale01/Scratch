@@ -1,8 +1,8 @@
-package edu.minecraft.collaboration.persistence;
+package com.yourname.minecraftcollaboration.persistence;
 
-import edu.minecraft.collaboration.collaboration.CollaborationManager;
-import edu.minecraft.collaboration.collaboration.Invitation;
-import edu.minecraft.collaboration.collaboration.VisitRequest;
+import com.yourname.minecraftcollaboration.collaboration.CollaborationManager;
+import com.yourname.minecraftcollaboration.collaboration.Invitation;
+import com.yourname.minecraftcollaboration.collaboration.VisitRequest;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;

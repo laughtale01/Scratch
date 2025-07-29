@@ -1,4 +1,4 @@
-package edu.minecraft.collaboration.util;
+package com.yourname.minecraftcollaboration.util;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

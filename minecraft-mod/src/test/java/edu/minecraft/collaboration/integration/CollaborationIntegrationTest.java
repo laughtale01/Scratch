@@ -1,9 +1,9 @@
-package edu.minecraft.collaboration.integration;
+package com.yourname.minecraftcollaboration.integration;
 
-import edu.minecraft.collaboration.collaboration.CollaborationManager;
-import edu.minecraft.collaboration.models.Invitation;
-import edu.minecraft.collaboration.models.VisitRequest;
-import edu.minecraft.collaboration.server.CollaborationCoordinator;
+import com.yourname.minecraftcollaboration.collaboration.CollaborationManager;
+import com.yourname.minecraftcollaboration.models.Invitation;
+import com.yourname.minecraftcollaboration.models.VisitRequest;
+import com.yourname.minecraftcollaboration.server.CollaborationCoordinator;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.junit.jupiter.api.*;
@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import net.minecraft.network.chat.Component;
 
 /**
  * Integration tests for collaboration features
@@ -47,12 +48,12 @@ public class CollaborationIntegrationTest {
     public void setup() {
         // Initialize collaboration components
         collaborationManager = CollaborationManager.getInstance();
-        coordinator = new CollaborationCoordinator(mockServer);
+        coordinator = new CollaborationCoordinator();
         coordinator.start();
         
         // Setup mock players
-        when(player1.getName()).thenReturn(() -> "Player1");
-        when(player2.getName()).thenReturn(() -> "Player2");
+        when(player1.getName()).thenReturn(Component.literal("Player1"));
+        when(player2.getName()).thenReturn(Component.literal("Player2"));
         when(player1.getUUID()).thenReturn(UUID.randomUUID());
         when(player2.getUUID()).thenReturn(UUID.randomUUID());
     }
@@ -139,7 +140,7 @@ public class CollaborationIntegrationTest {
     @DisplayName("Test coordinator visit request")
     public void testCoordinatorVisitRequest() throws Exception {
         // Request visit through coordinator
-        CompletableFuture<Boolean> future = coordinator.requestVisit("Player1", "Player2");
+        boolean result = coordinator.requestVisit("Player1", "Player2");
         Boolean result = future.get(5, TimeUnit.SECONDS);
         
         assertTrue(result, "Visit request should be sent successfully");

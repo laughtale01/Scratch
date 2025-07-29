@@ -1,4 +1,4 @@
-package edu.minecraft.collaboration.performance;
+package com.yourname.minecraftcollaboration.performance;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;

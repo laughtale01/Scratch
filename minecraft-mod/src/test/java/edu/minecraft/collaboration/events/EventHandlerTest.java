@@ -1,7 +1,7 @@
-package edu.minecraft.collaboration.events;
+package com.yourname.minecraftcollaboration.events;
 
-import edu.minecraft.collaboration.MinecraftCollaborationMod;
-import edu.minecraft.collaboration.network.WebSocketHandler;
+import com.yourname.minecraftcollaboration.MinecraftCollaborationMod;
+import com.yourname.minecraftcollaboration.network.WebSocketHandler;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;

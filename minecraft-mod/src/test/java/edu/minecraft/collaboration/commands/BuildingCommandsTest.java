@@ -1,7 +1,7 @@
-package edu.minecraft.collaboration.commands;
+package com.yourname.minecraftcollaboration.commands;
 
-import edu.minecraft.collaboration.network.CollaborationMessageProcessor;
-import edu.minecraft.collaboration.util.ResponseHelper;
+import com.yourname.minecraftcollaboration.network.CollaborationMessageProcessor;
+import com.yourname.minecraftcollaboration.util.ResponseHelper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.*;
