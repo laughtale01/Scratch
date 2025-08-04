@@ -37,13 +37,33 @@ public class LearningMilestone {
         this.createdAt = LocalDateTime.now();
     }
     
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public List<String> getRequiredActivities() { return requiredActivities; }
-    public int getRequiredCount() { return requiredCount; }
-    public int getPointReward() { return pointReward; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getId() {
+        return id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public List<String> getRequiredActivities() {
+        return requiredActivities;
+    }
+    
+    public int getRequiredCount() {
+        return requiredCount;
+    }
+    
+    public int getPointReward() {
+        return pointReward;
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
     
     /**
      * Check if the milestone requirements are met
@@ -81,8 +101,12 @@ public class LearningMilestone {
     
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         LearningMilestone that = (LearningMilestone) obj;
         return id.equals(that.id);
     }

@@ -2,7 +2,14 @@ package edu.minecraft.collaboration.offline;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * 繧ｪ繝輔Λ繧､繝ｳ譎ゅ・蟄ｦ逕溘ョ繝ｼ繧ｿ繧ｭ繝｣繝・す繝･
@@ -213,7 +220,9 @@ public class OfflineStudentData {
         
         boolean first = true;
         for (Map.Entry<String, Object> entry : data.entrySet()) {
-            if (!first) json.append(",\n");
+            if (!first) {
+                json.append(",\n");
+            }
             
             String key = entry.getKey();
             Object value = entry.getValue();
@@ -225,7 +234,8 @@ public class OfflineStudentData {
             } else if (value instanceof Number || value instanceof Boolean) {
                 json.append(value);
             } else if (value instanceof List || value instanceof Map) {
-                // 隍・尅縺ｪ繧ｪ繝悶ず繧ｧ繧ｯ繝医・譁・ｭ怜・縺ｨ縺励※菫晏ｭ・                json.append("\"").append(value.toString().replace("\"", "\\\"")).append("\"");
+                // Complex objects stored as string
+                json.append("\"").append(value.toString().replace("\"", "\\\"")).append("\"");
             } else {
                 json.append("\"").append(value != null ? value.toString() : "null").append("\"");
             }
@@ -328,8 +338,11 @@ public class OfflineStudentData {
         
         while (currentPos < json.length() && braceCount > 0) {
             char c = json.charAt(currentPos);
-            if (c == '{') braceCount++;
-            else if (c == '}') braceCount--;
+            if (c == '{') {
+                braceCount++;
+            } else if (c == '}') {
+                braceCount--;
+            }
             currentPos++;
         }
         
@@ -348,10 +361,14 @@ public class OfflineStudentData {
         
         for (String line : lines) {
             line = line.trim();
-            if (line.isEmpty()) continue;
+            if (line.isEmpty()) {
+                continue;
+            }
             
             int colonIndex = line.indexOf(":");
-            if (colonIndex == -1) continue;
+            if (colonIndex == -1) {
+                continue;
+            }
             
             String key = line.substring(0, colonIndex).trim();
             String value = line.substring(colonIndex + 1).trim();
@@ -412,8 +429,12 @@ public class OfflineStudentData {
     
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         OfflineStudentData that = (OfflineStudentData) obj;
         return Objects.equals(studentUUID, that.studentUUID);
     }

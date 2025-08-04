@@ -7,31 +7,27 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.Map;
+import java.util.List;
+import java.util.UUID;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Manages invitations and visit requests for the collaboration system
+ * Manages invitations and visit requests for the collaboration system.
+ * Converted from singleton to dependency injection pattern.
  */
-public class CollaborationManager {
+public final class CollaborationManager {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    private static CollaborationManager instance;
     
     private final Map<UUID, Invitation> invitations = new ConcurrentHashMap<>();
     private final Map<UUID, VisitRequest> visitRequests = new ConcurrentHashMap<>();
     private final Map<String, String> playerWorldMap = new ConcurrentHashMap<>(); // player -> current world
     private final Map<String, String> playerHomeMap = new ConcurrentHashMap<>(); // player -> home world
     
-    private CollaborationManager() {
-        // Private constructor for singleton
-    }
-    
-    public static CollaborationManager getInstance() {
-        if (instance == null) {
-            instance = new CollaborationManager();
-        }
-        return instance;
+    public CollaborationManager() {
+        LOGGER.info("CollaborationManager initialized");
     }
     
     // === Invitation Management ===
@@ -192,17 +188,19 @@ public class CollaborationManager {
     }
     
     public boolean returnPlayerHome(ServerPlayer player) {
-        if (player == null) return false;
+        if (player == null) {
+            return false;
+        }
         
         String playerName = player.getName().getString();
         PlayerPosition homePos = playerHomePositions.get(playerName);
         
         if (homePos != null) {
             // Teleport to home position
-            player.teleportTo(homePos.x, homePos.y, homePos.z);
+            player.teleportTo(homePos.getX(), homePos.getY(), homePos.getZ());
             
             // Update world tracking
-            setPlayerWorld(playerName, homePos.dimension);
+            setPlayerWorld(playerName, homePos.getDimension());
             
             // Notify player
             notifyPlayer(player, "You have returned to your home world.");
@@ -222,7 +220,9 @@ public class CollaborationManager {
     }
     
     public boolean emergencyReturnPlayer(ServerPlayer player) {
-        if (player == null) return false;
+        if (player == null) {
+            return false;
+        }
         
         // First return home
         boolean returned = returnPlayerHome(player);
@@ -247,14 +247,32 @@ public class CollaborationManager {
     
     // Inner class for storing position data
     private static class PlayerPosition {
-        public final double x, y, z;
-        public final String dimension;
+        private final double x;
+        private final double y;
+        private final double z;
+        private final String dimension;
         
-        public PlayerPosition(double x, double y, double z, String dimension) {
+        PlayerPosition(double x, double y, double z, String dimension) {
             this.x = x;
             this.y = y;
             this.z = z;
             this.dimension = dimension;
+        }
+        
+        public double getX() {
+            return x;
+        }
+        
+        public double getY() {
+            return y;
+        }
+        
+        public double getZ() {
+            return z;
+        }
+        
+        public String getDimension() {
+            return dimension;
         }
     }
     

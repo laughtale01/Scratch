@@ -12,8 +12,12 @@ import java.util.Arrays;
  * Comprehensive input validation for all user inputs
  * Prevents injection attacks and ensures data integrity
  */
-public class InputValidator {
+public final class InputValidator {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
+    
+    private InputValidator() {
+        throw new UnsupportedOperationException("Utility class");
+    }
     
     // Validation patterns
     private static final Pattern ALPHANUMERIC_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]+$");
@@ -302,13 +306,178 @@ public class InputValidator {
      * @return true if appears to be valid JSON
      */
     public static boolean validateJson(String json) {
-        if (json == null || json.isEmpty()) {
+        if (!isValidJsonInput(json)) {
             return false;
         }
         
-        // Basic check for JSON structure
         json = json.trim();
-        return (json.startsWith("{") && json.endsWith("}")) ||
-               (json.startsWith("[") && json.endsWith("]"));
+        
+        if (!hasValidJsonStructure(json)) {
+            return false;
+        }
+        
+        JsonValidationState state = parseJsonCharacters(json);
+        
+        return isJsonStateValid(state, json);
+    }
+    
+    /**
+     * Check if JSON input is valid (not null/empty) and has proper structure
+     * @param json The JSON string to check
+     * @return true if input is valid
+     */
+    private static boolean isValidJsonInput(String json) {
+        return json != null && !json.isEmpty();
+    }
+    
+    /**
+     * Check if JSON has valid opening and closing structure
+     * @param json The trimmed JSON string
+     * @return true if structure is valid
+     */
+    private static boolean hasValidJsonStructure(String json) {
+        return (json.startsWith("{") && json.endsWith("}"))
+            || (json.startsWith("[") && json.endsWith("]"));
+    }
+    
+    /**
+     * Parse JSON characters and track validation state
+     * @param json The JSON string to parse
+     * @return JsonValidationState containing parsing results
+     */
+    private static JsonValidationState parseJsonCharacters(String json) {
+        JsonValidationState state = new JsonValidationState();
+        
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+            
+            if (isQuoteCharacter(c, state.prevChar)) {
+                state.toggleStringMode();
+            }
+            
+            if (!state.inString) {
+                if (!processNonStringCharacter(c, state)) {
+                    state.valid = false;
+                    break;
+                }
+            }
+            
+            state.prevChar = c;
+        }
+        
+        return state;
+    }
+    
+    /**
+     * Check if character is an unescaped quote
+     * @param c Current character
+     * @param prevChar Previous character
+     * @return true if unescaped quote
+     */
+    private static boolean isQuoteCharacter(char c, char prevChar) {
+        return c == '"' && prevChar != '\\';
+    }
+    
+    /**
+     * Process character that is outside of string context
+     * @param c Character to process
+     * @param state Current validation state
+     * @return true if character is valid
+     */
+    private static boolean processNonStringCharacter(char c, JsonValidationState state) {
+        updateBraceAndBracketCounts(c, state);
+        
+        if (state.braceCount < 0 || state.bracketCount < 0) {
+            return false;
+        }
+        
+        if (c == ':' || c == ',') {
+            state.hasValidContent = true;
+        }
+        
+        return isValidJsonCharacterOutsideString(c);
+    }
+    
+    /**
+     * Update brace and bracket counts based on character
+     * @param c Character to process
+     * @param state Current validation state
+     */
+    private static void updateBraceAndBracketCounts(char c, JsonValidationState state) {
+        switch (c) {
+            case '{':
+                state.braceCount++;
+                break;
+            case '}':
+                state.braceCount--;
+                break;
+            case '[':
+                state.bracketCount++;
+                break;
+            case ']':
+                state.bracketCount--;
+                break;
+        }
+    }
+    
+    /**
+     * Check if character is valid outside of JSON strings
+     * @param c Character to validate
+     * @return true if valid
+     */
+    private static boolean isValidJsonCharacterOutsideString(char c) {
+        return Character.isWhitespace(c) || isJsonStructuralCharacter(c) 
+            || isJsonLiteralCharacter(c) || Character.isDigit(c) || c == '-' || c == '.';
+    }
+    
+    /**
+     * Check if character is a JSON structural character
+     * @param c Character to check
+     * @return true if structural character
+     */
+    private static boolean isJsonStructuralCharacter(char c) {
+        return c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == ',' || c == '"';
+    }
+    
+    /**
+     * Check if character is part of JSON literal values (true, false, null)
+     * @param c Character to check
+     * @return true if literal character
+     */
+    private static boolean isJsonLiteralCharacter(char c) {
+        return c == 't' || c == 'r' || c == 'u' || c == 'e' || c == 'f' 
+            || c == 'a' || c == 'l' || c == 's' || c == 'n';
+    }
+    
+    /**
+     * Check if final JSON validation state is valid
+     * @param state Final validation state
+     * @param json Original JSON string
+     * @return true if state indicates valid JSON
+     */
+    private static boolean isJsonStateValid(JsonValidationState state, String json) {
+        boolean balancedStructures = state.braceCount == 0 && state.bracketCount == 0;
+        boolean evenQuotes = state.quoteCount % 2 == 0;
+        boolean hasContent = state.hasValidContent || json.equals("{}") || json.equals("[]");
+        
+        return state.valid && balancedStructures && evenQuotes && hasContent;
+    }
+    
+    /**
+     * Internal class to track JSON validation state during parsing
+     */
+    private static class JsonValidationState {
+        int braceCount = 0;
+        int bracketCount = 0;
+        int quoteCount = 0;
+        boolean inString = false;
+        char prevChar = '\0';
+        boolean hasValidContent = false;
+        boolean valid = true;
+        
+        void toggleStringMode() {
+            inString = !inString;
+            quoteCount++;
+        }
     }
 }

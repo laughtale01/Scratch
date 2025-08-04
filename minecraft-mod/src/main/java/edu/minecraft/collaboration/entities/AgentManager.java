@@ -3,9 +3,7 @@ package edu.minecraft.collaboration.entities;
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -16,7 +14,7 @@ import java.util.Optional;
 /**
  * Manages agent entities for players
  */
-public class AgentManager {
+public final class AgentManager {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private static AgentManager instance;
     
@@ -25,7 +23,7 @@ public class AgentManager {
     // Map agent ID to agent entity
     private final Map<String, CollaborationAgent> agentRegistry = new HashMap<>();
     
-    private AgentManager() {}
+    private AgentManager() { }
     
     public static AgentManager getInstance() {
         if (instance == null) {
@@ -194,14 +192,16 @@ public class AgentManager {
         // Try positions around player
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
-                if (dx == 0 && dz == 0) continue; // Skip player position
+                if (dx == 0 && dz == 0) {
+                    continue; // Skip player position
+                }
                 
                 BlockPos checkPos = playerPos.offset(dx, 0, dz);
                 
                 // Check if position is safe (solid ground, air above)
-                if (level.getBlockState(checkPos.below()).isSolid() &&
-                    level.getBlockState(checkPos).isAir() &&
-                    level.getBlockState(checkPos.above()).isAir()) {
+                if (level.getBlockState(checkPos.below()).isSolid()
+                        && level.getBlockState(checkPos).isAir()
+                        && level.getBlockState(checkPos.above()).isAir()) {
                     return checkPos;
                 }
             }

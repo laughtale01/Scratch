@@ -9,9 +9,14 @@ import java.util.Map;
  * Utility class for block-related operations
  * Centralizes block name to Block object mapping
  */
-public class BlockUtils {
+public final class BlockUtils {
     
     private static final Map<String, Block> BLOCK_MAP = new HashMap<>();
+    
+    // Private constructor to prevent instantiation
+    private BlockUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
     
     static {
         // Initialize block mappings

@@ -2,6 +2,7 @@ package edu.minecraft.collaboration.server;
 
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
 import edu.minecraft.collaboration.collaboration.CollaborationManager;
+import edu.minecraft.collaboration.core.DependencyInjector;
 import edu.minecraft.collaboration.models.Invitation;
 import edu.minecraft.collaboration.models.VisitRequest;
 import net.minecraft.server.MinecraftServer;
@@ -9,13 +10,20 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Coordinates collaboration activities between players across the server
  */
-public class CollaborationCoordinator {
+public final class CollaborationCoordinator {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private static CollaborationCoordinator instance;
     
@@ -28,7 +36,7 @@ public class CollaborationCoordinator {
     private final Map<String, Long> lastActivityTimes = new ConcurrentHashMap<>();
     
     private CollaborationCoordinator() {
-        this.collaborationManager = CollaborationManager.getInstance();
+        this.collaborationManager = DependencyInjector.getInstance().getService(CollaborationManager.class);
         LOGGER.info("Collaboration coordinator initialized");
     }
     
@@ -262,8 +270,8 @@ public class CollaborationCoordinator {
         Set<String> friends1 = playerFriends.get(player1);
         Set<String> friends2 = playerFriends.get(player2);
         
-        return (friends1 != null && friends1.contains(player2)) ||
-               (friends2 != null && friends2.contains(player1));
+        return (friends1 != null && friends1.contains(player2))
+               || (friends2 != null && friends2.contains(player1));
     }
     
     /**

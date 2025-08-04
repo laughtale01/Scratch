@@ -3,7 +3,11 @@ package edu.minecraft.collaboration.blockpacks;
 import net.minecraft.world.level.block.Block;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * ブロックパック縺ｮ螳夂ｾｩ繧ｯ繝ｩ繧ｹ
@@ -110,19 +114,39 @@ public class BlockPack {
     }
     
     // Getters
-    public String getId() { return id; }
-    public Map<String, String> getNames() { return new HashMap<>(names); }
-    public Map<String, String> getDescriptions() { return new HashMap<>(descriptions); }
-    public BlockPackCategory getCategory() { return category; }
-    public DifficultyLevel getDifficulty() { return difficulty; }
-    public boolean isStudentAccessible() { return studentAccessible; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public Map<String, Object> getMetadata() { return new HashMap<>(metadata); }
+    public String getId() {
+        return id;
+    }
+    public Map<String, String> getNames() {
+        return new HashMap<>(names);
+    }
+    public Map<String, String> getDescriptions() {
+        return new HashMap<>(descriptions);
+    }
+    public BlockPackCategory getCategory() {
+        return category;
+    }
+    public DifficultyLevel getDifficulty() {
+        return difficulty;
+    }
+    public boolean isStudentAccessible() {
+        return studentAccessible;
+    }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    public Map<String, Object> getMetadata() {
+        return new HashMap<>(metadata);
+    }
     
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         BlockPack blockPack = (BlockPack) obj;
         return Objects.equals(id, blockPack.id);
     }

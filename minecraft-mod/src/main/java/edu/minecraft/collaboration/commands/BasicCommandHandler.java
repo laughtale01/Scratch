@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 import edu.minecraft.collaboration.util.BlockUtils;
@@ -200,69 +199,118 @@ public class BasicCommandHandler {
         }
         
         try {
-            int x1 = Integer.parseInt(args[0]);
-            int y1 = Integer.parseInt(args[1]);
-            int z1 = Integer.parseInt(args[2]);
-            int x2 = Integer.parseInt(args[3]);
-            int y2 = Integer.parseInt(args[4]);
-            int z2 = Integer.parseInt(args[5]);
-            String blockType = args[6];
+            FillAreaParams params = parseFillAreaParams(args);
             
-            // Validate coordinates
-            if (!ValidationUtils.isValidCoordinate(x1, y1, z1) || !ValidationUtils.isValidCoordinate(x2, y2, z2)) {
-                return ResponseHelper.error("fillArea", ResponseHelper.ERROR_INVALID_COORDS, "Invalid coordinates");
+            String validationError = validateFillAreaParams(params);
+            if (validationError != null) {
+                return validationError;
             }
             
-            // Validate block type
-            if (!ValidationUtils.isValidBlockType(blockType)) {
-                return ResponseHelper.error("fillArea", ResponseHelper.ERROR_INVALID_BLOCK, "Invalid block type: " + blockType);
-            }
-            
-            // Calculate area size and validate
-            int volume = Math.abs(x2 - x1 + 1) * Math.abs(y2 - y1 + 1) * Math.abs(z2 - z1 + 1);
-            if (volume > 10000) {
-                return ResponseHelper.error("fillArea", ResponseHelper.ERROR_AREA_TOO_LARGE, "Area too large (max 10000 blocks)");
-            }
-            
-            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                ServerLevel world = server.getLevel(Level.OVERWORLD);
-                if (world != null) {
-                    Block block = BlockUtils.getBlockFromString(blockType);
-                    
-                    if (block != null) {
-                        // Fill the area
-                        int minX = Math.min(x1, x2);
-                        int maxX = Math.max(x1, x2);
-                        int minY = Math.min(y1, y2);
-                        int maxY = Math.max(y1, y2);
-                        int minZ = Math.min(z1, z2);
-                        int maxZ = Math.max(z1, z2);
-                        
-                        int blocksSet = 0;
-                        for (int x = minX; x <= maxX; x++) {
-                            for (int y = minY; y <= maxY; y++) {
-                                for (int z = minZ; z <= maxZ; z++) {
-                                    BlockPos pos = new BlockPos(x, y, z);
-                                    world.setBlockAndUpdate(pos, block.defaultBlockState());
-                                    blocksSet++;
-                                }
-                            }
-                        }
-                        
-                        metricsCollector.incrementCounter("commands.fillArea");
-                        return ResponseHelper.areaFilled(minX, minY, minZ, maxX, maxY, maxZ, blockType, blocksSet);
-                    } else {
-                        return ResponseHelper.error("fillArea", ResponseHelper.ERROR_INVALID_BLOCK, "Unknown block type: " + blockType);
-                    }
-                }
-            }
-            return ResponseHelper.error("fillArea", ResponseHelper.ERROR_SERVER_UNAVAILABLE, "Server not available");
+            return executeFillArea(params);
         } catch (NumberFormatException e) {
             return ResponseHelper.error("fillArea", ResponseHelper.ERROR_INVALID_ARGS, "Invalid coordinate format");
         } catch (Exception e) {
             LOGGER.error("Error filling area", e);
             return ResponseHelper.error("fillArea", ResponseHelper.ERROR_INTERNAL, e.getMessage());
         }
+    }
+    
+    private FillAreaParams parseFillAreaParams(String[] args) {
+        return new FillAreaParams(
+            Integer.parseInt(args[0]),
+            Integer.parseInt(args[1]),
+            Integer.parseInt(args[2]),
+            Integer.parseInt(args[3]),
+            Integer.parseInt(args[4]),
+            Integer.parseInt(args[5]),
+            args[6]
+        );
+    }
+    
+    private String validateFillAreaParams(FillAreaParams params) {
+        // Validate coordinates
+        if (!ValidationUtils.isValidCoordinate(params.x1, params.y1, params.z1) || 
+            !ValidationUtils.isValidCoordinate(params.x2, params.y2, params.z2)) {
+            return ResponseHelper.error("fillArea", ResponseHelper.ERROR_INVALID_COORDS, "Invalid coordinates");
+        }
+        
+        // Validate block type
+        if (!ValidationUtils.isValidBlockType(params.blockType)) {
+            return ResponseHelper.error("fillArea", ResponseHelper.ERROR_INVALID_BLOCK, "Invalid block type: " + params.blockType);
+        }
+        
+        // Calculate and validate volume
+        int volume = params.calculateVolume();
+        if (volume > 10000) {
+            return ResponseHelper.error("fillArea", ResponseHelper.ERROR_AREA_TOO_LARGE, "Area too large (max 10000 blocks)");
+        }
+        
+        return null; // No validation errors
+    }
+    
+    private String executeFillArea(FillAreaParams params) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return ResponseHelper.error("fillArea", ResponseHelper.ERROR_SERVER_UNAVAILABLE, "Server not available");
+        }
+        
+        ServerLevel world = server.getLevel(Level.OVERWORLD);
+        if (world == null) {
+            return ResponseHelper.error("fillArea", ResponseHelper.ERROR_SERVER_UNAVAILABLE, "World not available");
+        }
+        
+        Block block = BlockUtils.getBlockFromString(params.blockType);
+        if (block == null) {
+            return ResponseHelper.error("fillArea", ResponseHelper.ERROR_INVALID_BLOCK, "Unknown block type: " + params.blockType);
+        }
+        
+        int blocksSet = fillAreaWithBlock(world, params, block);
+        metricsCollector.incrementCounter("commands.fillArea");
+        
+        return ResponseHelper.areaFilled(
+            params.getMinX(), params.getMinY(), params.getMinZ(),
+            params.getMaxX(), params.getMaxY(), params.getMaxZ(),
+            params.blockType, blocksSet
+        );
+    }
+    
+    private int fillAreaWithBlock(ServerLevel world, FillAreaParams params, Block block) {
+        int blocksSet = 0;
+        for (int x = params.getMinX(); x <= params.getMaxX(); x++) {
+            for (int y = params.getMinY(); y <= params.getMaxY(); y++) {
+                for (int z = params.getMinZ(); z <= params.getMaxZ(); z++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    world.setBlockAndUpdate(pos, block.defaultBlockState());
+                    blocksSet++;
+                }
+            }
+        }
+        return blocksSet;
+    }
+    
+    private static class FillAreaParams {
+        final int x1, y1, z1, x2, y2, z2;
+        final String blockType;
+        
+        FillAreaParams(int x1, int y1, int z1, int x2, int y2, int z2, String blockType) {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.z1 = z1;
+            this.x2 = x2;
+            this.y2 = y2;
+            this.z2 = z2;
+            this.blockType = blockType;
+        }
+        
+        int calculateVolume() {
+            return Math.abs(x2 - x1 + 1) * Math.abs(y2 - y1 + 1) * Math.abs(z2 - z1 + 1);
+        }
+        
+        int getMinX() { return Math.min(x1, x2); }
+        int getMaxX() { return Math.max(x1, x2); }
+        int getMinY() { return Math.min(y1, y2); }
+        int getMaxY() { return Math.max(y1, y2); }
+        int getMinZ() { return Math.min(z1, z2); }
+        int getMaxZ() { return Math.max(z1, z2); }
     }
 }

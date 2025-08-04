@@ -9,14 +9,18 @@ import org.slf4j.Logger;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Map;
+import java.util.Queue;
+import java.util.List;
+import java.util.HashMap;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * System-wide error management and logging
  */
-public class ErrorManager {
+public final class ErrorManager {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private static ErrorManager instance;
     private final LanguageManager languageManager;
@@ -83,7 +87,7 @@ public class ErrorManager {
     private static final int MAX_ERRORS_PER_WINDOW = 10;
     
     private ErrorManager() {
-        this.languageManager = LanguageManager.getInstance();
+        this.languageManager = DependencyInjector.getInstance().getService(LanguageManager.class);
         initializeErrorCounts();
     }
     
@@ -172,13 +176,18 @@ public class ErrorManager {
             case CRITICAL:
                 LOGGER.error(logMessage, error.getException());
                 break;
+            default:
+                LOGGER.warn("Unknown error severity: {}", error.getSeverity());
+                break;
         }
     }
     
     private void notifyRelevantPlayers(ErrorRecord error) {
         try {
             var server = ServerLifecycleHooks.getCurrentServer();
-            if (server == null) return;
+            if (server == null) {
+                return;
+            }
             
             String message = formatErrorMessage(error, "en_US"); // Default to English
             Component component = Component.literal("§c[Error] " + message);
@@ -271,12 +280,24 @@ public class ErrorManager {
         }
         
         // Getters
-        public ErrorCategory getCategory() { return category; }
-        public ErrorSeverity getSeverity() { return severity; }
-        public String getMessage() { return message; }
-        public Exception getException() { return exception; }
-        public UUID getPlayerUUID() { return playerUUID; }
-        public LocalDateTime getTimestamp() { return timestamp; }
+        public ErrorCategory getCategory() {
+            return category;
+        }
+        public ErrorSeverity getSeverity() {
+            return severity;
+        }
+        public String getMessage() {
+            return message;
+        }
+        public Exception getException() {
+            return exception;
+        }
+        public UUID getPlayerUUID() {
+            return playerUUID;
+        }
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
         
         public String getFormattedTimestamp() {
             return timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));

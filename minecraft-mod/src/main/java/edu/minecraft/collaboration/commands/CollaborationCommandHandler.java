@@ -8,23 +8,21 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 import edu.minecraft.collaboration.util.BlockUtils;
 import edu.minecraft.collaboration.util.ValidationUtils;
 import edu.minecraft.collaboration.util.ResponseHelper;
 import edu.minecraft.collaboration.collaboration.CollaborationManager;
+import edu.minecraft.collaboration.core.DependencyInjector;
 import edu.minecraft.collaboration.models.Invitation;
 import edu.minecraft.collaboration.models.VisitRequest;
 import edu.minecraft.collaboration.entities.AgentManager;
 import edu.minecraft.collaboration.entities.CollaborationAgent;
 import edu.minecraft.collaboration.teacher.TeacherManager;
-import edu.minecraft.collaboration.teacher.StudentActivity;
 import edu.minecraft.collaboration.progress.ProgressTracker;
 import edu.minecraft.collaboration.localization.LanguageManager;
 import edu.minecraft.collaboration.blockpacks.BlockPackManager;
-import edu.minecraft.collaboration.blockpacks.BlockPack;
 import edu.minecraft.collaboration.offline.OfflineModeManager;
 import edu.minecraft.collaboration.monitoring.MetricsCollector;
 import edu.minecraft.collaboration.monitoring.MetricsReporter;
@@ -54,14 +52,19 @@ public class CollaborationCommandHandler {
     private final TeacherCommandHandler teacherHandler;
     
     public CollaborationCommandHandler() {
-        LOGGER.debug("CollaborationCommandHandler initialized");
-        this.collaborationManager = CollaborationManager.getInstance();
+        LOGGER.debug("CollaborationCommandHandler initialized with dependency injection");
+        DependencyInjector injector = DependencyInjector.getInstance();
+        
+        // Get services from dependency injector for the core services we converted
+        this.collaborationManager = injector.getService(CollaborationManager.class);
+        this.languageManager = injector.getService(LanguageManager.class);
+        this.metricsCollector = injector.getService(MetricsCollector.class);
+        
+        // Keep singleton pattern for services that still need it (will fix later)
         this.teacherManager = TeacherManager.getInstance();
         this.progressTracker = ProgressTracker.getInstance();
-        this.languageManager = LanguageManager.getInstance();
         this.blockPackManager = BlockPackManager.getInstance();
         this.offlineModeManager = OfflineModeManager.getInstance();
-        this.metricsCollector = MetricsCollector.getInstance();
         this.metricsReporter = MetricsReporter.getInstance();
         
         // Initialize specialized handlers
@@ -266,7 +269,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error getting player position", e);
-            return ResponseHelper.error("getPlayerPos", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("getPlayerPos", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -302,7 +305,7 @@ public class CollaborationCommandHandler {
             return "error.invalidCoordinates()";
         } catch (Exception e) {
             LOGGER.error("Error setting block", e);
-            return "error.setBlock(" + e.getMessage() + ")";
+            return ResponseHelper.safeError("setBlock", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -331,7 +334,7 @@ public class CollaborationCommandHandler {
             return "error.invalidCoordinates()";
         } catch (Exception e) {
             LOGGER.error("Error getting block", e);
-            return "error.getBlock(" + e.getMessage() + ")";
+            return ResponseHelper.safeError("getBlock", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -361,7 +364,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error sending chat message", e);
-            return "error.chat(" + e.getMessage() + ")";
+            return ResponseHelper.safeError("chat", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -404,7 +407,7 @@ public class CollaborationCommandHandler {
             return "{\"type\":\"error\",\"error\":\"invalidCoordinates\",\"message\":\"Invalid coordinates\"}";
         } catch (Exception e) {
             LOGGER.error("Error filling area", e);
-            return "{\"type\":\"error\",\"error\":\"fillError\",\"message\":\"" + e.getMessage() + "\"}";
+            return ResponseHelper.safeError("fill", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -432,7 +435,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error summoning agent", e);
-            return ResponseHelper.error("summonAgent", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("summonAgent", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -488,7 +491,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error moving agent", e);
-            return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("moveAgent", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -512,7 +515,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error setting agent follow", e);
-            return ResponseHelper.error("agentFollow", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("agentFollow", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -539,7 +542,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error performing agent action", e);
-            return ResponseHelper.error("agentAction", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("agentAction", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -560,7 +563,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error dismissing agent", e);
-            return ResponseHelper.error("dismissAgent", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("dismissAgent", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -587,7 +590,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error registering teacher", e);
-            return ResponseHelper.error("registerTeacher", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("registerTeacher", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -613,7 +616,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error toggling classroom mode", e);
-            return ResponseHelper.error("toggleClassroomMode", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("toggleClassroomMode", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     
@@ -649,7 +652,7 @@ public class CollaborationCommandHandler {
             
         } catch (Exception e) {
             LOGGER.error("Error setting global permissions", e);
-            return ResponseHelper.error("setGlobalPermissions", ResponseHelper.ERROR_INTERNAL, e.getMessage());
+            return ResponseHelper.safeError("setGlobalPermissions", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
     

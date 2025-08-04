@@ -2,7 +2,11 @@ package edu.minecraft.collaboration.offline;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * 繧ｪ繝輔Λ繧､繝ｳ繧ｻ繝・す繝ｧ繝ｳ縺ｮ繝（繧ｿ繝｢繝・Ν
@@ -89,7 +93,9 @@ public class OfflineSession {
         json.append("  \"participants\": [");
         
         for (int i = 0; i < participantIds.size(); i++) {
-            if (i > 0) json.append(", ");
+            if (i > 0) {
+                json.append(", ");
+            }
             json.append("\"").append(participantIds.get(i)).append("\"");
         }
         
@@ -98,7 +104,9 @@ public class OfflineSession {
         
         boolean first = true;
         for (Map.Entry<String, Object> entry : sessionData.entrySet()) {
-            if (!first) json.append(",\n");
+            if (!first) {
+                json.append(",\n");
+            }
             json.append("    \"").append(entry.getKey()).append("\": \"").append(entry.getValue()).append("\"");
             first = false;
         }
@@ -240,8 +248,12 @@ public class OfflineSession {
     
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         OfflineSession that = (OfflineSession) obj;
         return Objects.equals(sessionId, that.sessionId);
     }

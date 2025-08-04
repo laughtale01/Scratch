@@ -25,13 +25,33 @@ public class Achievement {
         this.createdAt = LocalDateTime.now();
     }
     
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public AchievementType getType() { return type; }
-    public int getRequirement() { return requirement; }
-    public int getPointReward() { return pointReward; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getId() {
+        return id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public AchievementType getType() {
+        return type;
+    }
+    
+    public int getRequirement() {
+        return requirement;
+    }
+    
+    public int getPointReward() {
+        return pointReward;
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
     
     @Override
     public String toString() {
@@ -41,8 +61,12 @@ public class Achievement {
     
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         Achievement that = (Achievement) obj;
         return id.equals(that.id);
     }

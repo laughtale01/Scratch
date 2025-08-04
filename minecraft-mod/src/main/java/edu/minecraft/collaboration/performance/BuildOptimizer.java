@@ -6,7 +6,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -90,7 +91,9 @@ public class BuildOptimizer {
                 positions.add(new BlockPos(x, groundY + y, z));
             }
             
-            if (x == x2 && z == z2) break;
+            if (x == x2 && z == z2) {
+                break;
+            }
             
             int e2 = 2 * err;
             if (e2 > -dz) {

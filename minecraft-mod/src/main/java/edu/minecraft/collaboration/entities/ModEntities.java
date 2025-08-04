@@ -12,7 +12,12 @@ import net.minecraftforge.registries.RegistryObject;
 /**
  * Registers custom entities for the mod
  */
-public class ModEntities {
+public final class ModEntities {
+    
+    // Private constructor to prevent instantiation
+    private ModEntities() {
+        throw new UnsupportedOperationException("Utility class");
+    }
     
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES = 
         DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, MinecraftCollaborationMod.MOD_ID);

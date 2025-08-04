@@ -1,14 +1,15 @@
-# 📚 Minecraft協調学習システム - ドキュメント索引
+# 📚 Scratch × Minecraft 協調学習システム - ドキュメント索引
 
-プロジェクトのすべてのドキュメントへの包括的なガイドです。
+Scratch公式フォークベースのMinecraft拡張機能プロジェクトのドキュメントガイド
 
 ---
 
 ## 🚀 クイックスタート
 
-**Claude Code利用者は必ず先に以下を確認:**
-- [CLAUDE_CODE_STARTUP_GUIDE.md](../CLAUDE_CODE_STARTUP_GUIDE.md) - Claude Code起動時ガイド ⭐必読
-- [CLAUDE.md](../CLAUDE.md) - Claude Code設定と開発規約
+**開発者向けクイックスタート:**
+- [CLAUDE.md](../CLAUDE.md) - プロジェクト概要と開発規約
+- [README.md](../README.md) - プロジェクトの詳細説明
+- [scratch-gui/README.md](../scratch-gui/README.md) - Scratch GUI公式フォーク
 
 ## 🏠 メインドキュメント
 
@@ -17,19 +18,16 @@
 - [LICENSE](../LICENSE) - MITライセンス
 
 ### プロジェクト状態
-- [PROJECT_STATUS_REPORT_2025-07-26.md](../PROJECT_STATUS_REPORT_2025-07-26.md) - 最新の総合状況レポート
-- [PROJECT_ANALYSIS_2025-07-26.md](../PROJECT_ANALYSIS_2025-07-26.md) - 詳細なプロジェクト分析
-- [VULNERABILITY_ANALYSIS_REPORT_2025-07-26.md](../VULNERABILITY_ANALYSIS_REPORT_2025-07-26.md) - 脆弱性分析レポート
-- [IMPROVEMENT_REPORT_2025-07-26.md](../IMPROVEMENT_REPORT_2025-07-26.md) - 改善実施レポート ⭐新規
-- [CLEANUP_REPORT.md](../CLEANUP_REPORT.md) - ファイル整理レポート
+- [PROJECT_STATUS_REPORT_2025-07-29.md](../PROJECT_STATUS_REPORT_2025-07-29.md) - **最新の総合状況レポート**
 
 ---
 
 ## 📋 セットアップ・利用ガイド
 
 ### セットアップ
-- [setup/UNIFIED_SETUP_GUIDE.md](setup/UNIFIED_SETUP_GUIDE.md) - 統合セットアップガイド ⭐推奨
-- [README_USER.md](../README_USER.md) - エンドユーザー向けガイド
+- [setup/QUICK_START.md](setup/QUICK_START.md) - クイックスタートガイド ⭐新規・推奨
+- [setup/UNIFIED_SETUP_GUIDE.md](setup/UNIFIED_SETUP_GUIDE.md) - 統合セットアップガイド
+- [user/USER_MANUAL.md](user/USER_MANUAL.md) - ユーザーマニュアル
 
 ### 開発ガイド
 - [architecture.md](architecture.md) - システムアーキテクチャ
@@ -41,15 +39,12 @@
 
 ## 🔧 技術ドキュメント
 
-### API・統合
-- [remote-integration.md](remote-integration.md) - リモート統合ガイド
-- [SCRATCH_GUI_INTEGRATION.md](SCRATCH_GUI_INTEGRATION.md) - Scratch GUI統合
+### Scratch GUI統合
+- [scratch-gui/](../scratch-gui/) - Scratch公式フォーク
+- `scratch-gui/static/extensions/minecraft-unified.js` - Minecraft拡張実装
 
 ### テスト・品質管理
 - [testing-guide.md](testing-guide.md) - テストガイド
-- [INTEGRATION_TEST_GUIDE.md](../INTEGRATION_TEST_GUIDE.md) - 統合テストガイド
-- [TEST_RESULTS_2025-01-25.md](../TEST_RESULTS_2025-01-25.md) - 最新テスト結果
-- [QUALITY_REPORT_2025-07-25.md](../QUALITY_REPORT_2025-07-25.md) - 品質レポート
 
 ### トラブルシューティング
 - [troubleshooting.md](troubleshooting.md) - トラブルシューティングガイド
@@ -59,15 +54,14 @@
 
 ## 🚀 デプロイ・リリース
 
-### GitHub関連
-- [GITHUB_GUIDE.md](GITHUB_GUIDE.md) - GitHub統合ガイド ⭐新規作成
-- [GITHUB_PAGES_GUIDE.md](GITHUB_PAGES_GUIDE.md) - GitHub Pages設定
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - デプロイメントガイド
+### デプロイメント
+- [deployment/FIREBASE.md](deployment/FIREBASE.md) - Firebase Hostingガイド ⭐新規
+- [deployment/GITHUB_PAGES.md](deployment/GITHUB_PAGES.md) - GitHub Pagesガイド ⭐新規
+- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - デプロイメント総合ガイド
 
 ### リリース管理
-- [RELEASE_CHECKLIST.md](../RELEASE_CHECKLIST.md) - リリースチェックリスト
-- [RELEASE_NOTES_v1.0.0.md](../RELEASE_NOTES_v1.0.0.md) - v1.0.0リリースノート
-- [ROADMAP.md](../ROADMAP.md) - 開発ロードマップ
+- [DEPLOY_INSTRUCTIONS.md](../DEPLOY_INSTRUCTIONS.md) - デプロイメント手順
+- [QUICK_DEPLOYMENT.md](../QUICK_DEPLOYMENT.md) - クイックデプロイガイド
 
 ---
 
@@ -109,16 +103,17 @@
 ## 🔍 ドキュメント検索のヒント
 
 ### 目的別
-- **初めての方**: [README.md](../README.md) → [UNIFIED_SETUP_GUIDE.md](setup/UNIFIED_SETUP_GUIDE.md)
-- **開発者**: [architecture.md](architecture.md) → [patterns.md](patterns.md)
+- **初めての方**: [README.md](../README.md) → [QUICK_START.md](setup/QUICK_START.md)
+- **開発者**: [CLAUDE.md](../CLAUDE.md) → [scratch-gui/README.md](../scratch-gui/README.md)
 - **トラブル対応**: [troubleshooting.md](troubleshooting.md)
-- **リリース作業**: [RELEASE_CHECKLIST.md](../RELEASE_CHECKLIST.md)
+- **デプロイ作業**: [QUICK_DEPLOYMENT.md](../QUICK_DEPLOYMENT.md)
 
 ### キーワード別
-- **WebSocket**: architecture.md, troubleshooting.md
-- **協調機能**: PROJECT_STATUS_REPORT_2025-07-26.md
-- **ビルド**: UNIFIED_SETUP_GUIDE.md
-- **テスト**: testing-guide.md, INTEGRATION_TEST_GUIDE.md
+- **Scratch GUI**: scratch-gui/README.md, CLAUDE.md
+- **Minecraft拡張**: scratch-gui/static/extensions/minecraft-unified.js
+- **WebSocket**: minecraft-mod/, ポート14711
+- **ビルド**: README.md のセットアップ手順
+- **デプロイ**: QUICK_DEPLOYMENT.md, firebase.json
 
 ---
 
@@ -131,4 +126,4 @@
 
 ---
 
-最終更新: 2025年7月26日
+最終更新: 2025年8月1日

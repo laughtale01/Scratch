@@ -3,15 +3,19 @@ package edu.minecraft.collaboration.localization;
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages localization and language support for the collaboration system
+ * Manages localization and language support for the collaboration system.
+ * Converted from singleton to dependency injection pattern.
  */
-public class LanguageManager {
+public final class LanguageManager {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    private static LanguageManager instance;
     
     // Language data storage
     private final Map<String, Map<String, String>> languageData = new ConcurrentHashMap<>();
@@ -21,16 +25,9 @@ public class LanguageManager {
     private String defaultLanguage = "en_US";
     private final Set<String> supportedLanguages = new HashSet<>();
     
-    private LanguageManager() {
+    public LanguageManager() {
         initializeLanguages();
-        LOGGER.info("Language manager initialized with {} languages", supportedLanguages.size());
-    }
-    
-    public static synchronized LanguageManager getInstance() {
-        if (instance == null) {
-            instance = new LanguageManager();
-        }
-        return instance;
+        LOGGER.info("LanguageManager initialized with {} languages", supportedLanguages.size());
     }
     
     /**
@@ -286,6 +283,9 @@ public class LanguageManager {
      * Get message in player's language
      */
     public String getMessage(UUID playerUUID, String key, Object... args) {
+        if (playerUUID == null) {
+            return getMessage(defaultLanguage, key, args);
+        }
         String language = getPlayerLanguage(playerUUID);
         return getMessage(language, key, args);
     }
@@ -323,6 +323,10 @@ public class LanguageManager {
      * Set player's language preference
      */
     public void setPlayerLanguage(UUID playerUUID, String language) {
+        if (playerUUID == null) {
+            LOGGER.warn("Cannot set language for null player UUID");
+            return;
+        }
         if (supportedLanguages.contains(language)) {
             playerLanguages.put(playerUUID, language);
             LOGGER.debug("Set language for player {} to {}", playerUUID, language);
@@ -413,6 +417,8 @@ public class LanguageManager {
      * Remove player language preference
      */
     public void removePlayerLanguage(UUID playerUUID) {
-        playerLanguages.remove(playerUUID);
+        if (playerUUID != null) {
+            playerLanguages.remove(playerUUID);
+        }
     }
 }

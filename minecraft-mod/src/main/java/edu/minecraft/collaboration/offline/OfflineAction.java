@@ -2,7 +2,10 @@ package edu.minecraft.collaboration.offline;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * 繧ｪ繝輔Λ繧､繝ｳ譎ゅ↓螳溯｡後＆繧後◆繧｢繧ｯ繧ｷ繝ｧ繝ｳ縺ｮ繝（繧ｿ繝｢繝・Ν
@@ -97,7 +100,9 @@ public class OfflineAction {
         
         boolean first = true;
         for (Map.Entry<String, Object> entry : actionData.entrySet()) {
-            if (!first) json.append(",\n");
+            if (!first) {
+                json.append(",\n");
+            }
             
             Object value = entry.getValue();
             if (value instanceof String) {
@@ -208,8 +213,11 @@ public class OfflineAction {
         
         while (currentPos < json.length() && braceCount > 0) {
             char c = json.charAt(currentPos);
-            if (c == '{') braceCount++;
-            else if (c == '}') braceCount--;
+            if (c == '{') {
+                braceCount++;
+            } else if (c == '}') {
+                braceCount--;
+            }
             currentPos++;
         }
         
@@ -228,10 +236,14 @@ public class OfflineAction {
         
         for (String line : lines) {
             line = line.trim();
-            if (line.isEmpty()) continue;
+            if (line.isEmpty()) {
+                continue;
+            }
             
             int colonIndex = line.indexOf(":");
-            if (colonIndex == -1) continue;
+            if (colonIndex == -1) {
+                continue;
+            }
             
             String key = line.substring(0, colonIndex).trim();
             String value = line.substring(colonIndex + 1).trim();
@@ -332,8 +344,12 @@ public class OfflineAction {
     
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         OfflineAction that = (OfflineAction) obj;
         return Objects.equals(actionId, that.actionId);
     }

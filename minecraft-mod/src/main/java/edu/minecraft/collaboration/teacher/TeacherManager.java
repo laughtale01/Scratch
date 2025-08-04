@@ -1,21 +1,27 @@
 package edu.minecraft.collaboration.teacher;
 
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
+import edu.minecraft.collaboration.core.DependencyInjector;
 import edu.minecraft.collaboration.localization.LanguageManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.GameType;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.time.LocalDateTime;
-import java.time.Duration;
 
 /**
  * Teacher management system for monitoring and controlling student activities
  */
-public class TeacherManager {
+public final class TeacherManager {
     
     /**
      * Permission levels for global settings
@@ -38,7 +44,8 @@ public class TeacherManager {
         TIME_LIMIT
     }
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    private static TeacherManager instance;
+    private static volatile TeacherManager instance;
+    private static final Object LOCK = new Object();
     private final LanguageManager languageManager;
     
     // Teacher accounts
@@ -61,12 +68,16 @@ public class TeacherManager {
     private int maxSessionMinutes = 60;
     
     private TeacherManager() {
-        this.languageManager = LanguageManager.getInstance();
+        this.languageManager = DependencyInjector.getInstance().getService(LanguageManager.class);
     }
     
     public static TeacherManager getInstance() {
         if (instance == null) {
-            instance = new TeacherManager();
+            synchronized (LOCK) {
+                if (instance == null) {
+                    instance = new TeacherManager();
+                }
+            }
         }
         return instance;
     }
@@ -127,14 +138,23 @@ public class TeacherManager {
             case "build":
             case "place_block":
             case "break_block":
-                if (!allowBuilding) return false;
+                if (!allowBuilding) {
+                    return false;
+                }
                 break;
             case "chat":
-                if (!allowChat) return false;
+                if (!allowChat) {
+                    return false;
+                }
                 break;
             case "visit":
             case "invite":
-                if (!allowVisits) return false;
+                if (!allowVisits) {
+                    return false;
+                }
+                break;
+            default:
+                // Unknown action - allow by default
                 break;
         }
         
@@ -386,6 +406,9 @@ public class TeacherManager {
                 allowBuilding = false;
                 allowChat = true;
                 allowVisits = false;
+                break;
+            default:
+                LOGGER.warn("Unknown permission level: {}", level);
                 break;
         }
     }

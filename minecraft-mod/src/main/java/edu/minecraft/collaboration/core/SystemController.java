@@ -13,13 +13,20 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Central system controller that manages all core components and their lifecycle
  */
-public class SystemController {
+public final class SystemController {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private static SystemController instance;
     
@@ -49,7 +56,7 @@ public class SystemController {
         // Initialize all core components
         this.teacherManager = TeacherManager.getInstance();
         this.progressTracker = ProgressTracker.getInstance();
-        this.languageManager = LanguageManager.getInstance();
+        this.languageManager = DependencyInjector.getInstance().getService(LanguageManager.class);
         this.blockPackManager = BlockPackManager.getInstance();
         this.offlineModeManager = OfflineModeManager.getInstance();
         this.agentManager = AgentManager.getInstance();

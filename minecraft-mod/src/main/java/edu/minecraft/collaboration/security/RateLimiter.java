@@ -1,6 +1,8 @@
 package edu.minecraft.collaboration.security;
 
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
+import edu.minecraft.collaboration.config.ConfigurationManager;
+import edu.minecraft.collaboration.core.ResourceManager;
 import org.slf4j.Logger;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,31 +12,49 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * Rate limiter to prevent command spam and DoS attacks
+ * Rate limiter to prevent command spam and DoS attacks.
+ * Converted from singleton to dependency injection pattern.
+ * Now integrates with ResourceManager for proper cleanup.
  */
-public class RateLimiter {
+public final class RateLimiter implements AutoCloseable {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    private static RateLimiter instance;
     
-    // Rate limit configuration from SecurityConfig
-    private final int maxCommandsPerSecond = SecurityConfig.COMMAND_RATE_LIMIT_PER_SECOND;
+    // Configuration
+    private final ConfigurationManager configManager;
+    private final int maxCommandsPerSecond;
+    private final long cleanupIntervalMinutes;
+    private final long maxIdleTimeMinutes;
     
     // Track command counts per player/connection
     private final ConcurrentHashMap<String, CommandTracker> commandTrackers = new ConcurrentHashMap<>();
     
-    // Scheduled executor for cleanup
-    private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
+    // Scheduled executor for cleanup - managed by ResourceManager
+    private final ScheduledExecutorService cleanupExecutor;
+    private final ResourceManager resourceManager;
     
-    private RateLimiter() {
-        // Schedule cleanup of old entries every minute
-        cleanupExecutor.scheduleAtFixedRate(this::cleanupOldEntries, 1, 1, TimeUnit.MINUTES);
-    }
-    
-    public static RateLimiter getInstance() {
-        if (instance == null) {
-            instance = new RateLimiter();
-        }
-        return instance;
+    public RateLimiter(ConfigurationManager configManager) {
+        this.configManager = configManager;
+        this.resourceManager = ResourceManager.getInstance();
+        this.maxCommandsPerSecond = configManager.getIntProperty("security.command.rate.limit.per.second", 10);
+        this.cleanupIntervalMinutes = configManager.getLongProperty("rate.limiter.cleanup.interval.minutes", 1);
+        this.maxIdleTimeMinutes = configManager.getLongProperty("rate.limiter.max.idle.time.minutes", 5);
+        
+        // Create executor with proper thread naming
+        this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "RateLimiter-Cleanup");
+            t.setDaemon(true);
+            return t;
+        });
+        
+        // Register executor with ResourceManager for proper cleanup
+        resourceManager.registerExecutor("RateLimiter-cleanup", cleanupExecutor);
+        
+        // Schedule cleanup of old entries
+        cleanupExecutor.scheduleAtFixedRate(this::cleanupOldEntries, 
+                                           cleanupIntervalMinutes, 
+                                           cleanupIntervalMinutes, 
+                                           TimeUnit.MINUTES);
+        LOGGER.info("RateLimiter initialized with max {} commands per second", maxCommandsPerSecond);
     }
     
     /**
@@ -42,28 +62,32 @@ public class RateLimiter {
      * @param identifier The player name or connection identifier
      * @return true if command is allowed, false if rate limit exceeded
      */
-    public boolean allowCommand(String identifier) {
+    public synchronized boolean allowCommand(String identifier) {
         CommandTracker tracker = commandTrackers.computeIfAbsent(identifier, k -> new CommandTracker());
         
         long currentTime = System.currentTimeMillis();
-        long elapsedTime = currentTime - tracker.windowStart;
         
-        // Reset window if more than 1 second has passed
-        if (elapsedTime >= 1000) {
-            tracker.resetWindow(currentTime);
+        // Synchronize on the tracker to prevent race conditions
+        synchronized (tracker) {
+            long elapsedTime = currentTime - tracker.getWindowStart();
+            
+            // Reset window if more than 1 second has passed
+            if (elapsedTime >= 1000) {
+                tracker.resetWindow(currentTime);
+            }
+            
+            // Check if we've exceeded the rate limit
+            if (tracker.getCommandCount() >= maxCommandsPerSecond) {
+                LOGGER.warn("Rate limit exceeded for identifier: {} ({}+ commands/second)", 
+                    identifier, maxCommandsPerSecond);
+                return false;
+            }
+            
+            // Increment command count and allow
+            tracker.incrementAndGet();
+            tracker.setLastAccess(currentTime);
+            return true;
         }
-        
-        // Check if we've exceeded the rate limit
-        if (tracker.commandCount.get() >= maxCommandsPerSecond) {
-            LOGGER.warn("Rate limit exceeded for identifier: {} ({}+ commands/second)", 
-                identifier, maxCommandsPerSecond);
-            return false;
-        }
-        
-        // Increment command count and allow
-        tracker.commandCount.incrementAndGet();
-        tracker.lastAccess = currentTime;
-        return true;
     }
     
     /**
@@ -77,15 +101,18 @@ public class RateLimiter {
             return 0;
         }
         
-        long currentTime = System.currentTimeMillis();
-        long elapsedTime = currentTime - tracker.windowStart;
-        
-        // Return 0 if window has expired
-        if (elapsedTime >= 1000) {
-            return 0;
+        // Synchronize on the tracker to ensure consistent read
+        synchronized (tracker) {
+            long currentTime = System.currentTimeMillis();
+            long elapsedTime = currentTime - tracker.getWindowStart();
+            
+            // Return 0 if window has expired
+            if (elapsedTime >= 1000) {
+                return 0;
+            }
+            
+            return tracker.getCommandCount();
         }
-        
-        return tracker.commandCount.get();
     }
     
     /**
@@ -104,36 +131,60 @@ public class RateLimiter {
      */
     private void cleanupOldEntries() {
         long currentTime = System.currentTimeMillis();
-        long maxIdleTime = TimeUnit.MINUTES.toMillis(5); // Remove entries idle for 5+ minutes
+        long maxIdleTime = TimeUnit.MINUTES.toMillis(maxIdleTimeMinutes);
         
         commandTrackers.entrySet().removeIf(entry -> {
             CommandTracker tracker = entry.getValue();
-            return (currentTime - tracker.lastAccess) > maxIdleTime;
+            return (currentTime - tracker.getLastAccess()) > maxIdleTime;
         });
     }
     
     /**
-     * Shutdown the rate limiter
+     * Shutdown the rate limiter - delegates to ResourceManager
      */
     public void shutdown() {
-        cleanupExecutor.shutdown();
-        try {
-            if (!cleanupExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                cleanupExecutor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            cleanupExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+        close();
+    }
+    
+    /**
+     * Close the rate limiter and release resources
+     */
+    @Override
+    public void close() {
+        LOGGER.debug("Closing RateLimiter");
+        // Clear tracking data
+        commandTrackers.clear();
+        // ResourceManager will handle executor shutdown
+        resourceManager.unregisterAndShutdownExecutor("RateLimiter-cleanup");
     }
     
     /**
      * Inner class to track commands per identifier
      */
     private static class CommandTracker {
-        AtomicInteger commandCount = new AtomicInteger(0);
-        volatile long windowStart = System.currentTimeMillis();
-        volatile long lastAccess = System.currentTimeMillis();
+        private final AtomicInteger commandCount = new AtomicInteger(0);
+        private volatile long windowStart = System.currentTimeMillis();
+        private volatile long lastAccess = System.currentTimeMillis();
+        
+        int getCommandCount() {
+            return commandCount.get();
+        }
+        
+        int incrementAndGet() {
+            return commandCount.incrementAndGet();
+        }
+        
+        long getWindowStart() {
+            return windowStart;
+        }
+        
+        long getLastAccess() {
+            return lastAccess;
+        }
+        
+        void setLastAccess(long lastAccess) {
+            this.lastAccess = lastAccess;
+        }
         
         void resetWindow(long newWindowStart) {
             this.windowStart = newWindowStart;

@@ -2,7 +2,13 @@ package edu.minecraft.collaboration.progress;
 
 import java.time.LocalDateTime;
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -96,6 +102,9 @@ public class StudentProgress {
             case "visit_approved":
                 collaborationCount.incrementAndGet();
                 break;
+            default:
+                // Other activities don't update specific counters
+                break;
         }
     }
     
@@ -126,6 +135,9 @@ public class StudentProgress {
             case "summon_agent":
             case "agent_follow":
                 skill = "creativity";
+                break;
+            default:
+                // Other activities don't map to specific skills
                 break;
         }
         
@@ -241,15 +253,33 @@ public class StudentProgress {
     }
     
     // Getters
-    public UUID getStudentUUID() { return studentUUID; }
-    public LocalDateTime getSessionStart() { return sessionStart; }
-    public int getTotalPoints() { return totalPoints.get(); }
-    public int getLevel() { return currentLevel; }
-    public int getTotalBlocks() { return totalBlocks.get(); }
-    public int getTotalCommands() { return totalCommands.get(); }
-    public int getCollaborationCount() { return collaborationCount.get(); }
-    public Set<String> getUniqueActivities() { return new HashSet<>(uniqueActivities); }
-    public Set<String> getCompletedMilestones() { return new HashSet<>(completedMilestones); }
+    public UUID getStudentUUID() {
+        return studentUUID;
+    }
+    public LocalDateTime getSessionStart() {
+        return sessionStart;
+    }
+    public int getTotalPoints() {
+        return totalPoints.get();
+    }
+    public int getLevel() {
+        return currentLevel;
+    }
+    public int getTotalBlocks() {
+        return totalBlocks.get();
+    }
+    public int getTotalCommands() {
+        return totalCommands.get();
+    }
+    public int getCollaborationCount() {
+        return collaborationCount.get();
+    }
+    public Set<String> getUniqueActivities() {
+        return new HashSet<>(uniqueActivities);
+    }
+    public Set<String> getCompletedMilestones() {
+        return new HashSet<>(completedMilestones);
+    }
     public List<Achievement> getEarnedAchievements() { return new ArrayList<>(earnedAchievements); }
     public Map<String, AtomicInteger> getActivityCounts() { return new HashMap<>(activityCounts); }
     public Map<String, Integer> getSkillLevels() { return new HashMap<>(skillLevels); }
@@ -259,14 +289,26 @@ public class StudentProgress {
      * Activity record for history tracking
      */
     public static class ActivityRecord {
-        public final String activity;
-        public final String details;
-        public final LocalDateTime timestamp;
+        private final String activity;
+        private final String details;
+        private final LocalDateTime timestamp;
         
         public ActivityRecord(String activity, String details, LocalDateTime timestamp) {
             this.activity = activity;
             this.details = details;
             this.timestamp = timestamp;
+        }
+        
+        public String getActivity() {
+            return activity;
+        }
+        
+        public String getDetails() {
+            return details;
+        }
+        
+        public LocalDateTime getTimestamp() {
+            return timestamp;
         }
         
         @Override
@@ -280,17 +322,17 @@ public class StudentProgress {
      * Progress summary for reporting
      */
     public static class ProgressSummary {
-        public final UUID studentUUID;
-        public final int totalPoints;
-        public final int level;
-        public final long sessionMinutes;
-        public final int totalBlocks;
-        public final int totalCommands;
-        public final int collaborationCount;
-        public final int achievementCount;
-        public final int milestoneCount;
-        public final boolean isActive;
-        public final Map<String, Integer> skillLevels;
+        private final UUID studentUUID;
+        private final int totalPoints;
+        private final int level;
+        private final long sessionMinutes;
+        private final int totalBlocks;
+        private final int totalCommands;
+        private final int collaborationCount;
+        private final int achievementCount;
+        private final int milestoneCount;
+        private final boolean isActive;
+        private final Map<String, Integer> skillLevels;
         
         public ProgressSummary(UUID studentUUID, int totalPoints, int level, 
                              long sessionMinutes, int totalBlocks, int totalCommands,
@@ -308,6 +350,50 @@ public class StudentProgress {
             this.milestoneCount = milestoneCount;
             this.isActive = isActive;
             this.skillLevels = new HashMap<>(skillLevels);
+        }
+        
+        public UUID getStudentUUID() {
+            return studentUUID;
+        }
+        
+        public int getTotalPoints() {
+            return totalPoints;
+        }
+        
+        public int getLevel() {
+            return level;
+        }
+        
+        public long getSessionMinutes() {
+            return sessionMinutes;
+        }
+        
+        public int getTotalBlocks() {
+            return totalBlocks;
+        }
+        
+        public int getTotalCommands() {
+            return totalCommands;
+        }
+        
+        public int getCollaborationCount() {
+            return collaborationCount;
+        }
+        
+        public int getAchievementCount() {
+            return achievementCount;
+        }
+        
+        public int getMilestoneCount() {
+            return milestoneCount;
+        }
+        
+        public boolean isActive() {
+            return isActive;
+        }
+        
+        public Map<String, Integer> getSkillLevels() {
+            return new HashMap<>(skillLevels);
         }
         
         @Override

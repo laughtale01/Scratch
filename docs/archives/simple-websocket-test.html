@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket動作確認</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { 
+            background: #6c757d; 
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Minecraft WebSocket 動作確認</h1>
+        
+        <div id="status" class="status disconnected">
+            ❌ 未接続
+        </div>
+        
+        <div>
+            <button onclick="connect()">接続</button>
+            <button onclick="disconnect()">切断</button>
+            <button onclick="clearLog()">ログクリア</button>
+        </div>
+        
+        <h3>テストコマンド:</h3>
+        <div>
+            <button onclick="sendCommand('minecraft.connect()')">接続確認</button>
+            <button onclick="sendCommand('minecraft.status()')">ステータス</button>
+            <button onclick="sendCommand('player.getPos()')">位置取得</button>
+            <button onclick="sendCommand('chat.post(\"Hello!\")')">チャット</button>
+            <button onclick="sendCommand('world.getBlock(0,64,0)')">ブロック取得</button>
+        </div>
+        
+        <h3>ログ:</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const prefix = type === 'send' ? '📤' : type === 'receive' ? '📨' : '📝';
+            logDiv.innerHTML += `[${time}] ${prefix} ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            if (connected) {
+                status.className = 'status connected';
+                status.innerHTML = '✅ 接続中 (ws://localhost:14711)';
+            } else {
+                status.className = 'status disconnected';
+                status.innerHTML = '❌ 未接続';
+            }
+        }
+        
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('既に接続されています');
+                return;
+            }
+            
+            log('WebSocketサーバーに接続中...');
+            ws = new WebSocket('ws://localhost:14711');
+            
+            ws.onopen = function() {
+                log('接続成功！');
+                updateStatus(true);
+            };
+            
+            ws.onmessage = function(event) {
+                log(event.data, 'receive');
+            };
+            
+            ws.onclose = function() {
+                log('接続が切断されました');
+                updateStatus(false);
+            };
+            
+            ws.onerror = function(error) {
+                log('エラー: ' + error.message);
+                updateStatus(false);
+            };
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function sendCommand(command) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('エラー: WebSocketが接続されていません');
+                return;
+            }
+            log(command, 'send');
+            ws.send(command);
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // ページ読み込み時に自動接続
+        window.onload = function() {
+            setTimeout(connect, 500);
+        };
+    </script>
+</body>
+</html>

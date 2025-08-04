@@ -45,29 +45,29 @@ public class SystemMetrics {
         SystemSnapshot snapshot = new SystemSnapshot();
         
         // CPU metrics
-        snapshot.cpuUsage = cpuUsage;
-        snapshot.processCpuUsage = osBean.getProcessCpuLoad() * 100;
-        snapshot.systemCpuUsage = osBean.getCpuLoad() * 100;
-        snapshot.availableProcessors = runtime.availableProcessors();
+        snapshot.setCpuUsage(cpuUsage);
+        snapshot.setProcessCpuUsage(osBean.getProcessCpuLoad() * 100);
+        snapshot.setSystemCpuUsage(osBean.getCpuLoad() * 100);
+        snapshot.setAvailableProcessors(runtime.availableProcessors());
         
         // Memory metrics
-        snapshot.heapUsed = memoryBean.getHeapMemoryUsage().getUsed();
-        snapshot.heapMax = memoryBean.getHeapMemoryUsage().getMax();
-        snapshot.heapCommitted = memoryBean.getHeapMemoryUsage().getCommitted();
-        snapshot.nonHeapUsed = memoryBean.getNonHeapMemoryUsage().getUsed();
-        snapshot.totalMemory = runtime.totalMemory();
-        snapshot.freeMemory = runtime.freeMemory();
-        snapshot.maxMemory = runtime.maxMemory();
+        snapshot.setHeapUsed(memoryBean.getHeapMemoryUsage().getUsed());
+        snapshot.setHeapMax(memoryBean.getHeapMemoryUsage().getMax());
+        snapshot.setHeapCommitted(memoryBean.getHeapMemoryUsage().getCommitted());
+        snapshot.setNonHeapUsed(memoryBean.getNonHeapMemoryUsage().getUsed());
+        snapshot.setTotalMemory(runtime.totalMemory());
+        snapshot.setFreeMemory(runtime.freeMemory());
+        snapshot.setMaxMemory(runtime.maxMemory());
         
         // Thread metrics
-        snapshot.threadCount = threadBean.getThreadCount();
-        snapshot.peakThreadCount = threadBean.getPeakThreadCount();
-        snapshot.daemonThreadCount = threadBean.getDaemonThreadCount();
+        snapshot.setThreadCount(threadBean.getThreadCount());
+        snapshot.setPeakThreadCount(threadBean.getPeakThreadCount());
+        snapshot.setDaemonThreadCount(threadBean.getDaemonThreadCount());
         
         // System info
-        snapshot.osName = System.getProperty("os.name");
-        snapshot.osVersion = System.getProperty("os.version");
-        snapshot.javaVersion = System.getProperty("java.version");
+        snapshot.setOsName(System.getProperty("os.name"));
+        snapshot.setOsVersion(System.getProperty("os.version"));
+        snapshot.setJavaVersion(System.getProperty("java.version"));
         
         return snapshot;
     }
@@ -112,29 +112,139 @@ public class SystemMetrics {
      */
     public static class SystemSnapshot {
         // CPU metrics
-        public double cpuUsage;
-        public double processCpuUsage;
-        public double systemCpuUsage;
-        public int availableProcessors;
+        private double cpuUsage;
+        private double processCpuUsage;
+        private double systemCpuUsage;
+        private int availableProcessors;
         
         // Memory metrics (bytes)
-        public long heapUsed;
-        public long heapMax;
-        public long heapCommitted;
-        public long nonHeapUsed;
-        public long totalMemory;
-        public long freeMemory;
-        public long maxMemory;
+        private long heapUsed;
+        private long heapMax;
+        private long heapCommitted;
+        private long nonHeapUsed;
+        private long totalMemory;
+        private long freeMemory;
+        private long maxMemory;
         
         // Thread metrics
-        public int threadCount;
-        public int peakThreadCount;
-        public int daemonThreadCount;
+        private int threadCount;
+        private int peakThreadCount;
+        private int daemonThreadCount;
         
         // System info
-        public String osName;
-        public String osVersion;
-        public String javaVersion;
+        private String osName;
+        private String osVersion;
+        private String javaVersion;
+        
+        // CPU getters/setters
+        public double getCpuUsage() {
+            return cpuUsage;
+        }
+        public void setCpuUsage(double cpuUsage) {
+            this.cpuUsage = cpuUsage;
+        }
+        public double getProcessCpuUsage() {
+            return processCpuUsage;
+        }
+        public void setProcessCpuUsage(double processCpuUsage) {
+            this.processCpuUsage = processCpuUsage;
+        }
+        public double getSystemCpuUsage() {
+            return systemCpuUsage;
+        }
+        public void setSystemCpuUsage(double systemCpuUsage) {
+            this.systemCpuUsage = systemCpuUsage;
+        }
+        public int getAvailableProcessors() {
+            return availableProcessors;
+        }
+        public void setAvailableProcessors(int availableProcessors) {
+            this.availableProcessors = availableProcessors;
+        }
+        
+        // Memory getters/setters
+        public long getHeapUsed() {
+            return heapUsed;
+        }
+        public void setHeapUsed(long heapUsed) {
+            this.heapUsed = heapUsed;
+        }
+        public long getHeapMax() {
+            return heapMax;
+        }
+        public void setHeapMax(long heapMax) {
+            this.heapMax = heapMax;
+        }
+        public long getHeapCommitted() {
+            return heapCommitted;
+        }
+        public void setHeapCommitted(long heapCommitted) {
+            this.heapCommitted = heapCommitted;
+        }
+        public long getNonHeapUsed() {
+            return nonHeapUsed;
+        }
+        public void setNonHeapUsed(long nonHeapUsed) {
+            this.nonHeapUsed = nonHeapUsed;
+        }
+        public long getTotalMemory() {
+            return totalMemory;
+        }
+        public void setTotalMemory(long totalMemory) {
+            this.totalMemory = totalMemory;
+        }
+        public long getFreeMemory() {
+            return freeMemory;
+        }
+        public void setFreeMemory(long freeMemory) {
+            this.freeMemory = freeMemory;
+        }
+        public long getMaxMemory() {
+            return maxMemory;
+        }
+        public void setMaxMemory(long maxMemory) {
+            this.maxMemory = maxMemory;
+        }
+        
+        // Thread getters/setters
+        public int getThreadCount() {
+            return threadCount;
+        }
+        public void setThreadCount(int threadCount) {
+            this.threadCount = threadCount;
+        }
+        public int getPeakThreadCount() {
+            return peakThreadCount;
+        }
+        public void setPeakThreadCount(int peakThreadCount) {
+            this.peakThreadCount = peakThreadCount;
+        }
+        public int getDaemonThreadCount() {
+            return daemonThreadCount;
+        }
+        public void setDaemonThreadCount(int daemonThreadCount) {
+            this.daemonThreadCount = daemonThreadCount;
+        }
+        
+        // System info getters/setters
+        public String getOsName() {
+            return osName;
+        }
+        public void setOsName(String osName) {
+            this.osName = osName;
+        }
+        public String getOsVersion() {
+            return osVersion;
+        }
+        public void setOsVersion(String osVersion) {
+            this.osVersion = osVersion;
+        }
+        public String getJavaVersion() {
+            return javaVersion;
+        }
+        public void setJavaVersion(String javaVersion) {
+            this.javaVersion = javaVersion;
+        }
         
         /**
          * Get memory usage percentage

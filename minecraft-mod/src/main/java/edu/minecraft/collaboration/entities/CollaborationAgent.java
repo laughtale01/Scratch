@@ -4,7 +4,12 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.*;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.PanicGoal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.network.chat.Component;
@@ -142,7 +147,7 @@ public class CollaborationAgent extends PathfinderMob {
      */
     public boolean moveToTarget(Vec3 pos) {
         try {
-            BlockPos blockPos = new BlockPos((int)pos.x, (int)pos.y, (int)pos.z);
+            BlockPos blockPos = new BlockPos((int) pos.x, (int) pos.y, (int) pos.z);
             moveToPosition(blockPos);
             return true;
         } catch (Exception e) {
@@ -177,6 +182,9 @@ public class CollaborationAgent extends PathfinderMob {
             case "down":
                 newPos = currentPos.below(distance);
                 break;
+            default:
+                // Unknown direction - stay at current position
+                break;
         }
         
         moveToPosition(newPos);
@@ -198,6 +206,9 @@ public class CollaborationAgent extends PathfinderMob {
                 // Simple dance animation
                 this.jumpFromGround();
                 this.setYRot(this.getYRot() + 90);
+                break;
+            default:
+                // Unknown action - do nothing
                 break;
         }
     }

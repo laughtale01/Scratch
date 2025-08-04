@@ -2,7 +2,13 @@ package edu.minecraft.collaboration.teacher;
 
 import java.time.LocalDateTime;
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.Deque;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,6 +29,7 @@ public class StudentActivity {
     private final AtomicInteger totalMessages = new AtomicInteger(0);
     private final AtomicInteger totalVisits = new AtomicInteger(0);
     private final AtomicInteger emergencyReturns = new AtomicInteger(0);
+    private final AtomicInteger totalActions = new AtomicInteger(0);
     
     // Configuration
     private static final int MAX_ACTIVITY_LOGS = 1000;
@@ -85,6 +92,10 @@ public class StudentActivity {
             case "emergency_return":
                 emergencyReturns.incrementAndGet();
                 break;
+            default:
+                // Unknown activity type, count as general action
+                totalActions.incrementAndGet();
+                break;
         }
     }
     
@@ -111,11 +122,13 @@ public class StudentActivity {
         int i = 0;
         
         for (ActivityLog log : activityLogs) {
-            if (i++ >= count) break;
+            if (i++ >= count) {
+                break;
+            }
             recent.add(String.format("[%s] %s: %s", 
-                log.timestamp.toLocalTime(), 
-                log.activity, 
-                log.details));
+                log.getTimestamp().toLocalTime(), 
+                log.getActivity(), 
+                log.getDetails()));
         }
         
         return recent;
@@ -156,18 +169,16 @@ public class StudentActivity {
      * Get activity summary
      */
     public ActivitySummary getSummary() {
-        return new ActivitySummary(
-            playerUUID,
-            sessionStart,
-            getTotalActions(),
-            totalBlocks.get(),
-            totalCommands.get(),
-            totalMessages.get(),
-            totalVisits.get(),
-            emergencyReturns.get(),
-            getSessionDuration(),
-            getMostFrequentActivity()
-        );
+        return new ActivitySummary.Builder(playerUUID, sessionStart)
+            .totalActions(getTotalActions())
+            .totalBlocks(totalBlocks.get())
+            .totalCommands(totalCommands.get())
+            .totalMessages(totalMessages.get())
+            .totalVisits(totalVisits.get())
+            .emergencyReturns(emergencyReturns.get())
+            .sessionMinutes(getSessionDuration())
+            .mostFrequentActivity(getMostFrequentActivity())
+            .build();
     }
     
     /**
@@ -220,9 +231,19 @@ public class StudentActivity {
      * Activity log entry
      */
     private static class ActivityLog {
-        final String activity;
-        final String details;
-        final LocalDateTime timestamp;
+        private final String activity;
+        private final String details;
+        private final LocalDateTime timestamp;
+        
+        public String getActivity() {
+            return activity;
+        }
+        public String getDetails() {
+            return details;
+        }
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
         
         ActivityLog(String activity, String details, LocalDateTime timestamp) {
             this.activity = activity;
@@ -235,31 +256,123 @@ public class StudentActivity {
      * Activity summary for reporting
      */
     public static class ActivitySummary {
-        public final UUID playerUUID;
-        public final LocalDateTime sessionStart;
-        public final int totalActions;
-        public final int totalBlocks;
-        public final int totalCommands;
-        public final int totalMessages;
-        public final int totalVisits;
-        public final int emergencyReturns;
-        public final long sessionMinutes;
-        public final String mostFrequentActivity;
+        private final UUID playerUUID;
+        private final LocalDateTime sessionStart;
+        private final int totalActions;
+        private final int totalBlocks;
+        private final int totalCommands;
+        private final int totalMessages;
+        private final int totalVisits;
+        private final int emergencyReturns;
+        private final long sessionMinutes;
+        private final String mostFrequentActivity;
         
-        public ActivitySummary(UUID playerUUID, LocalDateTime sessionStart, 
-                             int totalActions, int totalBlocks, int totalCommands,
-                             int totalMessages, int totalVisits, int emergencyReturns,
-                             long sessionMinutes, String mostFrequentActivity) {
-            this.playerUUID = playerUUID;
-            this.sessionStart = sessionStart;
-            this.totalActions = totalActions;
-            this.totalBlocks = totalBlocks;
-            this.totalCommands = totalCommands;
-            this.totalMessages = totalMessages;
-            this.totalVisits = totalVisits;
-            this.emergencyReturns = emergencyReturns;
-            this.sessionMinutes = sessionMinutes;
-            this.mostFrequentActivity = mostFrequentActivity;
+        public UUID getPlayerUUID() {
+            return playerUUID;
+        }
+        public LocalDateTime getSessionStart() {
+            return sessionStart;
+        }
+        public int getTotalActions() {
+            return totalActions;
+        }
+        public int getTotalBlocks() {
+            return totalBlocks;
+        }
+        public int getTotalCommands() {
+            return totalCommands;
+        }
+        public int getTotalMessages() {
+            return totalMessages;
+        }
+        public int getTotalVisits() {
+            return totalVisits;
+        }
+        public int getEmergencyReturns() {
+            return emergencyReturns;
+        }
+        public long getSessionMinutes() {
+            return sessionMinutes;
+        }
+        public String getMostFrequentActivity() {
+            return mostFrequentActivity;
+        }
+        
+        // Private constructor for builder pattern
+        private ActivitySummary(Builder builder) {
+            this.playerUUID = builder.playerUUID;
+            this.sessionStart = builder.sessionStart;
+            this.totalActions = builder.totalActions;
+            this.totalBlocks = builder.totalBlocks;
+            this.totalCommands = builder.totalCommands;
+            this.totalMessages = builder.totalMessages;
+            this.totalVisits = builder.totalVisits;
+            this.emergencyReturns = builder.emergencyReturns;
+            this.sessionMinutes = builder.sessionMinutes;
+            this.mostFrequentActivity = builder.mostFrequentActivity;
+        }
+        
+        // Builder class
+        public static class Builder {
+            private final UUID playerUUID;
+            private final LocalDateTime sessionStart;
+            private int totalActions;
+            private int totalBlocks;
+            private int totalCommands;
+            private int totalMessages;
+            private int totalVisits;
+            private int emergencyReturns;
+            private long sessionMinutes;
+            private String mostFrequentActivity;
+            
+            public Builder(UUID playerUUID, LocalDateTime sessionStart) {
+                this.playerUUID = playerUUID;
+                this.sessionStart = sessionStart;
+            }
+            
+            public Builder totalActions(int totalActions) {
+                this.totalActions = totalActions;
+                return this;
+            }
+            
+            public Builder totalBlocks(int totalBlocks) {
+                this.totalBlocks = totalBlocks;
+                return this;
+            }
+            
+            public Builder totalCommands(int totalCommands) {
+                this.totalCommands = totalCommands;
+                return this;
+            }
+            
+            public Builder totalMessages(int totalMessages) {
+                this.totalMessages = totalMessages;
+                return this;
+            }
+            
+            public Builder totalVisits(int totalVisits) {
+                this.totalVisits = totalVisits;
+                return this;
+            }
+            
+            public Builder emergencyReturns(int emergencyReturns) {
+                this.emergencyReturns = emergencyReturns;
+                return this;
+            }
+            
+            public Builder sessionMinutes(long sessionMinutes) {
+                this.sessionMinutes = sessionMinutes;
+                return this;
+            }
+            
+            public Builder mostFrequentActivity(String mostFrequentActivity) {
+                this.mostFrequentActivity = mostFrequentActivity;
+                return this;
+            }
+            
+            public ActivitySummary build() {
+                return new ActivitySummary(this);
+            }
         }
         
         @Override

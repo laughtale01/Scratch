@@ -1,6 +1,15 @@
 # Claude Code Configuration
 
-## 🎉 Project Status Update (2025-07-28)
+## 🎯 Project Overview (Updated 2025-08-01)
+
+This project uses the **official Scratch GUI fork** with a custom Minecraft extension, following the standard Scratch extension development approach.
+
+### Architecture
+- **scratch-gui/**: Official Scratch fork (v5.1.88) with Minecraft extension added
+- **minecraft-mod/**: Original Minecraft Forge mod for WebSocket communication
+- **scratch-extension/**: Source code for the Minecraft extension
+
+## 🎉 Project Status Update (2025-08-01)
 
 ### ✅ Completed Features (All Verified Working)
 1. **WebSocket Communication** - Fixed class loading issue with jarJar configuration
@@ -22,6 +31,12 @@
    - Dangerous block/command filtering
    - Connection limit (max 10 connections)
 6. **Single-player Support** - WebSocket server starts in client mode
+7. **Quality Assurance System (NEW - 2025-07-29)**
+   - Comprehensive test coverage: 136 tests (6,700% increase)
+   - Security validation: XSS/SQL injection prevention verified
+   - Authentication system: Token-based security tested
+   - Multi-language support: 7 languages validated
+   - Educational features: Block restrictions and difficulty levels tested
 
 ### 📝 Implementation Summary
 - **CollaborationManager**: Complete implementation with all features
@@ -29,10 +44,22 @@
 - **RateLimiter**: Full implementation with cleanup scheduler
 - **Scratch Extension**: Cache-based real-time data synchronization
 - **Building Functions**: All geometry calculations implemented
+- **Test Infrastructure (NEW)**: 7 comprehensive test classes
+  - AuthenticationManagerTest (22 tests)
+  - InputValidatorTest (24 tests - 100% pass rate)
+  - LanguageManagerTest (19 tests - 95% pass rate)
+  - CollaborationCommandHandlerTest (21 tests)
+  - CollaborationMessageProcessorTest (11 tests)
+  - BlockPackManagerTest (13 tests)
+  - IntegrationTest (26 tests)
 
 ## 🚀 QUICK START FOR CLAUDE CODE
 
-**IMPORTANT: Start by reading `CLAUDE_CODE_STARTUP_GUIDE.md` for project orientation**
+### Essential Steps:
+1. **Build Scratch GUI**: `cd scratch-gui && npm install && npm run build`
+2. **Build Minecraft Mod**: `cd minecraft-mod && ./gradlew build`
+3. **Access Scratch**: Open `scratch-gui-minecraft-loader.html` or `scratch-gui/build/index.html`
+4. **Add Extension**: Click extension button → Select "Minecraft コラボレーション"
 
 ## 📚 Interactive Documentation Update System
 
@@ -44,14 +71,11 @@ Always check the following documents before starting any work:
 
 #### 🔴 CRITICAL - Start Here:
 - `docs/INDEX.md` - Master document index (START HERE)
-- `docs/development/SYSTEM_ARCHITECTURE_COMPLETE.md` - Complete system architecture
-- `docs/development/COMPREHENSIVE_DEVELOPMENT_GUIDE.md` - Development guide
+- `README.md` - Project overview and current status
+- `scratch-gui/README.md` - Scratch GUI fork documentation
 
 #### 📊 Project Status:
-- `README.md` - Project overview and current status
-- `PROJECT_STATUS_REPORT_2025-07-26.md` - Latest comprehensive status
-- `PROJECT_ANALYSIS_2025-07-26.md` - Detailed project analysis
-- `VULNERABILITY_ANALYSIS_REPORT_2025-07-26.md` - Comprehensive vulnerability analysis ⭐新規
+- `PROJECT_STATUS_REPORT_2025-07-29.md` - Latest comprehensive status
 
 #### 🔧 Development Resources:
 - `docs/architecture.md` - Architecture design guidelines
@@ -168,16 +192,21 @@ To prevent CLAUDE.md from becoming too large, split files according to these cri
 
 ## Project-Specific Commands
 
+### Scratch GUI (Official Fork)
+- **Install Dependencies**: `cd scratch-gui && npm install`
+- **Build**: `cd scratch-gui && npm run build`
+- **Development Server**: `cd scratch-gui && npm start`
+- **Access**: http://localhost:8601/
+
 ### Minecraft Mod Development
 - **Build**: `cd minecraft-mod && ./gradlew build`
 - **Run Client**: `cd minecraft-mod && ./gradlew runClient`
 - **Clean Build**: `cd minecraft-mod && ./gradlew clean build`
 
-### Scratch Extension Development
-- **Build**: `cd scratch-extension && npm run build`
-- **Dev Mode**: `cd scratch-extension && npm run dev`
-- **Install Dependencies**: `cd scratch-extension && npm install`
+### Deployment
+- **Quick Deploy**: `deploy.bat` (Windows) or `./deploy.sh` (Mac/Linux)
+- **Firebase Deploy**: `firebase deploy --only hosting`
 
 ### Key Ports
 - **WebSocket Server**: 14711
-- **Collaboration Server**: 14712
+- **Scratch GUI Dev Server**: 8601

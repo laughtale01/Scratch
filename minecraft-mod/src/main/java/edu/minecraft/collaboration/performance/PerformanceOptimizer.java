@@ -3,11 +3,14 @@ package edu.minecraft.collaboration.performance;
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -125,11 +128,11 @@ public class PerformanceOptimizer {
             
             if (err <= 0) {
                 z += 1;
-                err += 2*z + 1;
+                err += 2 * z + 1;
             }
             if (err > 0) {
                 x -= 1;
-                err -= 2*x + 1;
+                err -= 2 * x + 1;
             }
         }
         
@@ -148,10 +151,10 @@ public class PerformanceOptimizer {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
                     // Use squared distance to avoid sqrt calculation
-                    int distSquared = x*x + y*y + z*z;
+                    int distSquared = x * x + y * y + z * z;
                     
                     // Hollow sphere - only outer shell
-                    if (distSquared <= radiusSquared && distSquared >= (radius-1)*(radius-1)) {
+                    if (distSquared <= radiusSquared && distSquared >= (radius - 1) * (radius - 1)) {
                         positions.add(center.offset(x, y, z));
                     }
                 }
@@ -180,12 +183,20 @@ public class PerformanceOptimizer {
      * Block placement data
      */
     public static class BlockPlacement {
-        public final BlockPos pos;
-        public final BlockState state;
+        private final BlockPos pos;
+        private final BlockState state;
         
         public BlockPlacement(BlockPos pos, BlockState state) {
             this.pos = pos;
             this.state = state;
+        }
+        
+        public BlockPos getPos() {
+            return pos;
+        }
+        
+        public BlockState getState() {
+            return state;
         }
     }
 }

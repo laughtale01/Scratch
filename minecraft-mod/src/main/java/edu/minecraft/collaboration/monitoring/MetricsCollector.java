@@ -2,7 +2,8 @@ package edu.minecraft.collaboration.monitoring;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import edu.minecraft.collaboration.MinecraftCollaborationMod;
+import edu.minecraft.collaboration.core.ResourceManager;
+import edu.minecraft.collaboration.util.FileSecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,11 +21,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Collects and manages system metrics for monitoring and analysis
+ * Collects and manages system metrics for monitoring and analysis.
+ * Converted from singleton to dependency injection pattern.
+ * Now integrates with ResourceManager for proper cleanup.
  */
-public class MetricsCollector {
+public final class MetricsCollector implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetricsCollector.class);
-    private static MetricsCollector instance;
     
     // Metric counters
     private final Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
@@ -35,26 +37,37 @@ public class MetricsCollector {
     private final SystemMetrics systemMetrics = new SystemMetrics();
     
     // Configuration
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final File metricsDir;
+    private final ResourceManager resourceManager;
     private boolean enabled = true;
     
-    private MetricsCollector() {
-        this.metricsDir = new File("metrics");
-        if (!metricsDir.exists()) {
-            metricsDir.mkdirs();
+    public MetricsCollector() {
+        this.resourceManager = ResourceManager.getInstance();
+        
+        // Use secure directory creation
+        if (FileSecurityUtils.ensureSafeDirectory("metrics")) {
+            this.metricsDir = new File("metrics");
+        } else {
+            LOGGER.error("Failed to create secure metrics directory");
+            this.metricsDir = null;
+            this.enabled = false;
         }
+        
+        // Create scheduler with proper thread naming
+        this.scheduler = Executors.newScheduledThreadPool(1, r -> {
+            Thread t = new Thread(r, "MetricsCollector-Scheduler");
+            t.setDaemon(true);
+            return t;
+        });
+        
+        // Register executor with ResourceManager for proper cleanup
+        resourceManager.registerExecutor("MetricsCollector", scheduler);
         
         // Start periodic metrics collection
         startPeriodicCollection();
-    }
-    
-    public static MetricsCollector getInstance() {
-        if (instance == null) {
-            instance = new MetricsCollector();
-        }
-        return instance;
+        LOGGER.info("MetricsCollector initialized with enabled={}", enabled);
     }
     
     /**
@@ -137,13 +150,25 @@ public class MetricsCollector {
      * Export metrics to file
      */
     private void exportMetrics() {
+        if (!enabled || metricsDir == null) {
+            return;
+        }
+        
         try {
             MetricsSnapshot snapshot = getSnapshot();
             String timestamp = LocalDateTime.now().format(
                 DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
             );
             
-            File metricsFile = new File(metricsDir, "metrics_" + timestamp + ".json");
+            // Use secure file creation
+            String fileName = "metrics_" + timestamp + ".json";
+            File metricsFile = FileSecurityUtils.getSafeFile("metrics", fileName);
+            
+            if (metricsFile == null) {
+                LOGGER.error("Failed to create safe metrics file");
+                return;
+            }
+            
             try (FileWriter writer = new FileWriter(metricsFile)) {
                 gson.toJson(snapshot, writer);
             }
@@ -162,13 +187,31 @@ public class MetricsCollector {
      * Clean up metrics files older than 24 hours
      */
     private void cleanupOldMetrics() {
+        if (!enabled || metricsDir == null) {
+            return;
+        }
+        
         long cutoffTime = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24);
         File[] files = metricsDir.listFiles((dir, name) -> name.startsWith("metrics_"));
         
         if (files != null) {
             for (File file : files) {
                 if (file.lastModified() < cutoffTime) {
-                    file.delete();
+                    // Validate file is in metrics directory before deletion
+                    try {
+                        String canonicalPath = file.getCanonicalPath();
+                        String metricsCanonical = metricsDir.getCanonicalPath();
+                        
+                        if (canonicalPath.startsWith(metricsCanonical + File.separator)) {
+                            if (!file.delete()) {
+                                LOGGER.warn("Failed to delete old metrics file: {}", file.getName());
+                            }
+                        } else {
+                            LOGGER.error("Attempted to delete file outside metrics directory: {}", canonicalPath);
+                        }
+                    } catch (IOException e) {
+                        LOGGER.error("Error validating file path for deletion", e);
+                    }
                 }
             }
         }
@@ -182,23 +225,33 @@ public class MetricsCollector {
     }
     
     /**
-     * Shutdown metrics collector
+     * Shutdown metrics collector - delegates to close()
      */
     public void shutdown() {
-        scheduler.shutdown();
-        try {
-            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                scheduler.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            scheduler.shutdownNow();
-        }
+        close();
+    }
+    
+    /**
+     * Close the metrics collector and release resources
+     */
+    @Override
+    public void close() {
+        LOGGER.info("Closing MetricsCollector");
+        enabled = false;
+        
+        // Clear all metrics data
+        counters.clear();
+        gauges.clear();
+        timings.clear();
+        
+        // ResourceManager will handle executor shutdown
+        resourceManager.unregisterAndShutdownExecutor("MetricsCollector");
     }
     
     /**
      * Context for timing measurements
      */
-    public class TimingContext implements AutoCloseable {
+    public final class TimingContext implements AutoCloseable {
         private final String name;
         private final long startTime;
         
@@ -250,22 +303,62 @@ public class MetricsCollector {
      * Timing statistics
      */
     public static class TimingStatistics {
-        public long count;
-        public long sum;
-        public long min;
-        public long max;
-        public double average;
+        private long count;
+        private long sum;
+        private long min;
+        private long max;
+        private double average;
+        
+        public long getCount() {
+            return count;
+        }
+        
+        public long getSum() {
+            return sum;
+        }
+        
+        public long getMin() {
+            return min;
+        }
+        
+        public long getMax() {
+            return max;
+        }
+        
+        public double getAverage() {
+            return average;
+        }
     }
     
     /**
      * Metrics snapshot
      */
     public static class MetricsSnapshot {
-        public Instant timestamp;
-        public final Map<String, Long> counters = new ConcurrentHashMap<>();
-        public final Map<String, Long> gauges = new ConcurrentHashMap<>();
-        public final Map<String, TimingStatistics> timings = new ConcurrentHashMap<>();
-        public SystemMetrics.SystemSnapshot systemMetrics;
+        private Instant timestamp;
+        private final Map<String, Long> counters = new ConcurrentHashMap<>();
+        private final Map<String, Long> gauges = new ConcurrentHashMap<>();
+        private final Map<String, TimingStatistics> timings = new ConcurrentHashMap<>();
+        private SystemMetrics.SystemSnapshot systemMetrics;
+        
+        public Instant getTimestamp() {
+            return timestamp;
+        }
+        
+        public Map<String, Long> getCounters() {
+            return new ConcurrentHashMap<>(counters);
+        }
+        
+        public Map<String, Long> getGauges() {
+            return new ConcurrentHashMap<>(gauges);
+        }
+        
+        public Map<String, TimingStatistics> getTimings() {
+            return new ConcurrentHashMap<>(timings);
+        }
+        
+        public SystemMetrics.SystemSnapshot getSystemMetrics() {
+            return systemMetrics;
+        }
     }
     
     /**

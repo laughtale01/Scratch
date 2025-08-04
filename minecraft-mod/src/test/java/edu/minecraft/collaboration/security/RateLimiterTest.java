@@ -1,34 +1,37 @@
-package com.yourname.minecraftcollaboration.security;
+package edu.minecraft.collaboration.security;
 
+import edu.minecraft.collaboration.security.RateLimiter;
+import edu.minecraft.collaboration.core.DependencyInjector;
+import edu.minecraft.collaboration.test.categories.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Unit tests for RateLimiter
  */
+@DisplayName("RateLimiter Tests")
+@UnitTest
 public class RateLimiterTest {
     
     private RateLimiter rateLimiter;
     
     @BeforeEach
-    public void setUp() {
-        rateLimiter = RateLimiter.getInstance();
-    }
-    
-    @AfterEach
-    public void tearDown() {
-        // Reset limits after each test
-        rateLimiter.resetLimit("testPlayer");
+    void setUp() {
+        rateLimiter = DependencyInjector.getInstance().getService(RateLimiter.class);
     }
     
     @Test
-    public void testAllowCommandUnderLimit() {
-        // Test that commands are allowed under the rate limit
-        String identifier = "testPlayer";
+    @DisplayName("Should allow commands within rate limit")
+    void testAllowCommandsWithinLimit() {
+        // Given
+        String identifier = "test-player";
         
-        // Should allow up to 10 commands per second
+        // When & Then
         for (int i = 0; i < 10; i++) {
             assertTrue(rateLimiter.allowCommand(identifier), 
                 "Command " + (i + 1) + " should be allowed");
@@ -36,92 +39,100 @@ public class RateLimiterTest {
     }
     
     @Test
-    public void testBlockCommandOverLimit() {
-        // Test that commands are blocked over the rate limit
-        String identifier = "testPlayer";
+    @DisplayName("Should block commands exceeding rate limit")
+    void testBlockCommandsExceedingLimit() {
+        // Given
+        String identifier = "spammer";
         
-        // Send 10 commands (the limit)
-        for (int i = 0; i < 10; i++) {
-            rateLimiter.allowCommand(identifier);
+        // When - Send many commands quickly
+        int allowed = 0;
+        int blocked = 0;
+        
+        for (int i = 0; i < 50; i++) {
+            if (rateLimiter.allowCommand(identifier)) {
+                allowed++;
+            } else {
+                blocked++;
+            }
         }
         
-        // The 11th command should be blocked
-        assertFalse(rateLimiter.allowCommand(identifier), 
-            "11th command should be blocked");
+        // Then
+        assertTrue(allowed > 0, "Some commands should be allowed");
+        assertTrue(blocked > 0, "Some commands should be blocked");
+        assertTrue(allowed <= 10, "Should not allow more than rate limit");
     }
     
     @Test
-    public void testRateLimitResetAfterWindow() throws InterruptedException {
-        // Test that rate limit resets after time window
-        String identifier = "testPlayer";
+    @DisplayName("Should reset rate limit after time window")
+    void testRateLimitReset() throws InterruptedException {
+        // Given
+        String identifier = "reset-test";
         
         // Fill up the rate limit
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             rateLimiter.allowCommand(identifier);
         }
         
-        // Should be blocked
+        // Then - Should be blocked
         assertFalse(rateLimiter.allowCommand(identifier));
         
-        // Wait for window to reset (1.1 seconds to be safe)
-        Thread.sleep(1100);
+        // When - Wait for window to reset
+        Thread.sleep(1100); // Wait just over 1 second
         
-        // Should be allowed again
-        assertTrue(rateLimiter.allowCommand(identifier), 
-            "Command should be allowed after window reset");
+        // Then - Should be allowed again
+        assertTrue(rateLimiter.allowCommand(identifier));
     }
     
     @Test
-    public void testMultipleIdentifiersSeparateLimits() {
-        // Test that different identifiers have separate limits
+    @DisplayName("Should track different identifiers separately")
+    void testSeparateIdentifierTracking() {
+        // Given
         String player1 = "player1";
         String player2 = "player2";
         
-        // Fill up player1's limit
-        for (int i = 0; i < 10; i++) {
+        // When - Fill up rate limit for player1
+        for (int i = 0; i < 20; i++) {
             rateLimiter.allowCommand(player1);
         }
         
-        // Player1 should be blocked
-        assertFalse(rateLimiter.allowCommand(player1));
-        
-        // Player2 should still be allowed
-        assertTrue(rateLimiter.allowCommand(player2), 
-            "Different player should have separate limit");
+        // Then
+        assertFalse(rateLimiter.allowCommand(player1), "Player1 should be blocked");
+        assertTrue(rateLimiter.allowCommand(player2), "Player2 should still be allowed");
     }
     
     @Test
-    public void testGetCurrentCommandCount() {
-        String identifier = "testPlayer";
+    @DisplayName("Should get current command count")
+    void testGetCurrentCommandCount() {
+        // Given
+        String identifier = "count-test";
         
-        // Initially should be 0
+        // When
         assertEquals(0, rateLimiter.getCurrentCommandCount(identifier));
         
-        // Send 5 commands
-        for (int i = 0; i < 5; i++) {
-            rateLimiter.allowCommand(identifier);
-        }
+        rateLimiter.allowCommand(identifier);
+        assertEquals(1, rateLimiter.getCurrentCommandCount(identifier));
         
-        // Should be 5
-        assertEquals(5, rateLimiter.getCurrentCommandCount(identifier));
+        rateLimiter.allowCommand(identifier);
+        rateLimiter.allowCommand(identifier);
+        assertEquals(3, rateLimiter.getCurrentCommandCount(identifier));
     }
     
     @Test
-    public void testResetLimit() {
-        String identifier = "testPlayer";
+    @DisplayName("Should reset limit manually")
+    void testManualReset() {
+        // Given
+        String identifier = "manual-reset";
         
-        // Send some commands
+        // Fill up some commands
         for (int i = 0; i < 5; i++) {
             rateLimiter.allowCommand(identifier);
         }
-        
-        // Should have count of 5
         assertEquals(5, rateLimiter.getCurrentCommandCount(identifier));
         
-        // Reset the limit
+        // When
         rateLimiter.resetLimit(identifier);
         
-        // Should be back to 0
+        // Then
         assertEquals(0, rateLimiter.getCurrentCommandCount(identifier));
     }
 }

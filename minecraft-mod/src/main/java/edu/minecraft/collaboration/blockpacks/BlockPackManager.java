@@ -1,23 +1,27 @@
 package edu.minecraft.collaboration.blockpacks;
 
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
-import edu.minecraft.collaboration.models.BlockPack;
-import edu.minecraft.collaboration.localization.LanguageManager;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Manager for block packs - predefined collections of blocks for educational purposes
  */
-public class BlockPackManager {
+public final class BlockPackManager {
     
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    private static BlockPackManager instance;
+    private static volatile BlockPackManager instance;
+    private static final Object LOCK = new Object();
     private final Map<String, BlockPack> blockPacks;
     private String currentPackId = "basic";
     
@@ -26,9 +30,13 @@ public class BlockPackManager {
         initializeDefaultBlockPacks();
     }
     
-    public static synchronized BlockPackManager getInstance() {
+    public static BlockPackManager getInstance() {
         if (instance == null) {
-            instance = new BlockPackManager();
+            synchronized (LOCK) {
+                if (instance == null) {
+                    instance = new BlockPackManager();
+                }
+            }
         }
         return instance;
     }
@@ -76,7 +84,7 @@ public class BlockPackManager {
         // Convert string list to Block list
         List<Block> blockList = convertStringListToBlocks(blocks);
         BlockPack basicPack = new BlockPack("basic", names, descriptions, blockList, 
-            BlockPack.BlockPackCategory.BASIC, BlockPack.DifficultyLevel.BEGINNER, false);
+            BlockPackCategory.BASIC, DifficultyLevel.BEGINNER, false);
         blockPacks.put("basic", basicPack);
     }
     
@@ -112,7 +120,7 @@ public class BlockPackManager {
         
         List<Block> blockList = convertStringListToBlocks(blocks);
         BlockPack educationalPack = new BlockPack("educational", names, descriptions, blockList, 
-            BlockPack.BlockPackCategory.EDUCATIONAL, BlockPack.DifficultyLevel.BEGINNER, false);
+            BlockPackCategory.EDUCATIONAL, DifficultyLevel.BEGINNER, false);
         blockPacks.put("educational", educationalPack);
     }
     
@@ -147,7 +155,7 @@ public class BlockPackManager {
         
         List<Block> blockList = convertStringListToBlocks(blocks);
         BlockPack advancedPack = new BlockPack("advanced", names, descriptions, blockList, 
-            BlockPack.BlockPackCategory.ADVANCED, BlockPack.DifficultyLevel.INTERMEDIATE, true);
+            BlockPackCategory.ADVANCED, DifficultyLevel.INTERMEDIATE, true);
         blockPacks.put("advanced", advancedPack);
     }
     
@@ -183,7 +191,7 @@ public class BlockPackManager {
         
         List<Block> blockList = convertStringListToBlocks(blocks);
         BlockPack creativePack = new BlockPack("creative", names, descriptions, blockList, 
-            BlockPack.BlockPackCategory.CREATIVE, BlockPack.DifficultyLevel.ADVANCED, false);
+            BlockPackCategory.CREATIVE, DifficultyLevel.ADVANCED, false);
         blockPacks.put("creative", creativePack);
     }
     
@@ -219,7 +227,7 @@ public class BlockPackManager {
         
         List<Block> blockList = convertStringListToBlocks(blocks);
         BlockPack redstonePack = new BlockPack("redstone", names, descriptions, blockList, 
-            BlockPack.BlockPackCategory.REDSTONE, BlockPack.DifficultyLevel.EXPERT, true);
+            BlockPackCategory.PROGRAMMING, DifficultyLevel.EXPERT, true);
         blockPacks.put("redstone", redstonePack);
     }
     
@@ -297,7 +305,7 @@ public class BlockPackManager {
         
         List<Block> blockList = convertStringListToBlocks(blocks);
         BlockPack customPack = new BlockPack(packId, names, descriptions, blockList, 
-            BlockPack.BlockPackCategory.CUSTOM, BlockPack.DifficultyLevel.INTERMEDIATE, true);
+            BlockPackCategory.CUSTOM, DifficultyLevel.INTERMEDIATE, true);
         blockPacks.put(packId, customPack);
         LOGGER.info("Created custom block pack: {}", packId);
         return true;
@@ -367,56 +375,139 @@ public class BlockPackManager {
      * Get Block by name
      */
     private Block getBlockByName(String blockName) {
-        switch (blockName.toLowerCase()) {
+        String normalizedName = blockName.toLowerCase();
+        
+        // Try common blocks first
+        Block commonBlock = getCommonBlock(normalizedName);
+        if (commonBlock != null) {
+            return commonBlock;
+        }
+        
+        // Try building blocks
+        Block buildingBlock = getBuildingBlock(normalizedName);
+        if (buildingBlock != null) {
+            return buildingBlock;
+        }
+        
+        // Try utility blocks
+        Block utilityBlock = getUtilityBlock(normalizedName);
+        if (utilityBlock != null) {
+            return utilityBlock;
+        }
+        
+        // Try redstone blocks
+        Block redstoneBlock = getRedstoneBlock(normalizedName);
+        if (redstoneBlock != null) {
+            return redstoneBlock;
+        }
+        
+        // Fall back to registry lookup
+        return getBlockFromRegistry(normalizedName);
+    }
+    
+    /**
+     * Get common basic blocks
+     * @param blockName Normalized block name
+     * @return Block or null if not found
+     */
+    private Block getCommonBlock(String blockName) {
+        switch (blockName) {
             case "dirt": return Blocks.DIRT;
             case "stone": return Blocks.STONE;
             case "grass_block": return Blocks.GRASS_BLOCK;
             case "cobblestone": return Blocks.COBBLESTONE;
-            case "oak_planks": return Blocks.OAK_PLANKS;
             case "sand": return Blocks.SAND;
             case "gravel": return Blocks.GRAVEL;
             case "bedrock": return Blocks.BEDROCK;
             case "water": return Blocks.WATER;
             case "lava": return Blocks.LAVA;
+            default: return null;
+        }
+    }
+    
+    /**
+     * Get building and construction blocks
+     * @param blockName Normalized block name
+     * @return Block or null if not found
+     */
+    private Block getBuildingBlock(String blockName) {
+        switch (blockName) {
+            case "oak_planks": return Blocks.OAK_PLANKS;
             case "oak_log": return Blocks.OAK_LOG;
             case "oak_leaves": return Blocks.OAK_LEAVES;
             case "glass": return Blocks.GLASS;
-            case "coal_ore": return Blocks.COAL_ORE;
-            case "iron_ore": return Blocks.IRON_ORE;
-            case "gold_ore": return Blocks.GOLD_ORE;
-            case "diamond_ore": return Blocks.DIAMOND_ORE;
-            case "redstone_ore": return Blocks.REDSTONE_ORE;
             case "brick": return Blocks.BRICKS;
-            case "tnt": return Blocks.TNT;
             case "bookshelf": return Blocks.BOOKSHELF;
             case "mossy_cobblestone": return Blocks.MOSSY_COBBLESTONE;
             case "obsidian": return Blocks.OBSIDIAN;
-            case "torch": return Blocks.TORCH;
-            case "chest": return Blocks.CHEST;
-            case "crafting_table": return Blocks.CRAFTING_TABLE;
-            case "furnace": return Blocks.FURNACE;
-            case "ladder": return Blocks.LADDER;
-            case "redstone_wire": return Blocks.REDSTONE_WIRE;
-            case "redstone_torch": return Blocks.REDSTONE_TORCH;
-            case "lever": return Blocks.LEVER;
-            case "stone_button": return Blocks.STONE_BUTTON;
-            case "redstone_lamp": return Blocks.REDSTONE_LAMP;
             case "oak_door": return Blocks.OAK_DOOR;
             case "iron_door": return Blocks.IRON_DOOR;
             case "oak_fence": return Blocks.OAK_FENCE;
             case "oak_fence_gate": return Blocks.OAK_FENCE_GATE;
             case "stairs": return Blocks.OAK_STAIRS;
             case "wool": return Blocks.WHITE_WOOL;
-            default:
-                // Try to get from registry using ResourceLocation
-                try {
-                    ResourceLocation location = new ResourceLocation("minecraft", blockName);
-                    return BuiltInRegistries.BLOCK.get(location);
-                } catch (Exception e) {
-                    LOGGER.warn("Unknown block name: {}", blockName);
-                    return Blocks.DIRT; // Default fallback
-                }
+            default: return null;
         }
+    }
+    
+    /**
+     * Get utility and functional blocks
+     * @param blockName Normalized block name
+     * @return Block or null if not found
+     */
+    private Block getUtilityBlock(String blockName) {
+        switch (blockName) {
+            case "torch": return Blocks.TORCH;
+            case "chest": return Blocks.CHEST;
+            case "crafting_table": return Blocks.CRAFTING_TABLE;
+            case "furnace": return Blocks.FURNACE;
+            case "ladder": return Blocks.LADDER;
+            case "tnt": return Blocks.TNT;
+            default: return null;
+        }
+    }
+    
+    /**
+     * Get redstone and ore blocks
+     * @param blockName Normalized block name
+     * @return Block or null if not found
+     */
+    private Block getRedstoneBlock(String blockName) {
+        switch (blockName) {
+            case "coal_ore": return Blocks.COAL_ORE;
+            case "iron_ore": return Blocks.IRON_ORE;
+            case "gold_ore": return Blocks.GOLD_ORE;
+            case "diamond_ore": return Blocks.DIAMOND_ORE;
+            case "redstone_ore": return Blocks.REDSTONE_ORE;
+            case "redstone_wire": return Blocks.REDSTONE_WIRE;
+            case "redstone_torch": return Blocks.REDSTONE_TORCH;
+            case "lever": return Blocks.LEVER;
+            case "stone_button": return Blocks.STONE_BUTTON;
+            case "redstone_lamp": return Blocks.REDSTONE_LAMP;
+            default: return null;
+        }
+    }
+    
+    /**
+     * Get block from Minecraft registry as fallback
+     * @param blockName Normalized block name
+     * @return Block from registry or dirt as default
+     */
+    private Block getBlockFromRegistry(String blockName) {
+        try {
+            ResourceLocation location = new ResourceLocation("minecraft", blockName);
+            Block registryBlock = BuiltInRegistries.BLOCK.get(location);
+            
+            // Check if the block was actually found (registry returns air for unknown blocks)
+            if (registryBlock != Blocks.AIR) {
+                return registryBlock;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to get block from registry: {}", blockName, e);
+        }
+        
+        LOGGER.warn("Unknown block name: {}, using dirt as fallback", blockName);
+        return Blocks.DIRT; // Default fallback
     }
     
     /**

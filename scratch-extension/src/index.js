@@ -383,7 +383,7 @@
                       arguments: {
                           PASSWORD: {
                               type: ArgumentType.STRING,
-                              defaultValue: 'teacher123'
+                              defaultValue: ''  // No default password for security
                           }
                       }
                   },
@@ -1195,7 +1195,11 @@
       
       // 教師として登録
       registerTeacher(args) {
-          const password = this.validateString(args.PASSWORD, 'teacher123');
+          const password = this.validateString(args.PASSWORD, '');
+          if (!password) {
+              console.error('Password is required for teacher registration');
+              return;
+          }
           this.sendCommand('registerTeacher', { password: password });
       }
       

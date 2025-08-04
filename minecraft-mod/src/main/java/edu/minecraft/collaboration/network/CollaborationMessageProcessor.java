@@ -3,13 +3,13 @@ package edu.minecraft.collaboration.network;
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
 import edu.minecraft.collaboration.commands.CollaborationCommandHandler;
 import edu.minecraft.collaboration.collaboration.CollaborationManager;
+import edu.minecraft.collaboration.core.DependencyInjector;
+import edu.minecraft.collaboration.constants.ErrorConstants;
 import org.slf4j.Logger;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import edu.minecraft.collaboration.util.BlockUtils;
-import edu.minecraft.collaboration.util.ValidationUtils;
-import edu.minecraft.collaboration.util.ResponseHelper;
 import edu.minecraft.collaboration.monitoring.MetricsCollector;
 import edu.minecraft.collaboration.security.AuthenticationManager;
 import edu.minecraft.collaboration.security.InputValidator;
@@ -25,13 +25,31 @@ public class CollaborationMessageProcessor {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private final CollaborationCommandHandler commandHandler;
     private final Gson gson;
-    private final MetricsCollector metrics = MetricsCollector.getInstance();
-    private final AuthenticationManager authManager = AuthenticationManager.getInstance();
-    private final CollaborationManager collaborationManager = CollaborationManager.getInstance();
+    private final MetricsCollector metrics;
+    private final AuthenticationManager authManager;
+    private final CollaborationManager collaborationManager;
+    
+    // Delegated processors for handling specific command categories
+    private final BuildingCommandProcessor buildingProcessor;
+    private final CollaborationCommandProcessor collaborationProcessor;
     
     public CollaborationMessageProcessor() {
+        DependencyInjector injector = DependencyInjector.getInstance();
+        this.metrics = injector.getService(MetricsCollector.class);
+        this.authManager = injector.getService(AuthenticationManager.class);
+        this.collaborationManager = injector.getService(CollaborationManager.class);
         this.commandHandler = new CollaborationCommandHandler();
         this.gson = new Gson();
+        this.buildingProcessor = new BuildingCommandProcessor(commandHandler);
+        this.collaborationProcessor = new CollaborationCommandProcessor();
+    }
+    
+    // Current WebSocket connection identifier for authentication
+    private String currentConnectionId;
+    
+    public void setConnectionId(String connectionId) {
+        this.currentConnectionId = connectionId;
+        this.collaborationProcessor.setConnectionId(connectionId);
     }
     
     /**
@@ -67,7 +85,22 @@ public class CollaborationMessageProcessor {
     private String processJsonMessage(String message) {
         try {
             JsonObject jsonMessage = gson.fromJson(message, JsonObject.class);
-            String command = jsonMessage.get("command").getAsString();
+            
+            // Validate required fields
+            if (jsonMessage == null || !jsonMessage.has("command")) {
+                LOGGER.error("Missing required 'command' field in JSON message: {}", message);
+                metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
+                return createErrorResponse("missingCommand", "Command field is required");
+            }
+            
+            JsonElement commandElement = jsonMessage.get("command");
+            if (commandElement == null || !commandElement.isJsonPrimitive()) {
+                LOGGER.error("Invalid 'command' field type in JSON message: {}", message);
+                metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
+                return createErrorResponse("invalidCommand", "Command must be a string");
+            }
+            
+            String command = commandElement.getAsString();
             JsonObject args = jsonMessage.has("args") ? jsonMessage.getAsJsonObject("args") : new JsonObject();
             
             LOGGER.debug("Processing JSON command: {} with args: {}", command, args);
@@ -77,7 +110,9 @@ public class CollaborationMessageProcessor {
                 // Convert JSON args to string array for compatibility
                 Map<String, String> argsMap = new HashMap<>();
                 for (Map.Entry<String, com.google.gson.JsonElement> entry : args.entrySet()) {
-                    argsMap.put(entry.getKey(), entry.getValue().getAsString());
+                    if (entry.getValue() != null && entry.getValue().isJsonPrimitive()) {
+                        argsMap.put(entry.getKey(), entry.getValue().getAsString());
+                    }
                 }
                 
                 String result = routeJsonCommand(command, argsMap);
@@ -89,11 +124,16 @@ public class CollaborationMessageProcessor {
                 return result;
             }
             
-        } catch (JsonSyntaxException | NullPointerException e) {
-            LOGGER.error("Invalid JSON format: {}", message, e);
+        } catch (JsonSyntaxException e) {
+            LOGGER.error("Invalid JSON syntax: {}", message, e);
             metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
             metrics.incrementCounter(MetricsCollector.Metrics.WS_ERRORS);
-            return createErrorResponse("invalidJson", "Invalid JSON format");
+            return createErrorResponse("invalidJson", "Invalid JSON syntax");
+        } catch (Exception e) {
+            LOGGER.error("Unexpected error processing JSON message: {}", message, e);
+            metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
+            metrics.incrementCounter(MetricsCollector.Metrics.WS_ERRORS);
+            return createErrorResponse("processingError", "Failed to process message");
         }
     }
     
@@ -135,28 +175,99 @@ public class CollaborationMessageProcessor {
     /**
      * Route JSON commands to appropriate handlers
      */
-    private String routeJsonCommand(String command, Map<String, String> args) {
-        // Convert map to array for handlers that expect positional args
-        String[] argsArray = convertArgsForCommand(command, args);
+    private String routeJsonCommand(final String command, final Map<String, String> args) {
+        // Route based on command category
+        if (isAuthenticationCommand(command)) {
+            return handleAuthenticationCommands(command, args);
+        }
+        if (isConnectionCommand(command)) {
+            return handleConnectionCommands(command, args);
+        }
+        if (isBlockCommand(command)) {
+            return handleBlockCommands(command, args);
+        }
+        if (isPlayerCommand(command)) {
+            return handlePlayerCommands(command, args);
+        }
+        if (isBuildingCommand(command)) {
+            return handleBuildingCommands(command, args);
+        }
+        if (isWorldCommand(command)) {
+            return handleWorldCommands(command, args);
+        }
+        if (isChatCommand(command)) {
+            return handleChatCommands(command, args);
+        }
+        if (isCollaborationCommand(command)) {
+            return handleCollaborationCommands(command, args);
+        }
+        if (isAgentCommand(command)) {
+            return handleAgentCommands(command, args);
+        }
         
-        // Route based on Scratch extension commands
+        // Unknown command
+        LOGGER.warn("Unknown JSON command received: {}", command);
+        return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+    }
+    
+    /**
+     * Check if command is an authentication command
+     */
+    private boolean isAuthenticationCommand(final String command) {
+        return "auth".equals(command) || "getUserInfo".equals(command);
+    }
+    
+    /**
+     * Handle authentication-related commands
+     */
+    private String handleAuthenticationCommands(final String command, final Map<String, String> args) {
         switch (command) {
-            // Authentication
             case "auth":
-                return handleAuthentication(args);
-                
-            // Connection and basic commands
+                return collaborationProcessor.handleAuthentication(args);
+            case "getUserInfo":
+                return collaborationProcessor.handleGetUserInfo(args);
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Check if command is a connection command
+     */
+    private boolean isConnectionCommand(final String command) {
+        return "connect".equals(command) || "status".equals(command) || "getPlayerPosition".equals(command);
+    }
+    
+    /**
+     * Handle connection-related commands
+     */
+    private String handleConnectionCommands(final String command, final Map<String, String> args) {
+        switch (command) {
             case "connect":
                 return commandHandler.handleConnect(new String[0]);
             case "status":
                 return commandHandler.handleStatus(new String[0]);
             case "getPlayerPosition":
                 return commandHandler.handleGetPlayerPosition(new String[0]);
-                
-            // User info
-            case "getUserInfo":
-                return handleGetUserInfo(args);
-            // Basic block operations
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Check if command is a block operation command
+     */
+    private boolean isBlockCommand(final String command) {
+        return "setBlock".equals(command) || "fillArea".equals(command) || 
+               "placeBlock".equals(command) || "removeBlock".equals(command) || 
+               "getBlock".equals(command);
+    }
+    
+    /**
+     * Handle block operation commands
+     */
+    private String handleBlockCommands(final String command, final Map<String, String> args) {
+        switch (command) {
             case "setBlock":
                 return commandHandler.handleSetBlock(new String[] {
                     args.get("x"), args.get("y"), args.get("z"), args.get("blockType")
@@ -168,156 +279,215 @@ public class CollaborationMessageProcessor {
                     args.get("blockType")
                 });
             case "placeBlock":
-                // Validate coordinates
-                if (!InputValidator.validateCoordinates(args.get("x"), args.get("y"), args.get("z"))) {
-                    return createErrorResponse("invalidCoordinates", "Invalid coordinates");
-                }
-                // Validate block type
-                if (!InputValidator.validateBlockType(args.get("block"))) {
-                    return createErrorResponse("invalidBlockType", "Invalid or blocked block type");
-                }
-                return commandHandler.handleSetBlock(new String[] {
-                    args.get("x"), args.get("y"), args.get("z"), args.get("block")
-                });
+                return handlePlaceBlockCommand(args);
             case "removeBlock":
                 return commandHandler.handleSetBlock(new String[] {
-                    args.get("x"), args.get("y"), args.get("z"), "air"
+                    args.get("x"), args.get("y"), args.get("z"), ErrorConstants.AIR_BLOCK
                 });
             case "getBlock":
                 return commandHandler.handleGetBlock(new String[] {
                     args.get("x"), args.get("y"), args.get("z")
                 });
-                
-            // Player operations
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Handle place block command with validation
+     */
+    private String handlePlaceBlockCommand(final Map<String, String> args) {
+        // Validate coordinates
+        if (!InputValidator.validateCoordinates(args.get("x"), args.get("y"), args.get("z"))) {
+            return createErrorResponse(ErrorConstants.ERROR_INVALID_COORDINATES, ErrorConstants.MSG_INVALID_COORDINATES);
+        }
+        // Validate block type
+        if (!InputValidator.validateBlockType(args.get("block"))) {
+            return createErrorResponse(ErrorConstants.ERROR_INVALID_BLOCK_TYPE, ErrorConstants.MSG_INVALID_BLOCK_TYPE);
+        }
+        return commandHandler.handleSetBlock(new String[] {
+            args.get("x"), args.get("y"), args.get("z"), args.get("block")
+        });
+    }
+    
+    /**
+     * Check if command is a player operation command
+     */
+    private boolean isPlayerCommand(final String command) {
+        return "getPlayerPos".equals(command) || "teleport".equals(command) || "gamemode".equals(command);
+    }
+    
+    /**
+     * Handle player operation commands
+     */
+    private String handlePlayerCommands(final String command, final Map<String, String> args) {
+        switch (command) {
             case "getPlayerPos":
                 return commandHandler.handleGetPlayerPosition(new String[0]);
             case "teleport":
-                return handleTeleportPlayer(args);
+                return buildingProcessor.handleTeleportPlayer(args);
             case "gamemode":
-                return handleSetGameMode(args);
-                
-            // Building operations
+                return buildingProcessor.handleSetGameMode(args);
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Check if command is a building operation command
+     */
+    private boolean isBuildingCommand(final String command) {
+        return "fill".equals(command) || "buildCircle".equals(command) || 
+               "buildSphere".equals(command) || "buildWall".equals(command) || 
+               "buildHouse".equals(command);
+    }
+    
+    /**
+     * Handle building operation commands
+     */
+    private String handleBuildingCommands(final String command, final Map<String, String> args) {
+        switch (command) {
             case "fill":
-                return handleFillBlocks(args);
+                return buildingProcessor.handleFillBlocks(args);
             case "buildCircle":
-                return handleBuildCircle(args);
+                return buildingProcessor.handleBuildCircle(args);
             case "buildSphere":
-                return handleBuildSphere(args);
+                return buildingProcessor.handleBuildSphere(args);
             case "buildWall":
-                return handleBuildWall(args);
+                return buildingProcessor.handleBuildWall(args);
             case "buildHouse":
-                return handleBuildHouse(args);
-                
-            // World operations
+                return buildingProcessor.handleBuildHouse(args);
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Check if command is a world operation command
+     */
+    private boolean isWorldCommand(final String command) {
+        return "time".equals(command) || "weather".equals(command);
+    }
+    
+    /**
+     * Handle world operation commands
+     */
+    private String handleWorldCommands(final String command, final Map<String, String> args) {
+        switch (command) {
             case "time":
-                return handleSetTime(args);
+                return buildingProcessor.handleSetTime(args);
             case "weather":
-                return handleSetWeather(args);
-                
-            // Chat
-            case "chat":
-                return commandHandler.handleChatMessage(new String[] { args.get("message") });
-                
-            // Collaboration queries
+                return buildingProcessor.handleSetWeather(args);
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Check if command is a chat command
+     */
+    private boolean isChatCommand(final String command) {
+        return "chat".equals(command);
+    }
+    
+    /**
+     * Handle chat commands
+     */
+    private String handleChatCommands(final String command, final Map<String, String> args) {
+        if ("chat".equals(command)) {
+            return commandHandler.handleChatMessage(new String[]{args.get("message")});
+        }
+        return createErrorResponse("unknownCommand", command);
+    }
+    
+    /**
+     * Check if command is a collaboration command
+     */
+    private boolean isCollaborationCommand(final String command) {
+        return "getInvitations".equals(command) || "getCurrentWorld".equals(command);
+    }
+    
+    /**
+     * Handle collaboration commands
+     */
+    private String handleCollaborationCommands(final String command, final Map<String, String> args) {
+        switch (command) {
             case "getInvitations":
                 return commandHandler.handleGetInvitations(new String[0]);
             case "getCurrentWorld":
-                return handleGetCurrentWorld();
-                
-            // Agent commands
+                return collaborationProcessor.handleGetCurrentWorld();
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Check if command is an agent command
+     */
+    private boolean isAgentCommand(final String command) {
+        return "summonAgent".equals(command) || "moveAgent".equals(command) || 
+               "agentFollow".equals(command) || "agentAction".equals(command) || 
+               "dismissAgent".equals(command);
+    }
+    
+    /**
+     * Handle agent commands
+     */
+    private String handleAgentCommands(final String command, final Map<String, String> args) {
+        switch (command) {
             case "summonAgent":
-                return commandHandler.handleSummonAgent(new String[] { 
-                    args.getOrDefault("name", "Agent") 
+                return commandHandler.handleSummonAgent(new String[]{
+                    args.getOrDefault("name", ErrorConstants.DEFAULT_AGENT_NAME)
                 });
             case "moveAgent":
-                if (args.containsKey("direction")) {
-                    return commandHandler.handleMoveAgent(new String[] { 
-                        args.get("direction"), 
-                        args.getOrDefault("distance", "1") 
-                    });
-                } else {
-                    return commandHandler.handleMoveAgent(new String[] { 
-                        args.get("x"), args.get("y"), args.get("z") 
-                    });
-                }
+                return handleMoveAgentCommand(args);
             case "agentFollow":
-                return commandHandler.handleAgentFollow(new String[] { 
-                    args.getOrDefault("follow", "true") 
+                return commandHandler.handleAgentFollow(new String[]{
+                    args.getOrDefault("follow", ErrorConstants.DEFAULT_FOLLOW)
                 });
             case "agentAction":
-                return commandHandler.handleAgentAction(new String[] { 
-                    args.get("action") 
+                return commandHandler.handleAgentAction(new String[]{
+                    args.get("action")
                 });
             case "dismissAgent":
                 return commandHandler.handleDismissAgent(new String[0]);
-                
-            // Unknown command
             default:
-                LOGGER.warn("Unknown JSON command received: {}", command);
-                return createErrorResponse("unknownCommand", command);
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Handle move agent command with conditional logic
+     */
+    private String handleMoveAgentCommand(final Map<String, String> args) {
+        if (args.containsKey("direction")) {
+            return commandHandler.handleMoveAgent(new String[]{
+                args.get("direction"),
+                args.getOrDefault("distance", ErrorConstants.DEFAULT_DISTANCE)
+            });
+        } else {
+            return commandHandler.handleMoveAgent(new String[]{
+                args.get("x"), args.get("y"), args.get("z")
+            });
         }
     }
     
     /**
      * Route legacy commands to appropriate handlers
      */
-    private String routeCommand(String command, String[] args) {
-        
-        // Connection and status commands
-        if (command.equals("minecraft.connect")) {
-            return commandHandler.handleConnect(args);
+    private String routeCommand(final String command, final String[] args) {
+        // Route based on command prefix to reduce complexity
+        if (command.startsWith("minecraft.")) {
+            return handleMinecraftCommands(command, args);
         }
-        if (command.equals("minecraft.status")) {
-            return commandHandler.handleStatus(args);
+        if (command.startsWith("collaboration.")) {
+            return handleLegacyCollaborationCommands(command, args);
         }
-        
-        // Invitation system commands
-        if (command.equals("collaboration.invite")) {
-            return commandHandler.handleInviteFriend(args);
+        if (command.startsWith("player.") || command.startsWith("world.") || command.startsWith("chat.")) {
+            return handleBasicMinecraftCommands(command, args);
         }
-        if (command.equals("collaboration.getInvitations")) {
-            return commandHandler.handleGetInvitations(args);
-        }
-        
-        // Visitation system commands
-        if (command.equals("collaboration.requestVisit")) {
-            return commandHandler.handleRequestVisit(args);
-        }
-        if (command.equals("collaboration.approveVisit")) {
-            return commandHandler.handleApproveVisit(args);
-        }
-        if (command.equals("collaboration.getCurrentWorld")) {
-            return commandHandler.handleGetCurrentWorld(args);
-        }
-        
-        // Return home commands
-        if (command.equals("collaboration.returnHome")) {
-            return commandHandler.handleReturnHome(args);
-        }
-        if (command.equals("collaboration.emergencyReturn")) {
-            return commandHandler.handleEmergencyReturn(args);
-        }
-        
-        // Basic Minecraft commands (backward compatibility)
-        if (command.equals("player.getPos")) {
-            return commandHandler.handleGetPlayerPosition(args);
-        }
-        if (command.equals("world.setBlock")) {
-            return commandHandler.handleSetBlock(args);
-        }
-        if (command.equals("world.getBlock")) {
-            return commandHandler.handleGetBlock(args);
-        }
-        if (command.equals("chat.post")) {
-            return commandHandler.handleChatMessage(args);
-        }
-        
-        // Agent commands (if implemented)
-        if (command.equals("agent.summon")) {
-            return commandHandler.handleSummonAgent(args);
-        }
-        if (command.equals("agent.move")) {
-            return commandHandler.handleMoveAgent(args);
+        if (command.startsWith("agent.")) {
+            return handleLegacyAgentCommands(command, args);
         }
         
         // Unknown command
@@ -326,9 +496,79 @@ public class CollaborationMessageProcessor {
     }
     
     /**
+     * Handle minecraft.* commands
+     */
+    private String handleMinecraftCommands(final String command, final String[] args) {
+        switch (command) {
+            case "minecraft.connect":
+                return commandHandler.handleConnect(args);
+            case "minecraft.status":
+                return commandHandler.handleStatus(args);
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Handle collaboration.* commands
+     */
+    private String handleLegacyCollaborationCommands(final String command, final String[] args) {
+        switch (command) {
+            case "collaboration.invite":
+                return commandHandler.handleInviteFriend(args);
+            case "collaboration.getInvitations":
+                return commandHandler.handleGetInvitations(args);
+            case "collaboration.requestVisit":
+                return commandHandler.handleRequestVisit(args);
+            case "collaboration.approveVisit":
+                return commandHandler.handleApproveVisit(args);
+            case "collaboration.getCurrentWorld":
+                return commandHandler.handleGetCurrentWorld(args);
+            case "collaboration.returnHome":
+                return commandHandler.handleReturnHome(args);
+            case "collaboration.emergencyReturn":
+                return commandHandler.handleEmergencyReturn(args);
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Handle basic minecraft commands (backward compatibility)
+     */
+    private String handleBasicMinecraftCommands(final String command, final String[] args) {
+        switch (command) {
+            case "player.getPos":
+                return commandHandler.handleGetPlayerPosition(args);
+            case "world.setBlock":
+                return commandHandler.handleSetBlock(args);
+            case "world.getBlock":
+                return commandHandler.handleGetBlock(args);
+            case "chat.post":
+                return commandHandler.handleChatMessage(args);
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
+     * Handle agent.* commands
+     */
+    private String handleLegacyAgentCommands(final String command, final String[] args) {
+        switch (command) {
+            case "agent.summon":
+                return commandHandler.handleSummonAgent(args);
+            case "agent.move":
+                return commandHandler.handleMoveAgent(args);
+            default:
+                return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
+        }
+    }
+    
+    /**
      * Convert args map to array based on command requirements
      */
-    private String[] convertArgsForCommand(String command, Map<String, String> args) {
+    private String[] convertArgsForCommand(final String command, final Map<String, String> args) {
         // This is a placeholder - implement specific conversions as needed
         return args.values().toArray(new String[0]);
     }
@@ -336,510 +576,11 @@ public class CollaborationMessageProcessor {
     /**
      * Create standardized error response
      */
-    private String createErrorResponse(String errorType, String details) {
-        JsonObject response = new JsonObject();
-        response.addProperty("type", "error");
-        response.addProperty("error", errorType);
-        response.addProperty("message", details);
-        return gson.toJson(response);
+    private String createErrorResponse(final String errorType, final String details) {
+        return String.format(ErrorConstants.JSON_ERROR_TEMPLATE, errorType, details);
     }
     
-    // === New command handlers for Scratch extension commands ===
-    
-    private String handleTeleportPlayer(Map<String, String> args) {
-        try {
-            int x = Integer.parseInt(args.get("x"));
-            int y = Integer.parseInt(args.get("y"));
-            int z = Integer.parseInt(args.get("z"));
-            
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                java.util.List<net.minecraft.server.level.ServerPlayer> players = server.getPlayerList().getPlayers();
-                if (!players.isEmpty()) {
-                    net.minecraft.server.level.ServerPlayer player = players.get(0);
-                    player.teleportTo(x + 0.5, y, z + 0.5);
-                    return createSuccessResponse("teleport", "Teleported to " + x + "," + y + "," + z);
-                }
-            }
-            return createErrorResponse("teleportFailed", "No players online");
-        } catch (NumberFormatException e) {
-            return createErrorResponse("invalidCoordinates", "Invalid coordinates");
-        } catch (Exception e) {
-            LOGGER.error("Error teleporting player", e);
-            return createErrorResponse("teleportError", e.getMessage());
-        }
-    }
-    
-    private String handleSetGameMode(Map<String, String> args) {
-        try {
-            String mode = args.get("mode");
-            net.minecraft.world.level.GameType gameType;
-            
-            switch (mode.toLowerCase()) {
-                case "survival":
-                    gameType = net.minecraft.world.level.GameType.SURVIVAL;
-                    break;
-                case "creative":
-                    gameType = net.minecraft.world.level.GameType.CREATIVE;
-                    break;
-                case "adventure":
-                    gameType = net.minecraft.world.level.GameType.ADVENTURE;
-                    break;
-                case "spectator":
-                    gameType = net.minecraft.world.level.GameType.SPECTATOR;
-                    break;
-                default:
-                    return createErrorResponse("invalidGameMode", "Unknown game mode: " + mode);
-            }
-            
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                java.util.List<net.minecraft.server.level.ServerPlayer> players = server.getPlayerList().getPlayers();
-                if (!players.isEmpty()) {
-                    net.minecraft.server.level.ServerPlayer player = players.get(0);
-                    player.setGameMode(gameType);
-                    return createSuccessResponse("gamemode", "Changed to " + mode);
-                }
-            }
-            return createErrorResponse("gameModeFailed", "No players online");
-        } catch (Exception e) {
-            LOGGER.error("Error changing game mode", e);
-            return createErrorResponse("gameModeError", e.getMessage());
-        }
-    }
-    
-    private String handleFillBlocks(Map<String, String> args) {
-        try {
-            int x1 = Integer.parseInt(args.get("x1"));
-            int y1 = Integer.parseInt(args.get("y1"));
-            int z1 = Integer.parseInt(args.get("z1"));
-            int x2 = Integer.parseInt(args.get("x2"));
-            int y2 = Integer.parseInt(args.get("y2"));
-            int z2 = Integer.parseInt(args.get("z2"));
-            String blockType = args.get("block");
-            
-            // Ensure coordinates are in order
-            int minX = Math.min(x1, x2);
-            int maxX = Math.max(x1, x2);
-            int minY = Math.min(y1, y2);
-            int maxY = Math.max(y1, y2);
-            int minZ = Math.min(z1, z2);
-            int maxZ = Math.max(z1, z2);
-            
-            // Limit area size to prevent server lag
-            int volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-            if (volume > 10000) {
-                return createErrorResponse("areaTooBig", "Area too large (max 10000 blocks)");
-            }
-            
-            // Execute fill using command handler
-            String[] fillArgs = new String[] {
-                String.valueOf(minX), String.valueOf(minY), String.valueOf(minZ),
-                String.valueOf(maxX), String.valueOf(maxY), String.valueOf(maxZ),
-                blockType
-            };
-            
-            return commandHandler.handleFillArea(fillArgs);
-            
-        } catch (NumberFormatException e) {
-            return createErrorResponse("invalidCoordinates", "Invalid coordinates");
-        } catch (Exception e) {
-            LOGGER.error("Error filling blocks", e);
-            return createErrorResponse("fillError", e.getMessage());
-        }
-    }
-    
-    private String handleBuildCircle(Map<String, String> args) {
-        try {
-            int x = Integer.parseInt(args.get("x"));
-            int y = Integer.parseInt(args.get("y"));
-            int z = Integer.parseInt(args.get("z"));
-            int radius = Integer.parseInt(args.get("radius"));
-            String blockType = args.get("block");
-            
-            if (radius > 50) {
-                return createErrorResponse("radiusTooBig", "Radius too large (max 50)");
-            }
-            
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
-                if (world != null) {
-                    net.minecraft.world.level.block.Block block = BlockUtils.getBlockFromString(blockType);
-                    
-                    // Build circle using midpoint circle algorithm
-                    for (int dx = -radius; dx <= radius; dx++) {
-                        for (int dz = -radius; dz <= radius; dz++) {
-                            double distance = Math.sqrt(dx * dx + dz * dz);
-                            if (Math.abs(distance - radius) < 0.5) {
-                                net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x + dx, y, z + dz);
-                                world.setBlockAndUpdate(pos, block.defaultBlockState());
-                            }
-                        }
-                    }
-                    
-                    return createSuccessResponse("buildCircle", "Built circle with radius " + radius);
-                }
-            }
-            return createErrorResponse("circleFailed", "World not found");
-        } catch (NumberFormatException e) {
-            return createErrorResponse("invalidParameters", "Invalid parameters");
-        } catch (Exception e) {
-            LOGGER.error("Error building circle", e);
-            return createErrorResponse("circleError", e.getMessage());
-        }
-    }
-    
-    private String handleBuildSphere(Map<String, String> args) {
-        try {
-            int centerX = Integer.parseInt(args.get("x"));
-            int centerY = Integer.parseInt(args.get("y"));
-            int centerZ = Integer.parseInt(args.get("z"));
-            int radius = Integer.parseInt(args.get("radius"));
-            String blockType = args.get("block");
-            
-            if (radius > 50) {
-                return createErrorResponse("sphereTooBig", "Sphere too large (max radius 50)");
-            }
-            
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
-                if (world != null) {
-                    net.minecraft.world.level.block.Block block = BlockUtils.getBlockFromString(blockType);
-                    
-                    // Build sphere using 3D distance formula
-                    for (int x = -radius; x <= radius; x++) {
-                        for (int y = -radius; y <= radius; y++) {
-                            for (int z = -radius; z <= radius; z++) {
-                                double distance = Math.sqrt(x*x + y*y + z*z);
-                                if (distance <= radius && distance >= radius - 1) {
-                                    // Only place blocks on the outer shell
-                                    net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(
-                                        centerX + x, centerY + y, centerZ + z
-                                    );
-                                    world.setBlockAndUpdate(pos, block.defaultBlockState());
-                                }
-                            }
-                        }
-                    }
-                    
-                    return createSuccessResponse("buildSphere", "Built sphere with radius " + radius);
-                }
-            }
-            return createErrorResponse("worldNotFound", "World not found");
-            
-        } catch (NumberFormatException e) {
-            return createErrorResponse("invalidParameters", "Invalid parameters");
-        } catch (Exception e) {
-            LOGGER.error("Error building sphere", e);
-            return createErrorResponse("sphereError", e.getMessage());
-        }
-    }
-    
-    private String handleBuildWall(Map<String, String> args) {
-        try {
-            int x1 = Integer.parseInt(args.get("x1"));
-            int z1 = Integer.parseInt(args.get("z1"));
-            int x2 = Integer.parseInt(args.get("x2"));
-            int z2 = Integer.parseInt(args.get("z2"));
-            int height = Integer.parseInt(args.get("height"));
-            String blockType = args.get("block");
-            
-            if (height > 50) {
-                return createErrorResponse("wallTooHigh", "Wall too high (max height 50)");
-            }
-            
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
-                if (world != null) {
-                    net.minecraft.world.level.block.Block block = BlockUtils.getBlockFromString(blockType);
-                    
-                    // Get ground level at starting position
-                    int groundY = 64; // Default ground level
-                    for (int y = 255; y >= 0; y--) {
-                        net.minecraft.core.BlockPos checkPos = new net.minecraft.core.BlockPos(x1, y, z1);
-                        if (!world.getBlockState(checkPos).isAir()) {
-                            groundY = y + 1;
-                            break;
-                        }
-                    }
-                    
-                    // Build wall along the line from (x1,z1) to (x2,z2)
-                    int dx = x2 - x1;
-                    int dz = z2 - z1;
-                    int steps = Math.max(Math.abs(dx), Math.abs(dz));
-                    
-                    if (steps == 0) steps = 1;
-                    
-                    for (int i = 0; i <= steps; i++) {
-                        int x = x1 + (dx * i) / steps;
-                        int z = z1 + (dz * i) / steps;
-                        
-                        for (int y = 0; y < height; y++) {
-                            net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, groundY + y, z);
-                            world.setBlockAndUpdate(pos, block.defaultBlockState());
-                        }
-                    }
-                    
-                    return createSuccessResponse("buildWall", "Built wall from (" + x1 + "," + z1 + ") to (" + x2 + "," + z2 + ")");
-                }
-            }
-            return createErrorResponse("worldNotFound", "World not found");
-            
-        } catch (NumberFormatException e) {
-            return createErrorResponse("invalidParameters", "Invalid parameters");
-        } catch (Exception e) {
-            LOGGER.error("Error building wall", e);
-            return createErrorResponse("wallError", e.getMessage());
-        }
-    }
-    
-    private String handleBuildHouse(Map<String, String> args) {
-        try {
-            int x = Integer.parseInt(args.get("x"));
-            int y = Integer.parseInt(args.get("y"));
-            int z = Integer.parseInt(args.get("z"));
-            int width = Integer.parseInt(args.get("width"));
-            int depth = Integer.parseInt(args.get("depth"));
-            int height = Integer.parseInt(args.get("height"));
-            String blockType = args.get("block");
-            
-            if (width > 30 || depth > 30 || height > 20) {
-                return createErrorResponse("houseTooBig", "House too large (max 30x30x20)");
-            }
-            
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
-                if (world != null) {
-                    net.minecraft.world.level.block.Block wallBlock = BlockUtils.getBlockFromString(blockType);
-                    net.minecraft.world.level.block.Block roofBlock = net.minecraft.world.level.block.Blocks.OAK_PLANKS;
-                    net.minecraft.world.level.block.Block doorBlock = net.minecraft.world.level.block.Blocks.OAK_DOOR;
-                    net.minecraft.world.level.block.Block windowBlock = net.minecraft.world.level.block.Blocks.GLASS_PANE;
-                    
-                    // Build floor
-                    for (int dx = 0; dx < width; dx++) {
-                        for (int dz = 0; dz < depth; dz++) {
-                            net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x + dx, y - 1, z + dz);
-                            world.setBlockAndUpdate(pos, wallBlock.defaultBlockState());
-                        }
-                    }
-                    
-                    // Build walls
-                    for (int dy = 0; dy < height; dy++) {
-                        for (int dx = 0; dx < width; dx++) {
-                            for (int dz = 0; dz < depth; dz++) {
-                                if (dx == 0 || dx == width - 1 || dz == 0 || dz == depth - 1) {
-                                    net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x + dx, y + dy, z + dz);
-                                    // Add door on front wall
-                                    if (dy < 2 && dx == width / 2 && dz == 0) {
-                                        if (dy == 0) {
-                                            world.setBlockAndUpdate(pos, doorBlock.defaultBlockState());
-                                        }
-                                    }
-                                    // Add windows
-                                    else if (dy == height / 2 && (dx == 1 || dx == width - 2) && (dz == 0 || dz == depth - 1)) {
-                                        world.setBlockAndUpdate(pos, windowBlock.defaultBlockState());
-                                    }
-                                    else {
-                                        world.setBlockAndUpdate(pos, wallBlock.defaultBlockState());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Build roof
-                    for (int dx = -1; dx <= width; dx++) {
-                        for (int dz = -1; dz <= depth; dz++) {
-                            net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x + dx, y + height, z + dz);
-                            world.setBlockAndUpdate(pos, roofBlock.defaultBlockState());
-                        }
-                    }
-                    
-                    return createSuccessResponse("buildHouse", "Built house " + width + "x" + depth + "x" + height);
-                }
-            }
-            return createErrorResponse("houseFailed", "World not found");
-        } catch (NumberFormatException e) {
-            return createErrorResponse("invalidParameters", "Invalid parameters");
-        } catch (Exception e) {
-            LOGGER.error("Error building house", e);
-            return createErrorResponse("houseError", e.getMessage());
-        }
-    }
-    
-    private String handleSetTime(Map<String, String> args) {
-        try {
-            String timeStr = args.get("time");
-            long time;
-            
-            switch (timeStr.toLowerCase()) {
-                case "day":
-                    time = 1000;
-                    break;
-                case "night":
-                    time = 13000;
-                    break;
-                case "noon":
-                    time = 6000;
-                    break;
-                case "midnight":
-                    time = 18000;
-                    break;
-                case "sunrise":
-                    time = 23000;
-                    break;
-                case "sunset":
-                    time = 12000;
-                    break;
-                default:
-                    // Try to parse as number
-                    try {
-                        time = Long.parseLong(timeStr);
-                    } catch (NumberFormatException e) {
-                        return createErrorResponse("invalidTime", "Unknown time: " + timeStr);
-                    }
-            }
-            
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
-                if (world != null) {
-                    world.setDayTime(time);
-                    return createSuccessResponse("time", "Set time to " + timeStr);
-                }
-            }
-            return createErrorResponse("timeFailed", "World not found");
-        } catch (Exception e) {
-            LOGGER.error("Error setting time", e);
-            return createErrorResponse("timeError", e.getMessage());
-        }
-    }
-    
-    private String handleSetWeather(Map<String, String> args) {
-        try {
-            String weather = args.get("weather");
-            
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
-                if (world != null) {
-                    switch (weather.toLowerCase()) {
-                        case "clear":
-                            world.setWeatherParameters(6000, 0, false, false);
-                            break;
-                        case "rain":
-                            world.setWeatherParameters(0, 6000, true, false);
-                            break;
-                        case "thunder":
-                            world.setWeatherParameters(0, 6000, true, true);
-                            break;
-                        default:
-                            return createErrorResponse("invalidWeather", "Unknown weather: " + weather);
-                    }
-                    return createSuccessResponse("weather", "Set weather to " + weather);
-                }
-            }
-            return createErrorResponse("weatherFailed", "World not found");
-        } catch (Exception e) {
-            LOGGER.error("Error setting weather", e);
-            return createErrorResponse("weatherError", e.getMessage());
-        }
-    }
-    
-    /**
-     * Create standardized success response
-     */
-    private String createSuccessResponse(String type, String message) {
-        JsonObject response = new JsonObject();
-        response.addProperty("type", type);
-        response.addProperty("status", "success");
-        response.addProperty("message", message);
-        return gson.toJson(response);
-    }
-    
-    /**
-     * Get current world name for player
-     */
-    private String handleGetCurrentWorld() {
-        try {
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null && !server.getPlayerList().getPlayers().isEmpty()) {
-                net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                String playerName = player.getName().getString();
-                
-                // Get current world from CollaborationManager
-                String worldName = collaborationManager.getPlayerCurrentWorld(playerName);
-                
-                // If unknown, get from server
-                if ("unknown".equals(worldName)) {
-                    worldName = player.level().dimension().location().toString();
-                    collaborationManager.setPlayerWorld(playerName, worldName);
-                }
-                
-                return ResponseHelper.currentWorld(worldName);
-            }
-            return ResponseHelper.currentWorld("overworld");
-        } catch (Exception e) {
-            LOGGER.error("Error getting current world", e);
-            return ResponseHelper.error("getCurrentWorld", ResponseHelper.ERROR_INTERNAL, e.getMessage());
-        }
-    }
-    
-    /**
-     * Handle authentication requests
-     */
-    private String handleAuthentication(Map<String, String> args) {
-        String username = args.get("username");
-        String token = args.get("token");
-        
-        // Validate username
-        if (!InputValidator.validateUsername(username)) {
-            return createErrorResponse("invalidUsername", "Invalid username format");
-        }
-        
-        // If token is provided, validate it
-        if (token != null && !token.isEmpty()) {
-            if (authManager.validateToken(token)) {
-                // For now, we'll use a simple connection ID based on username
-                String connectionId = "conn_" + username;
-                if (authManager.authenticateConnection(connectionId, token)) {
-                    AuthenticationManager.UserRole role = authManager.getRole(token);
-                    return createSuccessResponse("auth", "Authenticated as " + role.toString().toLowerCase());
-                }
-            }
-            return createErrorResponse("authFailed", "Invalid token");
-        }
-        
-        // Generate new token for student
-        String newToken = authManager.generateToken(username, AuthenticationManager.UserRole.STUDENT);
-        return "{\"type\":\"auth\",\"status\":\"success\",\"token\":\"" + newToken + "\",\"role\":\"student\"}";
-    }
-    
-    /**
-     * Handle user info requests
-     */
-    private String handleGetUserInfo(Map<String, String> args) {
-        String connectionId = args.get("connectionId");
-        if (connectionId == null) {
-            connectionId = "conn_" + args.get("username");
-        }
-        
-        if (!authManager.isAuthenticated(connectionId)) {
-            return createErrorResponse("unauthenticated", "User not authenticated");
-        }
-        
-        String username = authManager.getUsername(connectionId);
-        AuthenticationManager.UserRole role = authManager.getRoleForConnection(connectionId);
-        boolean hasElevated = authManager.hasElevatedPrivileges(connectionId);
-        
-        return "{\"type\":\"userInfo\",\"username\":\"" + username + 
-               "\",\"role\":\"" + role.toString().toLowerCase() + 
-               "\",\"hasElevatedPrivileges\":" + hasElevated + "}";
-    }
-    
-    // Method removed - now using BlockUtils.getBlockFromString()
+    // === Delegated command handlers ===
+    // All heavy command logic has been moved to specialized processors
+    // This class now focuses on routing and coordination
 }

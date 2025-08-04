@@ -1,14 +1,17 @@
 package edu.minecraft.collaboration.offline;
 
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
+import edu.minecraft.collaboration.util.FileSecurityUtils;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Manages offline mode functionality for the collaboration system
  */
-public class OfflineModeManager {
+public final class OfflineModeManager {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private static OfflineModeManager instance;
     
@@ -52,14 +55,11 @@ public class OfflineModeManager {
      * Initialize offline data directory
      */
     private void initializeOfflineDirectory() {
-        try {
-            Path offlineDir = Paths.get(OFFLINE_DATA_DIR);
-            if (!Files.exists(offlineDir)) {
-                Files.createDirectories(offlineDir);
-                LOGGER.info("Created offline data directory: {}", offlineDir.toAbsolutePath());
-            }
-        } catch (IOException e) {
-            LOGGER.error("Failed to create offline data directory", e);
+        // Use secure directory creation
+        if (!FileSecurityUtils.ensureSafeDirectory(OFFLINE_DATA_DIR)) {
+            LOGGER.error("Failed to create secure offline data directory");
+        } else {
+            LOGGER.info("Offline data directory initialized");
         }
     }
     
@@ -333,12 +333,21 @@ public class OfflineModeManager {
             
             String exportJson = exportData.toString(); // Simplified JSON representation
             
-            // Save to file
-            Path exportPath = Paths.get(OFFLINE_DATA_DIR, "export_" + System.currentTimeMillis() + ".json");
-            Files.write(exportPath, exportJson.getBytes());
+            // Save to file using secure method
+            String fileName = "export_" + System.currentTimeMillis() + ".json";
+            java.io.File exportFile = FileSecurityUtils.getSafeFile(OFFLINE_DATA_DIR, fileName);
             
-            LOGGER.info("Offline data exported to: {}", exportPath.toAbsolutePath());
-            return exportPath.toString();
+            if (exportFile == null) {
+                LOGGER.error("Failed to create safe export file");
+                return null;
+            }
+            
+            try (java.io.FileWriter writer = new java.io.FileWriter(exportFile)) {
+                writer.write(exportJson);
+            }
+            
+            LOGGER.info("Offline data exported to: {}", exportFile.getName());
+            return exportFile.getAbsolutePath();
             
         } catch (IOException e) {
             LOGGER.error("Failed to export offline data", e);
@@ -368,7 +377,20 @@ public class OfflineModeManager {
      */
     private void saveCurrentStateSnapshot(String sessionId) {
         try {
-            Path snapshotPath = Paths.get(OFFLINE_DATA_DIR, "snapshot_" + sessionId + ".json");
+            // Sanitize session ID to prevent path traversal
+            String safeSessionId = FileSecurityUtils.sanitizeFileName(sessionId);
+            if (safeSessionId == null) {
+                LOGGER.error("Invalid session ID for snapshot");
+                return;
+            }
+            
+            String fileName = "snapshot_" + safeSessionId + ".json";
+            java.io.File snapshotFile = FileSecurityUtils.getSafeFile(OFFLINE_DATA_DIR, fileName);
+            
+            if (snapshotFile == null) {
+                LOGGER.error("Failed to create safe snapshot file");
+                return;
+            }
             
             Map<String, Object> snapshot = new HashMap<>();
             snapshot.put("sessionId", sessionId);
@@ -376,7 +398,9 @@ public class OfflineModeManager {
             snapshot.put("playerCount", 0); // Replace with actual value
             snapshot.put("worldState", "saved"); // Replace with actual world state
             
-            Files.write(snapshotPath, snapshot.toString().getBytes());
+            try (java.io.FileWriter writer = new java.io.FileWriter(snapshotFile)) {
+                writer.write(snapshot.toString());
+            }
             
         } catch (IOException e) {
             LOGGER.error("Failed to save state snapshot", e);
@@ -388,8 +412,24 @@ public class OfflineModeManager {
      */
     private void saveOfflineSession(OfflineSession session) {
         try {
-            Path sessionPath = Paths.get(OFFLINE_DATA_DIR, "session_" + session.getSessionId() + ".json");
-            Files.write(sessionPath, session.toJson().getBytes());
+            // Sanitize session ID
+            String safeSessionId = FileSecurityUtils.sanitizeFileName(session.getSessionId());
+            if (safeSessionId == null) {
+                LOGGER.error("Invalid session ID");
+                return;
+            }
+            
+            String fileName = "session_" + safeSessionId + ".json";
+            java.io.File sessionFile = FileSecurityUtils.getSafeFile(OFFLINE_DATA_DIR, fileName);
+            
+            if (sessionFile == null) {
+                LOGGER.error("Failed to create safe session file");
+                return;
+            }
+            
+            try (java.io.FileWriter writer = new java.io.FileWriter(sessionFile)) {
+                writer.write(session.toJson());
+            }
             
         } catch (IOException e) {
             LOGGER.error("Failed to save offline session", e);
@@ -401,8 +441,24 @@ public class OfflineModeManager {
      */
     private void saveStudentDataCache(OfflineStudentData data) {
         try {
-            Path dataPath = Paths.get(OFFLINE_DATA_DIR, "student_" + data.getStudentUUID() + ".json");
-            Files.write(dataPath, data.toJson().getBytes());
+            // Sanitize UUID string
+            String safeUUID = FileSecurityUtils.sanitizeFileName(data.getStudentUUID().toString());
+            if (safeUUID == null) {
+                LOGGER.error("Invalid student UUID");
+                return;
+            }
+            
+            String fileName = "student_" + safeUUID + ".json";
+            java.io.File dataFile = FileSecurityUtils.getSafeFile(OFFLINE_DATA_DIR, fileName);
+            
+            if (dataFile == null) {
+                LOGGER.error("Failed to create safe student data file");
+                return;
+            }
+            
+            try (java.io.FileWriter writer = new java.io.FileWriter(dataFile)) {
+                writer.write(data.toJson());
+            }
             
         } catch (IOException e) {
             LOGGER.error("Failed to save student data cache", e);
@@ -414,7 +470,12 @@ public class OfflineModeManager {
      */
     private void saveActionsToFile() {
         try {
-            Path actionsPath = Paths.get(OFFLINE_DATA_DIR, "pending_actions.json");
+            java.io.File actionsFile = FileSecurityUtils.getSafeFile(OFFLINE_DATA_DIR, "pending_actions.json");
+            
+            if (actionsFile == null) {
+                LOGGER.error("Failed to create safe actions file");
+                return;
+            }
             
             List<Map<String, Object>> actionsList = new ArrayList<>();
             for (OfflineAction action : pendingActions) {
@@ -422,7 +483,10 @@ public class OfflineModeManager {
             }
             
             String actionsJson = actionsList.toString();
-            Files.write(actionsPath, actionsJson.getBytes());
+            
+            try (java.io.FileWriter writer = new java.io.FileWriter(actionsFile)) {
+                writer.write(actionsJson);
+            }
             
         } catch (IOException e) {
             LOGGER.error("Failed to save actions to file", e);

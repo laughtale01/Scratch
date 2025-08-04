@@ -1,6 +1,7 @@
 package edu.minecraft.collaboration.error;
 
 import edu.minecraft.collaboration.monitoring.MetricsCollector;
+import edu.minecraft.collaboration.core.DependencyInjector;
 import edu.minecraft.collaboration.core.ErrorManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,12 +9,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 /**
  * Advanced error handling with recovery strategies and circuit breaker pattern
  */
-public class AdvancedErrorHandler {
+public final class AdvancedErrorHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AdvancedErrorHandler.class);
     private static AdvancedErrorHandler instance;
     
@@ -24,7 +24,7 @@ public class AdvancedErrorHandler {
     
     private AdvancedErrorHandler() {
         this.errorManager = ErrorManager.getInstance();
-        this.metrics = MetricsCollector.getInstance();
+        this.metrics = DependencyInjector.getInstance().getService(MetricsCollector.class);
         this.circuitBreakers = new ConcurrentHashMap<>();
         this.recoveryStrategies = new ConcurrentHashMap<>();
         
@@ -75,8 +75,8 @@ public class AdvancedErrorHandler {
             LOGGER.error("Operation failed: {}", operationName, e);
             
             // Try recovery
-            RecoveryStrategy strategy = customStrategy != null ? 
-                customStrategy : recoveryStrategies.get(operationName);
+            RecoveryStrategy strategy = customStrategy != null 
+                    ? customStrategy : recoveryStrategies.get(operationName);
                 
             if (strategy != null) {
                 try {
@@ -245,7 +245,7 @@ public class AdvancedErrorHandler {
     /**
      * Result wrapper for error handling
      */
-    public static class ErrorResult<T> {
+    public static final class ErrorResult<T> {
         private final boolean success;
         private final T value;
         private final Exception error;
@@ -375,16 +375,32 @@ public class AdvancedErrorHandler {
      * Circuit breaker status
      */
     public static class CircuitBreakerStatus {
-        public final String name;
-        public final String state;
-        public final int failureCount;
-        public final long lastFailureTime;
+        private final String name;
+        private final String state;
+        private final int failureCount;
+        private final long lastFailureTime;
         
         CircuitBreakerStatus(String name, String state, int failureCount, long lastFailureTime) {
             this.name = name;
             this.state = state;
             this.failureCount = failureCount;
             this.lastFailureTime = lastFailureTime;
+        }
+        
+        public String getName() {
+            return name;
+        }
+        
+        public String getState() {
+            return state;
+        }
+        
+        public int getFailureCount() {
+            return failureCount;
+        }
+        
+        public long getLastFailureTime() {
+            return lastFailureTime;
         }
     }
     

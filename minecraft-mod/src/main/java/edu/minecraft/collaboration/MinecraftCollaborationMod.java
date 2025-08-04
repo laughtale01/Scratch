@@ -4,15 +4,16 @@ import edu.minecraft.collaboration.network.WebSocketHandler;
 import edu.minecraft.collaboration.server.CollaborationServer;
 import edu.minecraft.collaboration.entities.ModEntities;
 import edu.minecraft.collaboration.entities.CollaborationAgent;
-import net.minecraft.client.Minecraft;
+import edu.minecraft.collaboration.util.ResourceCleanupManager;
+import edu.minecraft.collaboration.core.ResourceManager;
+import edu.minecraft.collaboration.config.ConfigurationManager;
+import edu.minecraft.collaboration.core.DependencyInjector;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -35,9 +36,12 @@ public class MinecraftCollaborationMod {
     private static CollaborationServer collaborationServer;
     private static WebSocketHandler webSocketHandler;
     
-    // Configuration
-    public static final int WEBSOCKET_PORT = 14711;
-    public static final int COLLABORATION_PORT = 14712;
+    // Configuration manager
+    private static ConfigurationManager configManager;
+    
+    // Resource management - both old and new systems for transition
+    private static final ResourceCleanupManager RESOURCE_CLEANUP_MANAGER = ResourceCleanupManager.getInstance();
+    private static final ResourceManager RESOURCE_MANAGER = ResourceManager.getInstance();
     
     public MinecraftCollaborationMod() {
         // Register the setup method for modloading
@@ -57,6 +61,10 @@ public class MinecraftCollaborationMod {
     private void setup(final FMLCommonSetupEvent event) {
         LOGGER.info("Minecraft Collaboration Mod setup started");
         
+        // Initialize configuration manager
+        configManager = DependencyInjector.getInstance().getService(ConfigurationManager.class);
+        LOGGER.info("Configuration loaded with profile: {}", configManager.getActiveProfile());
+        
         // Check if WebSocket library is available
         try {
             Class.forName("org.java_websocket.server.WebSocketServer");
@@ -68,7 +76,7 @@ public class MinecraftCollaborationMod {
         LOGGER.info("Minecraft Collaboration Mod setup completed");
     }
     
-    private void registerEntityAttributes(EntityAttributeCreationEvent event) {
+    private void registerEntityAttributes(final EntityAttributeCreationEvent event) {
         event.put(ModEntities.COLLABORATION_AGENT.get(), CollaborationAgent.createAttributes().build());
         LOGGER.info("Registered entity attributes for CollaborationAgent");
     }
@@ -81,12 +89,17 @@ public class MinecraftCollaborationMod {
         event.enqueueWork(() -> {
             if (collaborationServer == null) {
                 try {
+                    // Get configuration
+                    final ConfigurationManager config = getConfigurationManager();
+                    final int websocketPort = config.getIntProperty("websocket.port", 14711);
+                    int collaborationPort = config.getIntProperty("websocket.collaboration.port", 14712);
+                    
                     LOGGER.info("Starting WebSocket server for single-player mode");
-                    collaborationServer = new CollaborationServer(WEBSOCKET_PORT, COLLABORATION_PORT, null);
+                    collaborationServer = new CollaborationServer(websocketPort, collaborationPort, null);
                     collaborationServer.start();
                     
                     LOGGER.info("WebSocket server started successfully in single-player mode");
-                    LOGGER.info("WebSocket server listening on port: {}", WEBSOCKET_PORT);
+                    LOGGER.info("WebSocket server listening on port: {}", websocketPort);
                 } catch (IOException e) {
                     LOGGER.error("Failed to start WebSocket server in single-player mode", e);
                 }
@@ -102,13 +115,21 @@ public class MinecraftCollaborationMod {
         
         if (server != null) {
             try {
+                // Get configuration
+                ConfigurationManager config = getConfigurationManager();
+                int websocketPort = config.getIntProperty("websocket.port", 14711);
+                int collaborationPort = config.getIntProperty("websocket.collaboration.port", 14712);
+                
                 // Start WebSocket server for Scratch communication
-                collaborationServer = new CollaborationServer(WEBSOCKET_PORT, COLLABORATION_PORT, server);
+                collaborationServer = new CollaborationServer(websocketPort, collaborationPort, server);
                 collaborationServer.start();
                 
+                // Register collaboration server with ResourceManager for proper cleanup
+                RESOURCE_MANAGER.registerResource("CollaborationServer", collaborationServer);
+                
                 LOGGER.info("Collaboration servers started successfully");
-                LOGGER.info("WebSocket server listening on port: {}", WEBSOCKET_PORT);
-                LOGGER.info("Collaboration server listening on port: {}", COLLABORATION_PORT);
+                LOGGER.info("WebSocket server listening on port: {}", websocketPort);
+                LOGGER.info("Collaboration server listening on port: {}", collaborationPort);
                 
             } catch (IOException e) {
                 LOGGER.error("Failed to start collaboration servers", e);
@@ -122,12 +143,33 @@ public class MinecraftCollaborationMod {
         
         if (collaborationServer != null) {
             try {
-                collaborationServer.stop();
-                LOGGER.info("Collaboration servers stopped successfully");
-            } catch (InterruptedException e) {
-                LOGGER.error("Error while stopping collaboration servers", e);
-                Thread.currentThread().interrupt();
+                collaborationServer.close(); // Use close() instead of stop()
+                LOGGER.info("Collaboration server closed successfully");
+            } catch (Exception e) {
+                LOGGER.error("Error closing collaboration server", e);
             }
+        }
+        
+        // Perform resource cleanup with new ResourceManager
+        LOGGER.info("Performing resource cleanup...");
+        
+        try {
+            ResourceManager.ResourceStatistics stats = RESOURCE_MANAGER.getStatistics();
+            LOGGER.info("Resource statistics before cleanup: {}", stats);
+            RESOURCE_MANAGER.shutdown();
+            LOGGER.info("ResourceManager shutdown completed");
+        } catch (Exception e) {
+            LOGGER.error("Error during ResourceManager shutdown", e);
+        }
+        
+        // Fallback cleanup with old system
+        try {
+            ResourceCleanupManager.ResourceStatistics oldStats = RESOURCE_CLEANUP_MANAGER.getStatistics();
+            LOGGER.info("Legacy resource statistics before cleanup: {}", oldStats);
+            RESOURCE_CLEANUP_MANAGER.cleanup();
+            LOGGER.info("Legacy ResourceCleanupManager cleanup completed");
+        } catch (Exception e) {
+            LOGGER.error("Error during legacy cleanup", e);
         }
     }
     
@@ -148,6 +190,13 @@ public class MinecraftCollaborationMod {
         return collaborationServer != null && collaborationServer.isRunning();
     }
     
+    public static ConfigurationManager getConfigurationManager() {
+        if (configManager == null) {
+            configManager = DependencyInjector.getInstance().getService(ConfigurationManager.class);
+        }
+        return configManager;
+    }
+    
     // Add shutdown hook for client-side cleanup
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -159,16 +208,25 @@ public class MinecraftCollaborationMod {
                     LOGGER.error("Error stopping collaboration server", e);
                 }
             }
+            
+            // Perform resource cleanup
+            LOGGER.info("Performing resource cleanup...");
+            RESOURCE_CLEANUP_MANAGER.cleanup();
         }));
     }
     
-    private static final java.util.concurrent.ScheduledExecutorService executor = 
-        java.util.concurrent.Executors.newScheduledThreadPool(2);
+    private static final java.util.concurrent.ScheduledExecutorService EXECUTOR;
+    
+    static {
+        // Initialize executor using ResourceCleanupManager
+        EXECUTOR = RESOURCE_CLEANUP_MANAGER.createManagedScheduledExecutor("MinecraftCollab-Main", 2);
+    }
     
     /**
      * Get the shared executor service
      */
     public static java.util.concurrent.ScheduledExecutorService getExecutor() {
-        return executor;
+        return EXECUTOR;
     }
+    
 }

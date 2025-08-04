@@ -8,15 +8,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.Base64;
-import java.time.Instant;
 
 /**
- * Manages authentication for WebSocket connections
- * Implements token-based authentication for secure connections
+ * Manages authentication for WebSocket connections.
+ * Implements token-based authentication for secure connections.
+ * Converted from singleton to dependency injection pattern.
  */
-public class AuthenticationManager {
+public final class AuthenticationManager {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    private static AuthenticationManager instance;
     
     // Token configuration
     private static final int TOKEN_LENGTH = 32; // bytes
@@ -32,6 +31,9 @@ public class AuthenticationManager {
     // Store authenticated connections
     private final Map<String, String> authenticatedConnections = new ConcurrentHashMap<>();
     
+    // Store connection to token mapping
+    private final Map<String, String> connectionTokens = new ConcurrentHashMap<>();
+    
     // Teacher/Admin tokens (in production, these would be stored securely)
     private final Map<String, UserRole> teacherTokens = new ConcurrentHashMap<>();
     
@@ -42,10 +44,10 @@ public class AuthenticationManager {
     }
     
     private static class TokenInfo {
-        final String token;
-        final long expiryTime;
-        final UserRole role;
-        final String username;
+        private final String token;
+        private final long expiryTime;
+        private final UserRole role;
+        private final String username;
         
         TokenInfo(String token, long expiryTime, UserRole role, String username) {
             this.token = token;
@@ -54,22 +56,32 @@ public class AuthenticationManager {
             this.username = username;
         }
         
+        public String getToken() {
+            return token;
+        }
+        
+        public long getExpiryTime() {
+            return expiryTime;
+        }
+        
+        public UserRole getRole() {
+            return role;
+        }
+        
+        public String getUsername() {
+            return username;
+        }
+        
         boolean isExpired() {
             return System.currentTimeMillis() > expiryTime;
         }
     }
     
-    private AuthenticationManager() {
+    public AuthenticationManager() {
         // Schedule cleanup of expired tokens
         MinecraftCollaborationMod.getExecutor().scheduleAtFixedRate(
             this::cleanupExpiredTokens, 1, 1, TimeUnit.HOURS);
-    }
-    
-    public static AuthenticationManager getInstance() {
-        if (instance == null) {
-            instance = new AuthenticationManager();
-        }
-        return instance;
+        LOGGER.info("AuthenticationManager initialized with token expiry: {} hours", TOKEN_EXPIRY_HOURS);
     }
     
     /**
@@ -109,7 +121,7 @@ public class AuthenticationManager {
         }
         
         if (tokenInfo.isExpired()) {
-            LOGGER.warn("Expired token attempted for user: {}", tokenInfo.username);
+            LOGGER.warn("Expired token attempted for user: {}", tokenInfo.getUsername());
             activeTokens.remove(token);
             return false;
         }
@@ -124,15 +136,21 @@ public class AuthenticationManager {
      * @return true if authenticated successfully
      */
     public boolean authenticateConnection(String connectionId, String token) {
+        if (connectionId == null) {
+            LOGGER.warn("Null connectionId provided for authentication");
+            return false;
+        }
+        
         if (!validateToken(token)) {
             return false;
         }
         
         TokenInfo tokenInfo = activeTokens.get(token);
-        authenticatedConnections.put(connectionId, tokenInfo.username);
+        authenticatedConnections.put(connectionId, tokenInfo.getUsername());
+        connectionTokens.put(connectionId, token);
         
         LOGGER.info("Connection {} authenticated as user: {} with role: {}", 
-            connectionId, tokenInfo.username, tokenInfo.role);
+            connectionId, tokenInfo.getUsername(), tokenInfo.getRole());
         return true;
     }
     
@@ -142,7 +160,16 @@ public class AuthenticationManager {
      * @return true if authenticated
      */
     public boolean isAuthenticated(String connectionId) {
-        return authenticatedConnections.containsKey(connectionId);
+        if (connectionId == null) {
+            LOGGER.debug("isAuthenticated called with null connectionId");
+            return false;
+        }
+        
+        boolean result = authenticatedConnections.containsKey(connectionId);
+        LOGGER.debug("isAuthenticated check: connectionId='{}', result={}, authenticatedConnections={}", 
+                    connectionId, result, authenticatedConnections.keySet());
+        
+        return result;
     }
     
     /**
@@ -161,7 +188,7 @@ public class AuthenticationManager {
      */
     public UserRole getRole(String token) {
         TokenInfo tokenInfo = activeTokens.get(token);
-        return tokenInfo != null ? tokenInfo.role : UserRole.STUDENT;
+        return tokenInfo != null ? tokenInfo.getRole() : UserRole.STUDENT;
     }
     
     /**
@@ -170,16 +197,14 @@ public class AuthenticationManager {
      * @return The user role or STUDENT if not found
      */
     public UserRole getRoleForConnection(String connectionId) {
-        String username = authenticatedConnections.get(connectionId);
-        if (username == null) {
+        String token = connectionTokens.get(connectionId);
+        if (token == null) {
             return UserRole.STUDENT;
         }
         
-        // Find the token info by username
-        for (TokenInfo tokenInfo : activeTokens.values()) {
-            if (tokenInfo.username.equals(username) && !tokenInfo.isExpired()) {
-                return tokenInfo.role;
-            }
+        TokenInfo tokenInfo = activeTokens.get(token);
+        if (tokenInfo != null && !tokenInfo.isExpired()) {
+            return tokenInfo.getRole();
         }
         
         return UserRole.STUDENT;
@@ -194,9 +219,13 @@ public class AuthenticationManager {
         if (tokenInfo != null) {
             // Remove any authenticated connections using this token
             authenticatedConnections.entrySet().removeIf(entry -> 
-                entry.getValue().equals(tokenInfo.username));
+                entry.getValue().equals(tokenInfo.getUsername()));
             
-            LOGGER.info("Revoked token for user: {}", tokenInfo.username);
+            // Remove connection-token mappings
+            connectionTokens.entrySet().removeIf(entry -> 
+                entry.getValue().equals(token));
+            
+            LOGGER.info("Revoked token for user: {}", tokenInfo.getUsername());
         }
     }
     
@@ -206,6 +235,7 @@ public class AuthenticationManager {
      */
     public void removeConnection(String connectionId) {
         String username = authenticatedConnections.remove(connectionId);
+        connectionTokens.remove(connectionId);
         if (username != null) {
             LOGGER.info("Removed authentication for connection: {} (user: {})", 
                 connectionId, username);
@@ -261,13 +291,16 @@ public class AuthenticationManager {
         stats.put("teacherTokens", teacherTokens.size());
         
         // Count by role
-        int students = 0, teachers = 0, admins = 0;
+        int students = 0;
+        int teachers = 0;
+        int admins = 0;
         for (TokenInfo tokenInfo : activeTokens.values()) {
             if (!tokenInfo.isExpired()) {
-                switch (tokenInfo.role) {
+                switch (tokenInfo.getRole()) {
                     case STUDENT -> students++;
                     case TEACHER -> teachers++;
                     case ADMIN -> admins++;
+                    default -> { /* No action needed */ }
                 }
             }
         }
@@ -277,5 +310,15 @@ public class AuthenticationManager {
         stats.put("activeAdmins", admins);
         
         return stats;
+    }
+    
+    /**
+     * Clear all authentication data - FOR TESTING ONLY
+     */
+    public void clearAllForTesting() {
+        activeTokens.clear();
+        authenticatedConnections.clear();
+        connectionTokens.clear();
+        teacherTokens.clear();
     }
 }

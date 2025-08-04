@@ -7,7 +7,14 @@ import java.util.regex.Pattern;
  * Utility class for input validation
  * Provides common validation methods for coordinates, ranges, etc.
  */
-public class ValidationUtils {
+public final class ValidationUtils {
+    
+    /**
+     * Private constructor to prevent instantiation
+     */
+    private ValidationUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
     
     // Maximum allowed values for safety
     public static final int MAX_COORDINATE = 30000000;  // Minecraft world border
@@ -44,9 +51,9 @@ public class ValidationUtils {
      * @return true if all coordinates are valid
      */
     public static boolean isValidBlockPos(BlockPos pos) {
-        return isValidCoordinate(pos.getX(), false) &&
-               isValidCoordinate(pos.getY(), true) &&
-               isValidCoordinate(pos.getZ(), false);
+        return isValidCoordinate(pos.getX(), false) 
+                && isValidCoordinate(pos.getY(), true) 
+                && isValidCoordinate(pos.getZ(), false);
     }
     
     /**
@@ -56,9 +63,9 @@ public class ValidationUtils {
      */
     public static boolean isValidFillArea(int x1, int y1, int z1, int x2, int y2, int z2) {
         // Check individual coordinates
-        if (!isValidCoordinate(x1, false) || !isValidCoordinate(x2, false) ||
-            !isValidCoordinate(z1, false) || !isValidCoordinate(z2, false) ||
-            !isValidCoordinate(y1, true) || !isValidCoordinate(y2, true)) {
+        if (!isValidCoordinate(x1, false) || !isValidCoordinate(x2, false) 
+                || !isValidCoordinate(z1, false) || !isValidCoordinate(z2, false) 
+                || !isValidCoordinate(y1, true) || !isValidCoordinate(y2, true)) {
             return false;
         }
         
@@ -84,9 +91,9 @@ public class ValidationUtils {
      * @return true if all dimensions are valid
      */
     public static boolean isValidBuildingSize(int width, int height, int depth) {
-        return width > 0 && width <= MAX_BUILDING_SIZE &&
-               height > 0 && height <= MAX_BUILDING_SIZE &&
-               depth > 0 && depth <= MAX_BUILDING_SIZE;
+        return width > 0 && width <= MAX_BUILDING_SIZE 
+                && height > 0 && height <= MAX_BUILDING_SIZE 
+                && depth > 0 && depth <= MAX_BUILDING_SIZE;
     }
     
     /**
@@ -136,9 +143,9 @@ public class ValidationUtils {
      * Validate coordinate position (x, y, z)
      */
     public static boolean isValidCoordinate(int x, int y, int z) {
-        return isValidCoordinate(x, false) && 
-               isValidCoordinate(y, true) && 
-               isValidCoordinate(z, false);
+        return isValidCoordinate(x, false) 
+                && isValidCoordinate(y, true) 
+                && isValidCoordinate(z, false);
     }
     
     /**

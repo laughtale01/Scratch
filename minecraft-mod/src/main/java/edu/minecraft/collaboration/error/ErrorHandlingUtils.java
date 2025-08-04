@@ -1,6 +1,7 @@
 package edu.minecraft.collaboration.error;
 
 import edu.minecraft.collaboration.monitoring.MetricsCollector;
+import edu.minecraft.collaboration.core.DependencyInjector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
@@ -12,10 +13,17 @@ import java.util.function.Supplier;
 /**
  * Utility class for common error handling patterns
  */
-public class ErrorHandlingUtils {
+public final class ErrorHandlingUtils {
+    
+    // Private constructor to prevent instantiation
+    private ErrorHandlingUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
     private static final Logger LOGGER = LoggerFactory.getLogger(ErrorHandlingUtils.class);
-    private static final MetricsCollector metrics = MetricsCollector.getInstance();
-    private static final AdvancedErrorHandler errorHandler = AdvancedErrorHandler.getInstance();
+    private static MetricsCollector getMetrics() {
+        return DependencyInjector.getInstance().getService(MetricsCollector.class);
+    }
+    private static final AdvancedErrorHandler ERROR_HANDLER = AdvancedErrorHandler.getInstance();
     
     /**
      * Execute block operation with error handling
@@ -23,7 +31,7 @@ public class ErrorHandlingUtils {
     public static boolean executeBlockOperation(String operationName, 
                                               Runnable operation,
                                               ServerPlayer player) {
-        AdvancedErrorHandler.ErrorResult<Void> result = errorHandler.execute(
+        AdvancedErrorHandler.ErrorResult<Void> result = ERROR_HANDLER.execute(
             "block." + operationName,
             () -> {
                 operation.run();
@@ -36,7 +44,7 @@ public class ErrorHandlingUtils {
             return false;
         }
         
-        metrics.incrementCounter(MetricsCollector.Metrics.BLOCKS_PLACED);
+        getMetrics().incrementCounter(MetricsCollector.Metrics.BLOCKS_PLACED);
         return true;
     }
     
@@ -46,7 +54,7 @@ public class ErrorHandlingUtils {
     public static <T> T executeWebSocketOperation(String operationName,
                                                  Supplier<T> operation,
                                                  T defaultValue) {
-        AdvancedErrorHandler.ErrorResult<T> result = errorHandler.executeWithRetry(
+        AdvancedErrorHandler.ErrorResult<T> result = ERROR_HANDLER.executeWithRetry(
             "websocket." + operationName,
             operation::get,
             3,  // max retries
@@ -62,14 +70,14 @@ public class ErrorHandlingUtils {
     public static String executeCommandWithTimeout(String commandName,
                                                   Supplier<String> command,
                                                   long timeoutMs) {
-        AdvancedErrorHandler.ErrorResult<String> result = errorHandler.executeWithTimeout(
+        AdvancedErrorHandler.ErrorResult<String> result = ERROR_HANDLER.executeWithTimeout(
             "command." + commandName,
             command::get,
             timeoutMs
         );
         
         if (!result.isSuccess()) {
-            metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
+            getMetrics().incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
             return createErrorResponse(commandName, result.getError());
         }
         
@@ -84,7 +92,7 @@ public class ErrorHandlingUtils {
                                          String operationName) {
         if (player == null) {
             LOGGER.warn("Attempted {} on null player", operationName);
-            metrics.incrementCounter("error.null_player." + operationName);
+            getMetrics().incrementCounter("error.null_player." + operationName);
             return;
         }
         
@@ -92,7 +100,7 @@ public class ErrorHandlingUtils {
             operation.accept(player);
         } catch (Exception e) {
             LOGGER.error("Error in player operation: {}", operationName, e);
-            metrics.incrementCounter("error.player_operation." + operationName);
+            getMetrics().incrementCounter("error.player_operation." + operationName);
             notifyPlayerError(player, "error.operation.failed");
         }
     }
@@ -134,7 +142,7 @@ public class ErrorHandlingUtils {
         for (String dangerous : dangerousBlocks) {
             if (lowerBlockId.contains(dangerous)) {
                 LOGGER.warn("Dangerous block rejected: {}", blockId);
-                metrics.incrementCounter("error.dangerous_block." + dangerous);
+                getMetrics().incrementCounter("error.dangerous_block." + dangerous);
                 return false;
             }
         }
@@ -178,7 +186,7 @@ public class ErrorHandlingUtils {
             
             if (duration > 1000) {
                 LOGGER.warn("Slow operation in {}: {} ms", context, duration);
-                metrics.incrementCounter("performance.slow_operation." + context);
+                getMetrics().incrementCounter("performance.slow_operation." + context);
             }
             
             return result;
@@ -186,7 +194,7 @@ public class ErrorHandlingUtils {
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             LOGGER.error("Error in {} after {} ms", context, duration, e);
-            metrics.incrementCounter("error.context." + context);
+            getMetrics().incrementCounter("error.context." + context);
             throw new RuntimeException("Error in " + context, e);
         }
     }
@@ -216,8 +224,8 @@ public class ErrorHandlingUtils {
             LOGGER.info("Batch {} completed: {} successes, {} failures", 
                        batchName, successCount, failureCount);
             
-            metrics.incrementCounter("batch.success." + batchName, successCount);
-            metrics.incrementCounter("batch.failure." + batchName, failureCount);
+            getMetrics().incrementCounter("batch.success." + batchName, successCount);
+            getMetrics().incrementCounter("batch.failure." + batchName, failureCount);
             
             if (failureCount > 0) {
                 double failureRate = (failureCount * 100.0) / (successCount + failureCount);

@@ -23,12 +23,13 @@ minecraft-mod/gradle/
 scratch-gui/build/
 scratch-gui/static/assets/
 
-# scratch-guiディレクトリ全体を除外（414MB、40,000+ファイル）
-scratch-gui/
+# scratch-guiビルドファイルを除外（node_modulesは巨大なので除外）
+scratch-gui/node_modules/
+scratch-gui/build/
+scratch-gui/dist/
 
-# テスト用一時ファイル
-*test*.js
-!minecraft-extension.test.js
+# テスト用一時ファイル（testsディレクトリは削除予定）
+tests/
 coverage/
 
 # OS生成ファイル
@@ -47,6 +48,32 @@ Thumbs.db
 backup_*/
 *.backup
 *~
+
+# 不要なドキュメント（削除予定）
+FINAL_*.md
+FIX_*.md
+MOD_INSTALLATION_GUIDE.md
+RESTART_REQUIRED_NOTICE.md
+SECURITY_FIX_UPDATE.md
+SIMPLE_BROWSER_SETUP_GUIDE.md
+SUPER_SIMPLE_GUIDE.md
+SYSTEM_VERIFICATION_REPORT.md
+reports/
+scratch-gui-custom/
+scratch-gui-deploy/
+
+# 不要なHTMLファイル
+scratch-*.html
+test-*.html
+
+# Gradleファイル
+minecraft-mod/.gradle/
+minecraft-mod/nul
+
+# Firebase
+.firebaserc
+firebase.json
+.firebase/
 
 # 画像ファイル（スクリーンショット等）
 *.jpg

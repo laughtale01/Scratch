@@ -7,12 +7,16 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Main collaboration server that manages WebSocket communication
- * and coordination between different Minecraft instances for collaboration
+ * and coordination between different Minecraft instances for collaboration.
+ * Now implements AutoCloseable for proper resource management.
  */
-public class CollaborationServer {
+public class CollaborationServer implements AutoCloseable {
     
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     
@@ -51,12 +55,36 @@ public class CollaborationServer {
      * Stop all collaboration services
      */
     public void stop() throws InterruptedException {
-        LOGGER.info("Stopping Collaboration Server...");
+        close();
+    }
+    
+    /**
+     * Close the collaboration server and release resources
+     */
+    @Override
+    public void close() {
+        LOGGER.info("Closing Collaboration Server...");
         
-        // Stop WebSocket server
+        // Close WebSocket server with timeout
         if (webSocketServer != null) {
-            webSocketServer.stop();
-            LOGGER.info("WebSocket server stopped");
+            try {
+                CompletableFuture<Void> closeFuture = CompletableFuture.runAsync(() -> {
+                    webSocketServer.close();
+                });
+                
+                closeFuture.get(10, TimeUnit.SECONDS);
+                LOGGER.info("WebSocket server closed successfully");
+            } catch (TimeoutException e) {
+                LOGGER.error("Timeout while closing WebSocket server, forcing stop");
+                try {
+                    webSocketServer.stop();
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.error("Interrupted while force stopping WebSocket server", ie);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error closing WebSocket server", e);
+            }
         }
         
         // Stop coordination system
@@ -65,7 +93,7 @@ public class CollaborationServer {
             LOGGER.info("Collaboration coordinator stopped");
         }
         
-        LOGGER.info("Collaboration Server stopped successfully");
+        LOGGER.info("Collaboration Server closed successfully");
     }
     
     /**

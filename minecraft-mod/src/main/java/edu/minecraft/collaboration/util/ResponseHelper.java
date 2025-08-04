@@ -9,9 +9,16 @@ import java.util.Map;
 /**
  * Helper class for creating consistent JSON responses
  */
-public class ResponseHelper {
+public final class ResponseHelper {
     
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    /**
+     * Private constructor to prevent instantiation
+     */
+    private ResponseHelper() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+    
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     
     // Response types
     public static final String TYPE_SUCCESS = "success";
@@ -51,7 +58,7 @@ public class ResponseHelper {
         response.put("command", command);
         response.put("message", message);
         response.put("status", "success");
-        return gson.toJson(response);
+        return GSON.toJson(response);
     }
     
     /**
@@ -64,7 +71,7 @@ public class ResponseHelper {
         response.put("message", message);
         response.put("data", data);
         response.put("status", "success");
-        return gson.toJson(response);
+        return GSON.toJson(response);
     }
     
     /**
@@ -77,7 +84,7 @@ public class ResponseHelper {
         response.put("error", errorCode);
         response.put("message", message);
         response.put("status", "error");
-        return gson.toJson(response);
+        return GSON.toJson(response);
     }
     
     /**
@@ -89,7 +96,7 @@ public class ResponseHelper {
         response.put("dataType", dataType);
         response.put("data", data);
         response.put("status", "success");
-        return gson.toJson(response);
+        return GSON.toJson(response);
     }
     
     /**
@@ -101,7 +108,7 @@ public class ResponseHelper {
         response.put("event", eventType);
         response.put("data", eventData);
         response.put("status", "success");
-        return gson.toJson(response);
+        return GSON.toJson(response);
     }
     
     /**
@@ -164,7 +171,7 @@ public class ResponseHelper {
         };
         response.put("availableCommands", commands);
         
-        return gson.toJson(response);
+        return GSON.toJson(response);
     }
     
     /**
@@ -306,7 +313,7 @@ public class ResponseHelper {
         response.put("type", "connection");
         response.put("status", "connected");
         response.put("message", "Successfully connected to Minecraft Collaboration System");
-        return gson.toJson(response);
+        return GSON.toJson(response);
     }
     
     /**
@@ -341,19 +348,76 @@ public class ResponseHelper {
     }
     
     /**
+     * Data class for fill operation
+     */
+    public static class FillData {
+        private final int x1;
+        private final int y1;
+        private final int z1;
+        private final int x2;
+        private final int y2;
+        private final int z2;
+        private final String blockType;
+        private final int blocksPlaced;
+        
+        public FillData(int x1, int y1, int z1, int x2, int y2, int z2, String blockType, int blocksPlaced) {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.z1 = z1;
+            this.x2 = x2;
+            this.y2 = y2;
+            this.z2 = z2;
+            this.blockType = blockType;
+            this.blocksPlaced = blocksPlaced;
+        }
+        
+        public int getX1() {
+            return x1;
+        }
+        public int getY1() {
+            return y1;
+        }
+        public int getZ1() {
+            return z1;
+        }
+        public int getX2() {
+            return x2;
+        }
+        public int getY2() {
+            return y2;
+        }
+        public int getZ2() {
+            return z2;
+        }
+        public String getBlockType() {
+            return blockType;
+        }
+        public int getBlocksPlaced() {
+            return blocksPlaced;
+        }
+    }
+    
+    /**
      * Create fill completed response
      */
-    public static String fillCompleted(int x1, int y1, int z1, int x2, int y2, int z2, String blockType, int blocksPlaced) {
+    public static String fillCompleted(FillData fillData) {
         Map<String, Object> data = new HashMap<>();
-        data.put("x1", x1);
-        data.put("y1", y1);
-        data.put("z1", z1);
-        data.put("x2", x2);
-        data.put("y2", y2);
-        data.put("z2", z2);
-        data.put("blockType", blockType);
-        data.put("blocksPlaced", blocksPlaced);
+        data.put("x1", fillData.getX1());
+        data.put("y1", fillData.getY1());
+        data.put("z1", fillData.getZ1());
+        data.put("x2", fillData.getX2());
+        data.put("y2", fillData.getY2());
+        data.put("z2", fillData.getZ2());
+        data.put("blockType", fillData.getBlockType());
+        data.put("blocksPlaced", fillData.getBlocksPlaced());
         return successWithData("fill", "Fill operation completed", data);
+    }
+    
+    /**
+     * Create fill completed response (legacy method for compatibility)
+     */
+    public static String fillCompleted(int x1, int y1, int z1, int x2, int y2, int z2, String blockType, int blocksPlaced) {
+        return fillCompleted(new FillData(x1, y1, z1, x2, y2, z2, blockType, blocksPlaced));
     }
     
     /**
@@ -391,5 +455,45 @@ public class ResponseHelper {
         data.put("action", action);
         data.put("affectedStudents", count);
         return successWithData("freezeStudents", "Students " + action + " successfully", data);
+    }
+    
+    /**
+     * Sanitize error messages to prevent information leakage
+     * @param exception The exception that occurred
+     * @return A safe error message that doesn't expose sensitive information
+     */
+    public static String sanitizeErrorMessage(Exception exception) {
+        // Don't expose raw exception messages to clients
+        // Map specific exception types to safe messages
+        if (exception instanceof IllegalArgumentException) {
+            return "Invalid input provided";
+        } else if (exception instanceof NullPointerException) {
+            return "Required data not found";
+        } else if (exception instanceof SecurityException) {
+            return "Security policy violation";
+        } else if (exception instanceof java.io.IOException) {
+            return "Operation failed";
+        } else if (exception instanceof java.net.ConnectException) {
+            return "Connection failed";
+        } else if (exception instanceof java.util.concurrent.TimeoutException) {
+            return "Operation timed out";
+        } else {
+            // Generic message for all other exceptions
+            return "An error occurred while processing your request";
+        }
+    }
+    
+    /**
+     * Create a safe error response that doesn't expose sensitive information
+     * @param command The command that failed
+     * @param errorCode The error code
+     * @param exception The exception that occurred
+     * @return A sanitized error response
+     */
+    public static String safeError(String command, String errorCode, Exception exception) {
+        String safeMessage = sanitizeErrorMessage(exception);
+        // Log the full error details server-side
+        // The logging is handled by the caller
+        return error(command, errorCode, safeMessage);
     }
 }

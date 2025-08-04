@@ -1,20 +1,22 @@
 package edu.minecraft.collaboration.progress;
 
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
-import edu.minecraft.collaboration.teacher.StudentActivity;
 import org.slf4j.Logger;
-
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tracks learning progress and achievements for students
  */
-public class ProgressTracker {
+public final class ProgressTracker {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    private static ProgressTracker instance;
+    private static volatile ProgressTracker instance;
+    private static final Object lock = new Object();
     
     // Progress tracking
     private final Map<UUID, StudentProgress> studentProgress = new ConcurrentHashMap<>();
@@ -37,7 +39,11 @@ public class ProgressTracker {
     
     public static ProgressTracker getInstance() {
         if (instance == null) {
-            instance = new ProgressTracker();
+            synchronized (lock) {
+                if (instance == null) {
+                    instance = new ProgressTracker();
+                }
+            }
         }
         return instance;
     }
@@ -117,7 +123,9 @@ public class ProgressTracker {
      * Track student activity and update progress
      */
     public void trackActivity(UUID studentUUID, String activity, String details) {
-        if (!trackingEnabled) return;
+        if (!trackingEnabled) {
+            return;
+        }
         
         StudentProgress progress = studentProgress.computeIfAbsent(
             studentUUID, k -> new StudentProgress(studentUUID)
@@ -194,6 +202,9 @@ public class ProgressTracker {
                     break;
                 case TIME_BASED:
                     qualifies = progress.getSessionMinutes() >= achievement.getRequirement();
+                    break;
+                default:
+                    qualifies = false;
                     break;
             }
             
