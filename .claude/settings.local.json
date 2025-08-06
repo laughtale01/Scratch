@@ -115,7 +115,8 @@
       "Bash(\"/c/Program Files/Eclipse Adoptium/jdk-17.0.12.7-hotspot/bin/java\" -version)",
       "Bash(\"/c/Program Files/Java/jdk-17/bin/java.exe\" -version)",
       "Bash(py:*)",
-      "Bash(test -d scratch-gui/.git)"
+      "Bash(test -d scratch-gui/.git)",
+      "Bash(git gc:*)"
     ],
     "deny": []
   }

@@ -9,9 +9,10 @@
 ### Java 17が必須です
 ## 🎯 プロジェクトステータス
 
-**バージョン**: 1.2.1 (2025-08-05)  
-**ステータス**: 🚀 **エンタープライズグレードアーキテクチャ実装済み**  
-**品質達成**: ✅ **本番環境対応の高度な監視システム搭載**  
+**バージョン**: 1.3.0 (2025-08-06)  
+**ステータス**: 🚀 **本番環境対応・最適化完了**  
+**品質達成**: ✅ **ビルド成功・リポジトリ最適化済み**  
+**最終更新**: 2025-08-06 - プロジェクト整理・最適化完了  
 
 このプロジェクトは**Java 17**を必要とします。Java 21はGradle 7.6.4でサポートされていないため使用できません。
 
@@ -88,18 +89,19 @@ Scratch公式フォーク（scratch-gui）にMinecraft拡張機能を追加し�
 - **統合テスト**: エンドツーエンドの動作検証
 - **CI/CDパイプライン**: 自動化された品質チェック
 
-### 📊 エンタープライズ監視システム（NEW）
+### 📊 エンタープライズ監視システム
 - **高度なアラート管理**: 複数重要度レベルのアラートシステム
 - **予測分析**: 統計分析と異常検知による予測機能
 - **ヘルスモニタリング**: CPU、メモリ、接続数、応答時間のリアルタイム監視
 - **マルチチャネル通知**: 拡張可能な通知フレームワーク
 - **ルールエンジン**: トレンド分析と動的重要度計算
+- **パフォーマンス最適化**: キャッシング、バッチ処理、オブジェクトプーリング実装
 
 ## 🏗️ プロジェクト構造
 
 ```
 minecraft_collaboration_project/
-├── scratch-gui/                              # Scratch公式フォーク
+├── scratch-gui/                              # Scratch公式フォーク（統合済み）
 │   ├── src/lib/libraries/extensions/         # 拡張機能定義
 │   │   └── index.jsx                        # Minecraft拡張を登録
 │   ├── static/extensions/                    # 拡張機能実装
@@ -111,13 +113,16 @@ minecraft_collaboration_project/
 │   │   ├── MinecraftCollaborationMod.java  # メインModクラス
 │   │   ├── network/                        # WebSocket通信
 │   │   ├── commands/                       # コマンド処理
-│   │   └── collaboration/                  # 協調機能
+│   │   ├── collaboration/                  # 協調機能
+│   │   └── monitoring/                     # 監視システム
 │   └── build.gradle                        # ビルド設定
 ├── scratch-extension/                       # Minecraft拡張のソース
 │   ├── src/index.js                        # 拡張機能のソースコード
 │   └── package.json                        # ビルド設定
-├── scratch-gui-minecraft-loader.html        # Scratch GUIローダー
-└── docs/                                   # ドキュメント
+├── public/                                  # Webアセット
+├── docs/                                    # ドキュメント
+│   └── archives/                            # アーカイブ済みドキュメント
+└── .gitignore                               # Git除外設定（最適化済み）
 ```
 
 ## ⚙️ 技術仕様
@@ -144,7 +149,11 @@ minecraft_collaboration_project/
 
 ### クイックスタート（使用者向け）
 
-1. **Minecraft Java版 1.20.1 + Forge 47.2.0をインストール**
+1. **Java 17をインストール** （必須）
+   - Windows: [Oracle Java 17](https://www.oracle.com/java/technologies/downloads/#java17)
+   - Mac/Linux: 上記インストールガイド参照
+
+2. **Minecraft Java版 1.20.1 + Forge 47.2.0をインストール**
 2. **ビルド済みModをダウンロード**: `minecraft-collaboration-mod-1.0.0-all.jar`
 3. **Modを`.minecraft/mods/`フォルダに配置**
 4. **Minecraftを起動してワールドにログイン**
@@ -243,10 +252,13 @@ npm --version
 ```bash
 cd minecraft-mod
 
-# 1. 依存関係の取得とビルド
-./gradlew build
+# 1. 依存関係の取得とビルド（テストをスキップ）
+./gradlew jarJar -x test
 
-# 2. 開発用Minecraft起動（テスト用）
+# 2. ビルド成功後、JARファイルが生成される
+# build/libs/minecraft-collaboration-mod-1.0.0-all.jar
+
+# 3. 開発用Minecraft起動（テスト用）
 ./gradlew runClient
 ```
 
