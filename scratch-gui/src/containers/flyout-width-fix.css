@@ -1,0 +1,24 @@
+/* フライアウトの幅を固定する緊急対応CSS */
+.blocklyFlyout {
+    width: 280px !important;
+}
+
+.blocklyToolboxDiv {
+    position: absolute !important;
+    left: 0px !important;
+    top: 0px !important;
+}
+
+.blocklyMainBackground {
+    margin-left: 340px !important;
+}
+
+/* ドラッグ中のブロックのオフセットを修正 */
+.blocklyDragSurface {
+    transform: none !important;
+}
+
+/* Blocklyの座標計算を強制リセット */
+.blocklySvg {
+    transform-origin: 0 0 !important;
+}

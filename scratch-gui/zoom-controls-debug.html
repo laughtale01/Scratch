@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ズームコントロール デバッグ情報</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 5px; }
+        .code { background: #333; color: #fff; padding: 15px; border-radius: 5px; font-family: monospace; }
+        h2 { color: #2196F3; }
+        .issue { background: #ffebee; padding: 10px; margin: 10px 0; border-left: 4px solid #f44336; }
+        .solution { background: #e8f5e9; padding: 10px; margin: 10px 0; border-left: 4px solid #4caf50; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Scratch GUI ズームコントロール デバッグ情報</h1>
+
+    <div class="debug-section">
+        <h2>問題の概要</h2>
+        <div class="issue">
+            <strong>問題1:</strong> ズームコントロールが薄く表示され、非アクティブに見える<br>
+            <strong>原因:</strong> SVGファイル内の opacity:0.75 設定
+        </div>
+        <div class="issue">
+            <strong>問題2:</strong> ズームコントロールがクリックできない<br>
+            <strong>原因:</strong> フライアウトワークスペースのイベント処理の問題
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>デバッグスクリプト</h2>
+        <p>ブラウザのコンソール (F12) で以下のスクリプトを実行して、問題を診断してください：</p>
+        
+        <div class="code">
+// ズームコントロールの状態を確認
+(function debugZoomControls() {
+    console.log('=== ズームコントロール診断開始 ===');
+    
+    // 1. ズームコントロールを検索
+    const zoomControls = document.querySelectorAll('.blocklyZoom');
+    console.log('見つかったズームコントロール数:', zoomControls.length);
+    
+    zoomControls.forEach((zoom, index) => {
+        console.log(`\nズームコントロール ${index + 1}:`);
+        console.log('- 不透明度:', window.getComputedStyle(zoom).opacity);
+        console.log('- ポインターイベント:', window.getComputedStyle(zoom).pointerEvents);
+        console.log('- 表示状態:', window.getComputedStyle(zoom).display);
+        
+        // 画像を確認
+        const images = zoom.querySelectorAll('image');
+        console.log('- 画像数:', images.length);
+        
+        images.forEach((img, imgIndex) => {
+            console.log(`  画像 ${imgIndex + 1}:`, {
+                href: img.getAttribute('href') || img.getAttributeNS('http://www.w3.org/1999/xlink', 'href'),
+                opacity: img.getAttribute('opacity'),
+                style: img.getAttribute('style')
+            });
+        });
+    });
+    
+    // 2. ワークスペースを確認
+    if (window.Blockly && window.Blockly.mainWorkspace) {
+        console.log('\nワークスペース情報:');
+        const workspace = window.Blockly.mainWorkspace;
+        console.log('- メインワークスペース:', workspace);
+        console.log('- フライアウト:', workspace.getFlyout());
+        if (workspace.getFlyout()) {
+            console.log('- フライアウトワークスペース:', workspace.getFlyout().getWorkspace());
+        }
+    }
+    
+    console.log('=== 診断完了 ===');
+})();
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>最終修正スクリプト</h2>
+        <p>以下のスクリプトを実行して、ズームコントロールを修正してください：</p>
+        
+        <div class="code">
+// 完全な修正スクリプト
+(function fixAllZoomIssues() {
+    console.log('ズームコントロールの修正を開始...');
+    
+    // 1. すべてのズームコントロールを取得
+    const zoomControls = document.querySelectorAll('.blocklyZoom');
+    
+    if (zoomControls.length === 0) {
+        console.error('ズームコントロールが見つかりません');
+        return;
+    }
+    
+    // 2. 各ズームコントロールを修正
+    zoomControls.forEach((zoomGroup, index) => {
+        console.log(`修正中: ズームコントロール ${index + 1}`);
+        
+        // グループの不透明度を修正
+        zoomGroup.style.opacity = '1';
+        zoomGroup.style.pointerEvents = 'all';
+        
+        // SVG要素を取得して修正
+        const svgs = zoomGroup.querySelectorAll('svg');
+        svgs.forEach(svg => {
+            // SVG内のすべての要素の不透明度を修正
+            svg.querySelectorAll('*').forEach(elem => {
+                if (elem.tagName === 'g') {
+                    elem.setAttribute('opacity', '1');
+                    elem.style.opacity = '1';
+                }
+            });
+        });
+        
+        // クリックイベントを追加（フライアウト用）
+        if (index === 1 && window.Blockly && window.Blockly.mainWorkspace) {
+            const buttons = zoomGroup.querySelectorAll('g[transform]');
+            const flyout = window.Blockly.mainWorkspace.getFlyout();
+            if (flyout) {
+                const flyoutWs = flyout.getWorkspace();
+                
+                buttons.forEach((button, btnIndex) => {
+                    button.style.cursor = 'pointer';
+                    button.style.pointerEvents = 'all';
+                    
+                    // 既存のイベントリスナーを削除
+                    const newButton = button.cloneNode(true);
+                    button.parentNode.replaceChild(newButton, button);
+                    
+                    // 新しいクリックハンドラーを追加
+                    newButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        
+                        console.log(`ボタン ${btnIndex + 1} がクリックされました`);
+                        
+                        if (btnIndex === 0) { // ズームイン
+                            flyoutWs.zoomCenter(1);
+                        } else if (btnIndex === 1) { // ズームアウト
+                            flyoutWs.zoomCenter(-1);
+                        } else if (btnIndex === 2) { // リセット
+                            flyoutWs.setScale(1);
+                            flyoutWs.scrollCenter();
+                        }
+                        
+                        // フライアウトを再描画
+                        if (flyout.reflowInternal_) {
+                            flyout.reflowInternal_();
+                            flyout.position();
+                        }
+                    });
+                });
+            }
+        }
+    });
+    
+    console.log('✅ ズームコントロールの修正が完了しました');
+    return '修正完了';
+})();
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>根本的な解決方法</h2>
+        <div class="solution">
+            <strong>解決策:</strong> Blocklyのネイティブズームコントロールを正しく実装する<br>
+            <ol>
+                <li>SVGファイルの opacity 問題を回避するため、インラインSVGを使用</li>
+                <li>フライアウトワークスペースのイベント処理を適切に設定</li>
+                <li>Blocklyの bindEventWithChecks_ メソッドを正しく使用</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

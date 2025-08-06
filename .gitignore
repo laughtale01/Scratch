@@ -26,14 +26,11 @@ minecraft-mod/gradle/
 *.jar
 !*-all.jar
 
-# scratch-gui開発用一時ファイル
-scratch-gui/build/
-scratch-gui/static/assets/
-
-# scratch-guiビルドファイルを除外（node_modulesは巨大なので除外）
+# scratch-gui開発用一時ファイル（node_modulesは巨大なので除外）
 scratch-gui/node_modules/
 scratch-gui/build/
 scratch-gui/dist/
+scratch-gui/static/assets/
 
 # テスト用一時ファイル（testsディレクトリは削除予定）
 tests/
@@ -121,4 +118,4 @@ jacoco.exec
 # Package manager
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
+pnpm-lock.yaml.gitmodules scratch-gui/

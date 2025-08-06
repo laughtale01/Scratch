@@ -1,0 +1,108 @@
+/* 修正されたフライアウトリサイザーのスタイル */
+
+.flyout-resizer-improved,
+.flyout-resizer-fixed {
+    /* 基本スタイルはJavaScriptで設定 */
+}
+
+/* ドラッグ中のカーソル */
+.flyout-resizer-improved:active,
+.flyout-resizer-fixed:active {
+    cursor: col-resize !important;
+}
+
+/* リサイザーの視覚的なフィードバック */
+.flyout-resizer-improved::before,
+.flyout-resizer-fixed::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 30px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 1px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.flyout-resizer-improved:hover::before,
+.flyout-resizer-fixed:hover::before {
+    opacity: 1;
+}
+
+/* ドラッグハンドルのドット */
+.flyout-resizer-improved::after,
+.flyout-resizer-fixed::after {
+    content: '⋮';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    user-select: none;
+}
+
+.flyout-resizer-improved:hover::after,
+.flyout-resizer-fixed:hover::after {
+    opacity: 1;
+}
+
+/* ドラッグ中のオーバーレイ */
+body.dragging-resizer {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+body.dragging-resizer * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+/* プレビュー線 */
+.resizer-preview {
+    box-shadow: 0 0 4px rgba(76, 151, 255, 0.5);
+}
+
+/* ドラッグエリアのスタイル */
+.flyout-drag-area,
+.flyout-drag-area-boundary {
+    /* 基本スタイルはJavaScriptで設定 */
+}
+
+/* ドラッグ中のスタイル */
+body.dragging-resizer .flyout-drag-area,
+body.dragging-flyout-resizer .flyout-drag-area-boundary {
+    background-color: rgba(76, 151, 255, 0.3) !important;
+}
+
+/* ホバー時の視覚的フィードバック */
+.flyout-drag-area-boundary:hover {
+    background-color: rgba(76, 151, 255, 0.2);
+}
+
+/* 既存の境界線はそのまま残す */
+.blocks .blocklyToolboxDiv {
+    /* 既存のスタイルを維持 */
+}
+
+.blocks .blocklyFlyout {
+    /* 既存のスタイルを維持 */
+}
+
+/* ドラッグ中のボディスタイル */
+body.dragging-flyout-resizer {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+body.dragging-flyout-resizer * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Scratch - クイックスタート</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 30px;
+        }
+        .status {
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid #4CAF50;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .extension-list {
+            background: rgba(0, 206, 209, 0.2);
+            border: 2px solid #00CED1;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .extension {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+        .extension-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            width: 30px;
+        }
+        .btn {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .btn-orange {
+            background: #FF8C1A;
+        }
+        .btn-orange:hover {
+            background: #E64D00;
+        }
+        .access-info {
+            background: rgba(255, 140, 26, 0.2);
+            border: 2px solid #FF8C1A;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Minecraft Scratch - クイックスタートガイド</h1>
+        
+        <div class="status">
+            <h3>✅ 現在の状況</h3>
+            <p>カスタマイズされたScratch GUIが正常にセットアップされました！</p>
+            <p>5つのMinecraft専用拡張機能が統合済みです。</p>
+        </div>
+
+        <div class="extension-list">
+            <h3>📦 利用可能な拡張機能</h3>
+            
+            <div class="extension">
+                <div class="extension-icon">🎮</div>
+                <div>
+                    <strong>Minecraft 接続</strong><br>
+                    WebSocket接続管理・コラボレーション機能
+                </div>
+            </div>
+            
+            <div class="extension">
+                <div class="extension-icon">🧱</div>
+                <div>
+                    <strong>Minecraft ブロック</strong><br>
+                    ブロックの設置・破壊・範囲操作
+                </div>
+            </div>
+            
+            <div class="extension">
+                <div class="extension-icon">🏗️</div>
+                <div>
+                    <strong>Minecraft 建築</strong><br>
+                    建物・形状の自動建築機能
+                </div>
+            </div>
+            
+            <div class="extension">
+                <div class="extension-icon">⚡</div>
+                <div>
+                    <strong>Minecraft コマンド</strong><br>
+                    Minecraftコマンドを簡単実行
+                </div>
+            </div>
+            
+            <div class="extension">
+                <div class="extension-icon">📍</div>
+                <div>
+                    <strong>Minecraft 情報</strong><br>
+                    プレイヤー情報・ナビゲーション・オーバーレイ
+                </div>
+            </div>
+        </div>
+
+        <div class="access-info">
+            <h3>🌐 Scratchページへのアクセス方法</h3>
+            <p><strong>開発サーバーが起動中の場合：</strong></p>
+            <ul>
+                <li>WSLターミナルで npm start が実行中であることを確認</li>
+                <li>ブラウザで以下のURLにアクセス：</li>
+            </ul>
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="http://localhost:8601" class="btn" target="_blank">localhost:8601 で開く</a>
+                <a href="http://172.22.87.171:8601" class="btn btn-orange" target="_blank">WSL IP で開く</a>
+            </div>
+        </div>
+
+        <div class="status">
+            <h3>🚀 次のステップ</h3>
+            <ol>
+                <li>上記のリンクからScratchページにアクセス</li>
+                <li>拡張機能メニューから5つのMinecraft拡張機能を選択</li>
+                <li>Minecraft Java Edition 1.20.1 + Forgeを起動</li>
+                <li>カスタムmodを導入してWebSocket接続を確立</li>
+                <li>Scratchでスクリプトを作成してMinecraft内で建築開始！</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <p><em>プロジェクト作成者: Claude Code & COSMOS</em></p>
+            <p><small>Minecraft 1.20.1 + Forge 対応 | 2025年開発</small></p>
+        </div>
+    </div>
+</body>
+</html>

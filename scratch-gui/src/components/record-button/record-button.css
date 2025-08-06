@@ -1,0 +1,86 @@
+@import "../../css/colors.css";
+@import "../../css/units.css";
+
+.record-button {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background-color: $ui-red;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid $ui-red;
+    margin: 0 0.25rem;
+    transition: all 0.1s ease;
+    user-select: none;
+    position: relative;
+}
+
+.record-button:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+.record-button.is-active {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+.record-button.is-recording {
+    animation: recordingPulse 1.5s infinite;
+}
+
+@keyframes recordingPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+}
+
+.record-icon {
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recording-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.recording-dot {
+    width: 6px;
+    height: 6px;
+    background-color: $ui-red;
+    border-radius: 50%;
+    animation: recordingBlink 1s infinite;
+}
+
+@keyframes recordingBlink {
+    0%, 50% {
+        opacity: 1;
+    }
+    51%, 100% {
+        opacity: 0;
+    }
+}
+
+.recording-text {
+    font-family: monospace;
+}

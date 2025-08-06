@@ -1,0 +1,104 @@
+@import "../../css/colors.css";
+@import "../../css/units.css";
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: $ui-white;
+    border: 1px solid $ui-black-transparent-15;
+    border-radius: 0.25rem;
+    padding: 0.25rem;
+    margin: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.zoomInfo {
+    font-size: 0.6rem;
+    color: $text-primary;
+    min-width: 2rem;
+    text-align: center;
+    font-weight: normal;
+    margin-bottom: 0.125rem;
+}
+
+.zoomButton {
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0.1875rem;
+    margin: 0.0625rem 0;
+    border: 1px solid $ui-black-transparent-15;
+    border-radius: 0.1875rem;
+    background-color: $ui-white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.zoomButton:hover {
+    background-color: $ui-black-transparent-10;
+    border-color: $ui-black-transparent-25;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15);
+}
+
+.zoomButton:active {
+    background-color: $ui-black-transparent-15;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.zoomButtonIcon {
+    width: 0.75rem;
+    height: 0.75rem;
+    filter: opacity(0.8);
+}
+
+.zoomButton:hover .zoomButtonIcon {
+    filter: opacity(1);
+}
+
+/* ダークテーマ対応 */
+[theme="dark"] .container {
+    background-color: $text-primary;
+    border-color: $ui-white-transparent;
+}
+
+[theme="dark"] .zoomInfo {
+    color: $ui-white;
+}
+
+[theme="dark"] .zoomButton:hover {
+    background-color: $ui-white-transparent;
+}
+
+[theme="dark"] .zoomButton:active {
+    background-color: $ui-white-dim;
+}
+
+[theme="dark"] .zoomButtonIcon {
+    filter: invert(1) opacity(0.7);
+}
+
+[theme="dark"] .zoomButton:hover .zoomButtonIcon {
+    filter: invert(1) opacity(1);
+}
+
+/* ハイコントラストテーマ対応 */
+[theme="high-contrast"] .container {
+    background-color: $ui-white;
+    border: 2px solid $text-primary;
+}
+
+[theme="high-contrast"] .zoomButton {
+    border: 1px solid $text-primary;
+}
+
+[theme="high-contrast"] .zoomButton:hover {
+    background-color: $text-primary;
+}
+
+[theme="high-contrast"] .zoomButton:hover .zoomButtonIcon {
+    filter: invert(1);
+}

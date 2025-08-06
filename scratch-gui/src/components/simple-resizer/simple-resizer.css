@@ -1,0 +1,29 @@
+@import "../../css/colors.css";
+@import "../../css/units.css";
+
+.resizer {
+    width: 4px;
+    height: 100%;
+    background-color: $ui-black-transparent-10;
+    cursor: col-resize;
+    position: relative;
+    transition: background-color 0.2s;
+}
+
+.resizer:hover {
+    background-color: $ui-black-transparent;
+}
+
+.resizer.dragging {
+    background-color: $motion-primary;
+}
+
+.resizer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -3px;
+    right: -3px;
+    bottom: 0;
+    /* 見えない拡張エリア */
+}

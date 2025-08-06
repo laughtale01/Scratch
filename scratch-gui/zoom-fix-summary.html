@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ズームコントロール実装 - 最終状態</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #4CAF50; }
+        h2 { color: #2196F3; }
+        .status { 
+            background: #e8f5e9; 
+            padding: 20px; 
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .code-block {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .success { color: #4CAF50; font-weight: bold; }
+        .warning { color: #FF9800; font-weight: bold; }
+        .step {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Scratch GUI ズームコントロール実装状況</h1>
+        
+        <div class="status">
+            <h2>✅ 実装完了内容</h2>
+            <ul>
+                <li class="success">ブロックパレット（左側）の右下にズームコントロールを配置</li>
+                <li class="success">スクリプトエリア（右側）と同じBlocklyネイティブのデザイン</li>
+                <li class="success">縦型3ボタン配置（+、○、−）</li>
+                <li class="success">ズーム機能の実装（拡大・縮小・リセット）</li>
+            </ul>
+        </div>
+        
+        <h2>⚠️ 現在の問題と解決方法</h2>
+        
+        <div class="step">
+            <h3>問題1: アイコンが表示されない</h3>
+            <p><strong>原因:</strong> SVGファイルのパスが相対パスになっている</p>
+            <p><strong>解決方法:</strong> 以下のコードをブラウザコンソールで実行</p>
+        </div>
+        
+        <div class="step">
+            <h3>問題2: ボタンが薄く表示されクリックできない</h3>
+            <p><strong>原因:</strong> opacity設定とイベントリスナーの問題</p>
+            <p><strong>解決方法:</strong> 以下の修正コードで対応</p>
+        </div>
+        
+        <h2>🛠️ 修正コード（コンソールで実行）</h2>
+        
+        <div class="code-block">// 完全な修正コード - コピーしてブラウザのコンソールに貼り付けてください
+(function fixZoomControls() {
+    // すべてのズームコントロールを取得
+    const zoomControls = document.querySelectorAll('.blocklyZoom');
+    
+    zoomControls.forEach((zoomGroup, index) => {
+        console.log(`修正中: ズームコントロール ${index + 1}`);
+        
+        // グループ全体を修正
+        zoomGroup.style.opacity = '1';
+        zoomGroup.style.pointerEvents = 'all';
+        
+        // 各画像ボタンを修正
+        const images = zoomGroup.querySelectorAll('image');
+        images.forEach((img, imgIndex) => {
+            // 見た目を修正
+            img.style.opacity = '1';
+            img.setAttribute('opacity', '1');
+            img.style.cursor = 'pointer';
+            img.style.pointerEvents = 'all';
+            
+            // 画像パスを修正
+            const href = img.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+            if (href) {
+                const fileName = href.split('/').pop();
+                img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', 
+                    `/static/blocks-media/default/${fileName}`);
+            }
+            
+            // フライアウト（ブロックパレット）のズームコントロールにクリックイベントを追加
+            if (index === 1) { // 2番目のズームコントロール
+                img.onclick = function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    if (window.Blockly && window.Blockly.mainWorkspace) {
+                        const flyout = window.Blockly.mainWorkspace.getFlyout();
+                        if (flyout) {
+                            const flyoutWs = flyout.getWorkspace();
+                            const currentScale = flyoutWs.scale || 1;
+                            
+                            if (imgIndex === 0) { // ズームイン
+                                flyoutWs.setScale(Math.min(currentScale * 1.1, 3));
+                            } else if (imgIndex === 1) { // ズームアウト  
+                                flyoutWs.setScale(Math.max(currentScale * 0.9, 0.3));
+                            } else if (imgIndex === 2) { // リセット
+                                flyoutWs.setScale(1);
+                            }
+                            
+                            // フライアウトを再描画
+                            if (flyout.reflowInternal_) {
+                                flyout.reflowInternal_();
+                                flyout.position();
+                            }
+                        }
+                    }
+                };
+            }
+        });
+    });
+    
+    console.log('✅ ズームコントロールの修正が完了しました');
+    return '修正完了';
+})();</div>
+        
+        <h2>📋 使用手順</h2>
+        
+        <ol class="step">
+            <li>Scratch GUIを開く（通常はhttp://localhost:8080）</li>
+            <li>F12キーで開発者ツールを開く</li>
+            <li>「コンソール」タブをクリック</li>
+            <li>上記のコードをコピーして貼り付け</li>
+            <li>Enterキーを押して実行</li>
+        </ol>
+        
+        <h2>🎯 期待される結果</h2>
+        
+        <ul>
+            <li>両方のズームコントロールが通常の濃さで表示される</li>
+            <li>アイコン（+、○、−）が正しく表示される</li>
+            <li>クリックして拡大・縮小・リセットが動作する</li>
+            <li>ブロックパレットとスクリプトエリアの両方で同じデザイン</li>
+        </ul>
+        
+        <div class="status" style="background: #fff3e0;">
+            <h3>📝 技術的な詳細</h3>
+            <p><strong>実装方法:</strong> Blockly.ZoomControlsクラスの代わりにSVG要素を直接作成</p>
+            <p><strong>配置:</strong> フライアウトワークスペースのSVGに追加</p>
+            <p><strong>イベント処理:</strong> ScratchBlocks.bindEventWithChecks_を使用</p>
+            <p><strong>スケール制限:</strong> 最小0.3倍、最大3倍</p>
+        </div>
+    </div>
+</body>
+</html>

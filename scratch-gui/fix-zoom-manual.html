@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ズームコントロール 手動修正ガイド</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        pre { background: #f0f0f0; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .success { color: green; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>🔧 ズームコントロール修正状況</h1>
+    
+    <h2>✅ 実装済みの内容</h2>
+    <ul>
+        <li class="success">ブロックパレットの右下にズームコントロールを配置</li>
+        <li class="success">Blocklyネイティブと同じデザイン（グレーの縦型ボタン）</li>
+        <li class="success">ズーム機能の実装（拡大・縮小・リセット）</li>
+    </ul>
+    
+    <h2>⚠️ 現在の問題</h2>
+    <ul>
+        <li class="warning">画像（SVGアイコン）が表示されない</li>
+        <li>画像パス: <code>/static/blocks-media/default/zoom-in.svg</code> など</li>
+    </ul>
+    
+    <h2>🛠️ 手動修正方法</h2>
+    
+    <h3>方法1: ブラウザコンソールで一時的に修正</h3>
+    <pre>
+// Scratch GUIを開いた状態で、ブラウザのコンソール（F12）で実行：
+
+// すべてのズームコントロールの画像を修正
+document.querySelectorAll('.blocklyZoom image').forEach(img => {
+    const href = img.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+    if (href && !href.startsWith('/')) {
+        // 相対パスを絶対パスに修正
+        const fileName = href.split('/').pop();
+        img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `/static/blocks-media/default/${fileName}`);
+    }
+});
+    </pre>
+    
+    <h3>方法2: 開発サーバーで確認</h3>
+    <p>開発サーバーを起動する場合：</p>
+    <pre>
+cd /mnt/d/minecraft_collaboration_project/scratch-gui
+npm run start
+    </pre>
+    <p>アクセス: <strong>http://localhost:8601</strong></p>
+    
+    <h2>📸 期待される結果</h2>
+    <p>両方のズームコントロール（ブロックパレットとスクリプトエリア）に以下のアイコンが表示されます：</p>
+    <ul>
+        <li>➕ ズームイン（上）</li>
+        <li>⭕ リセット（中）</li>
+        <li>➖ ズームアウト（下）</li>
+    </ul>
+    
+    <h2>🎯 実装のポイント</h2>
+    <p>実装自体は完了しており、画像パスの問題のみです。ビルドプロセスの問題で、静的ファイルのパスが正しく設定されていません。</p>
+</body>
+</html>

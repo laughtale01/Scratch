@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Zoom Debug</title>
+</head>
+<body>
+    <h1>ズームコントロール デバッグ</h1>
+    <p>ブラウザのコンソールを開いて、以下のコードを実行してください：</p>
+    <pre style="background: #f0f0f0; padding: 20px; border-radius: 5px;">
+// メインワークスペースのズームコントロールのパスを確認
+const mainZoomImages = document.querySelectorAll('.blocklyZoom image');
+console.log('=== メインズームコントロール ===');
+mainZoomImages.forEach((img, i) => {
+    const href = img.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+    console.log(`Image ${i}: ${href}`);
+});
+
+// ワークスペースのpathToMediaを確認
+if (window.Blockly && window.Blockly.mainWorkspace) {
+    console.log('=== Workspace pathToMedia ===');
+    console.log('Main workspace:', window.Blockly.mainWorkspace.options.pathToMedia);
+    
+    const flyout = window.Blockly.mainWorkspace.getFlyout();
+    if (flyout) {
+        const flyoutWs = flyout.getWorkspace();
+        console.log('Flyout workspace:', flyoutWs.options.pathToMedia);
+    }
+}
+
+// 実際のズームコントロール要素を確認
+console.log('=== 全てのズームコントロール ===');
+document.querySelectorAll('.blocklyZoom').forEach((zoom, i) => {
+    console.log(`Zoom control ${i}:`, zoom);
+    const images = zoom.querySelectorAll('image');
+    images.forEach((img, j) => {
+        console.log(`  Image ${j}:`, img.getAttributeNS('http://www.w3.org/1999/xlink', 'href'));
+    });
+});
+    </pre>
+    
+    <h2>修正方法</h2>
+    <p>コンソールで確認した正しいパスを使って修正します。</p>
+    
+    <h2>テスト用画像パス</h2>
+    <ul>
+        <li><a href="/static/blocks-media/default/zoom-in.svg" target="_blank">/static/blocks-media/default/zoom-in.svg</a></li>
+        <li><a href="/static/blocks-media/default/zoom-out.svg" target="_blank">/static/blocks-media/default/zoom-out.svg</a></li>
+        <li><a href="/static/blocks-media/default/zoom-reset.svg" target="_blank">/static/blocks-media/default/zoom-reset.svg</a></li>
+    </ul>
+</body>
+</html>
