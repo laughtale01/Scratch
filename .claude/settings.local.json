@@ -119,7 +119,11 @@
       "Bash(git gc:*)",
       "Bash(firebase list:*)",
       "Bash(firebase init:*)",
-      "Bash(firebase hosting:disable:*)"
+      "Bash(firebase hosting:disable:*)",
+      "Bash(set GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json)",
+      "Bash(gcloud auth activate-service-account:*)",
+      "Bash(GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json firebase projects:list)",
+      "Bash(GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json firebase deploy --only hosting --project laughtale-scratch-ca803)"
     ],
     "deny": []
   }
