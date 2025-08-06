@@ -116,7 +116,10 @@
       "Bash(\"/c/Program Files/Java/jdk-17/bin/java.exe\" -version)",
       "Bash(py:*)",
       "Bash(test -d scratch-gui/.git)",
-      "Bash(git gc:*)"
+      "Bash(git gc:*)",
+      "Bash(firebase list:*)",
+      "Bash(firebase init:*)",
+      "Bash(firebase hosting:disable:*)"
     ],
     "deny": []
   }
