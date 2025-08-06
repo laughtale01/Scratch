@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
@@ -25,7 +26,7 @@ public class PredictionEngine {
     public PredictionResult generatePredictions(Collection<HealthDataPoint> healthHistory, Duration predictionWindow) {
         try {
             if (healthHistory.size() < 5) {
-                return PredictionResult.insufficientData(\"Need at least 5 data points for prediction\");
+                return PredictionResult.insufficientData("Need at least 5 data points for prediction");
             }
             
             // Convert to list and sort by timestamp
@@ -64,21 +65,21 @@ public class PredictionEngine {
                 .predictedErrorRateAvg(predictedErrorRate)
                 .predictedErrorRateMax(predictedErrorRate + errorTrend.getVolatility() * 2)
                 .confidence(confidence)
-                .cpuTrend(cpuTrend.getSlope() > 0 ? \"INCREASING\" : cpuTrend.getSlope() < 0 ? \"DECREASING\" : \"STABLE\")
-                .memoryTrend(memoryTrend.getSlope() > 0 ? \"INCREASING\" : memoryTrend.getSlope() < 0 ? \"DECREASING\" : \"STABLE\")
+                .cpuTrend(cpuTrend.getSlope() > 0 ? "INCREASING" : cpuTrend.getSlope() < 0 ? "DECREASING" : "STABLE")
+                .memoryTrend(memoryTrend.getSlope() > 0 ? "INCREASING" : memoryTrend.getSlope() < 0 ? "DECREASING" : "STABLE")
                 .anomalies(anomalies)
                 .build();
             
             latestPredictions = result;
             
-            LOGGER.debug(\"Generated predictions: CPU={:.1f}%, Memory={:.1f}%, Confidence={:.2f}\",
+            LOGGER.debug("Generated predictions: CPU={:.1f}%, Memory={:.1f}%, Confidence={:.2f}",
                 predictedCpu, predictedMemory, confidence);
             
             return result;
             
         } catch (Exception e) {
-            LOGGER.error(\"Error generating predictions\", e);
-            return PredictionResult.error(\"Prediction generation failed: \" + e.getMessage());
+            LOGGER.error("Error generating predictions", e);
+            return PredictionResult.error("Prediction generation failed: " + e.getMessage());
         }
     }
     
@@ -224,8 +225,8 @@ public class PredictionEngine {
             // Check for rapid CPU increase
             if (latest.getCpuUsage() - previous.getCpuUsage() > 30) {
                 anomalies.add(new AnomalyPrediction(
-                    \"RAPID_CPU_INCREASE\",
-                    \"CPU usage increased rapidly\",
+                    "RAPID_CPU_INCREASE",
+                    "CPU usage increased rapidly",
                     0.7,
                     Duration.ofMinutes(15)
                 ));
@@ -234,8 +235,8 @@ public class PredictionEngine {
             // Check for rapid memory increase
             if (latest.getMemoryUsage() - previous.getMemoryUsage() > 25) {
                 anomalies.add(new AnomalyPrediction(
-                    \"RAPID_MEMORY_INCREASE\",
-                    \"Memory usage increased rapidly\",
+                    "RAPID_MEMORY_INCREASE",
+                    "Memory usage increased rapidly",
                     0.6,
                     Duration.ofMinutes(20)
                 ));
@@ -244,8 +245,8 @@ public class PredictionEngine {
             // Check for error rate spike
             if (latest.getErrorRate() - previous.getErrorRate() > 5) {
                 anomalies.add(new AnomalyPrediction(
-                    \"ERROR_RATE_SPIKE\",
-                    \"Error rate spiked significantly\",
+                    "ERROR_RATE_SPIKE",
+                    "Error rate spiked significantly",
                     0.8,
                     Duration.ofMinutes(10)
                 ));
@@ -293,4 +294,4 @@ public class PredictionEngine {
             this.intercept = intercept;
         }
     }
-}"
+}

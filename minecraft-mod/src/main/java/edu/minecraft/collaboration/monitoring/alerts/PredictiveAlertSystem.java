@@ -9,8 +9,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -334,7 +336,7 @@ public class PredictiveAlertSystem implements AutoCloseable {
             activeAlerts.add(alert);
             
             // Send notification
-            notificationManager.sendNotification(alert);
+            notificationManager.sendAlert(alert);
             
             LOGGER.warn("ALERT TRIGGERED: {} - {}", rule.getName(), rule.getDescription());
         }

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  minecraft-dev:
+    build:
+      context: ./minecraft-mod
+      dockerfile: Dockerfile.dev
+    container_name: minecraft-collaboration-dev
+    volumes:
+      - ./minecraft-mod:/workspace
+      - gradle-cache:/home/gradle/.gradle
+    ports:
+      - "14711:14711"  # WebSocket port
+      - "25565:25565"  # Minecraft server port
+    environment:
+      - JAVA_OPTS=-Xmx2G -Xms1G
+    networks:
+      - dev-network
+
+  scratch-dev:
+    build:
+      context: ./scratch-gui
+      dockerfile: Dockerfile.dev
+    container_name: scratch-gui-dev
+    volumes:
+      - ./scratch-gui:/app
+      - node-modules:/app/node_modules
+    ports:
+      - "8601:8601"
+    environment:
+      - NODE_ENV=development
+    networks:
+      - dev-network
+    depends_on:
+      - minecraft-dev
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: minecraft-db
+    environment:
+      POSTGRES_DB: minecraft_collab
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - dev-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: minecraft-cache
+    ports:
+      - "6379:6379"
+    networks:
+      - dev-network
+
+volumes:
+  gradle-cache:
+  node-modules:
+  postgres-data:
+
+networks:
+  dev-network:
+    driver: bridge

@@ -40,14 +40,14 @@ public class AlertRuleEngine {
             boolean triggered = occurrences >= rule.getMinimumOccurrences();
             
             if (triggered) {
-                LOGGER.debug(\"Alert rule '{}' triggered: {} occurrences (minimum: {})\", 
+                LOGGER.debug("Alert rule '{}' triggered: {} occurrences (minimum: {})", 
                     rule.getName(), occurrences, rule.getMinimumOccurrences());
             }
             
             return triggered;
             
         } catch (Exception e) {
-            LOGGER.error(\"Error evaluating alert rule: {}\", rule.getName(), e);
+            LOGGER.error("Error evaluating alert rule: {}", rule.getName(), e);
             return false;
         }
     }
@@ -86,7 +86,7 @@ public class AlertRuleEngine {
                 }
                 
             } catch (Exception e) {
-                LOGGER.error(\"Error evaluating rule: {}\", rule.getName(), e);
+                LOGGER.error("Error evaluating rule: {}", rule.getName(), e);
                 resultBuilder.addRuleError(rule.getName(), e.getMessage());
             }
         }
@@ -114,13 +114,13 @@ public class AlertRuleEngine {
         
         // Calculate trend based on metric type
         switch (metric.toLowerCase()) {
-            case \"cpu\":
+            case "cpu":
                 return calculateTrend(recentData, HealthDataPoint::getCpuUsage) > 20; // 20% increase trend
-            case \"memory\":
+            case "memory":
                 return calculateTrend(recentData, HealthDataPoint::getMemoryUsage) > 20;
-            case \"responsetime\":
+            case "responsetime":
                 return calculateTrend(recentData, HealthDataPoint::getResponseTime) > 500; // 500ms increase trend
-            case \"errorrate\":
+            case "errorrate":
                 return calculateTrend(recentData, HealthDataPoint::getErrorRate) > 2; // 2% increase trend
             default:
                 return false;
@@ -169,15 +169,15 @@ public class AlertRuleEngine {
     private double getMetricValue(HealthDataPoint data, String ruleName) {
         // Map rule names to metric values
         switch (ruleName.toLowerCase()) {
-            case \"high_cpu_usage\":
-            case \"predicted_cpu_spike\":
+            case "high_cpu_usage":
+            case "predicted_cpu_spike":
                 return data.getCpuUsage();
-            case \"high_memory_usage\":
-            case \"predicted_memory_exhaustion\":
+            case "high_memory_usage":
+            case "predicted_memory_exhaustion":
                 return data.getMemoryUsage();
-            case \"high_error_rate\":
+            case "high_error_rate":
                 return data.getErrorRate();
-            case \"slow_response_time\":
+            case "slow_response_time":
                 return data.getResponseTime();
             default:
                 return 0.0;
@@ -200,4 +200,4 @@ public class AlertRuleEngine {
     public boolean isSystemCritical(HealthDataPoint data) {
         return data.isCritical();
     }
-}"
+}

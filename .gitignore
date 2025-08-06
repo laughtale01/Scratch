@@ -8,9 +8,16 @@ node_modules/
 
 # ログファイル
 *.log
+logs/
+*/logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+checkstyle*.log
+build*.log
+final-*.log
+debug.log
+latest.log
 
 # Minecraft開発用一時ファイル
 minecraft-mod/run/
@@ -47,7 +54,9 @@ Thumbs.db
 # バックアップファイル
 backup_*/
 *.backup
+*.bak
 *~
+*.orig
 
 # 不要なドキュメント（削除予定）
 FINAL_*.md
@@ -68,7 +77,9 @@ test-*.html
 
 # Gradleファイル
 minecraft-mod/.gradle/
-minecraft-mod/nul
+minecraft-mod/gradle-local.properties
+nul
+*/nul
 
 # Firebase
 .firebaserc
@@ -86,6 +97,26 @@ firebase.json
 dist/
 build/
 out/
+target/
+*.class
+*.war
+*.ear
+
+# TestContainers
+.testcontainers*
+
+# Metrics and reports
+minecraft-mod/metrics/
+minecraft-mod/reports/
+jacoco.exec
+*.hprof
+
+# Temporary files
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
 
 # Package manager
 package-lock.json

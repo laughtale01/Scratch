@@ -18,7 +18,10 @@ Scratch公式フォークベースのMinecraft拡張機能プロジェクトの�
 - [LICENSE](../LICENSE) - MITライセンス
 
 ### プロジェクト状態
-- [PROJECT_STATUS_REPORT_2025-07-29.md](../PROJECT_STATUS_REPORT_2025-07-29.md) - **最新の総合状況レポート**
+- **[最新] WebSocket通信動作確認完了 (2025-08-05)**
+  - ping/pong、chat、getPlayerPos全て正常動作
+  - NoClassDefFoundError解決（リフレクション使用）
+  - test-websocket.htmlでデバッグ可能
 
 ---
 
@@ -40,8 +43,10 @@ Scratch公式フォークベースのMinecraft拡張機能プロジェクトの�
 ## 🔧 技術ドキュメント
 
 ### Scratch GUI統合
-- [scratch-gui/](../scratch-gui/) - Scratch公式フォーク
-- `scratch-gui/static/extensions/minecraft-unified.js` - Minecraft拡張実装
+- [scratch-gui/](../scratch-gui/) - Scratch公式フォーク (v5.1.88)
+- **開発サーバー**: http://localhost:8601 (既に起動中)
+- `scratch-gui/src/lib/libraries/extensions/minecraft/` - Minecraft拡張定義
+- `scratch-extension/src/index.js` - Minecraft拡張ソースコード
 
 ### テスト・品質管理
 - [testing-guide.md](testing-guide.md) - テストガイド
@@ -126,4 +131,10 @@ Scratch公式フォークベースのMinecraft拡張機能プロジェクトの�
 
 ---
 
-最終更新: 2025年8月1日
+最終更新: 2025年8月5日
+
+### 📝 最新の変更点
+- WebSocket通信の完全動作確認
+- NoClassDefFoundError修正（リフレクションベースの実装）
+- test-websocket.htmlデバッグツール追加
+- scratch-gui開発サーバー稼働中 (http://localhost:8601)

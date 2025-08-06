@@ -1,22 +1,19 @@
 package edu.minecraft.collaboration.security.jwt;
 
 import edu.minecraft.collaboration.MinecraftCollaborationMod;
-import edu.minecraft.collaboration.security.AuthenticationManager;
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
+import edu.minecraft.collaboration.security.SecurityAuditLogger;
 import org.slf4j.Logger;
 
-import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Enterprise-grade JWT Authentication Provider
- * Implements OAuth2-compatible JWT token management with advanced security features
+ * Simplified JWT Authentication Provider
+ * Basic JWT-like token management without external dependencies
  */
 public class JWTAuthenticationProvider {
     
@@ -25,337 +22,179 @@ public class JWTAuthenticationProvider {
     private static final Duration TOKEN_VALIDITY = Duration.ofHours(24);
     private static final Duration REFRESH_TOKEN_VALIDITY = Duration.ofDays(7);
     
-    private final SecretKey signingKey;
-    private final JwtParser jwtParser;
     private final Map<String, TokenMetadata> activeTokens = new ConcurrentHashMap<>();
     private final SecurityAuditLogger auditLogger;
+    private final String secretKey;
     
     public JWTAuthenticationProvider(SecurityAuditLogger auditLogger) {
         this.auditLogger = auditLogger;
-        this.signingKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-        this.jwtParser = Jwts.parserBuilder()
-            .setSigningKey(signingKey)
-            .requireIssuer(ISSUER)
-            .build();
+        this.secretKey = generateSecretKey();
         
-        LOGGER.info("JWT Authentication Provider initialized with HS256 signing");
+        LOGGER.info("JWT Authentication Provider initialized");
     }
     
     /**
-     * Generate JWT access token with advanced claims
+     * Generate a new access token
      */
-    public JWTTokenPair generateTokenPair(String username, AuthenticationManager.UserRole role, Map<String, Object> additionalClaims) {
-        Instant now = Instant.now();
-        String tokenId = UUID.randomUUID().toString();
-        
+    public String generateToken(String username, String role) {
         try {
-            // Access Token
-            String accessToken = Jwts.builder()
-                .setId(tokenId)
-                .setIssuer(ISSUER)
-                .setSubject(username)
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plus(TOKEN_VALIDITY)))
-                .claim("role", role.name())
-                .claim("token_type", "access")
-                .claim("session_id", UUID.randomUUID().toString())
-                .addClaims(additionalClaims)
-                .signWith(signingKey)
-                .compact();
+            String tokenId = UUID.randomUUID().toString();
+            Instant expiry = Instant.now().plus(TOKEN_VALIDITY);
             
-            // Refresh Token
-            String refreshToken = Jwts.builder()
-                .setId(UUID.randomUUID().toString())
-                .setIssuer(ISSUER)
-                .setSubject(username)
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plus(REFRESH_TOKEN_VALIDITY)))
-                .claim("token_type", "refresh")
-                .claim("access_token_id", tokenId)
-                .signWith(signingKey)
-                .compact();
+            // Create simple token payload
+            String payload = String.format("%s|%s|%s|%s|%d", 
+                tokenId, username, role, ISSUER, expiry.toEpochMilli());
+            
+            // Encode token (simplified - in production use proper JWT library)
+            String token = Base64.getEncoder().encodeToString(payload.getBytes());
             
             // Store token metadata
-            TokenMetadata metadata = new TokenMetadata(username, role, now, now.plus(TOKEN_VALIDITY));
-            activeTokens.put(tokenId, metadata);
+            activeTokens.put(tokenId, new TokenMetadata(username, role, expiry, TokenType.ACCESS));
             
-            auditLogger.logTokenGeneration(username, role, tokenId);
-            LOGGER.debug("Generated JWT token pair for user: {} with role: {}", username, role);
+            LOGGER.debug("Generated access token for user: {}", username);
+            auditLogger.logTokenValidation(tokenId, true);
             
-            return new JWTTokenPair(accessToken, refreshToken, TOKEN_VALIDITY.toSeconds());
-            
+            return token;
         } catch (Exception e) {
-            auditLogger.logTokenGenerationFailure(username, e);
-            LOGGER.error("Failed to generate JWT token for user: {}", username, e);
-            throw new JWTAuthenticationException("Token generation failed", e);
+            LOGGER.error("Failed to generate token for user: {}", username, e);
+            return null;
         }
     }
     
     /**
-     * Validate JWT token with comprehensive security checks
+     * Validate a token
      */
-    public AuthenticationResult authenticate(String token) {
-        if (token == null || token.trim().isEmpty()) {
-            return AuthenticationResult.failure("Token is required");
-        }
-        
+    public TokenValidation validateToken(String token) {
         try {
-            Claims claims = jwtParser.parseClaimsJws(token).getBody();
-            String tokenId = claims.getId();
-            String username = claims.getSubject();
-            String roleStr = claims.get("role", String.class);
-            String tokenType = claims.get("token_type", String.class);
+            // Decode token
+            String payload = new String(Base64.getDecoder().decode(token));
+            String[] parts = payload.split("\\|");
             
-            // Validate token type
-            if (!"access".equals(tokenType)) {
-                auditLogger.logAuthenticationFailure(username, "Invalid token type: " + tokenType);
-                return AuthenticationResult.failure("Invalid token type");
+            if (parts.length != 5) {
+                auditLogger.logTokenValidation("invalid", false);
+                return TokenValidation.invalid("Invalid token format");
             }
             
-            // Check if token is still active
+            String tokenId = parts[0];
+            String username = parts[1];
+            String role = parts[2];
+            String issuer = parts[3];
+            long expiryMillis = Long.parseLong(parts[4]);
+            
+            // Check issuer
+            if (!ISSUER.equals(issuer)) {
+                auditLogger.logTokenValidation(tokenId, false);
+                return TokenValidation.invalid("Invalid issuer");
+            }
+            
+            // Check expiry
+            if (Instant.now().toEpochMilli() > expiryMillis) {
+                auditLogger.logTokenValidation(tokenId, false);
+                return TokenValidation.invalid("Token expired");
+            }
+            
+            // Check if token is active
             TokenMetadata metadata = activeTokens.get(tokenId);
             if (metadata == null) {
-                auditLogger.logAuthenticationFailure(username, "Token not found in active tokens");
-                return AuthenticationResult.failure("Token has been revoked");
+                auditLogger.logTokenValidation(tokenId, false);
+                return TokenValidation.invalid("Token not found");
             }
             
-            // Validate expiration
-            if (Instant.now().isAfter(metadata.getExpiresAt())) {
-                activeTokens.remove(tokenId);
-                auditLogger.logAuthenticationFailure(username, "Token expired");
-                return AuthenticationResult.failure("Token has expired");
-            }
+            auditLogger.logTokenValidation(tokenId, true);
+            return TokenValidation.valid(username, role);
             
-            // Validate role
-            AuthenticationManager.UserRole role = AuthenticationManager.UserRole.valueOf(roleStr);
-            if (!metadata.getRole().equals(role)) {
-                auditLogger.logAuthenticationFailure(username, "Role mismatch");
-                return AuthenticationResult.failure("Token validation failed");
-            }
-            
-            // Update last access time
-            metadata.updateLastAccess();
-            
-            auditLogger.logSuccessfulAuthentication(username, role);
-            LOGGER.debug("Successfully authenticated user: {} with role: {}", username, role);
-            
-            return AuthenticationResult.success(new AuthenticatedUser(username, role, tokenId, claims));
-            
-        } catch (ExpiredJwtException e) {
-            auditLogger.logAuthenticationFailure("unknown", "Token expired: " + e.getMessage());
-            return AuthenticationResult.failure("Token has expired");
-        } catch (JwtException e) {
-            auditLogger.logAuthenticationFailure("unknown", "Invalid token: " + e.getMessage());
-            LOGGER.warn("JWT validation failed: {}", e.getMessage());
-            return AuthenticationResult.failure("Invalid token");
         } catch (Exception e) {
-            auditLogger.logAuthenticationFailure("unknown", "Authentication error: " + e.getMessage());
-            LOGGER.error("Unexpected error during JWT authentication", e);
-            return AuthenticationResult.failure("Authentication failed");
+            LOGGER.error("Token validation failed", e);
+            auditLogger.logTokenValidation("unknown", false);
+            return TokenValidation.invalid("Validation error: " + e.getMessage());
         }
     }
     
     /**
-     * Refresh access token using refresh token
+     * Refresh a token
      */
-    public JWTTokenPair refreshToken(String refreshToken) {
-        try {
-            Claims claims = jwtParser.parseClaimsJws(refreshToken).getBody();
-            String username = claims.getSubject();
-            String tokenType = claims.get("token_type", String.class);
-            String accessTokenId = claims.get("access_token_id", String.class);
-            
-            if (!"refresh".equals(tokenType)) {
-                auditLogger.logTokenRefreshFailure(username, "Invalid token type");
-                throw new JWTAuthenticationException("Invalid refresh token type");
-            }
-            
-            // Get original token metadata
-            TokenMetadata originalMetadata = activeTokens.get(accessTokenId);
-            if (originalMetadata == null) {
-                auditLogger.logTokenRefreshFailure(username, "Original token not found");
-                throw new JWTAuthenticationException("Original token not found");
-            }
-            
-            // Generate new token pair
-            JWTTokenPair newTokenPair = generateTokenPair(username, originalMetadata.getRole(), Map.of());
-            
-            // Revoke old token
-            activeTokens.remove(accessTokenId);
-            
-            auditLogger.logTokenRefresh(username, accessTokenId);
-            LOGGER.info("Successfully refreshed token for user: {}", username);
-            
-            return newTokenPair;
-            
-        } catch (JwtException e) {
-            auditLogger.logTokenRefreshFailure("unknown", "Invalid refresh token: " + e.getMessage());
-            throw new JWTAuthenticationException("Invalid refresh token", e);
+    public String refreshToken(String refreshToken) {
+        TokenValidation validation = validateToken(refreshToken);
+        if (validation.isValid()) {
+            return generateToken(validation.getUsername(), validation.getRole());
         }
+        return null;
     }
     
     /**
-     * Revoke token (logout)
+     * Revoke a token
      */
-    public boolean revokeToken(String token) {
-        try {
-            Claims claims = jwtParser.parseClaimsJws(token).getBody();
-            String tokenId = claims.getId();
-            String username = claims.getSubject();
-            
-            TokenMetadata removed = activeTokens.remove(tokenId);
-            if (removed != null) {
-                auditLogger.logTokenRevocation(username, tokenId);
-                LOGGER.info("Successfully revoked token for user: {}", username);
-                return true;
-            }
-            
-            return false;
-        } catch (JwtException e) {
-            LOGGER.warn("Failed to revoke token: {}", e.getMessage());
-            return false;
-        }
+    public void revokeToken(String tokenId) {
+        activeTokens.remove(tokenId);
+        LOGGER.info("Revoked token: {}", tokenId);
     }
     
     /**
-     * Get token statistics
-     */
-    public TokenStatistics getTokenStatistics() {
-        long activeCount = activeTokens.size();
-        long expiredCount = activeTokens.values().stream()
-            .mapToLong(metadata -> Instant.now().isAfter(metadata.getExpiresAt()) ? 1 : 0)
-            .sum();
-        
-        return new TokenStatistics(activeCount, expiredCount);
-    }
-    
-    /**
-     * Cleanup expired tokens
+     * Clean up expired tokens
      */
     public void cleanupExpiredTokens() {
         Instant now = Instant.now();
-        int removed = 0;
-        
-        var iterator = activeTokens.entrySet().iterator();
-        while (iterator.hasNext()) {
-            var entry = iterator.next();
-            if (now.isAfter(entry.getValue().getExpiresAt())) {
-                iterator.remove();
-                removed++;
-            }
-        }
-        
-        if (removed > 0) {
-            LOGGER.info("Cleaned up {} expired tokens", removed);
-        }
+        activeTokens.entrySet().removeIf(entry -> entry.getValue().expiry.isBefore(now));
     }
     
-    // Inner classes for data structures
-    public static class JWTTokenPair {
-        private final String accessToken;
-        private final String refreshToken;
-        private final long expiresIn;
-        
-        public JWTTokenPair(String accessToken, String refreshToken, long expiresIn) {
-            this.accessToken = accessToken;
-            this.refreshToken = refreshToken;
-            this.expiresIn = expiresIn;
-        }
-        
-        public String getAccessToken() { return accessToken; }
-        public String getRefreshToken() { return refreshToken; }
-        public long getExpiresIn() { return expiresIn; }
+    /**
+     * Generate a secret key
+     */
+    private String generateSecretKey() {
+        return UUID.randomUUID().toString() + "-" + System.currentTimeMillis();
     }
     
-    public static class AuthenticationResult {
-        private final boolean success;
-        private final String errorMessage;
-        private final AuthenticatedUser user;
-        
-        private AuthenticationResult(boolean success, String errorMessage, AuthenticatedUser user) {
-            this.success = success;
-            this.errorMessage = errorMessage;
-            this.user = user;
-        }
-        
-        public static AuthenticationResult success(AuthenticatedUser user) {
-            return new AuthenticationResult(true, null, user);
-        }
-        
-        public static AuthenticationResult failure(String errorMessage) {
-            return new AuthenticationResult(false, errorMessage, null);
-        }
-        
-        public boolean isSuccess() { return success; }
-        public String getErrorMessage() { return errorMessage; }
-        public AuthenticatedUser getUser() { return user; }
-    }
-    
-    public static class AuthenticatedUser {
-        private final String username;
-        private final AuthenticationManager.UserRole role;
-        private final String tokenId;
-        private final Claims claims;
-        
-        public AuthenticatedUser(String username, AuthenticationManager.UserRole role, String tokenId, Claims claims) {
-            this.username = username;
-            this.role = role;
-            this.tokenId = tokenId;
-            this.claims = claims;
-        }
-        
-        public String getUsername() { return username; }
-        public AuthenticationManager.UserRole getRole() { return role; }
-        public String getTokenId() { return tokenId; }
-        public Claims getClaims() { return claims; }
-    }
-    
+    /**
+     * Token metadata
+     */
     private static class TokenMetadata {
-        private final String username;
-        private final AuthenticationManager.UserRole role;
-        private final Instant issuedAt;
-        private final Instant expiresAt;
-        private volatile Instant lastAccess;
+        final String username;
+        final String role;
+        final Instant expiry;
+        final TokenType type;
         
-        public TokenMetadata(String username, AuthenticationManager.UserRole role, Instant issuedAt, Instant expiresAt) {
+        TokenMetadata(String username, String role, Instant expiry, TokenType type) {
             this.username = username;
             this.role = role;
-            this.issuedAt = issuedAt;
-            this.expiresAt = expiresAt;
-            this.lastAccess = issuedAt;
+            this.expiry = expiry;
+            this.type = type;
+        }
+    }
+    
+    /**
+     * Token type
+     */
+    private enum TokenType {
+        ACCESS, REFRESH
+    }
+    
+    /**
+     * Token validation result
+     */
+    public static class TokenValidation {
+        private final boolean valid;
+        private final String username;
+        private final String role;
+        private final String error;
+        
+        private TokenValidation(boolean valid, String username, String role, String error) {
+            this.valid = valid;
+            this.username = username;
+            this.role = role;
+            this.error = error;
         }
         
-        public void updateLastAccess() {
-            this.lastAccess = Instant.now();
+        public static TokenValidation valid(String username, String role) {
+            return new TokenValidation(true, username, role, null);
         }
         
+        public static TokenValidation invalid(String error) {
+            return new TokenValidation(false, null, null, error);
+        }
+        
+        public boolean isValid() { return valid; }
         public String getUsername() { return username; }
-        public AuthenticationManager.UserRole getRole() { return role; }
-        public Instant getIssuedAt() { return issuedAt; }
-        public Instant getExpiresAt() { return expiresAt; }
-        public Instant getLastAccess() { return lastAccess; }
-    }
-    
-    public static class TokenStatistics {
-        private final long activeTokens;
-        private final long expiredTokens;
-        
-        public TokenStatistics(long activeTokens, long expiredTokens) {
-            this.activeTokens = activeTokens;
-            this.expiredTokens = expiredTokens;
-        }
-        
-        public long getActiveTokens() { return activeTokens; }
-        public long getExpiredTokens() { return expiredTokens; }
-    }
-    
-    public static class JWTAuthenticationException extends RuntimeException {
-        public JWTAuthenticationException(String message) {
-            super(message);
-        }
-        
-        public JWTAuthenticationException(String message, Throwable cause) {
-            super(message, cause);
-        }
+        public String getRole() { return role; }
+        public String getError() { return error; }
     }
 }

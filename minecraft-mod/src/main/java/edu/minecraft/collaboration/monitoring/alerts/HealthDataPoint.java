@@ -60,7 +60,7 @@ public class HealthDataPoint {
     @Override
     public String toString() {
         return String.format(
-            \"HealthDataPoint{cpu=%.1f%%, memory=%.1f%%, connections=%d, responseTime=%.1fms, errorRate=%.2f%%, score=%.1f}\",
+            "HealthDataPoint{cpu=%.1f%%, memory=%.1f%%, connections=%d, responseTime=%.1fms, errorRate=%.2f%%, score=%.1f}",
             cpuUsage, memoryUsage, activeConnections, responseTime, errorRate, getHealthScore()
         );
     }
@@ -84,6 +84,6 @@ class MetricDataPoint {
     
     @Override
     public String toString() {
-        return String.format(\"MetricDataPoint{value=%.2f, timestamp=%s}\", value, timestamp);
+        return String.format("MetricDataPoint{value=%.2f, timestamp=%s}", value, timestamp);
     }
-}"
+}

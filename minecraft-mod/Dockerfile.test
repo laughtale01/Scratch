@@ -1,0 +1,42 @@
+# TestContainers Dockerfile for Minecraft Collaboration Mod testing
+FROM eclipse-temurin:17-jdk-alpine
+
+# Install necessary tools
+RUN apk add --no-cache curl bash
+
+# Create minecraft directory
+WORKDIR /minecraft
+
+# Download Minecraft Forge installer
+ENV FORGE_VERSION=47.2.0
+ENV MC_VERSION=1.20.1
+RUN curl -L -o forge-installer.jar \
+    https://maven.minecraftforge.net/net/minecraftforge/forge/${MC_VERSION}-${FORGE_VERSION}/forge-${MC_VERSION}-${FORGE_VERSION}-installer.jar
+
+# Install Forge server
+RUN java -jar forge-installer.jar --installServer && \
+    rm forge-installer.jar
+
+# Accept EULA
+RUN echo "eula=true" > eula.txt
+
+# Create mods directory
+RUN mkdir -p mods
+
+# Copy startup script
+COPY <<EOF /minecraft/start.sh
+#!/bin/bash
+java -Xmx2G -Xms1G -jar forge-${MC_VERSION}-${FORGE_VERSION}.jar nogui
+EOF
+
+RUN chmod +x /minecraft/start.sh
+
+# Expose ports
+EXPOSE 25565 14711
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=120s \
+  CMD curl -f http://localhost:14711/health || exit 1
+
+# Start server
+CMD ["/minecraft/start.sh"]

@@ -34,7 +34,7 @@ public class WebSocketHandler extends WebSocketServer implements AutoCloseable {
     
     // Helper classes to reduce complexity
     private final WebSocketMessageValidator messageValidator;
-    private final WebSocketMetricsHandler metricsHandler;
+    private static WebSocketMetricsHandler metricsHandler;
     
     // Configuration-based settings
     private final boolean developmentMode;
@@ -310,31 +310,31 @@ public class WebSocketHandler extends WebSocketServer implements AutoCloseable {
     }
     
     // Static getter methods for metrics
-    public long getStartTime() {
+    public static long getStartTime() {
         return (Long) metricsHandler.getMetrics().get("uptimeMs");
     }
     
-    public int getConnectionCount() {
+    public static int getConnectionCount() {
         return (Integer) metricsHandler.getMetrics().get("connectionCount");
     }
     
-    public int getTotalMessages() {
+    public static int getTotalMessages() {
         return (Integer) metricsHandler.getMetrics().get("totalMessages");
     }
     
-    public int getErrorCount() {
+    public static int getErrorCount() {
         return (Integer) metricsHandler.getMetrics().get("errorCount");
     }
     
-    public int getTotalCommands() {
+    public static int getTotalCommands() {
         return (Integer) metricsHandler.getMetrics().get("totalCommands");
     }
     
-    public int getSuccessfulCommands() {
+    public static int getSuccessfulCommands() {
         return (Integer) metricsHandler.getMetrics().get("successfulCommands");
     }
     
-    public int getFailedCommands() {
+    public static int getFailedCommands() {
         return (Integer) metricsHandler.getMetrics().get("failedCommands");
     }
     

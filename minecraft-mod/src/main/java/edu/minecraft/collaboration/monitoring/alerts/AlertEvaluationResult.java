@@ -66,9 +66,9 @@ public class AlertEvaluationResult {
     @Override
     public String toString() {
         return String.format(
-            \"AlertEvaluationResult{triggered=%d, errors=%d, highestSeverity=%s}\",
+            "AlertEvaluationResult{triggered=%d, errors=%d, highestSeverity=%s}",
             getTriggeredRuleCount(), ruleErrors.size(), 
-            hasTriggeredRules() ? getHighestSeverity() : \"NONE\"
+            hasTriggeredRules() ? getHighestSeverity() : "NONE"
         );
     }
     
@@ -96,4 +96,4 @@ public class AlertEvaluationResult {
             return new AlertEvaluationResult(this);
         }
     }
-}"
+}

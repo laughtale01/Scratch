@@ -112,7 +112,7 @@ public class Alert {
      * Get a summary of the alert
      */
     public String getSummary() {
-        return String.format(\"[%s] %s - %s (Age: %d min, Status: %s)\",
+        return String.format("[%s] %s - %s (Age: %d min, Status: %s)",
             severity.name(), ruleName, description, getAgeInMinutes(), status.name());
     }
     
@@ -128,7 +128,7 @@ public class Alert {
     public static class Builder {
         private String ruleName;
         private AlertSeverity severity = AlertSeverity.LOW;
-        private String description = \"\";
+        private String description = "";
         private Map<String, Object> details = new HashMap<>();
         
         public Builder ruleName(String ruleName) {
@@ -158,7 +158,7 @@ public class Alert {
         
         public Alert build() {
             if (ruleName == null || ruleName.trim().isEmpty()) {
-                throw new IllegalArgumentException(\"Rule name is required\");
+                throw new IllegalArgumentException("Rule name is required");
             }
             return new Alert(this);
         }
@@ -169,11 +169,11 @@ public class Alert {
  * Alert severity levels
  */
 enum AlertSeverity {
-    LOW(1, \"Low\"),
-    MEDIUM(2, \"Medium\"),
-    HIGH(3, \"High\"),
-    WARNING(4, \"Warning\"),
-    CRITICAL(5, \"Critical\");
+    LOW(1, "Low"),
+    MEDIUM(2, "Medium"),
+    HIGH(3, "High"),
+    WARNING(4, "Warning"),
+    CRITICAL(5, "Critical");
     
     private final int level;
     private final String displayName;
@@ -195,9 +195,9 @@ enum AlertSeverity {
  * Alert status
  */
 enum AlertStatus {
-    ACTIVE(\"Active\"),
-    ACKNOWLEDGED(\"Acknowledged\"),
-    RESOLVED(\"Resolved\");
+    ACTIVE("Active"),
+    ACKNOWLEDGED("Acknowledged"),
+    RESOLVED("Resolved");
     
     private final String displayName;
     
@@ -206,4 +206,4 @@ enum AlertStatus {
     }
     
     public String getDisplayName() { return displayName; }
-}"
+}

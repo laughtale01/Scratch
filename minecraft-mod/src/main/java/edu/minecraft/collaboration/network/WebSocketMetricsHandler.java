@@ -66,7 +66,7 @@ public class WebSocketMetricsHandler {
      */
     public void recordConnectionOpened() {
         connectionCount++;
-        metrics.incrementCounter(MetricsCollector.Metrics.WS_CONNECTIONS);
+        metrics.incrementCounter(MetricsCollector.Metrics.WS_CONNECTIONS_TOTAL);
     }
     
     /**

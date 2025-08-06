@@ -43,13 +43,13 @@ public class AlertRule {
     
     @Override
     public String toString() {
-        return String.format(\"AlertRule{name='%s', severity=%s, threshold=%.2f, predictive=%s}\",
+        return String.format("AlertRule{name='%s', severity=%s, threshold=%.2f, predictive=%s}",
             name, severity, threshold, isPredictive);
     }
     
     public static class Builder {
         private String name;
-        private String description = \"\";
+        private String description = "";
         private AlertSeverity severity = AlertSeverity.MEDIUM;
         private Predicate<HealthDataPoint> condition;
         private double threshold = 0.0;
@@ -99,12 +99,12 @@ public class AlertRule {
         
         public AlertRule build() {
             if (name == null || name.trim().isEmpty()) {
-                throw new IllegalArgumentException(\"Alert rule name is required\");
+                throw new IllegalArgumentException("Alert rule name is required");
             }
             if (condition == null) {
-                throw new IllegalArgumentException(\"Alert rule condition is required\");
+                throw new IllegalArgumentException("Alert rule condition is required");
             }
             return new AlertRule(this);
         }
     }
-}"
+}

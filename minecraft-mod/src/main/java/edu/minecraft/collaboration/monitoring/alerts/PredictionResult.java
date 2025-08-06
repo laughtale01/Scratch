@@ -84,11 +84,11 @@ public class PredictionResult {
      */
     public String getRiskLevel() {
         if (hasCriticalPredictions()) {
-            return \"CRITICAL\";
+            return "CRITICAL";
         } else if (hasWarningPredictions()) {
-            return \"WARNING\";
+            return "WARNING";
         } else {
-            return \"NORMAL\";
+            return "NORMAL";
         }
     }
     
@@ -97,12 +97,12 @@ public class PredictionResult {
      */
     public String getSummary() {
         if (isError) {
-            return \"Prediction Error: \" + errorMessage;
+            return "Prediction Error: " + errorMessage;
         }
         
         return String.format(
-            \"Predictions (%.0f min): CPU=%.1f%% (max %.1f%%), Memory=%.1f%% (max %.1f%%), \" +
-            \"Response=%.1fms (max %.1fms), Errors=%.2f%% (max %.2f%%), Risk=%s, Confidence=%.0f%%\",
+            "Predictions (%.0f min): CPU=%.1f%% (max %.1f%%), Memory=%.1f%% (max %.1f%%), " +
+            "Response=%.1fms (max %.1fms), Errors=%.2f%% (max %.2f%%), Risk=%s, Confidence=%.0f%%",
             predictionWindow.toMinutes(),
             predictedCpuAvg, predictedCpuMax,
             predictedMemoryAvg, predictedMemoryMax,
@@ -147,11 +147,11 @@ public class PredictionResult {
         private double predictedErrorRateAvg = 0.0;
         private double predictedErrorRateMax = 0.0;
         private double confidence = 0.0;
-        private String cpuTrend = \"STABLE\";
-        private String memoryTrend = \"STABLE\";
+        private String cpuTrend = "STABLE";
+        private String memoryTrend = "STABLE";
         private List<AnomalyPrediction> anomalies = new ArrayList<>();
         private boolean isError = false;
-        private String errorMessage = \"\";
+        private String errorMessage = "";
         
         public Builder predictionWindow(Duration predictionWindow) {
             this.predictionWindow = predictionWindow;
@@ -258,7 +258,7 @@ class AnomalyPrediction {
     
     @Override
     public String toString() {
-        return String.format(\"%s: %s (confidence: %.0f%%, ETA: %d min)\",
+        return String.format("%s: %s (confidence: %.0f%%, ETA: %d min)",
             type, description, confidence * 100, estimatedTimeToOccurrence.toMinutes());
     }
-}"
+}

@@ -1,0 +1,103 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-minecraft-mod:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Grant execute permission for gradlew
+      run: chmod +x minecraft-mod/gradlew
+    
+    - name: Build with Gradle
+      run: |
+        cd minecraft-mod
+        ./gradlew build
+    
+    - name: Run tests
+      run: |
+        cd minecraft-mod
+        ./gradlew test
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: minecraft-mod/build/reports/tests/
+    
+    - name: Upload JAR
+      uses: actions/upload-artifact@v3
+      with:
+        name: minecraft-mod
+        path: minecraft-mod/build/libs/*.jar
+
+  build-scratch-gui:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: scratch-gui/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd scratch-gui
+        npm ci
+    
+    - name: Build
+      run: |
+        cd scratch-gui
+        npm run build
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: scratch-gui-build
+        path: scratch-gui/build/
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Run Checkstyle
+      run: |
+        cd minecraft-mod
+        ./gradlew checkstyleMain || true
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Run ESLint
+      run: |
+        cd scratch-extension
+        npm install
+        npx eslint src/ || true

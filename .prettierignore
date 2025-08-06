@@ -1,0 +1,32 @@
+# ビルド成果物
+build/
+dist/
+out/
+target/
+*.class
+*.jar
+
+# 依存関係
+node_modules/
+.gradle/
+gradle/
+
+# IDE
+.idea/
+.vscode/settings.json
+*.iml
+
+# 生成ファイル
+*.min.js
+*.min.css
+package-lock.json
+yarn.lock
+
+# その他
+*.log
+*.pdf
+*.png
+*.jpg
+*.gif
+*.ico
+scratch-gui/
