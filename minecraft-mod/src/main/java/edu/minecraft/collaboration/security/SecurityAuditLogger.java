@@ -114,4 +114,151 @@ public class SecurityAuditLogger {
     private void incrementEventCount(String event) {
         eventCounts.merge(event, 1, Integer::sum);
     }
+    
+    /**
+     * Log access attempt (for Zero Trust compatibility)
+     */
+    public void logAccessAttempt(String userId, String resource, boolean allowed, String reason) {
+        String event = allowed ? "ACCESS_ALLOWED" : "ACCESS_BLOCKED";
+        incrementEventCount(event);
+        
+        LOGGER.info("[SECURITY AUDIT] {} - User: {}, Resource: {}, Reason: {}, Time: {}", 
+            event, userId, resource, reason, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log security event (for Threat Detection compatibility)
+     */
+    public void logSecurityEvent(String component, String message, String level) {
+        incrementEventCount("SECURITY_EVENT_" + level);
+        
+        String logMessage = String.format("[SECURITY AUDIT] %s - Component: %s, Message: %s, Time: %s", 
+            level, component, message, formatter.format(Instant.now()));
+            
+        if ("ERROR".equals(level)) {
+            LOGGER.error(logMessage);
+        } else if ("WARN".equals(level)) {
+            LOGGER.warn(logMessage);
+        } else {
+            LOGGER.info(logMessage);
+        }
+    }
+    
+    /**
+     * Log threat detection (for Threat Detection Engine compatibility)
+     */
+    public void logThreatDetected(String userId, String action, double threatScore) {
+        incrementEventCount("THREAT_DETECTED");
+        
+        LOGGER.warn("[SECURITY AUDIT] THREAT_DETECTED - User: {}, Action: {}, Score: {}, Time: {}", 
+            userId, action, threatScore, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log successful authentication (for JWT compatibility)
+     */
+    public void logSuccessfulAuthentication(String username, AuthenticationManager.UserRole role) {
+        incrementEventCount("SUCCESSFUL_AUTHENTICATION");
+        
+        LOGGER.info("[SECURITY AUDIT] SUCCESSFUL_AUTHENTICATION - User: {}, Role: {}, Time: {}", 
+            username, role, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log token revocation (for JWT compatibility)
+     */
+    public void logTokenRevocation(String username, String tokenId) {
+        incrementEventCount("TOKEN_REVOKED");
+        
+        LOGGER.info("[SECURITY AUDIT] TOKEN_REVOKED - User: {}, TokenId: {}, Time: {}", 
+            username, tokenId, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log token refresh failure (for JWT compatibility)
+     */
+    public void logTokenRefreshFailure(String username, String reason) {
+        incrementEventCount("TOKEN_REFRESH_FAILURE");
+        
+        LOGGER.warn("[SECURITY AUDIT] TOKEN_REFRESH_FAILURE - User: {}, Reason: {}, Time: {}", 
+            username, reason, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log suspicious activity detected by threat detection system
+     */
+    public void logSuspiciousActivity(String username, String activity, Map<String, Object> context) {
+        incrementEventCount("SUSPICIOUS_ACTIVITY");
+        
+        StringBuilder contextStr = new StringBuilder();
+        if (context != null && !context.isEmpty()) {
+            contextStr.append(" [Context: ");
+            context.forEach((key, value) -> contextStr.append(key).append("=").append(value).append(", "));
+            contextStr.setLength(contextStr.length() - 2); // Remove last comma and space
+            contextStr.append("]");
+        }
+        
+        LOGGER.warn("[SECURITY AUDIT] SUSPICIOUS_ACTIVITY - User: {}, Activity: {}, Time: {}{}", 
+            username, activity, formatter.format(Instant.now()), contextStr.toString());
+    }
+    
+    /**
+     * Log access granted event
+     */
+    public void logAccessGranted(String username, String resource, String operation) {
+        incrementEventCount("ACCESS_GRANTED");
+        
+        LOGGER.info("[SECURITY AUDIT] ACCESS_GRANTED - User: {}, Resource: {}, Operation: {}, Time: {}", 
+            username, resource, operation, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log access denied event
+     */
+    public void logAccessDenied(String username, String resource, String operation, String reason) {
+        incrementEventCount("ACCESS_DENIED");
+        
+        LOGGER.warn("[SECURITY AUDIT] ACCESS_DENIED - User: {}, Resource: {}, Operation: {}, Reason: {}, Time: {}", 
+            username, resource, operation, reason, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log token generation
+     */
+    public void logTokenGeneration(String username, AuthenticationManager.UserRole role, String tokenId) {
+        incrementEventCount("TOKEN_GENERATED");
+        
+        LOGGER.info("[SECURITY AUDIT] TOKEN_GENERATED - User: {}, Role: {}, TokenId: {}, Time: {}", 
+            username, role, tokenId, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log authentication failure
+     */
+    public void logAuthenticationFailure(String username, String reason) {
+        incrementEventCount("AUTH_FAILURE");
+        
+        LOGGER.warn("[SECURITY AUDIT] AUTH_FAILURE - User: {}, Reason: {}, Time: {}", 
+            username, reason, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log token refresh
+     */
+    public void logTokenRefresh(String username, String tokenId) {
+        incrementEventCount("TOKEN_REFRESHED");
+        
+        LOGGER.info("[SECURITY AUDIT] TOKEN_REFRESHED - User: {}, TokenId: {}, Time: {}", 
+            username, tokenId, formatter.format(Instant.now()));
+    }
+    
+    /**
+     * Log token generation failure
+     */
+    public void logTokenGenerationFailure(String username, Exception exception) {
+        incrementEventCount("TOKEN_GENERATION_FAILURE");
+        
+        LOGGER.error("[SECURITY AUDIT] TOKEN_GENERATION_FAILURE - User: {}, Error: {}, Time: {}", 
+            username, exception.getMessage(), formatter.format(Instant.now()));
+    }
 }

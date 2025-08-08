@@ -81,6 +81,13 @@ public class WebSocketHandler extends WebSocketServer implements AutoCloseable {
         this.metricsHandler = new WebSocketMetricsHandler(metrics);
     }
     
+    /**
+     * Constructor with host and port for test compatibility
+     */
+    public WebSocketHandler(String host, int port) {
+        this(new InetSocketAddress(host, port));
+    }
+    
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         System.out.println("=== WEBSOCKET CONNECTION OPENED ===");
@@ -307,6 +314,26 @@ public class WebSocketHandler extends WebSocketServer implements AutoCloseable {
                         LOGGER.warn("Failed to send message to client");
                     }
                 });
+        }
+    }
+    
+    /**
+     * Send a message to a specific client by connection ID (for test compatibility)
+     */
+    public void sendMessage(String connectionId, String message) {
+        WebSocket client = null;
+        for (WebSocket conn : getConnections()) {
+            if (conn != null && conn.getRemoteSocketAddress() != null && 
+                conn.getRemoteSocketAddress().toString().equals(connectionId)) {
+                client = conn;
+                break;
+            }
+        }
+        
+        if (client != null) {
+            sendToClient(client, message);
+        } else {
+            LOGGER.warn("No client found with connection ID: {}", connectionId);
         }
     }
     

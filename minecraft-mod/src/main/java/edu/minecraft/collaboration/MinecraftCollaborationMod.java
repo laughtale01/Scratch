@@ -229,4 +229,11 @@ public class MinecraftCollaborationMod {
         return EXECUTOR;
     }
     
+    /**
+     * Callback for WebSocket connection establishment (for test compatibility)
+     */
+    public void onWebSocketConnected() {
+        LOGGER.info("WebSocket connection established");
+    }
+    
 }

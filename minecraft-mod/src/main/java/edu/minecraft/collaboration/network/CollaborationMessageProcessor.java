@@ -53,6 +53,19 @@ public class CollaborationMessageProcessor {
     }
     
     /**
+     * Process incoming message from WebSocket connection
+     * This is the primary method for handling WebSocket messages
+     */
+    public String processMessage(String message, org.java_websocket.WebSocket webSocket) {
+        // Set the current connection context for authentication
+        if (webSocket != null) {
+            this.currentConnectionId = webSocket.getRemoteSocketAddress().toString();
+        }
+        
+        return processMessage(message);
+    }
+    
+    /**
      * Process incoming message from Scratch extension
      * Supports JSON format: {"command": "cmdName", "args": {...}}
      * Also supports legacy format: "command(arg1,arg2,arg3)"

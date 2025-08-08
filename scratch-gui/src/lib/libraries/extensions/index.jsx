@@ -46,9 +46,29 @@ import gdxforInsetIconURL from './gdxfor/gdxfor-small.svg';
 import gdxforConnectionIconURL from './gdxfor/gdxfor-illustration.svg';
 import gdxforConnectionSmallIconURL from './gdxfor/gdxfor-small.svg';
 
-// Minecraft Collaboration Extension
-const minecraftIconURL = 'static/assets/minecraft.png';
-const minecraftInsetIconURL = 'static/assets/minecraft-small.svg';
+// Minecraft Collaboration Extension - Base64 icons to avoid 404 errors
+const minecraftIconURL = 'data:image/svg+xml;base64,' + btoa(`
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+    <rect width="40" height="40" fill="#8FBC8F" rx="8"/>
+    <rect x="8" y="8" width="8" height="8" fill="#228B22"/>
+    <rect x="24" y="8" width="8" height="8" fill="#32CD32"/>
+    <rect x="8" y="24" width="8" height="8" fill="#32CD32"/>
+    <rect x="24" y="24" width="8" height="8" fill="#228B22"/>
+    <rect x="16" y="16" width="8" height="8" fill="#90EE90"/>
+    <circle cx="20" cy="30" r="3" fill="#654321"/>
+    <rect x="18" y="27" width="4" height="2" fill="#8B4513"/>
+</svg>
+`);
+const minecraftInsetIconURL = 'data:image/svg+xml;base64,' + btoa(`
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+    <rect width="20" height="20" fill="#8FBC8F" rx="4"/>
+    <rect x="4" y="4" width="4" height="4" fill="#228B22"/>
+    <rect x="12" y="4" width="4" height="4" fill="#32CD32"/>
+    <rect x="4" y="12" width="4" height="4" fill="#32CD32"/>
+    <rect x="12" y="12" width="4" height="4" fill="#228B22"/>
+    <rect x="8" y="8" width="4" height="4" fill="#90EE90"/>
+</svg>
+`);
 
 export default [
     {
@@ -325,9 +345,9 @@ export default [
     {
         name: (
             <FormattedMessage
-                defaultMessage="Minecraft Controller"
-                description="Name for the unified Minecraft extension"
-                id="gui.extension.minecraftUnified.name"
+                defaultMessage="Minecraft"
+                description="Name for the Minecraft extension"
+                id="gui.extension.minecraft.name"
             />
         ),
         extensionId: 'minecraftUnified',
@@ -335,112 +355,18 @@ export default [
         insetIconURL: minecraftInsetIconURL,
         description: (
             <FormattedMessage
-                defaultMessage="Control Minecraft with Scratch blocks"
-                description="Description for unified Minecraft extension"
-                id="gui.extension.minecraftUnified.description"
+                defaultMessage="Control Minecraft with Scratch blocks - chat, build, and collaborate!"
+                description="Description for Minecraft extension"
+                id="gui.extension.minecraft.description"
             />
         ),
         featured: true,
         disabled: false,
-        internetConnectionRequired: true,
+        internetConnectionRequired: false,
         bluetoothRequired: false,
         launchPeripheralConnectionFlow: false,
         useAutoScan: false,
-        extensionURL: 'static/extensions/minecraft-unified-v2.js',
-        helpLink: 'https://github.com/yourusername/minecraft-collaboration'
-    },
-    {
-        name: 'Minecraft Minimal Test',
-        extensionId: 'minecraftMinimalTest',
-        iconURL: minecraftIconURL,
-        insetIconURL: minecraftInsetIconURL,
-        description: 'Test minimal implementation',
-        featured: true,
-        disabled: false,
-        extensionURL: 'static/extensions/minecraft-minimal-test.js'
-    },
-    {
-        name: 'Minecraft Debug DataClone',
-        extensionId: 'minecraftDebugDataClone',
-        iconURL: minecraftIconURL,
-        insetIconURL: minecraftInsetIconURL,
-        description: 'Debug DataClone issues',
-        featured: true,
-        disabled: false,
-        extensionURL: 'static/extensions/minecraft-debug-dataclone.js'
-    },
-    {
-        name: 'Minecraft Worker Safe',
-        extensionId: 'minecraftWorkerSafe',
-        iconURL: minecraftIconURL,
-        insetIconURL: minecraftInsetIconURL,
-        description: 'Worker-safe implementation',
-        featured: true,
-        disabled: false,
-        extensionURL: 'static/extensions/minecraft-worker-safe.js'
-    },
-    {
-        name: 'Minecraft DateFix',
-        extensionId: 'minecraftDateFix',
-        iconURL: minecraftIconURL,
-        insetIconURL: minecraftInsetIconURL,
-        description: 'Date function reference fix',
-        featured: true,
-        disabled: false,
-        extensionURL: 'static/extensions/minecraft-datefix.js'
-    },
-    {
-        name: 'Minecraft Clean',
-        extensionId: 'minecraftNoDate',
-        iconURL: minecraftIconURL,
-        insetIconURL: minecraftInsetIconURL,
-        description: 'Completely Date-free implementation',
-        featured: true,
-        disabled: false,
-        extensionURL: 'static/extensions/minecraft-no-date.js'
-    },
-    {
-        name: 'Minecraft Minimal WebSocket',
-        extensionId: 'minecraftMinimalWebSocket',
-        iconURL: minecraftIconURL,
-        insetIconURL: minecraftInsetIconURL,
-        description: (
-            <FormattedMessage
-                defaultMessage="Minimal WebSocket implementation to test DataClone errors"
-                description="Description for minimal Minecraft WebSocket extension"
-                id="gui.extension.minecraftMinimalWebSocket.description"
-            />
-        ),
-        extensionURL: 'static/extensions/minecraft-minimal-websocket.js'
-    },
-    {
-        name: 'Minecraft Safe Complete',
-        extensionId: 'minecraftSafeComplete',
-        iconURL: minecraftIconURL,
-        insetIconURL: minecraftInsetIconURL,
-        description: (
-            <FormattedMessage
-                defaultMessage="Completely safe implementation without Date references"
-                description="Description for completely safe Minecraft extension"
-                id="gui.extension.minecraftSafeComplete.description"
-            />
-        ),
-        featured: true,
-        extensionURL: 'static/extensions/minecraft-safe-complete.js'
-    },
-    {
-        name: 'Minecraft Worker Free',
-        extensionId: 'minecraftWorkerFree',
-        iconURL: minecraftIconURL,
-        insetIconURL: minecraftInsetIconURL,
-        description: (
-            <FormattedMessage
-                defaultMessage="Worker-free implementation for complete DataClone avoidance"
-                description="Description for worker-free Minecraft extension"
-                id="gui.extension.minecraftWorkerFree.description"
-            />
-        ),
-        featured: true,
-        extensionURL: 'static/extensions/minecraft-worker-free.js'
+        extensionURL: 'static/minecraft-unified.js',
+        helpLink: 'https://github.com/minecraft-collaboration'
     }
 ];

@@ -15,6 +15,7 @@ public class WebSocketMessageValidator {
     private final AuthenticationManager authManager;
     private final int maxCommandLength;
     private final boolean developmentMode;
+    private String lastValidationError;
     
     public WebSocketMessageValidator(final AuthenticationManager authManager, 
                                    final int maxCommandLength, 
@@ -22,6 +23,15 @@ public class WebSocketMessageValidator {
         this.authManager = authManager;
         this.maxCommandLength = maxCommandLength;
         this.developmentMode = developmentMode;
+    }
+    
+    /**
+     * Default constructor for test compatibility
+     */
+    public WebSocketMessageValidator() {
+        this.authManager = null;
+        this.maxCommandLength = 1024;
+        this.developmentMode = false;
     }
     
     /**
@@ -141,5 +151,73 @@ public class WebSocketMessageValidator {
         }
         
         return message.substring(startQuoteIndex + 1, endQuoteIndex);
+    }
+    
+    /**
+     * Simple validation method for test compatibility
+     */
+    public boolean isValidMessage(String message) {
+        // Reset last error
+        lastValidationError = null;
+        
+        // Basic validation checks
+        if (message == null) {
+            lastValidationError = "Message is null";
+            return false;
+        }
+        
+        if (message.isEmpty() || message.trim().isEmpty()) {
+            lastValidationError = "Message is empty";
+            return false;
+        }
+        
+        if (message.length() > maxCommandLength) {
+            lastValidationError = "Message exceeds maximum length";
+            return false;
+        }
+        
+        // Check for dangerous patterns
+        String[] dangerousPatterns = {
+            "<script", "javascript:", "onclick", "onerror",
+            "DROP TABLE", "DELETE FROM", "; DROP", "--"
+        };
+        
+        String lowerMessage = message.toLowerCase();
+        for (String pattern : dangerousPatterns) {
+            if (lowerMessage.contains(pattern.toLowerCase())) {
+                lastValidationError = "Message contains dangerous pattern: " + pattern;
+                return false;
+            }
+        }
+        
+        // Basic JSON validation if it looks like JSON
+        if (message.trim().startsWith("{")) {
+            try {
+                // Simple check for balanced braces
+                int openBraces = 0;
+                int closeBraces = 0;
+                for (char c : message.toCharArray()) {
+                    if (c == '{') openBraces++;
+                    if (c == '}') closeBraces++;
+                }
+                if (openBraces != closeBraces || openBraces == 0) {
+                    lastValidationError = "Invalid JSON structure";
+                    return false;
+                }
+                return true;
+            } catch (Exception e) {
+                lastValidationError = "JSON validation error: " + e.getMessage();
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get the last validation error message
+     */
+    public String getLastValidationError() {
+        return lastValidationError;
     }
 }

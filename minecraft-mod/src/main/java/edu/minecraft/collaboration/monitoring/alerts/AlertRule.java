@@ -37,6 +37,30 @@ public class AlertRule {
     public boolean isPredictive() { return isPredictive; }
     public int getMinimumOccurrences() { return minimumOccurrences; }
     
+    /**
+     * Evaluate metrics against this rule
+     */
+    public Alert evaluate(java.util.Map<String, Double> currentMetrics) {
+        if (currentMetrics == null) {
+            return null;
+        }
+        
+        // Simple evaluation logic - check if any metric exceeds threshold
+        for (java.util.Map.Entry<String, Double> entry : currentMetrics.entrySet()) {
+            Double value = entry.getValue();
+            if (value != null && value > threshold) {
+                return Alert.builder()
+                    .ruleName(name)
+                    .severity(severity)
+                    .description(String.format("Alert: %s - %s exceeded threshold %.2f with value %.2f", 
+                        name, entry.getKey(), threshold, value))
+                    .build();
+            }
+        }
+        
+        return null; // No alert triggered
+    }
+    
     public static Builder builder() {
         return new Builder();
     }

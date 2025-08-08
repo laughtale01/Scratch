@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -70,6 +71,19 @@ public final class CollaborationManager {
             return true;
         }
         return false;
+    }
+    
+    /**
+     * Accept invitation with string IDs for test compatibility
+     */
+    public CompletableFuture<String> acceptInvitation(String recipientId, String invitationId) {
+        return CompletableFuture.supplyAsync(() -> {
+            UUID inviteUUID = UUID.fromString(invitationId);
+            if (acceptInvitation(inviteUUID)) {
+                return "accepted";
+            }
+            return "error";
+        });
     }
     
     public boolean declineInvitation(UUID invitationId) {
@@ -243,6 +257,42 @@ public final class CollaborationManager {
         }
         
         return returned;
+    }
+    
+    /**
+     * Send invitation for test compatibility
+     */
+    public CompletableFuture<String> sendInvitation(String senderId, String recipientId) {
+        return CompletableFuture.supplyAsync(() -> {
+            // Clean up expired invitations first
+            cleanupExpiredInvitations();
+            
+            // Create new invitation
+            Invitation invitation = new Invitation(
+                UUID.randomUUID(),
+                UUID.fromString(senderId),
+                UUID.fromString(recipientId),
+                "sender_" + senderId,
+                "recipient_" + recipientId,
+                5 // 5 minutes expiry
+            );
+            
+            invitations.put(invitation.getId(), invitation);
+            return invitation.getId().toString();
+        });
+    }
+    
+    /**
+     * Check if there's an active invitation between users
+     */
+    public boolean hasActiveInvitation(String senderId, String recipientId) {
+        UUID senderUUID = UUID.fromString(senderId);
+        UUID recipientUUID = UUID.fromString(recipientId);
+        
+        return invitations.values().stream()
+            .anyMatch(inv -> inv.getSenderId().equals(senderUUID) 
+                && inv.getRecipientId().equals(recipientUUID)
+                && !inv.isExpired());
     }
     
     // Inner class for storing position data

@@ -224,6 +224,20 @@ public class ConfigurationManager {
     }
     
     /**
+     * Set a property value (for runtime configuration or testing)
+     */
+    public void setProperty(String key, String value) {
+        if (key == null || value == null) {
+            throw new IllegalArgumentException("Key and value cannot be null");
+        }
+        
+        propertyCache.put(key, value);
+        properties.setProperty(key, value);
+        
+        LOGGER.debug("Set property {} = {}", key, value);
+    }
+    
+    /**
      * Check if a property exists
      */
     public boolean hasProperty(String key) {

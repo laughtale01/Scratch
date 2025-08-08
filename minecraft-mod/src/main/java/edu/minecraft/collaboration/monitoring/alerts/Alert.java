@@ -39,6 +39,7 @@ public class Alert {
     public String getRuleName() { return ruleName; }
     public AlertSeverity getSeverity() { return severity; }
     public String getDescription() { return description; }
+    public String getMessage() { return description; } // Alias for getDescription
     public Map<String, Object> getDetails() { return details; }
     public Instant getCreatedAt() { return createdAt; }
     public AlertStatus getStatus() { return status; }
@@ -165,45 +166,3 @@ public class Alert {
     }
 }
 
-/**
- * Alert severity levels
- */
-enum AlertSeverity {
-    LOW(1, "Low"),
-    MEDIUM(2, "Medium"),
-    HIGH(3, "High"),
-    WARNING(4, "Warning"),
-    CRITICAL(5, "Critical");
-    
-    private final int level;
-    private final String displayName;
-    
-    AlertSeverity(int level, String displayName) {
-        this.level = level;
-        this.displayName = displayName;
-    }
-    
-    public int getLevel() { return level; }
-    public String getDisplayName() { return displayName; }
-    
-    public boolean isHigherThan(AlertSeverity other) {
-        return this.level > other.level;
-    }
-}
-
-/**
- * Alert status
- */
-enum AlertStatus {
-    ACTIVE("Active"),
-    ACKNOWLEDGED("Acknowledged"),
-    RESOLVED("Resolved");
-    
-    private final String displayName;
-    
-    AlertStatus(String displayName) {
-        this.displayName = displayName;
-    }
-    
-    public String getDisplayName() { return displayName; }
-}

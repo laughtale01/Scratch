@@ -8,9 +8,12 @@ import java.util.UUID;
  */
 public class Invitation {
     private final UUID id;
+    private final UUID senderId;
+    private final UUID recipientId;
     private final String senderName;
     private final String recipientName;
     private final Instant timestamp;
+    private final int expiryMinutes;
     private InvitationStatus status;
     
     public enum InvitationStatus {
@@ -22,15 +25,40 @@ public class Invitation {
     
     public Invitation(String senderName, String recipientName) {
         this.id = UUID.randomUUID();
+        this.senderId = UUID.randomUUID();
+        this.recipientId = UUID.randomUUID();
         this.senderName = senderName;
         this.recipientName = recipientName;
         this.timestamp = Instant.now();
+        this.expiryMinutes = 5;
+        this.status = InvitationStatus.PENDING;
+    }
+    
+    /**
+     * Constructor with all parameters for test compatibility
+     */
+    public Invitation(UUID id, UUID senderId, UUID recipientId, String senderName, String recipientName, int expiryMinutes) {
+        this.id = id;
+        this.senderId = senderId;
+        this.recipientId = recipientId;
+        this.senderName = senderName;
+        this.recipientName = recipientName;
+        this.timestamp = Instant.now();
+        this.expiryMinutes = expiryMinutes;
         this.status = InvitationStatus.PENDING;
     }
     
     // Getters
     public UUID getId() {
         return id;
+    }
+    
+    public UUID getSenderId() {
+        return senderId;
+    }
+    
+    public UUID getRecipientId() {
+        return recipientId;
     }
     
     public String getSenderName() {
@@ -54,8 +82,8 @@ public class Invitation {
         this.status = status;
     }
     
-    // Check if invitation is expired (older than 5 minutes)
+    // Check if invitation is expired
     public boolean isExpired() {
-        return Instant.now().isAfter(timestamp.plusSeconds(300));
+        return Instant.now().isAfter(timestamp.plusSeconds(expiryMinutes * 60));
     }
 }

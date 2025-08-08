@@ -127,6 +127,24 @@ public class PredictionResult {
             .build();
     }
     
+    /**
+     * Create a failed prediction result (alias for error)
+     */
+    public static PredictionResult failed(String message) {
+        return error(message);
+    }
+    
+    /**
+     * Create a successful prediction result
+     */
+    public static PredictionResult success(double predictedValue, double confidence, String description) {
+        return builder()
+            .predictedCpuAvg(predictedValue)
+            .confidence(confidence)
+            .cpuTrend(description)
+            .build();
+    }
+    
     public static Builder builder() {
         return new Builder();
     }

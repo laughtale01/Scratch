@@ -73,6 +73,31 @@ public class CollaborationCommandHandler {
         this.teacherHandler = new TeacherCommandHandler(teacherManager, metricsCollector);
     }
     
+    /**
+     * Constructor for test compatibility - accepts CollaborationManager parameter
+     */
+    public CollaborationCommandHandler(CollaborationManager collaborationManager) {
+        LOGGER.debug("CollaborationCommandHandler initialized with explicit CollaborationManager");
+        this.collaborationManager = collaborationManager;
+        
+        // Get other services from dependency injector
+        DependencyInjector injector = DependencyInjector.getInstance();
+        this.languageManager = injector.getService(LanguageManager.class);
+        this.blockPackManager = injector.getService(BlockPackManager.class);
+        this.offlineModeManager = injector.getService(OfflineModeManager.class);
+        this.metricsCollector = injector.getService(MetricsCollector.class);
+        
+        // Get remaining services with simple instantiation
+        this.teacherManager = TeacherManager.getInstance();
+        this.progressTracker = ProgressTracker.getInstance();
+        this.metricsReporter = MetricsReporter.getInstance();
+        
+        // Initialize specialized handlers
+        this.basicHandler = new BasicCommandHandler(metricsCollector);
+        this.agentHandler = new AgentCommandHandler(metricsCollector);
+        this.teacherHandler = new TeacherCommandHandler(teacherManager, metricsCollector);
+    }
+    
     // === Connection Commands ===
     
     public String handleConnect(String[] args) {
@@ -691,6 +716,105 @@ public class CollaborationCommandHandler {
                 
                 offlineModeManager.recordOfflineAction(activity, actionData);
             }
+        }
+    }
+    
+    /**
+     * Generic command handler for test compatibility
+     * Routes commands to appropriate handlers based on command name
+     */
+    public String handleCommand(String command, String[] args) {
+        if (command == null || command.isEmpty()) {
+            return ResponseHelper.error("handleCommand", ResponseHelper.ERROR_INVALID_PARAMS, "Command is required");
+        }
+        
+        // Track metrics
+        metricsCollector.incrementCounter(MetricsCollector.Metrics.WS_MESSAGES_RECEIVED);
+        
+        try {
+            // Route to appropriate handler based on command
+            switch (command.toLowerCase()) {
+                // Connection commands
+                case "connect":
+                    return handleConnect(args);
+                case "status":
+                    return handleStatus(args);
+                case "ping":
+                    return handlePing(args);
+                    
+                // Collaboration commands
+                case "invitefriend":
+                case "invite_friend":
+                    return handleInviteFriend(args);
+                case "getinvitations":
+                case "get_invitations":
+                    return handleGetInvitations(args);
+                case "requestvisit":
+                case "request_visit":
+                    return handleRequestVisit(args);
+                case "approvevisit":
+                case "approve_visit":
+                    return handleApproveVisit(args);
+                case "getcurrentworld":
+                case "get_current_world":
+                    return handleGetCurrentWorld(args);
+                case "returnhome":
+                case "return_home":
+                    return handleReturnHome(args);
+                case "emergencyreturn":
+                case "emergency_return":
+                    return handleEmergencyReturn(args);
+                    
+                // Basic commands
+                case "getplayerpos":
+                case "get_player_pos":
+                    return handleGetPlayerPosition(args);
+                case "setblock":
+                case "set_block":
+                    return handleSetBlock(args);
+                case "chat":
+                    return handleChatMessage(args);
+                case "fill":
+                    return handleFillArea(args);
+                    
+                // Agent commands
+                case "spawnagent":
+                case "spawn_agent":
+                case "summonagent":
+                case "summon_agent":
+                    return handleSummonAgent(args);
+                case "moveagent":
+                case "move_agent":
+                    return handleMoveAgent(args);
+                case "agentfollow":
+                case "agent_follow":
+                    return handleAgentFollow(args);
+                case "agentaction":
+                case "agent_action":
+                    return handleAgentAction(args);
+                case "dismissagent":
+                case "dismiss_agent":
+                    return handleDismissAgent(args);
+                    
+                // Teacher commands
+                case "registerteacher":
+                case "register_teacher":
+                    return handleRegisterTeacher(args);
+                case "toggleclassroommode":
+                case "toggle_classroom_mode":
+                    return handleToggleClassroomMode(args);
+                case "setglobalpermissions":
+                case "set_global_permissions":
+                    return handleSetGlobalPermissions(args);
+                    
+                default:
+                    return ResponseHelper.error("handleCommand", ResponseHelper.ERROR_NOT_FOUND, 
+                        "Unknown command: " + command);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error handling command: " + command, e);
+            metricsCollector.incrementCounter(MetricsCollector.Metrics.WS_ERRORS);
+            return ResponseHelper.safeError("handleCommand", ResponseHelper.ERROR_INTERNAL, e);
         }
     }
 }

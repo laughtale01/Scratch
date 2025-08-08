@@ -1,8 +1,6 @@
 /**
- * 統合されたMinecraft拡張機能
- * 全てのMinecraft機能を一つの拡張機能に統合
+ * シンプルなMinecraft拡張機能 - DataCloneError修正版
  */
-
 (function(Scratch) {
     'use strict';
 
@@ -19,10 +17,14 @@
             this.socket = null;
             this.isConnected = false;
             this.lastMessage = '';
-            this.playerInfo = {};
-            this.zoomLevel = 1.0;
+            this.playerInfo = {
+                x: 0,
+                y: 0, 
+                z: 0,
+                health: 20
+            };
             
-            // WebSocket接続の初期化
+            // 自動接続を試行
             this.initWebSocket();
         }
 
@@ -36,31 +38,61 @@
                 menuIconURI: this.getMenuIconURI(),
                 blockIconURI: this.getBlockIconURI(),
                 blocks: [
-                    // === 接続・設定カテゴリ ===
+                    // === 接続管理 ===
                     {
                         blockType: BlockType.LABEL,
-                        text: '🔌 接続・設定'
+                        text: '🔌 接続'
                     },
                     {
                         opcode: 'connectToMinecraft',
                         blockType: BlockType.COMMAND,
-                        text: 'Minecraftに接続',
-                        arguments: {}
+                        text: 'Minecraftに接続'
                     },
                     {
-                        opcode: 'disconnectFromMinecraft',
+                        opcode: 'authenticateAsTeacher',
                         blockType: BlockType.COMMAND,
-                        text: 'Minecraftから切断',
-                        arguments: {}
+                        text: '🔑 先生として認証'
+                    },
+                    {
+                        opcode: 'authenticateAsStudent',
+                        blockType: BlockType.COMMAND,
+                        text: '👨‍🎓 生徒として認証'
                     },
                     {
                         opcode: 'isConnected',
                         blockType: BlockType.BOOLEAN,
-                        text: '接続中？',
-                        arguments: {}
+                        text: '接続中？'
                     },
 
-                    // === ブロック操作カテゴリ ===
+                    // === 開発モードテスト ===
+                    {
+                        blockType: BlockType.LABEL,
+                        text: '🧪 開発モードテスト'
+                    },
+                    {
+                        opcode: 'testDevMode',
+                        blockType: BlockType.COMMAND,
+                        text: '💬 開発モードでチャットテスト'
+                    },
+
+                    // === チャット ===
+                    {
+                        blockType: BlockType.LABEL,
+                        text: '💬 チャット'
+                    },
+                    {
+                        opcode: 'sendChat',
+                        blockType: BlockType.COMMAND,
+                        text: 'チャット: [MESSAGE]',
+                        arguments: {
+                            MESSAGE: {
+                                type: ArgumentType.STRING,
+                                defaultValue: 'Hello Minecraft!'
+                            }
+                        }
+                    },
+
+                    // === ブロック操作 ===
                     {
                         blockType: BlockType.LABEL,
                         text: '🧱 ブロック操作'
@@ -68,9 +100,9 @@
                     {
                         opcode: 'placeBlock',
                         blockType: BlockType.COMMAND,
-                        text: '[BLOCK_TYPE]を座標[X][Y][Z]に設置',
+                        text: '[BLOCK]を座標[X][Y][Z]に設置',
                         arguments: {
-                            BLOCK_TYPE: {
+                            BLOCK: {
                                 type: ArgumentType.STRING,
                                 menu: 'blockTypes',
                                 defaultValue: 'stone'
@@ -89,178 +121,11 @@
                             }
                         }
                     },
-                    {
-                        opcode: 'breakBlock',
-                        blockType: BlockType.COMMAND,
-                        text: '座標[X][Y][Z]のブロックを破壊',
-                        arguments: {
-                            X: {
-                                type: ArgumentType.NUMBER,
-                                defaultValue: 0
-                            },
-                            Y: {
-                                type: ArgumentType.NUMBER,
-                                defaultValue: 0
-                            },
-                            Z: {
-                                type: ArgumentType.NUMBER,
-                                defaultValue: 0
-                            }
-                        }
-                    },
-                    {
-                        opcode: 'getBlockType',
-                        blockType: BlockType.REPORTER,
-                        text: '座標[X][Y][Z]のブロック',
-                        arguments: {
-                            X: {
-                                type: ArgumentType.NUMBER,
-                                defaultValue: 0
-                            },
-                            Y: {
-                                type: ArgumentType.NUMBER,
-                                defaultValue: 0
-                            },
-                            Z: {
-                                type: ArgumentType.NUMBER,
-                                defaultValue: 0
-                            }
-                        }
-                    },
-                    {
-                        opcode: 'fillBlocks',
-                        blockType: BlockType.COMMAND,
-                        text: '[BLOCK_TYPE]で[X1][Y1][Z1]から[X2][Y2][Z2]を埋める',
-                        arguments: {
-                            BLOCK_TYPE: {
-                                type: ArgumentType.STRING,
-                                menu: 'blockTypes',
-                                defaultValue: 'stone'
-                            },
-                            X1: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Y1: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Z1: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            X2: { type: ArgumentType.NUMBER, defaultValue: 10 },
-                            Y2: { type: ArgumentType.NUMBER, defaultValue: 10 },
-                            Z2: { type: ArgumentType.NUMBER, defaultValue: 10 }
-                        }
-                    },
 
-                    // === 建築カテゴリ ===
+                    // === プレイヤー情報 ===
                     {
                         blockType: BlockType.LABEL,
-                        text: '🏗️ 建築'
-                    },
-                    {
-                        opcode: 'buildWall',
-                        blockType: BlockType.COMMAND,
-                        text: '[BLOCK_TYPE]で壁を[X][Y][Z]から高さ[HEIGHT]幅[WIDTH]で建築',
-                        arguments: {
-                            BLOCK_TYPE: {
-                                type: ArgumentType.STRING,
-                                menu: 'blockTypes',
-                                defaultValue: 'stone_bricks'
-                            },
-                            X: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Y: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Z: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            HEIGHT: { type: ArgumentType.NUMBER, defaultValue: 5 },
-                            WIDTH: { type: ArgumentType.NUMBER, defaultValue: 10 }
-                        }
-                    },
-                    {
-                        opcode: 'buildHouse',
-                        blockType: BlockType.COMMAND,
-                        text: '[STYLE]スタイルの家を[X][Y][Z]にサイズ[SIZE]で建築',
-                        arguments: {
-                            STYLE: {
-                                type: ArgumentType.STRING,
-                                menu: 'houseStyles',
-                                defaultValue: 'simple'
-                            },
-                            X: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Y: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Z: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            SIZE: {
-                                type: ArgumentType.STRING,
-                                menu: 'sizes',
-                                defaultValue: 'medium'
-                            }
-                        }
-                    },
-                    {
-                        opcode: 'buildCircle',
-                        blockType: BlockType.COMMAND,
-                        text: '[BLOCK_TYPE]で円を[X][Y][Z]に半径[RADIUS]で建築',
-                        arguments: {
-                            BLOCK_TYPE: {
-                                type: ArgumentType.STRING,
-                                menu: 'blockTypes',
-                                defaultValue: 'stone'
-                            },
-                            X: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Y: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Z: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            RADIUS: { type: ArgumentType.NUMBER, defaultValue: 5 }
-                        }
-                    },
-
-                    // === コマンドカテゴリ ===
-                    {
-                        blockType: BlockType.LABEL,
-                        text: '⚡ コマンド'
-                    },
-                    {
-                        opcode: 'teleportPlayer',
-                        blockType: BlockType.COMMAND,
-                        text: 'プレイヤーを[X][Y][Z]にテレポート',
-                        arguments: {
-                            X: { type: ArgumentType.NUMBER, defaultValue: 0 },
-                            Y: { type: ArgumentType.NUMBER, defaultValue: 100 },
-                            Z: { type: ArgumentType.NUMBER, defaultValue: 0 }
-                        }
-                    },
-                    {
-                        opcode: 'changeGameMode',
-                        blockType: BlockType.COMMAND,
-                        text: 'ゲームモードを[MODE]に変更',
-                        arguments: {
-                            MODE: {
-                                type: ArgumentType.STRING,
-                                menu: 'gameModes',
-                                defaultValue: 'creative'
-                            }
-                        }
-                    },
-                    {
-                        opcode: 'giveItem',
-                        blockType: BlockType.COMMAND,
-                        text: '[ITEM]を[AMOUNT]個付与',
-                        arguments: {
-                            ITEM: {
-                                type: ArgumentType.STRING,
-                                menu: 'items',
-                                defaultValue: 'diamond_sword'
-                            },
-                            AMOUNT: { type: ArgumentType.NUMBER, defaultValue: 1 }
-                        }
-                    },
-                    {
-                        opcode: 'sendChatMessage',
-                        blockType: BlockType.COMMAND,
-                        text: 'チャットに[MESSAGE]を送信',
-                        arguments: {
-                            MESSAGE: {
-                                type: ArgumentType.STRING,
-                                defaultValue: 'Hello from Scratch!'
-                            }
-                        }
-                    },
-
-                    // === 情報表示カテゴリ ===
-                    {
-                        blockType: BlockType.LABEL,
-                        text: '📍 情報表示'
+                        text: '📍 プレイヤー情報'
                     },
                     {
                         opcode: 'getPlayerX',
@@ -276,59 +141,6 @@
                         opcode: 'getPlayerZ',
                         blockType: BlockType.REPORTER,
                         text: 'プレイヤーのZ座標'
-                    },
-                    {
-                        opcode: 'getPlayerHealth',
-                        blockType: BlockType.REPORTER,
-                        text: 'プレイヤーの体力'
-                    },
-                    {
-                        opcode: 'getPlayerDirection',
-                        blockType: BlockType.REPORTER,
-                        text: 'プレイヤーの向き'
-                    },
-                    {
-                        opcode: 'getBiome',
-                        blockType: BlockType.REPORTER,
-                        text: '現在のバイオーム'
-                    },
-
-                    // === コラボレーションカテゴリ ===
-                    {
-                        blockType: BlockType.LABEL,
-                        text: '👥 コラボレーション'
-                    },
-                    {
-                        opcode: 'inviteFriend',
-                        blockType: BlockType.COMMAND,
-                        text: '[FRIEND_NAME]を招待',
-                        arguments: {
-                            FRIEND_NAME: {
-                                type: ArgumentType.STRING,
-                                defaultValue: 'friend'
-                            }
-                        }
-                    },
-                    {
-                        opcode: 'visitWorld',
-                        blockType: BlockType.COMMAND,
-                        text: '[WORLD_NAME]のワールドを訪問',
-                        arguments: {
-                            WORLD_NAME: {
-                                type: ArgumentType.STRING,
-                                defaultValue: 'world'
-                            }
-                        }
-                    },
-                    {
-                        opcode: 'returnHome',
-                        blockType: BlockType.COMMAND,
-                        text: '自分のワールドに帰る'
-                    },
-                    {
-                        opcode: 'emergencyReturn',
-                        blockType: BlockType.COMMAND,
-                        text: '緊急帰宅'
                     }
                 ],
                 
@@ -336,30 +148,9 @@
                     blockTypes: {
                         acceptReporters: true,
                         items: [
-                            'stone', 'dirt', 'grass_block', 'cobblestone', 'wood_planks',
-                            'stone_bricks', 'brick', 'sandstone', 'glass', 'wool',
-                            'iron_block', 'gold_block', 'diamond_block', 'emerald_block',
-                            'obsidian', 'bedrock', 'water', 'lava'
-                        ]
-                    },
-                    houseStyles: {
-                        acceptReporters: true,
-                        items: ['simple', 'modern', 'medieval', 'japanese', 'castle']
-                    },
-                    sizes: {
-                        acceptReporters: true,
-                        items: ['small', 'medium', 'large', 'huge']
-                    },
-                    gameModes: {
-                        acceptReporters: true,
-                        items: ['survival', 'creative', 'adventure', 'spectator']
-                    },
-                    items: {
-                        acceptReporters: true,
-                        items: [
-                            'diamond_sword', 'iron_pickaxe', 'golden_apple', 'bread',
-                            'arrow', 'bow', 'shield', 'elytra', 'diamond_armor',
-                            'redstone', 'tnt', 'torch', 'book', 'map'
+                            'stone', 'dirt', 'grass_block', 'cobblestone',
+                            'oak_planks', 'glass', 'iron_block', 'gold_block',
+                            'diamond_block', 'wool', 'brick'
                         ]
                     }
                 }
@@ -369,162 +160,163 @@
         // WebSocket接続管理
         initWebSocket() {
             try {
+                if (this.socket) {
+                    this.socket.close();
+                }
+
                 this.socket = new WebSocket('ws://localhost:14711');
                 
                 this.socket.onopen = () => {
                     this.isConnected = true;
-                    console.log('Minecraft WebSocket接続が確立されました');
+                    console.log('[Minecraft] WebSocket接続が確立されました');
                 };
                 
                 this.socket.onmessage = (event) => {
-                    this.lastMessage = event.data;
                     this.handleMessage(event.data);
                 };
                 
                 this.socket.onclose = () => {
                     this.isConnected = false;
-                    console.log('Minecraft WebSocket接続が切断されました');
+                    console.log('[Minecraft] WebSocket接続が切断されました');
                 };
                 
                 this.socket.onerror = (error) => {
-                    console.error('WebSocketエラー:', error);
+                    console.error('[Minecraft] WebSocketエラー:', error);
                     this.isConnected = false;
                 };
+
             } catch (error) {
-                console.error('WebSocket接続に失敗:', error);
+                console.error('[Minecraft] WebSocket接続に失敗:', error);
                 this.isConnected = false;
             }
         }
 
+        // メッセージ処理 - シンプルに文字列のみ扱う
         handleMessage(data) {
+            // 必ず文字列として保存
+            this.lastMessage = String(data);
+            
             try {
                 const response = JSON.parse(data);
-                if (response.type === 'playerInfo') {
-                    this.playerInfo = response.data;
+                
+                // プレイヤー座標の更新
+                if (response.x !== undefined) {
+                    this.playerInfo.x = Number(response.x) || 0;
                 }
+                if (response.y !== undefined) {
+                    this.playerInfo.y = Number(response.y) || 0;
+                }
+                if (response.z !== undefined) {
+                    this.playerInfo.z = Number(response.z) || 0;
+                }
+                if (response.health !== undefined) {
+                    this.playerInfo.health = Number(response.health) || 20;
+                }
+
+                console.log('[Minecraft] 受信:', response);
+                
             } catch (error) {
-                // JSONでない場合はそのまま保存
-                this.lastMessage = data;
+                // JSONでない場合はそのまま処理
+                console.log('[Minecraft] Raw message:', data);
             }
         }
 
+        // コマンド送信 - 必ずプリミティブ値を返す
         sendCommand(command) {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                console.log('[Minecraft] 送信:', command);
                 this.socket.send(command);
-                return new Promise((resolve) => {
-                    setTimeout(() => resolve(this.lastMessage), 100);
-                });
+                // DataCloneError回避：必ず文字列を返す
+                return '';
             } else {
-                throw new Error('Minecraftに接続されていません');
+                console.warn('[Minecraft] 接続されていません');
+                return '';
             }
         }
 
-        // === 接続・設定ブロック ===
+        // === ブロック実装 ===
+
+        // 接続
         connectToMinecraft() {
             this.initWebSocket();
-            return new Promise((resolve) => {
-                setTimeout(() => resolve(), 1000);
-            });
+            return ''; // 必ず文字列を返す
         }
 
-        disconnectFromMinecraft() {
-            if (this.socket) {
-                this.socket.close();
-                this.isConnected = false;
+        // 先生として認証
+        authenticateAsTeacher() {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                const authCommand = JSON.stringify({
+                    "command": "auth",
+                    "username": "testUser"
+                });
+                console.log('[Minecraft] 先生として認証中: testUser');
+                this.socket.send(authCommand);
+            } else {
+                console.warn('[Minecraft] 接続されていません - 先に接続してください');
             }
+            return '';
         }
 
+        // 生徒として認証
+        authenticateAsStudent() {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                const authCommand = JSON.stringify({
+                    "command": "auth",
+                    "username": "testUser2"
+                });
+                console.log('[Minecraft] 生徒として認証中: testUser2');
+                this.socket.send(authCommand);
+            } else {
+                console.warn('[Minecraft] 接続されていません - 先に接続してください');
+            }
+            return '';
+        }
+
+        // 接続状態
         isConnected() {
-            return this.isConnected;
+            return this.isConnected; // ブール値は安全
         }
 
-        // === ブロック操作ブロック ===
+        // 開発モードテスト
+        testDevMode() {
+            console.log('[Minecraft] 開発モードテスト実行中');
+            this.sendCommand('chat(DevMode Test from Scratch!)');
+            return '';
+        }
+
+        // チャット送信
+        sendChat(args) {
+            const message = String(args.MESSAGE || 'Hello');
+            this.sendCommand(`chat(${message})`);
+            return ''; // 必ず文字列を返す
+        }
+
+        // ブロック設置
         placeBlock(args) {
-            return this.sendCommand(`placeBlock(${args.BLOCK_TYPE},${args.X},${args.Y},${args.Z})`);
+            const block = String(args.BLOCK || 'stone');
+            const x = Number(args.X) || 0;
+            const y = Number(args.Y) || 0; 
+            const z = Number(args.Z) || 0;
+            
+            this.sendCommand(`placeBlock(${block},${x},${y},${z})`);
+            return ''; // 必ず文字列を返す
         }
 
-        breakBlock(args) {
-            return this.sendCommand(`breakBlock(${args.X},${args.Y},${args.Z})`);
-        }
-
-        getBlockType(args) {
-            return this.sendCommand(`getBlock(${args.X},${args.Y},${args.Z})`);
-        }
-
-        fillBlocks(args) {
-            return this.sendCommand(`fill(${args.X1},${args.Y1},${args.Z1},${args.X2},${args.Y2},${args.Z2},${args.BLOCK_TYPE})`);
-        }
-
-        // === 建築ブロック ===
-        buildWall(args) {
-            return this.sendCommand(`buildWall(${args.BLOCK_TYPE},${args.X},${args.Y},${args.Z},${args.HEIGHT},${args.WIDTH})`);
-        }
-
-        buildHouse(args) {
-            return this.sendCommand(`buildHouse(${args.STYLE},${args.X},${args.Y},${args.Z},${args.SIZE})`);
-        }
-
-        buildCircle(args) {
-            return this.sendCommand(`buildCircle(${args.BLOCK_TYPE},${args.X},${args.Y},${args.Z},${args.RADIUS})`);
-        }
-
-        // === コマンドブロック ===
-        teleportPlayer(args) {
-            return this.sendCommand(`teleport(${args.X},${args.Y},${args.Z})`);
-        }
-
-        changeGameMode(args) {
-            return this.sendCommand(`gamemode(${args.MODE})`);
-        }
-
-        giveItem(args) {
-            return this.sendCommand(`give(${args.ITEM},${args.AMOUNT})`);
-        }
-
-        sendChatMessage(args) {
-            return this.sendCommand(`chat(${args.MESSAGE})`);
-        }
-
-        // === 情報表示ブロック ===
+        // プレイヤー座標取得
         getPlayerX() {
-            return this.playerInfo.x || 0;
+            // WebSocketで最新情報をリクエスト
+            this.sendCommand('getPlayerPos()');
+            return this.playerInfo.x; // 数値は安全
         }
 
         getPlayerY() {
-            return this.playerInfo.y || 0;
+            this.sendCommand('getPlayerPos()');
+            return this.playerInfo.y;
         }
 
         getPlayerZ() {
-            return this.playerInfo.z || 0;
-        }
-
-        getPlayerHealth() {
-            return this.playerInfo.health || 20;
-        }
-
-        getPlayerDirection() {
-            return this.playerInfo.direction || 'north';
-        }
-
-        getBiome() {
-            return this.playerInfo.biome || 'plains';
-        }
-
-        // === コラボレーションブロック ===
-        inviteFriend(args) {
-            return this.sendCommand(`invite(${args.FRIEND_NAME})`);
-        }
-
-        visitWorld(args) {
-            return this.sendCommand(`visit(${args.WORLD_NAME})`);
-        }
-
-        returnHome() {
-            return this.sendCommand('returnHome()');
-        }
-
-        emergencyReturn() {
-            return this.sendCommand('emergencyReturn()');
+            this.sendCommand('getPlayerPos()');
+            return this.playerInfo.z;
         }
 
         // アイコン

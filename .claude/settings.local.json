@@ -137,7 +137,15 @@
       "Bash(set JAVA_HOME=C:Program FilesJavajdk-17)",
       "Bash(firebase hosting:sites:list:*)",
       "Bash(set-java17-vscode.bat)",
-      "Bash(../set-java17-vscode.bat)"
+      "Bash(../set-java17-vscode.bat)",
+      "Bash(start simple-monitoring.html)",
+      "Bash(start test-websocket-performance.html)",
+      "Bash(rg:*)",
+      "Bash(start websocket-test.html)",
+      "Bash(./deploy-new-mod.bat)",
+      "Bash(git restore:*)",
+      "Bash(rsync:*)",
+      "Bash(flutter:*)"
     ],
     "deny": []
   }
