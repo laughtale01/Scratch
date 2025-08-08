@@ -55,6 +55,13 @@ public class BasicCommandHandler {
     }
     
     /**
+     * Handle ping command
+     */
+    public String handlePing(String[] args) {
+        return "pong";
+    }
+    
+    /**
      * Handle get player position command
      */
     public String handleGetPlayerPosition(String[] args) {
@@ -176,13 +183,32 @@ public class BasicCommandHandler {
                 return ResponseHelper.error("chat", ResponseHelper.ERROR_INVALID_MESSAGE, "Invalid message");
             }
             
+            // Try to get server - this should work for both single-player and dedicated servers
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
+            
+            // Log for debugging
+            LOGGER.info("Attempting to send chat message: '{}', Server available: {}", message, (server != null));
+            
+            if (server != null && server.getPlayerList() != null) {
                 Component chatComponent = Component.literal("[Scratch] " + message);
-                server.getPlayerList().broadcastSystemMessage(chatComponent, false);
+                
+                // Try to broadcast to all players
+                if (!server.getPlayerList().getPlayers().isEmpty()) {
+                    // Send to all players individually to ensure delivery
+                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                        player.sendSystemMessage(chatComponent);
+                    }
+                    LOGGER.info("Chat message sent to {} player(s)", server.getPlayerList().getPlayers().size());
+                } else {
+                    // No players online, but still report success (message was processed)
+                    LOGGER.warn("No players online to receive chat message");
+                }
+                
                 metricsCollector.incrementCounter("commands.chat");
                 return ResponseHelper.chatSent(message);
             }
+            
+            LOGGER.warn("Server not available for chat message");
             return ResponseHelper.error("chat", ResponseHelper.ERROR_SERVER_UNAVAILABLE, "Server not available");
         } catch (Exception e) {
             LOGGER.error("Error sending chat message", e);

@@ -18,10 +18,13 @@ Scratch公式フォークベースのMinecraft拡張機能プロジェクトの�
 - [LICENSE](../LICENSE) - MITライセンス
 
 ### プロジェクト状態
-- **[最新] WebSocket通信動作確認完了 (2025-08-05)**
+- **[最新] VSCode統合最適化完了 (2025-08-08)**
+  - Java 17自動設定、ワンクリックビルド実現
+  - タスクランナーによる自動デプロイ対応
+  - Git Bash統合、開発効率大幅向上
+- **WebSocket通信動作確認完了 (2025-08-05)**
   - ping/pong、chat、getPlayerPos全て正常動作
   - NoClassDefFoundError解決（リフレクション使用）
-  - test-websocket.htmlでデバッグ可能
 
 ---
 
@@ -37,6 +40,7 @@ Scratch公式フォークベースのMinecraft拡張機能プロジェクトの�
 - [dependencies.md](dependencies.md) - 依存関係の詳細
 - [patterns.md](patterns.md) - 実装パターン
 - [tdd-guidelines.md](tdd-guidelines.md) - TDD実装ガイドライン
+- **[vscode-integration.md](vscode-integration.md) - VSCode統合ガイド** ⭐新規 (2025-08-08)
 
 ---
 
@@ -131,10 +135,15 @@ Scratch公式フォークベースのMinecraft拡張機能プロジェクトの�
 
 ---
 
-最終更新: 2025年8月5日
+最終更新: 2025年8月8日
 
-### 📝 最新の変更点
+### 📝 最新の変更点 (2025-08-08)
+- VSCode統合最適化完了
+- Java 17自動環境設定スクリプト追加
+- タスクランナーによるワンクリックビルド・デプロイ
+- 開発ドキュメント更新（vscode-integration.md追加）
+
+### 📝 前回の変更点 (2025-08-05)
 - WebSocket通信の完全動作確認
 - NoClassDefFoundError修正（リフレクションベースの実装）
 - test-websocket.htmlデバッグツール追加
-- scratch-gui開発サーバー稼働中 (http://localhost:8601)

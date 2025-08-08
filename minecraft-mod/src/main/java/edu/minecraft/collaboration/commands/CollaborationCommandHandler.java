@@ -83,6 +83,10 @@ public class CollaborationCommandHandler {
         return basicHandler.handleStatus(args);
     }
     
+    public String handlePing(String[] args) {
+        return basicHandler.handlePing(args);
+    }
+    
     // === Collaboration Commands ===
     
     public String handleInviteFriend(String[] args) {

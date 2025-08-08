@@ -1,6 +1,6 @@
 # Claude Code Configuration
 
-## 🎯 Project Overview (Updated 2025-08-01)
+## 🎯 Project Overview (Updated 2025-08-08)
 
 This project uses the **official Scratch GUI fork** with a custom Minecraft extension, following the standard Scratch extension development approach.
 
@@ -9,12 +9,12 @@ This project uses the **official Scratch GUI fork** with a custom Minecraft exte
 - **minecraft-mod/**: Original Minecraft Forge mod for WebSocket communication
 - **scratch-extension/**: Source code for the Minecraft extension
 
-## 🎉 Project Status Update (2025-08-05)
+## 🎉 Project Status Update (2025-08-08)
 
 ### 🚀 Major Architecture Enhancement
 The project has evolved into an enterprise-grade system with comprehensive monitoring, predictive analytics, and advanced resource management capabilities. This positions the system for large-scale educational deployments.
 
-### ✅ Completed Features (All Verified Working)
+### ✅ Implemented Features (Code Complete)
 1. **WebSocket Communication** - Fully operational with reflection-based client handler
    - Fixed NoClassDefFoundError with reflection approach
    - Supports both JSON and legacy message formats
@@ -43,9 +43,9 @@ The project has evolved into an enterprise-grade system with comprehensive monit
 7. **Quality Assurance System (NEW - 2025-07-29)**
    - Comprehensive test coverage: 136 tests (6,700% increase)
    - Security validation: XSS/SQL injection prevention verified
-   - Authentication system: Token-based security tested
-   - Multi-language support: 7 languages validated
-   - Educational features: Block restrictions and difficulty levels tested
+   - Authentication system: Token-based security implemented
+   - Multi-language support: 7 languages implemented
+   - Educational features: Block restrictions and difficulty levels implemented
 8. **Enterprise Monitoring System (NEW - 2025-08-05)**
    - Advanced alert management with severity levels and lifecycle tracking
    - Predictive analytics using statistical analysis and anomaly detection
@@ -59,22 +59,42 @@ The project has evolved into an enterprise-grade system with comprehensive monit
 - **RateLimiter**: Full implementation with cleanup scheduler
 - **Scratch Extension**: Cache-based real-time data synchronization
 - **Building Functions**: All geometry calculations implemented
-- **Test Infrastructure (NEW)**: 7 comprehensive test classes
+- **Test Infrastructure**: 7 comprehensive test classes (currently in test.disabled/)
   - AuthenticationManagerTest (22 tests)
-  - InputValidatorTest (24 tests - 100% pass rate)
-  - LanguageManagerTest (19 tests - 95% pass rate)
+  - InputValidatorTest (24 tests)
+  - LanguageManagerTest (19 tests)
   - CollaborationCommandHandlerTest (21 tests)
   - CollaborationMessageProcessorTest (11 tests)
   - BlockPackManagerTest (13 tests)
   - IntegrationTest (26 tests)
+  - **Note**: Tests need to be re-enabled by renaming test.disabled/ to test/
 
 ## 🚀 QUICK START FOR CLAUDE CODE
 
+### 🔧 Java Environment (Updated 2025-08-08)
+- **Required**: Java 17 (NOT Java 21)
+- **Location**: `C:\Program Files\Java\jdk-17`
+- **Helper Scripts**: 
+  - `set-java17.bat` - Configure environment (general use)
+  - `set-java17-vscode.bat` - Configure for VSCode terminal
+- **Verification**: `java -version` should show "17.0.12"
+
+### VSCode Integration (Updated 2025-08-08)
+- **Optimized Settings**: `.vscode/settings.json` configured for Java 17
+- **Task Runner**: Use `Ctrl+Shift+P` → `Tasks: Run Task` for automated builds
+- **Terminal**: Git Bash configured as default with Java 17 path
+- **Available Tasks**:
+  - Build Minecraft Mod - Standard build
+  - Build Mod (jarJar) - Deployment build
+  - Deploy Mod to Minecraft - Auto-deploy to .minecraft/mods
+  - Set Java 17 Environment - Configure Java environment
+
 ### Essential Steps:
-1. **Scratch GUI Server**: Already running at http://localhost:8601 (check with `curl http://localhost:8601`)
-2. **Build Minecraft Mod**: `cd minecraft-mod && ./gradlew jarJar -x test -x checkstyleMain`
-3. **Deploy Mod**: `cp minecraft-mod/build/libs/minecraft-collaboration-mod-1.0.0-all.jar "C:/Users/riyum/AppData/Roaming/.minecraft/mods/"`
-4. **Access Scratch**: http://localhost:8601 → Extension button → Select "Minecraft コラボレーション"
+1. **Set Java Environment**: Run `set-java17-vscode.bat` in VSCode terminal
+2. **Scratch GUI Server**: Start with `cd scratch-gui && npm start` (port 8601)
+3. **Build Minecraft Mod**: `cd minecraft-mod && ./gradlew jarJar -x test -x checkstyleMain`
+4. **Deploy Mod**: Use VSCode task "Deploy Mod to Minecraft" or manual copy
+5. **Access Scratch**: http://localhost:8601 → Extension button → Select "Minecraft コラボレーション"
 
 ### WebSocket Testing:
 - Use `test-websocket.html` for detailed WebSocket debugging

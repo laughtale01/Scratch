@@ -107,6 +107,11 @@ public class CollaborationServer implements AutoCloseable {
             // Start the WebSocket server
             webSocketServer.start();
             
+            System.out.println("=== WEBSOCKET SERVER STARTED ===");
+            System.out.println("Port: " + webSocketPort);
+            System.out.println("Address: " + address);
+            System.out.println("=================================");
+            
             LOGGER.info("WebSocket server started on port: {}", webSocketPort);
         } catch (NoClassDefFoundError e) {
             LOGGER.error("WebSocket library not available. WebSocket server will not start.", e);

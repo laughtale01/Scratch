@@ -14,6 +14,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -61,30 +62,57 @@ public class WebSocketTimeoutHandler implements AutoCloseable {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         String connectionId = conn.getRemoteSocketAddress().toString();
         
-        // Create timeout task
-        ScheduledFuture<?> timeoutTask = timeoutExecutor.schedule(() -> {
-            if (!future.isDone()) {
-                LOGGER.warn("Message send timeout for connection: {} after {}ms", connectionId, timeoutMs);
-                future.complete(false);
-                activeTimeouts.remove(connectionId);
+        // Check if executor is still running
+        if (timeoutExecutor.isShutdown() || timeoutExecutor.isTerminated()) {
+            // Fallback: send without timeout
+            try {
+                conn.send(message);
+                return CompletableFuture.completedFuture(true);
+            } catch (Exception e) {
+                LOGGER.error("Failed to send message to {}: {}", connectionId, e.getMessage());
+                return CompletableFuture.completedFuture(false);
             }
-        }, timeoutMs, TimeUnit.MILLISECONDS);
+        }
         
-        activeTimeouts.put(connectionId, timeoutTask);
+        // Create timeout task
+        try {
+            ScheduledFuture<?> timeoutTask = timeoutExecutor.schedule(() -> {
+                if (!future.isDone()) {
+                    LOGGER.warn("Message send timeout for connection: {} after {}ms", connectionId, timeoutMs);
+                    future.complete(false);
+                    activeTimeouts.remove(connectionId);
+                }
+            }, timeoutMs, TimeUnit.MILLISECONDS);
+            
+            activeTimeouts.put(connectionId, timeoutTask);
+        } catch (RejectedExecutionException e) {
+            // Executor was shut down, send without timeout
+            try {
+                conn.send(message);
+                return CompletableFuture.completedFuture(true);
+            } catch (Exception ex) {
+                LOGGER.error("Failed to send message to {}: {}", connectionId, ex.getMessage());
+                return CompletableFuture.completedFuture(false);
+            }
+        }
         
         try {
             // Send message
             conn.send(message);
             
             // Cancel timeout and complete future
-            timeoutTask.cancel(false);
-            activeTimeouts.remove(connectionId);
+            ScheduledFuture<?> task = activeTimeouts.remove(connectionId);
+            if (task != null) {
+                task.cancel(false);
+            }
             future.complete(true);
             
         } catch (Exception e) {
             LOGGER.error("Error sending message to {}: {}", connectionId, e.getMessage());
-            timeoutTask.cancel(false);
-            activeTimeouts.remove(connectionId);
+            ScheduledFuture<?> task = activeTimeouts.remove(connectionId);
+            if (task != null) {
+                task.cancel(false);
+            }
             future.complete(false);
         }
         

@@ -123,7 +123,21 @@
       "Bash(set GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json)",
       "Bash(gcloud auth activate-service-account:*)",
       "Bash(GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json firebase projects:list)",
-      "Bash(GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json firebase deploy --only hosting --project laughtale-scratch-ca803)"
+      "Bash(GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json firebase deploy --only hosting --project laughtale-scratch-ca803)",
+      "WebFetch(domain:laughtale-scratch-ca803.web.app)",
+      "Bash(start test-connection.html)",
+      "Bash(PORT=8601 npm start)",
+      "Bash(start test-minecraft-ws.html)",
+      "Bash(tasklist:*)",
+      "Bash(start test-safe-extension.html)",
+      "Bash(start test-dataclone-isolated.html)",
+      "Bash(\"C:/Program Files/Common Files/Oracle/Java/javapath/java.exe\" -version)",
+      "Bash(\"C:/Program Files/Java/jdk-17/bin/java.exe\" -version)",
+      "Bash(echo:*)",
+      "Bash(set JAVA_HOME=C:Program FilesJavajdk-17)",
+      "Bash(firebase hosting:sites:list:*)",
+      "Bash(set-java17-vscode.bat)",
+      "Bash(../set-java17-vscode.bat)"
     ],
     "deny": []
   }

@@ -83,13 +83,17 @@ public class WebSocketHandler extends WebSocketServer implements AutoCloseable {
     
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
+        System.out.println("=== WEBSOCKET CONNECTION OPENED ===");
         if (conn == null) {
+            System.out.println("ERROR: Null WebSocket connection in onOpen");
             LOGGER.error("Null WebSocket connection in onOpen");
             return;
         }
         
         String remoteAddress = conn.getRemoteSocketAddress() != null
             ? conn.getRemoteSocketAddress().toString() : ErrorConstants.UNKNOWN_CONNECTION;
+        System.out.println("Remote address: " + remoteAddress);
+        System.out.println("===================================");
             
         // Security check
         String clientIp = conn.getRemoteSocketAddress() != null
@@ -149,7 +153,11 @@ public class WebSocketHandler extends WebSocketServer implements AutoCloseable {
     
     @Override
     public void onMessage(final WebSocket conn, final String message) {
-        LOGGER.debug("Received message from {}: {}", conn.getRemoteSocketAddress(), message);
+        System.out.println("=== WEBSOCKET MESSAGE RECEIVED ===");
+        System.out.println("From: " + conn.getRemoteSocketAddress());
+        System.out.println("Message: " + message);
+        System.out.println("====================================");
+        LOGGER.info("WEBSOCKET MESSAGE RECEIVED from {}: {}", conn.getRemoteSocketAddress(), message);
         
         final String identifier = conn.getRemoteSocketAddress().toString();
         

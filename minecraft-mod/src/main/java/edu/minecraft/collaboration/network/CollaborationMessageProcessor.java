@@ -83,6 +83,7 @@ public class CollaborationMessageProcessor {
      * Process JSON format messages from Scratch
      */
     private String processJsonMessage(String message) {
+        LOGGER.info("Processing JSON message: {}", message);
         try {
             JsonObject jsonMessage = gson.fromJson(message, JsonObject.class);
             
@@ -103,7 +104,7 @@ public class CollaborationMessageProcessor {
             String command = commandElement.getAsString();
             JsonObject args = jsonMessage.has("args") ? jsonMessage.getAsJsonObject("args") : new JsonObject();
             
-            LOGGER.debug("Processing JSON command: {} with args: {}", command, args);
+            LOGGER.info("Processing JSON command: {} with args: {}", command, args);
             
             // Start timing
             try (MetricsCollector.TimingContext timing = metrics.startTiming(MetricsCollector.Metrics.COMMAND_TIMING_PREFIX + command)) {
@@ -116,6 +117,8 @@ public class CollaborationMessageProcessor {
                 }
                 
                 String result = routeJsonCommand(command, argsMap);
+                
+                LOGGER.info("Command result for '{}': {}", command, result);
                 
                 // Update metrics
                 metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_EXECUTED);
@@ -235,7 +238,8 @@ public class CollaborationMessageProcessor {
      * Check if command is a connection command
      */
     private boolean isConnectionCommand(final String command) {
-        return "connect".equals(command) || "status".equals(command) || "getPlayerPosition".equals(command);
+        return "connect".equals(command) || "status".equals(command) || "getPlayerPosition".equals(command) ||
+               "ping".equals(command) || "getPlayerPos".equals(command);
     }
     
     /**
@@ -248,7 +252,10 @@ public class CollaborationMessageProcessor {
             case "status":
                 return commandHandler.handleStatus(new String[0]);
             case "getPlayerPosition":
+            case "getPlayerPos":
                 return commandHandler.handleGetPlayerPosition(new String[0]);
+            case "ping":
+                return commandHandler.handlePing(new String[0]);
             default:
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
