@@ -1,0 +1,263 @@
+# Monitoring and Logging Configuration
+# Version: 1.0.0
+
+monitoring:
+  enabled: true
+  
+  # Metrics Collection
+  metrics:
+    enabled: true
+    interval: 30s
+    retention: 30d
+    
+    collectors:
+      # System Metrics
+      system:
+        enabled: true
+        cpu: true
+        memory: true
+        disk: true
+        network: true
+      
+      # Application Metrics  
+      application:
+        enabled: true
+        jvm: true
+        websocket: true
+        commands: true
+        collaboration: true
+      
+      # Custom Metrics
+      custom:
+        enabled: true
+        latency: true
+        throughput: true
+        error_rate: true
+        connection_count: true
+
+  # Logging Configuration
+  logging:
+    enabled: true
+    level: INFO
+    format: JSON
+    
+    # Log Destinations
+    outputs:
+      console:
+        enabled: true
+        level: INFO
+      
+      file:
+        enabled: true
+        path: logs/minecraft-collaboration.log
+        level: DEBUG
+        max_size: 100MB
+        max_files: 10
+        rotation: daily
+      
+      remote:
+        enabled: false
+        endpoint: https://logs.example.com
+        api_key: ${LOG_API_KEY}
+    
+    # Log Categories
+    categories:
+      security:
+        enabled: true
+        level: WARN
+        include:
+          - authentication_failures
+          - rate_limit_violations
+          - suspicious_commands
+          - connection_anomalies
+      
+      performance:
+        enabled: true
+        level: INFO
+        include:
+          - slow_queries
+          - high_latency
+          - resource_usage
+      
+      business:
+        enabled: true
+        level: INFO
+        include:
+          - user_actions
+          - collaboration_events
+          - command_executions
+
+  # Alerting
+  alerts:
+    enabled: true
+    
+    rules:
+      # System Alerts
+      high_cpu:
+        condition: cpu_usage > 80
+        duration: 5m
+        severity: WARNING
+        message: "High CPU usage detected: {{.value}}%"
+      
+      high_memory:
+        condition: memory_usage > 85
+        duration: 5m
+        severity: WARNING
+        message: "High memory usage detected: {{.value}}%"
+      
+      disk_space:
+        condition: disk_free < 10
+        duration: 1m
+        severity: CRITICAL
+        message: "Low disk space: {{.value}}% remaining"
+      
+      # Application Alerts
+      websocket_connections:
+        condition: active_connections > 50
+        duration: 2m
+        severity: WARNING
+        message: "High number of WebSocket connections: {{.value}}"
+      
+      high_latency:
+        condition: avg_latency > 1000
+        duration: 3m
+        severity: WARNING
+        message: "High average latency detected: {{.value}}ms"
+      
+      error_rate:
+        condition: error_rate > 5
+        duration: 1m
+        severity: CRITICAL
+        message: "High error rate: {{.value}}% errors in last minute"
+      
+      # Security Alerts
+      authentication_failures:
+        condition: auth_failures > 10
+        duration: 1m
+        severity: CRITICAL
+        message: "Multiple authentication failures detected"
+      
+      rate_limit_violations:
+        condition: rate_limit_violations > 5
+        duration: 1m
+        severity: WARNING
+        message: "Rate limit violations detected"
+    
+    # Notification Channels
+    channels:
+      email:
+        enabled: false
+        smtp_server: smtp.example.com
+        smtp_port: 587
+        username: alerts@example.com
+        password: ${SMTP_PASSWORD}
+        recipients:
+          - admin@example.com
+      
+      slack:
+        enabled: false
+        webhook_url: ${SLACK_WEBHOOK_URL}
+        channel: "#alerts"
+      
+      discord:
+        enabled: false
+        webhook_url: ${DISCORD_WEBHOOK_URL}
+      
+      console:
+        enabled: true
+
+  # Health Checks
+  health_checks:
+    enabled: true
+    interval: 30s
+    
+    checks:
+      websocket_server:
+        enabled: true
+        endpoint: ws://localhost:14711
+        timeout: 5s
+      
+      minecraft_connection:
+        enabled: true
+        timeout: 10s
+      
+      database_connection:
+        enabled: false
+        connection_string: ${DB_CONNECTION}
+        timeout: 5s
+      
+      external_apis:
+        enabled: false
+        endpoints:
+          - url: https://api.example.com/health
+            timeout: 5s
+
+  # Performance Profiling
+  profiling:
+    enabled: false # Enable only when needed
+    
+    cpu:
+      enabled: false
+      duration: 60s
+      output: profiles/cpu.prof
+    
+    memory:
+      enabled: false
+      duration: 60s
+      output: profiles/memory.prof
+    
+    trace:
+      enabled: false
+      duration: 30s
+      output: profiles/trace.prof
+
+# Dashboards
+dashboards:
+  enabled: true
+  port: 9090
+  
+  panels:
+    system:
+      - cpu_usage
+      - memory_usage
+      - disk_usage
+      - network_io
+    
+    application:
+      - websocket_connections
+      - command_throughput
+      - response_times
+      - error_rates
+    
+    security:
+      - authentication_attempts
+      - rate_limit_status
+      - security_events
+    
+    business:
+      - active_users
+      - collaboration_sessions
+      - popular_commands
+
+# Data Export
+export:
+  enabled: false
+  
+  prometheus:
+    enabled: false
+    port: 9091
+    path: /metrics
+  
+  influxdb:
+    enabled: false
+    url: http://localhost:8086
+    database: minecraft_collaboration
+    username: ${INFLUX_USER}
+    password: ${INFLUX_PASSWORD}
+  
+  elasticsearch:
+    enabled: false
+    url: http://localhost:9200
+    index: minecraft-collaboration-logs
+    username: ${ELASTIC_USER}
+    password: ${ELASTIC_PASSWORD}
