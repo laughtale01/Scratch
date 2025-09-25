@@ -1,0 +1,60 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: scratch-gui/package-lock.json
+
+    - name: Install Scratch GUI dependencies
+      run: |
+        cd scratch-gui
+        npm ci || npm install
+
+    - name: Build Scratch GUI
+      run: |
+        cd scratch-gui
+        npm run build
+
+    - name: Prepare public directory for Firebase
+      run: |
+        # Create public directory if it doesn't exist
+        mkdir -p public
+
+        # Copy built files to public directory
+        cp -r scratch-gui/build/* public/
+
+        # Copy extension files if they exist
+        if [ -d "scratch-extension/dist" ]; then
+          mkdir -p public/extensions
+          cp -r scratch-extension/dist/* public/extensions/
+        fi
+
+    - name: Deploy to Firebase
+      uses: w9jds/firebase-action@v12.4.0
+      with:
+        args: deploy --only hosting --project laughtale-scratch-ca803
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+    - name: Deploy Status
+      if: success()
+      run: echo "✅ Successfully deployed to Firebase Hosting!"
+
+    - name: Deploy Failed
+      if: failure()
+      run: echo "❌ Firebase deployment failed. Please check the FIREBASE_TOKEN secret."

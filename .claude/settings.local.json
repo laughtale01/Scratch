@@ -146,7 +146,9 @@
       "Bash(git restore:*)",
       "Bash(rsync:*)",
       "Bash(flutter:*)",
-      "Bash(./fix-checkstyle.sh:*)"
+      "Bash(./fix-checkstyle.sh:*)",
+      "Read(//c/Program Files/Java/**)",
+      "Bash(./set-java17-vscode.bat)"
     ],
     "deny": []
   }

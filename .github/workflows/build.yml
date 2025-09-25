@@ -32,10 +32,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     
-    - name: Build with Gradle (skip tests)
+    - name: Build with Gradle
       run: |
         cd minecraft-mod
-        ./gradlew jarJar -x test --no-daemon
+        ./gradlew jarJar --no-daemon
+
+    - name: Run tests
+      run: |
+        cd minecraft-mod
+        ./gradlew test --no-daemon || true
+      continue-on-error: true
     
     - name: Upload JAR
       uses: actions/upload-artifact@v3
