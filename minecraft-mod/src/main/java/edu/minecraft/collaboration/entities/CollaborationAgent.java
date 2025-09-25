@@ -27,22 +27,22 @@ import java.util.UUID;
  * Represents a helper/companion for educational activities
  */
 public class CollaborationAgent extends PathfinderMob {
-    
+
     private static final String AGENT_NAME_TAG = "AgentName";
     private static final String OWNER_UUID_TAG = "OwnerUUID";
     private static final String AGENT_ID_TAG = "AgentID";
-    
+
     private String agentName = "Agent";
     private UUID ownerUUID;
     private String agentId;
     private BlockPos targetPosition;
     private boolean isFollowing = false;
-    
+
     public CollaborationAgent(EntityType<? extends PathfinderMob> entityType, Level level) {
         super(entityType, level);
         this.agentId = UUID.randomUUID().toString();
     }
-    
+
     @Override
     protected void registerGoals() {
         // Basic movement goals
@@ -51,18 +51,18 @@ public class CollaborationAgent extends PathfinderMob {
         this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 1.0D));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 6.0F));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
-        
+
         // Custom follow player goal
         this.goalSelector.addGoal(1, new FollowOwnerGoal());
     }
-    
+
     public static AttributeSupplier.Builder createAttributes() {
         return PathfinderMob.createMobAttributes()
             .add(Attributes.MAX_HEALTH, 20.0D)
             .add(Attributes.MOVEMENT_SPEED, 0.3D)
             .add(Attributes.FOLLOW_RANGE, 48.0D);
     }
-    
+
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (!this.level().isClientSide) {
@@ -70,25 +70,25 @@ public class CollaborationAgent extends PathfinderMob {
             player.sendSystemMessage(Component.literal(
                 String.format("§a[Agent] ﾂｧf%s (ID: %s)", agentName, agentId.substring(0, 8))
             ));
-            
+
             if (ownerUUID != null && ownerUUID.equals(player.getUUID())) {
                 player.sendSystemMessage(Component.literal("ﾂｧ7This is your agent!"));
             }
         }
         return InteractionResult.SUCCESS;
     }
-    
+
     @Override
     public boolean hurt(DamageSource source, float amount) {
         // Agents are invulnerable to damage (educational safety)
         return false;
     }
-    
+
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
     }
-    
+
     @Override
     public void addAdditionalSaveData(CompoundTag compound) {
         super.addAdditionalSaveData(compound);
@@ -98,7 +98,7 @@ public class CollaborationAgent extends PathfinderMob {
             compound.putUUID(OWNER_UUID_TAG, ownerUUID);
         }
     }
-    
+
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
@@ -112,36 +112,36 @@ public class CollaborationAgent extends PathfinderMob {
             ownerUUID = compound.getUUID(OWNER_UUID_TAG);
         }
     }
-    
+
     // Agent control methods
-    
+
     public void setAgentName(String name) {
         this.agentName = name;
         this.setCustomName(Component.literal(name));
         this.setCustomNameVisible(true);
     }
-    
+
     public String getAgentName() {
         return agentName;
     }
-    
+
     public void setOwner(Player player) {
         this.ownerUUID = player.getUUID();
     }
-    
+
     public UUID getOwnerUUID() {
         return ownerUUID;
     }
-    
+
     public String getAgentId() {
         return agentId;
     }
-    
+
     public void moveToPosition(BlockPos pos) {
         this.targetPosition = pos;
         this.getNavigation().moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 1.0);
     }
-    
+
     /**
      * Move to Vec3 position (for API compatibility)
      */
@@ -154,11 +154,11 @@ public class CollaborationAgent extends PathfinderMob {
             return false;
         }
     }
-    
+
     public void moveInDirection(String direction, int distance) {
         BlockPos currentPos = this.blockPosition();
         BlockPos newPos = currentPos;
-        
+
         switch (direction.toLowerCase()) {
             case "forward":
             case "north":
@@ -186,14 +186,14 @@ public class CollaborationAgent extends PathfinderMob {
                 // Unknown direction - stay at current position
                 break;
         }
-        
+
         moveToPosition(newPos);
     }
-    
+
     public void followPlayer(boolean follow) {
         this.isFollowing = follow;
     }
-    
+
     public void performAction(String action) {
         switch (action.toLowerCase()) {
             case "jump":
@@ -212,27 +212,27 @@ public class CollaborationAgent extends PathfinderMob {
                 break;
         }
     }
-    
+
     // Custom goal for following owner
     private class FollowOwnerGoal extends Goal {
         private static final double FOLLOW_DISTANCE = 3.0;
         private static final double MAX_DISTANCE = 10.0;
-        
+
         @Override
         public boolean canUse() {
             if (!isFollowing || ownerUUID == null) {
                 return false;
             }
-            
+
             Player owner = level().getPlayerByUUID(ownerUUID);
             if (owner == null || owner.isSpectator()) {
                 return false;
             }
-            
+
             double distance = distanceToSqr(owner);
             return distance > FOLLOW_DISTANCE * FOLLOW_DISTANCE && distance < MAX_DISTANCE * MAX_DISTANCE;
         }
-        
+
         @Override
         public void tick() {
             if (ownerUUID != null) {
@@ -244,10 +244,10 @@ public class CollaborationAgent extends PathfinderMob {
             }
         }
     }
-    
+
     // Agent action methods for API compatibility
     private Player followTarget;
-    
+
     /**
      * Set follow target player
      */
@@ -257,7 +257,7 @@ public class CollaborationAgent extends PathfinderMob {
             this.setOwner(player);
         }
     }
-    
+
     /**
      * Dig forward
      */
@@ -270,7 +270,7 @@ public class CollaborationAgent extends PathfinderMob {
             return false;
         }
     }
-    
+
     /**
      * Place block
      */
@@ -278,7 +278,7 @@ public class CollaborationAgent extends PathfinderMob {
         // Simplified implementation - would need proper item/block handling
         return false; // Placeholder
     }
-    
+
     /**
      * Collect items
      */
@@ -286,7 +286,7 @@ public class CollaborationAgent extends PathfinderMob {
         // Simplified implementation - would need item entity detection
         return false; // Placeholder
     }
-    
+
     /**
      * Drop items
      */
@@ -294,7 +294,7 @@ public class CollaborationAgent extends PathfinderMob {
         // Simplified implementation - would need inventory handling
         return false; // Placeholder
     }
-    
+
     /**
      * Turn in direction
      */
@@ -318,7 +318,7 @@ public class CollaborationAgent extends PathfinderMob {
             return false;
         }
     }
-    
+
     /**
      * Get agent ID for dismissal
      */

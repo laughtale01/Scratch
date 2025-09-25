@@ -26,18 +26,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class MetricsReporter {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetricsReporter.class);
     private static MetricsReporter instance;
-    
+
     private final MetricsCollector collector;
     private final Gson gson;
     private final File reportsDir;
-    
+
     private MetricsReporter() {
         this.collector = DependencyInjector.getInstance().getService(MetricsCollector.class);
         this.gson = new GsonBuilder()
             .setPrettyPrinting()
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
             .create();
-        
+
         // Use secure directory creation
         if (FileSecurityUtils.ensureSafeDirectory("metrics/reports")) {
             this.reportsDir = new File("metrics/reports");
@@ -46,45 +46,45 @@ public final class MetricsReporter {
             this.reportsDir = null;
         }
     }
-    
+
     public static MetricsReporter getInstance() {
         if (instance == null) {
             instance = new MetricsReporter();
         }
         return instance;
     }
-    
+
     /**
      * Generate a comprehensive metrics report
      */
     public MetricsReport generateReport() {
         MetricsReport report = new MetricsReport();
         report.setGeneratedAt(LocalDateTime.now());
-        
+
         // Get metrics snapshot
         MetricsCollector.MetricsSnapshot snapshot = collector.getSnapshot();
-        
+
         // Server status
         report.setServerStatus(generateServerStatus());
-        
+
         // Performance metrics
         report.performanceMetrics = generatePerformanceMetrics(snapshot);
-        
+
         // WebSocket metrics
         report.webSocketMetrics = generateWebSocketMetrics(snapshot);
-        
+
         // Collaboration metrics
         report.collaborationMetrics = generateCollaborationMetrics(snapshot);
-        
+
         // System metrics
         report.systemMetrics = generateSystemMetrics(snapshot);
-        
+
         // Player activity
         report.playerActivity = generatePlayerActivity();
-        
+
         return report;
     }
-    
+
     /**
      * Export report to file
      */
@@ -93,20 +93,20 @@ public final class MetricsReporter {
             LOGGER.error("Reports directory not initialized");
             return;
         }
-        
+
         String timestamp = LocalDateTime.now().format(
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
         );
-        
+
         // Use secure file creation
         String fileName = "report_" + timestamp + ".json";
         File reportFile = FileSecurityUtils.getSafeFile("metrics/reports", fileName);
-        
+
         if (reportFile == null) {
             LOGGER.error("Failed to create safe report file");
             return;
         }
-        
+
         try (FileWriter writer = new FileWriter(reportFile)) {
             gson.toJson(report, writer);
             LOGGER.info("Exported metrics report to: {}", reportFile.getName());
@@ -114,7 +114,7 @@ public final class MetricsReporter {
             LOGGER.error("Failed to export metrics report", e);
         }
     }
-    
+
     /**
      * Generate HTML report
      */
@@ -123,21 +123,21 @@ public final class MetricsReporter {
         String timestamp = LocalDateTime.now().format(
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
         );
-        
+
         if (reportsDir == null) {
             LOGGER.error("Reports directory not initialized");
             return;
         }
-        
+
         // Use secure file creation
         String fileName = "report_" + timestamp + ".html";
         File htmlFile = FileSecurityUtils.getSafeFile("metrics/reports", fileName);
-        
+
         if (htmlFile == null) {
             LOGGER.error("Failed to create safe HTML report file");
             return;
         }
-        
+
         try (FileWriter writer = new FileWriter(htmlFile)) {
             writer.write(generateHtml(report));
             LOGGER.info("Generated HTML report: {}", htmlFile.getName());
@@ -145,11 +145,11 @@ public final class MetricsReporter {
             LOGGER.error("Failed to generate HTML report", e);
         }
     }
-    
+
     private ServerStatus generateServerStatus() {
         ServerStatus status = new ServerStatus();
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        
+
         if (server != null) {
             status.setRunning(true);
             status.setPlayerCount(server.getPlayerCount());
@@ -157,24 +157,24 @@ public final class MetricsReporter {
             status.setTickTime(server.getAverageTickTime());
             status.motd = server.getMotd();
         }
-        
+
         return status;
     }
-    
+
     private PerformanceMetrics generatePerformanceMetrics(MetricsCollector.MetricsSnapshot snapshot) {
         PerformanceMetrics metrics = new PerformanceMetrics();
-        
+
         // Block operations
         metrics.blocksPlaced = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.BLOCKS_PLACED, 0L);
         metrics.blocksBroken = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.BLOCKS_BROKEN, 0L);
         metrics.batchOperations = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.BATCH_OPERATIONS, 0L);
-        
+
         // Cache performance
         long cacheHits = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.CACHE_HITS, 0L);
         long cacheMisses = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.CACHE_MISSES, 0L);
         long totalCacheAccess = cacheHits + cacheMisses;
         metrics.cacheHitRate = (totalCacheAccess > 0) ? (cacheHits * 100.0 / totalCacheAccess) : 0;
-        
+
         // Timing metrics
         snapshot.getTimings().forEach((name, stats) -> {
             if (name.startsWith(MetricsCollector.Metrics.COMMAND_TIMING_PREFIX)) {
@@ -182,42 +182,42 @@ public final class MetricsReporter {
                 metrics.commandTimings.put(commandName, stats.getAverage());
             }
         });
-        
+
         return metrics;
     }
-    
+
     private WebSocketMetrics generateWebSocketMetrics(MetricsCollector.MetricsSnapshot snapshot) {
         WebSocketMetrics metrics = new WebSocketMetrics();
-        
+
         metrics.totalConnections = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.WS_CONNECTIONS_TOTAL, 0L);
         metrics.activeConnections = snapshot.getGauges().getOrDefault(MetricsCollector.Metrics.WS_CONNECTIONS_ACTIVE, 0L);
         metrics.messagesReceived = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.WS_MESSAGES_RECEIVED, 0L);
         metrics.messagesSent = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.WS_MESSAGES_SENT, 0L);
         metrics.errors = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.WS_ERRORS, 0L);
-        
+
         return metrics;
     }
-    
+
     private CollaborationMetrics generateCollaborationMetrics(MetricsCollector.MetricsSnapshot snapshot) {
         CollaborationMetrics metrics = new CollaborationMetrics();
-        
+
         metrics.invitationsSent = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.INVITATIONS_SENT, 0L);
         metrics.invitationsAccepted = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.INVITATIONS_ACCEPTED, 0L);
         metrics.invitationsDeclined = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.INVITATIONS_DECLINED, 0L);
         metrics.visitsRequested = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.VISITS_REQUESTED, 0L);
         metrics.visitsApproved = snapshot.getCounters().getOrDefault(MetricsCollector.Metrics.VISITS_APPROVED, 0L);
-        
+
         // Calculate acceptance rate
         long totalInvitations = metrics.invitationsAccepted + metrics.invitationsDeclined;
         metrics.acceptanceRate = (totalInvitations > 0)
                 ? (metrics.invitationsAccepted * 100.0 / totalInvitations) : 0;
-        
+
         return metrics;
     }
-    
+
     private SystemMetricsData generateSystemMetrics(MetricsCollector.MetricsSnapshot snapshot) {
         SystemMetricsData metrics = new SystemMetricsData();
-        
+
         if (snapshot.getSystemMetrics() != null) {
             SystemMetrics.SystemSnapshot sys = snapshot.getSystemMetrics();
             metrics.setCpuUsage(sys.getCpuUsage());
@@ -226,14 +226,14 @@ public final class MetricsReporter {
             metrics.setAvailableMemoryMB(sys.getAvailableMemoryMB());
             metrics.setThreadCount(sys.getThreadCount());
         }
-        
+
         return metrics;
     }
-    
+
     private List<PlayerActivityData> generatePlayerActivity() {
         List<PlayerActivityData> activities = new ArrayList<>();
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        
+
         if (server != null) {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 PlayerActivityData activity = new PlayerActivityData();
@@ -245,10 +245,10 @@ public final class MetricsReporter {
                 activities.add(activity);
             }
         }
-        
+
         return activities;
     }
-    
+
     private String generateHtml(MetricsReport report) {
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html>\n<html>\n<head>\n");
@@ -264,11 +264,11 @@ public final class MetricsReporter {
         html.append(".warning { color: #ff9800; }\n");
         html.append(".error { color: #f44336; }\n");
         html.append("</style>\n</head>\n<body>\n");
-        
+
         // Header
         html.append("<h1>Minecraft Collaboration Metrics Report</h1>\n");
         html.append("<p>Generated at: ").append(report.getGeneratedAt()).append("</p>\n");
-        
+
         // Server Status
         html.append("<h2>Server Status</h2>\n");
         html.append("<table>\n");
@@ -279,7 +279,7 @@ public final class MetricsReporter {
         html.append("<tr><td>Average Tick Time</td><td class='metric-value'>")
             .append(String.format("%.2f ms", report.getServerStatus().getTickTime())).append("</td></tr>\n");
         html.append("</table>\n");
-        
+
         // System Metrics
         html.append("<h2>System Metrics</h2>\n");
         html.append("<table>\n");
@@ -292,7 +292,7 @@ public final class MetricsReporter {
         html.append("<tr><td>Thread Count</td><td class='metric-value'>")
             .append(report.systemMetrics.threadCount).append("</td></tr>\n");
         html.append("</table>\n");
-        
+
         // Performance Metrics
         html.append("<h2>Performance Metrics</h2>\n");
         html.append("<table>\n");
@@ -303,7 +303,7 @@ public final class MetricsReporter {
         html.append("<tr><td>Cache Hit Rate</td><td class='metric-value'>")
             .append(String.format("%.1f%%", report.performanceMetrics.cacheHitRate)).append("</td></tr>\n");
         html.append("</table>\n");
-        
+
         // WebSocket Metrics
         html.append("<h2>WebSocket Metrics</h2>\n");
         html.append("<table>\n");
@@ -317,11 +317,11 @@ public final class MetricsReporter {
             .append(report.webSocketMetrics.errors > 0 ? "error" : "metric-value").append("'>")
             .append(report.webSocketMetrics.errors).append("</td></tr>\n");
         html.append("</table>\n");
-        
+
         html.append("</body>\n</html>");
         return html.toString();
     }
-    
+
     // Report data classes
     public static class MetricsReport {
         private LocalDateTime generatedAt;
@@ -331,7 +331,7 @@ public final class MetricsReporter {
         private CollaborationMetrics collaborationMetrics;
         private SystemMetricsData systemMetrics;
         private List<PlayerActivityData> playerActivity;
-        
+
         public LocalDateTime getGeneratedAt() {
             return generatedAt;
         }
@@ -375,14 +375,14 @@ public final class MetricsReporter {
             this.playerActivity = playerActivity;
         }
     }
-    
+
     public static class ServerStatus {
         private boolean isRunning;
         private int playerCount;
         private int maxPlayers;
         private double tickTime;
         private String motd;
-        
+
         public boolean isRunning() {
             return isRunning;
         }
@@ -414,14 +414,14 @@ public final class MetricsReporter {
             this.motd = motd;
         }
     }
-    
+
     public static class PerformanceMetrics {
         private long blocksPlaced;
         private long blocksBroken;
         private long batchOperations;
         private double cacheHitRate;
         private Map<String, Double> commandTimings = new ConcurrentHashMap<>();
-        
+
         public long getBlocksPlaced() {
             return blocksPlaced;
         }
@@ -453,14 +453,14 @@ public final class MetricsReporter {
             this.commandTimings = commandTimings;
         }
     }
-    
+
     public static class WebSocketMetrics {
         private long totalConnections;
         private long activeConnections;
         private long messagesReceived;
         private long messagesSent;
         private long errors;
-        
+
         public long getTotalConnections() {
             return totalConnections;
         }
@@ -492,7 +492,7 @@ public final class MetricsReporter {
             this.errors = errors;
         }
     }
-    
+
     public static class CollaborationMetrics {
         private long invitationsSent;
         private long invitationsAccepted;
@@ -500,7 +500,7 @@ public final class MetricsReporter {
         private long visitsRequested;
         private long visitsApproved;
         private double acceptanceRate;
-        
+
         public long getInvitationsSent() {
             return invitationsSent;
         }
@@ -538,14 +538,14 @@ public final class MetricsReporter {
             this.acceptanceRate = acceptanceRate;
         }
     }
-    
+
     public static class SystemMetricsData {
         private double cpuUsage;
         private double memoryUsage;
         private long usedMemoryMB;
         private long availableMemoryMB;
         private int threadCount;
-        
+
         public double getCpuUsage() {
             return cpuUsage;
         }
@@ -577,14 +577,14 @@ public final class MetricsReporter {
             this.threadCount = threadCount;
         }
     }
-    
+
     public static class PlayerActivityData {
         private String playerName;
         private String gameMode;
         private String dimension;
         private float health;
         private int foodLevel;
-        
+
         public String getPlayerName() {
             return playerName;
         }

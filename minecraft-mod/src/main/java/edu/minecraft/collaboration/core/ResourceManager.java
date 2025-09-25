@@ -14,37 +14,37 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Centralized resource manager for handling all system resources
  * including ExecutorServices, AutoCloseable resources, and shutdown hooks.
- * 
+ *
  * This class ensures proper resource cleanup and prevents resource leaks
  * by managing all resources through a single point of control.
  */
 public final class ResourceManager implements AutoCloseable {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    
+
     // Singleton instance
     private static volatile ResourceManager instance;
     private static final ReentrantLock INSTANCE_LOCK = new ReentrantLock();
-    
+
     // Configuration
     private static final long EXECUTOR_SHUTDOWN_TIMEOUT_MS = 15000; // 15 seconds
     private static final long RESOURCE_CLEANUP_TIMEOUT_MS = 10000; // 10 seconds
-    
+
     // Resource tracking
     private final Map<String, AutoCloseable> managedResources = new ConcurrentHashMap<>();
     private final Map<String, ExecutorService> managedExecutors = new ConcurrentHashMap<>();
     private final Set<Runnable> shutdownHooks = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
     private final AtomicBoolean shutdownComplete = new AtomicBoolean(false);
-    
+
     // Shutdown hook thread
     private Thread shutdownHookThread;
-    
+
     private ResourceManager() {
         // Register JVM shutdown hook
         registerJvmShutdownHook();
         LOGGER.info("ResourceManager initialized - centralized resource management enabled");
     }
-    
+
     /**
      * Get the singleton instance of ResourceManager
      */
@@ -61,7 +61,7 @@ public final class ResourceManager implements AutoCloseable {
         }
         return instance;
     }
-    
+
     /**
      * Register a resource for automatic cleanup
      * @param name Unique name for the resource
@@ -72,21 +72,21 @@ public final class ResourceManager implements AutoCloseable {
         if (shutdownInProgress.get()) {
             throw new IllegalStateException("Cannot register resources during shutdown");
         }
-        
+
         if (resource == null) {
             LOGGER.warn("Attempted to register null resource: {}", name);
             return;
         }
-        
+
         AutoCloseable existing = managedResources.put(name, resource);
         if (existing != null && existing != resource) {
             LOGGER.warn("Replacing existing resource '{}', closing old resource", name);
             closeResourceQuietly(existing, name + " (replaced)");
         }
-        
+
         LOGGER.debug("Registered resource for cleanup: {}", name);
     }
-    
+
     /**
      * Register an executor service for automatic shutdown
      * @param name Unique name for the executor
@@ -97,21 +97,21 @@ public final class ResourceManager implements AutoCloseable {
         if (shutdownInProgress.get()) {
             throw new IllegalStateException("Cannot register executors during shutdown");
         }
-        
+
         if (executor == null) {
             LOGGER.warn("Attempted to register null executor: {}", name);
             return;
         }
-        
+
         ExecutorService existing = managedExecutors.put(name, executor);
         if (existing != null && existing != executor) {
             LOGGER.warn("Replacing existing executor '{}', shutting down old executor", name);
             shutdownExecutorQuietly(existing, name + " (replaced)");
         }
-        
+
         LOGGER.debug("Registered executor for cleanup: {}", name);
     }
-    
+
     /**
      * Register a shutdown hook to run during cleanup
      * @param hook The hook to run during shutdown
@@ -121,13 +121,13 @@ public final class ResourceManager implements AutoCloseable {
         if (shutdownInProgress.get()) {
             throw new IllegalStateException("Cannot register shutdown hooks during shutdown");
         }
-        
+
         if (hook != null) {
             shutdownHooks.add(hook);
             LOGGER.debug("Registered shutdown hook");
         }
     }
-    
+
     /**
      * Unregister and close a resource
      * @param name The resource name
@@ -142,7 +142,7 @@ public final class ResourceManager implements AutoCloseable {
         }
         return false;
     }
-    
+
     /**
      * Unregister and shutdown an executor
      * @param name The executor name
@@ -157,7 +157,7 @@ public final class ResourceManager implements AutoCloseable {
         }
         return false;
     }
-    
+
     /**
      * Perform immediate shutdown of all resources
      * This method is idempotent and can be called multiple times safely
@@ -166,7 +166,7 @@ public final class ResourceManager implements AutoCloseable {
     public void close() {
         shutdown();
     }
-    
+
     /**
      * Perform shutdown of all managed resources
      */
@@ -175,36 +175,36 @@ public final class ResourceManager implements AutoCloseable {
             LOGGER.debug("ResourceManager already shutdown, skipping");
             return;
         }
-        
+
         if (!shutdownInProgress.compareAndSet(false, true)) {
             LOGGER.info("ResourceManager shutdown already in progress, waiting for completion");
             waitForShutdownCompletion();
             return;
         }
-        
+
         LOGGER.info("Starting ResourceManager shutdown...");
         long startTime = System.currentTimeMillis();
-        
+
         try {
             // Run shutdown hooks first
             runShutdownHooks();
-            
+
             // Shutdown executors (most critical)
             shutdownAllExecutors();
-            
+
             // Close remaining resources
             closeAllResources();
-            
+
             shutdownComplete.set(true);
             long duration = System.currentTimeMillis() - startTime;
             LOGGER.info("ResourceManager shutdown completed successfully in {} ms", duration);
-            
+
         } catch (Exception e) {
             LOGGER.error("Error during ResourceManager shutdown", e);
             shutdownComplete.set(true);
         }
     }
-    
+
     /**
      * Wait for shutdown completion if it's in progress
      */
@@ -219,14 +219,14 @@ public final class ResourceManager implements AutoCloseable {
             }
         }
     }
-    
+
     /**
      * Register JVM shutdown hook
      */
     private void registerJvmShutdownHook() {
         shutdownHookThread = new Thread(this::shutdown, "ResourceManager-ShutdownHook");
         shutdownHookThread.setDaemon(false);
-        
+
         try {
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
             LOGGER.debug("JVM shutdown hook registered");
@@ -234,7 +234,7 @@ public final class ResourceManager implements AutoCloseable {
             LOGGER.warn("Could not register JVM shutdown hook - JVM may be shutting down");
         }
     }
-    
+
     /**
      * Run all registered shutdown hooks
      */
@@ -242,9 +242,9 @@ public final class ResourceManager implements AutoCloseable {
         if (shutdownHooks.isEmpty()) {
             return;
         }
-        
+
         LOGGER.info("Running {} shutdown hooks", shutdownHooks.size());
-        
+
         for (Runnable hook : shutdownHooks) {
             try {
                 hook.run();
@@ -252,10 +252,10 @@ public final class ResourceManager implements AutoCloseable {
                 LOGGER.error("Error running shutdown hook", e);
             }
         }
-        
+
         shutdownHooks.clear();
     }
-    
+
     /**
      * Shutdown all managed executors
      */
@@ -263,23 +263,23 @@ public final class ResourceManager implements AutoCloseable {
         if (managedExecutors.isEmpty()) {
             return;
         }
-        
+
         LOGGER.info("Shutting down {} executors", managedExecutors.size());
-        
+
         // Shutdown all executors gracefully first
         managedExecutors.forEach((name, executor) -> {
             LOGGER.debug("Initiating graceful shutdown for executor: {}", name);
             executor.shutdown();
         });
-        
+
         // Wait for graceful termination with timeout
         long shutdownStart = System.currentTimeMillis();
         long gracefulTimeout = EXECUTOR_SHUTDOWN_TIMEOUT_MS / 2;
-        
+
         managedExecutors.entrySet().removeIf(entry -> {
             String name = entry.getKey();
             ExecutorService executor = entry.getValue();
-            
+
             try {
                 if (executor.awaitTermination(gracefulTimeout, TimeUnit.MILLISECONDS)) {
                     LOGGER.debug("Executor '{}' terminated gracefully", name);
@@ -294,18 +294,18 @@ public final class ResourceManager implements AutoCloseable {
                 return false;
             }
         });
-        
+
         // Force shutdown remaining executors
         if (!managedExecutors.isEmpty()) {
             LOGGER.warn("Force shutting down {} remaining executors", managedExecutors.size());
-            
+
             managedExecutors.forEach((name, executor) -> {
                 try {
                     executor.shutdownNow();
-                    
-                    long remainingTimeout = Math.max(1000, 
+
+                    long remainingTimeout = Math.max(1000,
                         EXECUTOR_SHUTDOWN_TIMEOUT_MS - (System.currentTimeMillis() - shutdownStart));
-                    
+
                     if (!executor.awaitTermination(remainingTimeout, TimeUnit.MILLISECONDS)) {
                         LOGGER.error("Executor '{}' did not terminate after forced shutdown", name);
                     } else {
@@ -317,10 +317,10 @@ public final class ResourceManager implements AutoCloseable {
                 }
             });
         }
-        
+
         managedExecutors.clear();
     }
-    
+
     /**
      * Close all managed resources
      */
@@ -328,16 +328,16 @@ public final class ResourceManager implements AutoCloseable {
         if (managedResources.isEmpty()) {
             return;
         }
-        
+
         LOGGER.info("Closing {} resources", managedResources.size());
-        
+
         managedResources.forEach((name, resource) -> {
             closeResourceQuietly(resource, name);
         });
-        
+
         managedResources.clear();
     }
-    
+
     /**
      * Close a resource quietly without throwing exceptions
      */
@@ -345,7 +345,7 @@ public final class ResourceManager implements AutoCloseable {
         if (resource == null) {
             return;
         }
-        
+
         try {
             LOGGER.debug("Closing resource: {}", name);
             resource.close();
@@ -353,7 +353,7 @@ public final class ResourceManager implements AutoCloseable {
             LOGGER.error("Error closing resource '{}': {}", name, e.getMessage());
         }
     }
-    
+
     /**
      * Shutdown an executor quietly without throwing exceptions
      */
@@ -361,15 +361,15 @@ public final class ResourceManager implements AutoCloseable {
         if (executor == null) {
             return;
         }
-        
+
         try {
             LOGGER.debug("Shutting down executor: {}", name);
             executor.shutdown();
-            
+
             if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
                 LOGGER.warn("Executor '{}' did not terminate gracefully, forcing shutdown", name);
                 executor.shutdownNow();
-                
+
                 if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
                     LOGGER.error("Executor '{}' did not terminate after forced shutdown", name);
                 }
@@ -380,7 +380,7 @@ public final class ResourceManager implements AutoCloseable {
             Thread.currentThread().interrupt();
         }
     }
-    
+
     /**
      * Get resource management statistics
      */
@@ -393,14 +393,14 @@ public final class ResourceManager implements AutoCloseable {
             shutdownComplete.get()
         );
     }
-    
+
     /**
      * Check if ResourceManager is shutdown
      */
     public boolean isShutdown() {
         return shutdownComplete.get();
     }
-    
+
     /**
      * Resource management statistics
      */
@@ -410,7 +410,7 @@ public final class ResourceManager implements AutoCloseable {
         private final int shutdownHooks;
         private final boolean shutdownInProgress;
         private final boolean shutdownComplete;
-        
+
         public ResourceStatistics(int managedResources, int managedExecutors, int shutdownHooks,
                                  boolean shutdownInProgress, boolean shutdownComplete) {
             this.managedResources = managedResources;
@@ -419,13 +419,13 @@ public final class ResourceManager implements AutoCloseable {
             this.shutdownInProgress = shutdownInProgress;
             this.shutdownComplete = shutdownComplete;
         }
-        
+
         public int getManagedResources() { return managedResources; }
         public int getManagedExecutors() { return managedExecutors; }
         public int getShutdownHooks() { return shutdownHooks; }
         public boolean isShutdownInProgress() { return shutdownInProgress; }
         public boolean isShutdownComplete() { return shutdownComplete; }
-        
+
         @Override
         public String toString() {
             return String.format("ResourceStats{resources=%d, executors=%d, hooks=%d, "

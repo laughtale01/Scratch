@@ -13,7 +13,7 @@ import java.util.Map;
  * Separated from CollaborationMessageProcessor to reduce complexity
  */
 public class BuildingCommandProcessor {
-    
+
     /**
      * Parameters for house building operations
      */
@@ -25,7 +25,7 @@ public class BuildingCommandProcessor {
         final net.minecraft.world.level.block.Block doorBlock;
         final net.minecraft.world.level.block.Block windowBlock;
         final net.minecraft.server.level.ServerLevel world;
-        
+
         HouseBuildingParams(int x, int y, int z, int width, int depth, int height,
                            net.minecraft.world.level.block.Block wallBlock,
                            net.minecraft.world.level.block.Block roofBlock,
@@ -45,16 +45,16 @@ public class BuildingCommandProcessor {
             this.world = world;
         }
     }
-    
+
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private final CollaborationCommandHandler commandHandler;
     private final Gson gson;
-    
+
     public BuildingCommandProcessor(CollaborationCommandHandler commandHandler) {
         this.commandHandler = commandHandler;
         this.gson = new Gson();
     }
-    
+
     /**
      * Handle fill blocks command
      */
@@ -67,7 +67,7 @@ public class BuildingCommandProcessor {
             int y2 = Integer.parseInt(args.get("y2"));
             int z2 = Integer.parseInt(args.get("z2"));
             String blockType = args.get("block");
-            
+
             // Ensure coordinates are in order
             int minX = Math.min(x1, x2);
             int maxX = Math.max(x1, x2);
@@ -75,22 +75,22 @@ public class BuildingCommandProcessor {
             int maxY = Math.max(y1, y2);
             int minZ = Math.min(z1, z2);
             int maxZ = Math.max(z1, z2);
-            
+
             // Limit area size to prevent server lag
             int volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
             if (volume > 10000) {
                 return createErrorResponse("areaTooBig", "Area too large (max 10000 blocks)");
             }
-            
+
             // Execute fill using command handler
             String[] fillArgs = new String[] {
                 String.valueOf(minX), String.valueOf(minY), String.valueOf(minZ),
                 String.valueOf(maxX), String.valueOf(maxY), String.valueOf(maxZ),
                 blockType
             };
-            
+
             return commandHandler.handleFillArea(fillArgs);
-            
+
         } catch (NumberFormatException e) {
             return createErrorResponse("invalidCoordinates", "Invalid coordinates");
         } catch (Exception e) {
@@ -98,7 +98,7 @@ public class BuildingCommandProcessor {
             return createErrorResponse("fillError", e.getMessage());
         }
     }
-    
+
     /**
      * Handle build circle command
      */
@@ -109,17 +109,17 @@ public class BuildingCommandProcessor {
             int z = Integer.parseInt(args.get("z"));
             int radius = Integer.parseInt(args.get("radius"));
             String blockType = args.get("block");
-            
+
             if (radius > 50) {
                 return createErrorResponse("radiusTooBig", "Radius too large (max 50)");
             }
-            
+
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
                 if (world != null) {
                     net.minecraft.world.level.block.Block block = BlockUtils.getBlockFromString(blockType);
-                    
+
                     // Build circle using midpoint circle algorithm
                     for (int dx = -radius; dx <= radius; dx++) {
                         for (int dz = -radius; dz <= radius; dz++) {
@@ -130,7 +130,7 @@ public class BuildingCommandProcessor {
                             }
                         }
                     }
-                    
+
                     return createSuccessResponse("buildCircle", "Built circle with radius " + radius);
                 }
             }
@@ -142,7 +142,7 @@ public class BuildingCommandProcessor {
             return createErrorResponse("circleError", e.getMessage());
         }
     }
-    
+
     /**
      * Handle build sphere command
      */
@@ -153,17 +153,17 @@ public class BuildingCommandProcessor {
             int centerZ = Integer.parseInt(args.get("z"));
             int radius = Integer.parseInt(args.get("radius"));
             String blockType = args.get("block");
-            
+
             if (radius > 50) {
                 return createErrorResponse("sphereTooBig", "Sphere too large (max radius 50)");
             }
-            
+
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
                 if (world != null) {
                     net.minecraft.world.level.block.Block block = BlockUtils.getBlockFromString(blockType);
-                    
+
                     // Build sphere using 3D distance formula
                     for (int x = -radius; x <= radius; x++) {
                         for (int y = -radius; y <= radius; y++) {
@@ -179,12 +179,12 @@ public class BuildingCommandProcessor {
                             }
                         }
                     }
-                    
+
                     return createSuccessResponse("buildSphere", "Built sphere with radius " + radius);
                 }
             }
             return createErrorResponse("worldNotFound", "World not found");
-            
+
         } catch (NumberFormatException e) {
             return createErrorResponse("invalidParameters", "Invalid parameters");
         } catch (Exception e) {
@@ -192,7 +192,7 @@ public class BuildingCommandProcessor {
             return createErrorResponse("sphereError", e.getMessage());
         }
     }
-    
+
     /**
      * Handle build wall command
      */
@@ -204,17 +204,17 @@ public class BuildingCommandProcessor {
             int z2 = Integer.parseInt(args.get("z2"));
             int height = Integer.parseInt(args.get("height"));
             String blockType = args.get("block");
-            
+
             if (height > 50) {
                 return createErrorResponse("wallTooHigh", "Wall too high (max height 50)");
             }
-            
+
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
                 if (world != null) {
                     net.minecraft.world.level.block.Block block = BlockUtils.getBlockFromString(blockType);
-                    
+
                     // Get ground level at starting position
                     int groundY = 64; // Default ground level
                     for (int y = 255; y >= 0; y--) {
@@ -224,31 +224,31 @@ public class BuildingCommandProcessor {
                             break;
                         }
                     }
-                    
+
                     // Build wall along the line from (x1,z1) to (x2,z2)
                     int dx = x2 - x1;
                     int dz = z2 - z1;
                     int steps = Math.max(Math.abs(dx), Math.abs(dz));
-                    
+
                     if (steps == 0) {
                         steps = 1;
                     }
-                    
+
                     for (int i = 0; i <= steps; i++) {
                         int x = x1 + (dx * i) / steps;
                         int z = z1 + (dz * i) / steps;
-                        
+
                         for (int y = 0; y < height; y++) {
                             net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, groundY + y, z);
                             world.setBlockAndUpdate(pos, block.defaultBlockState());
                         }
                     }
-                    
+
                     return createSuccessResponse("buildWall", "Built wall from (" + x1 + "," + z1 + ") to (" + x2 + "," + z2 + ")");
                 }
             }
             return createErrorResponse("worldNotFound", "World not found");
-            
+
         } catch (NumberFormatException e) {
             return createErrorResponse("invalidParameters", "Invalid parameters");
         } catch (Exception e) {
@@ -256,7 +256,7 @@ public class BuildingCommandProcessor {
             return createErrorResponse("wallError", e.getMessage());
         }
     }
-    
+
     /**
      * Build the floor of the house
      */
@@ -269,7 +269,7 @@ public class BuildingCommandProcessor {
             }
         }
     }
-    
+
     /**
      * Build the walls of the house with door and window placement
      */
@@ -278,7 +278,7 @@ public class BuildingCommandProcessor {
             buildWallsAtHeight(params, dy);
         }
     }
-    
+
     /**
      * Build walls at a specific height with door and window logic
      */
@@ -288,58 +288,58 @@ public class BuildingCommandProcessor {
                 if (isWallPosition(dx, dz, params.width, params.depth)) {
                     net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(
                         params.x + dx, params.y + dy, params.z + dz);
-                    
-                    net.minecraft.world.level.block.state.BlockState blockState = 
+
+                    net.minecraft.world.level.block.state.BlockState blockState =
                         getBlockStateForWallPosition(params, dx, dz, dy);
                     params.world.setBlockAndUpdate(pos, blockState);
                 }
             }
         }
     }
-    
+
     /**
      * Determine if a position is on the wall (perimeter)
      */
     private boolean isWallPosition(int dx, int dz, int width, int depth) {
         return dx == 0 || dx == width - 1 || dz == 0 || dz == depth - 1;
     }
-    
+
     /**
      * Get the appropriate block state for a wall position (door, window, or wall)
      */
     private net.minecraft.world.level.block.state.BlockState getBlockStateForWallPosition(
             HouseBuildingParams params, int dx, int dz, int dy) {
-        
+
         // Add door on front wall
         if (isDoorPosition(dx, dz, dy, params.width, params.height)) {
             return params.doorBlock.defaultBlockState();
         }
-        
+
         // Add windows
         if (isWindowPosition(dx, dz, dy, params.width, params.depth, params.height)) {
             return params.windowBlock.defaultBlockState();
         }
-        
+
         // Default wall block
         return params.wallBlock.defaultBlockState();
     }
-    
+
     /**
      * Check if current position should have a door
      */
     private boolean isDoorPosition(int dx, int dz, int dy, int width, int height) {
         return dy < 2 && dx == width / 2 && dz == 0 && dy == 0;
     }
-    
+
     /**
      * Check if current position should have a window
      */
     private boolean isWindowPosition(int dx, int dz, int dy, int width, int depth, int height) {
-        return dy == height / 2 && 
-               (dx == 1 || dx == width - 2) && 
-               (dz == 0 || dz == depth - 1);
+        return dy == height / 2
+               && (dx == 1 || dx == width - 2)
+               && (dz == 0 || dz == depth - 1);
     }
-    
+
     /**
      * Build the roof of the house
      */
@@ -366,29 +366,29 @@ public class BuildingCommandProcessor {
             int depth = Integer.parseInt(args.get("depth"));
             int height = Integer.parseInt(args.get("height"));
             String blockType = args.get("block");
-            
+
             // Validate house size
             if (width > 30 || depth > 30 || height > 20) {
                 return createErrorResponse("houseTooBig", "House too large (max 30x30x20)");
             }
-            
+
             // Get world
             net.minecraft.server.level.ServerLevel world = getOverworld();
             if (world == null) {
                 return createErrorResponse("houseFailed", "World not found");
             }
-            
+
             // Create building parameters
             HouseBuildingParams params = createHouseBuildingParams(
                 x, y, z, width, depth, height, blockType, world);
-            
+
             // Build house components
             buildFloor(params);
             buildWalls(params);
             buildRoof(params);
-            
+
             return createSuccessResponse("buildHouse", "Built house " + width + "x" + depth + "x" + height);
-            
+
         } catch (NumberFormatException e) {
             return createErrorResponse("invalidParameters", "Invalid parameters");
         } catch (Exception e) {
@@ -396,7 +396,7 @@ public class BuildingCommandProcessor {
             return createErrorResponse("houseError", e.getMessage());
         }
     }
-    
+
     /**
      * Get the overworld level
      */
@@ -407,22 +407,22 @@ public class BuildingCommandProcessor {
         }
         return null;
     }
-    
+
     /**
      * Create house building parameters
      */
-    private HouseBuildingParams createHouseBuildingParams(int x, int y, int z, int width, int depth, 
-                                                         int height, String blockType, 
+    private HouseBuildingParams createHouseBuildingParams(int x, int y, int z, int width, int depth,
+                                                         int height, String blockType,
                                                          net.minecraft.server.level.ServerLevel world) {
         net.minecraft.world.level.block.Block wallBlock = BlockUtils.getBlockFromString(blockType);
         net.minecraft.world.level.block.Block roofBlock = net.minecraft.world.level.block.Blocks.OAK_PLANKS;
         net.minecraft.world.level.block.Block doorBlock = net.minecraft.world.level.block.Blocks.OAK_DOOR;
         net.minecraft.world.level.block.Block windowBlock = net.minecraft.world.level.block.Blocks.GLASS_PANE;
-        
-        return new HouseBuildingParams(x, y, z, width, depth, height, 
+
+        return new HouseBuildingParams(x, y, z, width, depth, height,
                                      wallBlock, roofBlock, doorBlock, windowBlock, world);
     }
-    
+
     /**
      * Handle set time command
      */
@@ -430,7 +430,7 @@ public class BuildingCommandProcessor {
         try {
             String timeStr = args.get("time");
             long time;
-            
+
             switch (timeStr.toLowerCase()) {
                 case "day":
                     time = 1000;
@@ -458,7 +458,7 @@ public class BuildingCommandProcessor {
                         return createErrorResponse("invalidTime", "Unknown time: " + timeStr);
                     }
             }
-            
+
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
@@ -473,14 +473,14 @@ public class BuildingCommandProcessor {
             return createErrorResponse("timeError", e.getMessage());
         }
     }
-    
+
     /**
      * Handle set weather command
      */
     public String handleSetWeather(Map<String, String> args) {
         try {
             String weather = args.get("weather");
-            
+
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 net.minecraft.server.level.ServerLevel world = server.getLevel(net.minecraft.world.level.Level.OVERWORLD);
@@ -507,7 +507,7 @@ public class BuildingCommandProcessor {
             return createErrorResponse("weatherError", e.getMessage());
         }
     }
-    
+
     /**
      * Handle teleport player command
      */
@@ -516,7 +516,7 @@ public class BuildingCommandProcessor {
             int x = Integer.parseInt(args.get("x"));
             int y = Integer.parseInt(args.get("y"));
             int z = Integer.parseInt(args.get("z"));
-            
+
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 java.util.List<net.minecraft.server.level.ServerPlayer> players = server.getPlayerList().getPlayers();
@@ -534,7 +534,7 @@ public class BuildingCommandProcessor {
             return createErrorResponse("teleportError", e.getMessage());
         }
     }
-    
+
     /**
      * Handle set game mode command
      */
@@ -542,7 +542,7 @@ public class BuildingCommandProcessor {
         try {
             String mode = args.get("mode");
             net.minecraft.world.level.GameType gameType;
-            
+
             switch (mode.toLowerCase()) {
                 case "survival":
                     gameType = net.minecraft.world.level.GameType.SURVIVAL;
@@ -559,7 +559,7 @@ public class BuildingCommandProcessor {
                 default:
                     return createErrorResponse("invalidGameMode", "Unknown game mode: " + mode);
             }
-            
+
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 java.util.List<net.minecraft.server.level.ServerPlayer> players = server.getPlayerList().getPlayers();
@@ -575,7 +575,7 @@ public class BuildingCommandProcessor {
             return createErrorResponse("gameModeError", e.getMessage());
         }
     }
-    
+
     // Helper methods for creating responses
     private String createErrorResponse(String errorType, String details) {
         JsonObject response = new JsonObject();
@@ -584,7 +584,7 @@ public class BuildingCommandProcessor {
         response.addProperty("message", details);
         return gson.toJson(response);
     }
-    
+
     private String createSuccessResponse(String type, String message) {
         JsonObject response = new JsonObject();
         response.addProperty("type", type);

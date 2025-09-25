@@ -22,9 +22,9 @@ public class BlockPack {
     private final boolean studentAccessible;
     private final LocalDateTime createdAt;
     private final Map<String, Object> metadata;
-    
+
     public BlockPack(String id, Map<String, String> names, Map<String, String> descriptions,
-                    List<Block> allowedBlocks, BlockPackCategory category, 
+                    List<Block> allowedBlocks, BlockPackCategory category,
                     DifficultyLevel difficulty, boolean studentAccessible) {
         this.id = id;
         this.names = new HashMap<>(names);
@@ -36,51 +36,51 @@ public class BlockPack {
         this.createdAt = LocalDateTime.now();
         this.metadata = new HashMap<>();
     }
-    
+
     /**
      * 險隱槭↓蠢懊§縺溷錐蜑阪ｒ蜿門ｾ・     */
     public String getName(String language) {
         return names.getOrDefault(language, names.getOrDefault("ja_JP", id));
     }
-    
+
     /**
      * 險隱槭↓蠢懊§縺溯ｪｬ譏弱ｒ蜿門ｾ・     */
     public String getDescription(String language) {
         return descriptions.getOrDefault(language, descriptions.getOrDefault("ja_JP", ""));
     }
-    
+
     /**
      * ブロック謨ｰ繧貞叙蠕・     */
     public int getBlockCount() {
         return allowedBlocks.size();
     }
-    
+
     /**
      * 迚ｹ螳壹・ブロック縺悟性縺ｾ繧後※縺・ｋ縺九メ繧ｧ繝・け
      */
     public boolean containsBlock(Block block) {
         return allowedBlocks.contains(block);
     }
-    
+
     /**
      * ブロック繝ｪ繧ｹ繝医ｒ螳牙・縺ｫ蜿門ｾ・     */
     public List<Block> getAllowedBlocks() {
         return new ArrayList<>(allowedBlocks);
     }
-    
+
     /**
      * 繝｡繧ｿ繝（繧ｿ繧定ｿｽ蜉
      */
     public void addMetadata(String key, Object value) {
         metadata.put(key, value);
     }
-    
+
     /**
      * 繝｡繧ｿ繝（繧ｿ繧貞叙蠕・     */
     public Object getMetadata(String key) {
         return metadata.get(key);
     }
-    
+
     /**
      * パック諠・ｱ繧偵お繧ｯ繧ｹ繝昴・繝・     */
     public Map<String, Object> exportData() {
@@ -94,10 +94,10 @@ public class BlockPack {
         data.put("studentAccessible", studentAccessible);
         data.put("createdAt", createdAt.toString());
         data.put("metadata", new HashMap<>(metadata));
-        
+
         return data;
     }
-    
+
     /**
      * 隧ｳ邏ｰ縺ｪ隱ｬ譏弱ｒ逕滓・
      */
@@ -109,10 +109,10 @@ public class BlockPack {
         info.append("Difficulty: ").append(difficulty.getDisplayName(language)).append("\n");
         info.append("Blocks: ").append(allowedBlocks.size()).append("\n");
         info.append("Student Access: ").append(studentAccessible ? "Yes" : "No").append("\n");
-        
+
         return info.toString();
     }
-    
+
     // Getters
     public String getId() {
         return id;
@@ -138,7 +138,7 @@ public class BlockPack {
     public Map<String, Object> getMetadata() {
         return new HashMap<>(metadata);
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -150,12 +150,12 @@ public class BlockPack {
         BlockPack blockPack = (BlockPack) obj;
         return Objects.equals(id, blockPack.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-    
+
     @Override
     public String toString() {
         return String.format("BlockPack[id=%s, category=%s, difficulty=%s, blocks=%d, studentAccess=%s]",

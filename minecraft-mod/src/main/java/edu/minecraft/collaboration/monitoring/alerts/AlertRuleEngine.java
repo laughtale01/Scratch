@@ -11,9 +11,9 @@ import java.util.List;
  * Alert Rule Engine for evaluating alert conditions
  */
 public class AlertRuleEngine {
-    
+
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    
+
     /**
      * Evaluate an alert rule against current and historical data
      */
@@ -23,35 +23,35 @@ public class AlertRuleEngine {
             if (!rule.getCondition().test(currentData)) {
                 return false;
             }
-            
+
             // For immediate rules (no minimum occurrences), return true
             if (rule.getMinimumOccurrences() <= 1) {
                 return true;
             }
-            
+
             // Count occurrences in the evaluation window
             int occurrences = countOccurrencesInWindow(rule, historicalData);
-            
+
             // Include current data point if it matches
             if (rule.getCondition().test(currentData)) {
                 occurrences++;
             }
-            
+
             boolean triggered = occurrences >= rule.getMinimumOccurrences();
-            
+
             if (triggered) {
-                LOGGER.debug("Alert rule '{}' triggered: {} occurrences (minimum: {})", 
+                LOGGER.debug("Alert rule '{}' triggered: {} occurrences (minimum: {})",
                     rule.getName(), occurrences, rule.getMinimumOccurrences());
             }
-            
+
             return triggered;
-            
+
         } catch (Exception e) {
             LOGGER.error("Error evaluating alert rule: {}", rule.getName(), e);
             return false;
         }
     }
-    
+
     /**
      * Count the number of times the rule condition was met in the historical data
      */
@@ -59,41 +59,41 @@ public class AlertRuleEngine {
         if (historicalData == null || historicalData.isEmpty()) {
             return 0;
         }
-        
+
         Instant windowStart = Instant.now().minus(rule.getEvaluationWindow());
-        
+
         return (int) historicalData.stream()
             .filter(dataPoint -> dataPoint.getTimestamp().isAfter(windowStart))
             .filter(rule.getCondition()::test)
             .count();
     }
-    
+
     /**
      * Evaluate multiple rules against the same data
      */
-    public AlertEvaluationResult evaluateMultipleRules(List<AlertRule> rules, 
-                                                       HealthDataPoint currentData, 
+    public AlertEvaluationResult evaluateMultipleRules(List<AlertRule> rules,
+                                                       HealthDataPoint currentData,
                                                        List<HealthDataPoint> historicalData) {
         AlertEvaluationResult.Builder resultBuilder = AlertEvaluationResult.builder();
-        
+
         for (AlertRule rule : rules) {
             try {
                 boolean triggered = evaluateRule(rule, currentData, historicalData);
                 resultBuilder.addRuleResult(rule.getName(), triggered);
-                
+
                 if (triggered) {
                     resultBuilder.addTriggeredRule(rule);
                 }
-                
+
             } catch (Exception e) {
                 LOGGER.error("Error evaluating rule: {}", rule.getName(), e);
                 resultBuilder.addRuleError(rule.getName(), e.getMessage());
             }
         }
-        
+
         return resultBuilder.build();
     }
-    
+
     /**
      * Check if a data point trend is concerning
      */
@@ -101,17 +101,17 @@ public class AlertRuleEngine {
         if (data.size() < 3) {
             return false; // Need at least 3 points for trend analysis
         }
-        
+
         Instant windowStart = Instant.now().minus(trendWindow);
         List<HealthDataPoint> recentData = data.stream()
             .filter(point -> point.getTimestamp().isAfter(windowStart))
             .sorted((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()))
             .toList();
-        
+
         if (recentData.size() < 3) {
             return false;
         }
-        
+
         // Calculate trend based on metric type
         switch (metric.toLowerCase()) {
             case "cpu":
@@ -126,7 +126,7 @@ public class AlertRuleEngine {
                 return false;
         }
     }
-    
+
     /**
      * Calculate trend slope for a metric
      */
@@ -134,27 +134,27 @@ public class AlertRuleEngine {
         if (data.size() < 2) {
             return 0.0;
         }
-        
+
         // Simple linear trend calculation
         double firstValue = metricExtractor.applyAsDouble(data.get(0));
         double lastValue = metricExtractor.applyAsDouble(data.get(data.size() - 1));
-        
+
         return lastValue - firstValue;
     }
-    
+
     /**
      * Calculate the severity of a condition based on how much it exceeds the threshold
      */
     public AlertSeverity calculateDynamicSeverity(AlertRule baseRule, HealthDataPoint data) {
         double threshold = baseRule.getThreshold();
         double actualValue = getMetricValue(data, baseRule.getName());
-        
+
         if (actualValue <= threshold) {
             return AlertSeverity.LOW;
         }
-        
+
         double exceedanceRatio = actualValue / threshold;
-        
+
         if (exceedanceRatio >= 2.0) {
             return AlertSeverity.CRITICAL;
         } else if (exceedanceRatio >= 1.5) {
@@ -165,7 +165,7 @@ public class AlertRuleEngine {
             return AlertSeverity.LOW;
         }
     }
-    
+
     private double getMetricValue(HealthDataPoint data, String ruleName) {
         // Map rule names to metric values
         switch (ruleName.toLowerCase()) {
@@ -183,17 +183,17 @@ public class AlertRuleEngine {
                 return 0.0;
         }
     }
-    
+
     /**
      * Check if system is in a degraded state
      */
     public boolean isSystemDegraded(HealthDataPoint data) {
-        return data.getCpuUsage() > 80 || 
-               data.getMemoryUsage() > 80 || 
-               data.getResponseTime() > 1000 || 
-               data.getErrorRate() > 5;
+        return data.getCpuUsage() > 80
+               || data.getMemoryUsage() > 80
+               || data.getResponseTime() > 1000
+               || data.getErrorRate() > 5;
     }
-    
+
     /**
      * Check if system is in a critical state
      */

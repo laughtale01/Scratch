@@ -21,18 +21,18 @@ import java.util.HashMap;
  * Supports both JSON format and legacy format messages
  */
 public class CollaborationMessageProcessor {
-    
+
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private final CollaborationCommandHandler commandHandler;
     private final Gson gson;
     private final MetricsCollector metrics;
     private final AuthenticationManager authManager;
     private final CollaborationManager collaborationManager;
-    
+
     // Delegated processors for handling specific command categories
     private final BuildingCommandProcessor buildingProcessor;
     private final CollaborationCommandProcessor collaborationProcessor;
-    
+
     public CollaborationMessageProcessor() {
         DependencyInjector injector = DependencyInjector.getInstance();
         this.metrics = injector.getService(MetricsCollector.class);
@@ -43,15 +43,15 @@ public class CollaborationMessageProcessor {
         this.buildingProcessor = new BuildingCommandProcessor(commandHandler);
         this.collaborationProcessor = new CollaborationCommandProcessor();
     }
-    
+
     // Current WebSocket connection identifier for authentication
     private String currentConnectionId;
-    
+
     public void setConnectionId(String connectionId) {
         this.currentConnectionId = connectionId;
         this.collaborationProcessor.setConnectionId(connectionId);
     }
-    
+
     /**
      * Process incoming message from WebSocket connection
      * This is the primary method for handling WebSocket messages
@@ -61,10 +61,10 @@ public class CollaborationMessageProcessor {
         if (webSocket != null) {
             this.currentConnectionId = webSocket.getRemoteSocketAddress().toString();
         }
-        
+
         return processMessage(message);
     }
-    
+
     /**
      * Process incoming message from Scratch extension
      * Supports JSON format: {"command": "cmdName", "args": {...}}
@@ -74,10 +74,10 @@ public class CollaborationMessageProcessor {
         if (message == null || message.trim().isEmpty()) {
             return createErrorResponse("emptyMessage", "Empty message received");
         }
-        
+
         try {
             LOGGER.debug("Processing message: {}", message);
-            
+
             // Try to parse as JSON first
             if (message.trim().startsWith("{")) {
                 return processJsonMessage(message);
@@ -85,13 +85,13 @@ public class CollaborationMessageProcessor {
                 // Fall back to legacy format
                 return processLegacyMessage(message);
             }
-            
+
         } catch (Exception e) {
             LOGGER.error("Error processing message: {}", message, e);
             return createErrorResponse("processing", e.getMessage());
         }
     }
-    
+
     /**
      * Process JSON format messages from Scratch
      */
@@ -99,26 +99,26 @@ public class CollaborationMessageProcessor {
         LOGGER.info("Processing JSON message: {}", message);
         try {
             JsonObject jsonMessage = gson.fromJson(message, JsonObject.class);
-            
+
             // Validate required fields
             if (jsonMessage == null || !jsonMessage.has("command")) {
                 LOGGER.error("Missing required 'command' field in JSON message: {}", message);
                 metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
                 return createErrorResponse("missingCommand", "Command field is required");
             }
-            
+
             JsonElement commandElement = jsonMessage.get("command");
             if (commandElement == null || !commandElement.isJsonPrimitive()) {
                 LOGGER.error("Invalid 'command' field type in JSON message: {}", message);
                 metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
                 return createErrorResponse("invalidCommand", "Command must be a string");
             }
-            
+
             String command = commandElement.getAsString();
             JsonObject args = jsonMessage.has("args") ? jsonMessage.getAsJsonObject("args") : new JsonObject();
-            
+
             LOGGER.info("Processing JSON command: {} with args: {}", command, args);
-            
+
             // Start timing
             try (MetricsCollector.TimingContext timing = metrics.startTiming(MetricsCollector.Metrics.COMMAND_TIMING_PREFIX + command)) {
                 // Convert JSON args to string array for compatibility
@@ -128,18 +128,18 @@ public class CollaborationMessageProcessor {
                         argsMap.put(entry.getKey(), entry.getValue().getAsString());
                     }
                 }
-                
+
                 String result = routeJsonCommand(command, argsMap);
-                
+
                 LOGGER.info("Command result for '{}': {}", command, result);
-                
+
                 // Update metrics
                 metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_EXECUTED);
                 metrics.incrementCounter(MetricsCollector.Metrics.WS_MESSAGES_SENT);
-                
+
                 return result;
             }
-            
+
         } catch (JsonSyntaxException e) {
             LOGGER.error("Invalid JSON syntax: {}", message, e);
             metrics.incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
@@ -152,7 +152,7 @@ public class CollaborationMessageProcessor {
             return createErrorResponse("processingError", "Failed to process message");
         }
     }
-    
+
     /**
      * Process legacy format messages
      */
@@ -162,10 +162,10 @@ public class CollaborationMessageProcessor {
         if (parts.length < 1) {
             return createErrorResponse("invalidFormat", "Expected: command(args)");
         }
-        
+
         String command = parts[0].trim();
         String argsString = "";
-        
+
         if (parts.length > 1) {
             argsString = parts[1];
             // Remove trailing parenthesis
@@ -173,21 +173,21 @@ public class CollaborationMessageProcessor {
                 argsString = argsString.substring(0, argsString.length() - 1);
             }
         }
-        
+
         // Split arguments
         String[] args = argsString.isEmpty() ? new String[0] : argsString.split(",");
-        
+
         // Trim arguments
         for (int i = 0; i < args.length; i++) {
             args[i] = args[i].trim();
         }
-        
+
         LOGGER.debug("Parsed legacy command: '{}' with {} arguments", command, args.length);
-        
+
         // Route to appropriate handler based on command
         return routeCommand(command, args);
     }
-    
+
     /**
      * Route JSON commands to appropriate handlers
      */
@@ -220,19 +220,19 @@ public class CollaborationMessageProcessor {
         if (isAgentCommand(command)) {
             return handleAgentCommands(command, args);
         }
-        
+
         // Unknown command
         LOGGER.warn("Unknown JSON command received: {}", command);
         return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
     }
-    
+
     /**
      * Check if command is an authentication command
      */
     private boolean isAuthenticationCommand(final String command) {
         return "auth".equals(command) || "getUserInfo".equals(command);
     }
-    
+
     /**
      * Handle authentication-related commands
      */
@@ -246,15 +246,15 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Check if command is a connection command
      */
     private boolean isConnectionCommand(final String command) {
-        return "connect".equals(command) || "status".equals(command) || "getPlayerPosition".equals(command) ||
-               "ping".equals(command) || "getPlayerPos".equals(command);
+        return "connect".equals(command) || "status".equals(command) || "getPlayerPosition".equals(command)
+               || "ping".equals(command) || "getPlayerPos".equals(command);
     }
-    
+
     /**
      * Handle connection-related commands
      */
@@ -273,16 +273,16 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Check if command is a block operation command
      */
     private boolean isBlockCommand(final String command) {
-        return "setBlock".equals(command) || "fillArea".equals(command) || 
-               "placeBlock".equals(command) || "removeBlock".equals(command) || 
-               "getBlock".equals(command);
+        return "setBlock".equals(command) || "fillArea".equals(command)
+               || "placeBlock".equals(command) || "removeBlock".equals(command)
+               || "getBlock".equals(command);
     }
-    
+
     /**
      * Handle block operation commands
      */
@@ -294,8 +294,8 @@ public class CollaborationMessageProcessor {
                 });
             case "fillArea":
                 return commandHandler.handleFillArea(new String[] {
-                    args.get("x1"), args.get("y1"), args.get("z1"), 
-                    args.get("x2"), args.get("y2"), args.get("z2"), 
+                    args.get("x1"), args.get("y1"), args.get("z1"),
+                    args.get("x2"), args.get("y2"), args.get("z2"),
                     args.get("blockType")
                 });
             case "placeBlock":
@@ -312,7 +312,7 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Handle place block command with validation
      */
@@ -329,14 +329,14 @@ public class CollaborationMessageProcessor {
             args.get("x"), args.get("y"), args.get("z"), args.get("block")
         });
     }
-    
+
     /**
      * Check if command is a player operation command
      */
     private boolean isPlayerCommand(final String command) {
         return "getPlayerPos".equals(command) || "teleport".equals(command) || "gamemode".equals(command);
     }
-    
+
     /**
      * Handle player operation commands
      */
@@ -352,16 +352,16 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Check if command is a building operation command
      */
     private boolean isBuildingCommand(final String command) {
-        return "fill".equals(command) || "buildCircle".equals(command) || 
-               "buildSphere".equals(command) || "buildWall".equals(command) || 
-               "buildHouse".equals(command);
+        return "fill".equals(command) || "buildCircle".equals(command)
+               || "buildSphere".equals(command) || "buildWall".equals(command)
+               || "buildHouse".equals(command);
     }
-    
+
     /**
      * Handle building operation commands
      */
@@ -381,14 +381,14 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Check if command is a world operation command
      */
     private boolean isWorldCommand(final String command) {
         return "time".equals(command) || "weather".equals(command);
     }
-    
+
     /**
      * Handle world operation commands
      */
@@ -402,14 +402,14 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Check if command is a chat command
      */
     private boolean isChatCommand(final String command) {
         return "chat".equals(command);
     }
-    
+
     /**
      * Handle chat commands
      */
@@ -419,14 +419,14 @@ public class CollaborationMessageProcessor {
         }
         return createErrorResponse("unknownCommand", command);
     }
-    
+
     /**
      * Check if command is a collaboration command
      */
     private boolean isCollaborationCommand(final String command) {
         return "getInvitations".equals(command) || "getCurrentWorld".equals(command);
     }
-    
+
     /**
      * Handle collaboration commands
      */
@@ -440,16 +440,16 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Check if command is an agent command
      */
     private boolean isAgentCommand(final String command) {
-        return "summonAgent".equals(command) || "moveAgent".equals(command) || 
-               "agentFollow".equals(command) || "agentAction".equals(command) || 
-               "dismissAgent".equals(command);
+        return "summonAgent".equals(command) || "moveAgent".equals(command)
+               || "agentFollow".equals(command) || "agentAction".equals(command)
+               || "dismissAgent".equals(command);
     }
-    
+
     /**
      * Handle agent commands
      */
@@ -475,7 +475,7 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Handle move agent command with conditional logic
      */
@@ -491,7 +491,7 @@ public class CollaborationMessageProcessor {
             });
         }
     }
-    
+
     /**
      * Route legacy commands to appropriate handlers
      */
@@ -509,12 +509,12 @@ public class CollaborationMessageProcessor {
         if (command.startsWith("agent.")) {
             return handleLegacyAgentCommands(command, args);
         }
-        
+
         // Unknown command
         LOGGER.warn("Unknown command received: {}", command);
         return createErrorResponse("unknownCommand", command);
     }
-    
+
     /**
      * Handle minecraft.* commands
      */
@@ -528,7 +528,7 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Handle collaboration.* commands
      */
@@ -552,7 +552,7 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Handle basic minecraft commands (backward compatibility)
      */
@@ -570,7 +570,7 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Handle agent.* commands
      */
@@ -584,7 +584,7 @@ public class CollaborationMessageProcessor {
                 return createErrorResponse(ErrorConstants.ERROR_UNKNOWN_COMMAND, command);
         }
     }
-    
+
     /**
      * Convert args map to array based on command requirements
      */
@@ -592,14 +592,14 @@ public class CollaborationMessageProcessor {
         // This is a placeholder - implement specific conversions as needed
         return args.values().toArray(new String[0]);
     }
-    
+
     /**
      * Create standardized error response
      */
     private String createErrorResponse(final String errorType, final String details) {
         return String.format(ErrorConstants.JSON_ERROR_TEMPLATE, errorType, details);
     }
-    
+
     // === Delegated command handlers ===
     // All heavy command logic has been moved to specialized processors
     // This class now focuses on routing and coordination

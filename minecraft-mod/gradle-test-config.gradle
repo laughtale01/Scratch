@@ -1,0 +1,68 @@
+// Gradle test configuration for minecraft-collaboration-mod
+// This file contains test task definitions to avoid circular dependencies
+
+// Task to run only unit tests (fast, reliable)
+task unitTest(type: Test) {
+    useJUnitPlatform {
+        excludeTags 'integration', 'performance', 'minecraft-dependent', 'docker-required'
+    }
+    
+    // Faster test execution
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+    
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = false
+        exceptionFormat = 'short'
+    }
+}
+
+// Safe integration test task (excludes problematic tests)
+task safeIntegrationTest(type: Test) {
+    useJUnitPlatform {
+        includeTags 'integration'
+        excludeTags 'docker-required', 'minecraft-dependent'
+    }
+    
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+    
+    shouldRunAfter unitTest
+}
+
+// Docker-dependent integration test task (optional)
+task dockerIntegrationTest(type: Test) {
+    useJUnitPlatform {
+        includeTags 'docker-required'
+    }
+    
+    // Only run if Docker is available
+    onlyIf {
+        try {
+            "docker --version".execute().waitFor() == 0
+        } catch (Exception e) {
+            logger.warn("Docker not available, skipping docker integration tests")
+            false
+        }
+    }
+    
+    shouldRunAfter safeIntegrationTest
+}
+
+// Add comprehensive test tasks after all individual tasks are defined
+afterEvaluate {
+    // Add a comprehensive test task that includes safe tests
+    task comprehensiveTest {
+        dependsOn unitTest, safeIntegrationTest
+        description = 'Run unit tests and safe integration tests'
+    }
+
+    // Full test suite (including Docker tests if available)
+    task fullTest {
+        dependsOn unitTest, safeIntegrationTest, dockerIntegrationTest
+        description = 'Run all tests including Docker-dependent tests'
+    }
+}

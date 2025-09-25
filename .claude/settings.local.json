@@ -145,7 +145,8 @@
       "Bash(./deploy-new-mod.bat)",
       "Bash(git restore:*)",
       "Bash(rsync:*)",
-      "Bash(flutter:*)"
+      "Bash(flutter:*)",
+      "Bash(./fix-checkstyle.sh:*)"
     ],
     "deny": []
   }

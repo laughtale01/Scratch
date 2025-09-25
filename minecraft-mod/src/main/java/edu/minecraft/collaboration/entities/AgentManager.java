@@ -17,21 +17,21 @@ import java.util.Optional;
 public final class AgentManager {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private static AgentManager instance;
-    
+
     // Map player UUID to their agent
     private final Map<UUID, CollaborationAgent> playerAgents = new HashMap<>();
     // Map agent ID to agent entity
     private final Map<String, CollaborationAgent> agentRegistry = new HashMap<>();
-    
+
     private AgentManager() { }
-    
+
     public static AgentManager getInstance() {
         if (instance == null) {
             instance = new AgentManager();
         }
         return instance;
     }
-    
+
     /**
      * Summon an agent for a player
      */
@@ -39,35 +39,35 @@ public final class AgentManager {
         try {
             // Remove existing agent if any
             removeAgent(player.getUUID());
-            
+
             ServerLevel level = player.serverLevel();
             BlockPos playerPos = player.blockPosition();
-            
+
             // Spawn agent near player
             BlockPos spawnPos = findSafeSpawnPosition(level, playerPos);
-            
+
             CollaborationAgent agent = ModEntities.COLLABORATION_AGENT.get().create(level);
             if (agent != null) {
                 agent.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
                 agent.setAgentName(agentName != null ? agentName : "Agent");
                 agent.setOwner(player);
-                
+
                 level.addFreshEntity(agent);
-                
+
                 // Register the agent
                 playerAgents.put(player.getUUID(), agent);
                 agentRegistry.put(agent.getAgentId(), agent);
-                
+
                 LOGGER.info("Summoned agent '{}' for player {}", agent.getAgentName(), player.getName().getString());
                 return agent;
             }
         } catch (Exception e) {
             LOGGER.error("Failed to summon agent for player {}", player.getName().getString(), e);
         }
-        
+
         return null;
     }
-    
+
     /**
      * Get agent for a player
      */
@@ -78,7 +78,7 @@ public final class AgentManager {
         }
         return Optional.empty();
     }
-    
+
     /**
      * Get active agent for primary player
      */
@@ -89,7 +89,7 @@ public final class AgentManager {
         }
         return null;
     }
-    
+
     /**
      * Get agent by ID
      */
@@ -100,7 +100,7 @@ public final class AgentManager {
         }
         return Optional.empty();
     }
-    
+
     /**
      * Remove an agent
      */
@@ -114,7 +114,7 @@ public final class AgentManager {
         }
         return false;
     }
-    
+
     /**
      * Dismiss agent by ID
      */
@@ -129,14 +129,14 @@ public final class AgentManager {
                     break;
                 }
             }
-            
+
             if (playerUUID != null) {
                 return removeAgent(playerUUID);
             }
         }
         return false;
     }
-    
+
     /**
      * Move agent to position
      */
@@ -148,7 +148,7 @@ public final class AgentManager {
         }
         return false;
     }
-    
+
     /**
      * Move agent in direction
      */
@@ -160,7 +160,7 @@ public final class AgentManager {
         }
         return false;
     }
-    
+
     /**
      * Make agent follow player
      */
@@ -172,7 +172,7 @@ public final class AgentManager {
         }
         return false;
     }
-    
+
     /**
      * Make agent perform action
      */
@@ -184,7 +184,7 @@ public final class AgentManager {
         }
         return false;
     }
-    
+
     /**
      * Find safe spawn position near player
      */
@@ -195,9 +195,9 @@ public final class AgentManager {
                 if (dx == 0 && dz == 0) {
                     continue; // Skip player position
                 }
-                
+
                 BlockPos checkPos = playerPos.offset(dx, 0, dz);
-                
+
                 // Check if position is safe (solid ground, air above)
                 if (level.getBlockState(checkPos.below()).isSolid()
                         && level.getBlockState(checkPos).isAir()
@@ -206,11 +206,11 @@ public final class AgentManager {
                 }
             }
         }
-        
+
         // Fallback to offset position
         return playerPos.offset(2, 0, 0);
     }
-    
+
     /**
      * Clean up disconnected players' agents
      */

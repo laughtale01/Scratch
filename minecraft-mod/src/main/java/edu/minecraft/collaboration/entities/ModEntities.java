@@ -13,23 +13,23 @@ import net.minecraftforge.registries.RegistryObject;
  * Registers custom entities for the mod
  */
 public final class ModEntities {
-    
+
     // Private constructor to prevent instantiation
     private ModEntities() {
         throw new UnsupportedOperationException("Utility class");
     }
-    
-    public static final DeferredRegister<EntityType<?>> ENTITY_TYPES = 
+
+    public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
         DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, MinecraftCollaborationMod.MOD_ID);
-    
-    public static final RegistryObject<EntityType<CollaborationAgent>> COLLABORATION_AGENT = 
+
+    public static final RegistryObject<EntityType<CollaborationAgent>> COLLABORATION_AGENT =
         ENTITY_TYPES.register("collaboration_agent",
             () -> EntityType.Builder.of(CollaborationAgent::new, MobCategory.CREATURE)
                 .sized(0.6F, 1.8F)
                 .clientTrackingRange(8)
                 .build(new ResourceLocation(MinecraftCollaborationMod.MOD_ID, "collaboration_agent").toString())
         );
-    
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }

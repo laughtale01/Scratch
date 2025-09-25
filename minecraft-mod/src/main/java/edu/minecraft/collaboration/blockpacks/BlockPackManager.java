@@ -18,18 +18,18 @@ import net.minecraft.world.level.block.Blocks;
  * Manager for block packs - predefined collections of blocks for educational purposes
  */
 public final class BlockPackManager {
-    
+
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private static volatile BlockPackManager instance;
     private static final Object LOCK = new Object();
     private final Map<String, BlockPack> blockPacks;
     private String currentPackId = "basic";
-    
+
     private BlockPackManager() {
         this.blockPacks = new HashMap<>();
         initializeDefaultBlockPacks();
     }
-    
+
     public static BlockPackManager getInstance() {
         if (instance == null) {
             synchronized (LOCK) {
@@ -40,7 +40,7 @@ public final class BlockPackManager {
         }
         return instance;
     }
-    
+
     /**
      * Initialize default block packs
      */
@@ -51,7 +51,7 @@ public final class BlockPackManager {
         createCreativeBlockPack();
         createRedstoneBlockPack();
     }
-    
+
     /**
      * Create basic block pack for beginners
      */
@@ -60,7 +60,7 @@ public final class BlockPackManager {
             "stone", "dirt", "wood", "planks", "cobblestone",
             "sand", "gravel", "glass", "brick", "wool"
         );
-        
+
         Map<String, String> names = new HashMap<>();
         names.put("en_US", "Basic Blocks");
         names.put("ja_JP", "Basic Blocks");
@@ -70,7 +70,7 @@ public final class BlockPackManager {
         names.put("es_ES", "Bloques Básicos");
         names.put("fr_FR", "Blocs de Base");
         names.put("de_DE", "Grundblöcke");
-        
+
         Map<String, String> descriptions = new HashMap<>();
         descriptions.put("ja_JP", "The most fundamental building blocks. Perfect for beginners.");
         descriptions.put("en_US", "The most fundamental building blocks. Perfect for beginners.");
@@ -80,14 +80,14 @@ public final class BlockPackManager {
         descriptions.put("es_ES", "El conjunto de bloques de construcción más fundamental. Perfecto para principiantes.");
         descriptions.put("fr_FR", "L'ensemble de blocs de construction le plus fondamental. Parfait pour les débutants.");
         descriptions.put("de_DE", "Die grundlegendsten Baublöcke. Perfekt für Anfänger.");
-        
+
         // Convert string list to Block list
         List<Block> blockList = convertStringListToBlocks(blocks);
-        BlockPack basicPack = new BlockPack("basic", names, descriptions, blockList, 
+        BlockPack basicPack = new BlockPack("basic", names, descriptions, blockList,
             BlockPackCategory.BASIC, DifficultyLevel.BEGINNER, false);
         blockPacks.put("basic", basicPack);
     }
-    
+
     /**
      * Create educational block pack with colorful blocks
      */
@@ -97,7 +97,7 @@ public final class BlockPackManager {
             "orange_wool", "purple_wool", "pink_wool", "lime_wool", "cyan_wool",
             "light_blue_wool", "magenta_wool", "brown_wool", "gray_wool", "black_wool"
         );
-        
+
         Map<String, String> names = new HashMap<>();
         names.put("en_US", "Educational Blocks");
         names.put("ja_JP", "Educational Blocks");
@@ -107,7 +107,7 @@ public final class BlockPackManager {
         names.put("es_ES", "Bloques Educativos");
         names.put("fr_FR", "Blocs Éducatifs");
         names.put("de_DE", "Bildungsblöcke");
-        
+
         Map<String, String> descriptions = new HashMap<>();
         descriptions.put("ja_JP", "Colorful blocks designed for educational purposes. Perfect for teaching.");
         descriptions.put("en_US", "Colorful blocks designed for educational purposes. Perfect for teaching.");
@@ -117,13 +117,13 @@ public final class BlockPackManager {
         descriptions.put("es_ES", "Bloques coloridos diseñados para fines educativos. Perfecto para enseñar.");
         descriptions.put("fr_FR", "Blocs colorés conçus à des fins éducatives. Parfait pour enseigner.");
         descriptions.put("de_DE", "Bunte Blöcke für Bildungszwecke. Perfekt zum Unterrichten.");
-        
+
         List<Block> blockList = convertStringListToBlocks(blocks);
-        BlockPack educationalPack = new BlockPack("educational", names, descriptions, blockList, 
+        BlockPack educationalPack = new BlockPack("educational", names, descriptions, blockList,
             BlockPackCategory.EDUCATIONAL, DifficultyLevel.BEGINNER, false);
         blockPacks.put("educational", educationalPack);
     }
-    
+
     /**
      * Create advanced block pack
      */
@@ -132,7 +132,7 @@ public final class BlockPackManager {
             "quartz", "nether_brick", "end_stone", "prismarine", "purpur_block",
             "concrete", "terracotta", "glazed_terracotta", "shulker_box", "observer"
         );
-        
+
         Map<String, String> names = new HashMap<>();
         names.put("en_US", "Advanced Blocks");
         names.put("ja_JP", "Advanced Blocks");
@@ -142,7 +142,7 @@ public final class BlockPackManager {
         names.put("es_ES", "Bloques Avanzados");
         names.put("fr_FR", "Blocs Avancés");
         names.put("de_DE", "Erweiterte Blöcke");
-        
+
         Map<String, String> descriptions = new HashMap<>();
         descriptions.put("ja_JP", "Advanced blocks for experienced builders. Great for detailed construction.");
         descriptions.put("en_US", "Advanced blocks for experienced builders. Great for detailed construction.");
@@ -152,13 +152,13 @@ public final class BlockPackManager {
         descriptions.put("es_ES", "Bloques avanzados para constructores experimentados. Genial para construcción detallada.");
         descriptions.put("fr_FR", "Blocs avancés pour les constructeurs expérimentés. Idéal pour la construction détaillée.");
         descriptions.put("de_DE", "Erweiterte Blöcke für erfahrene Baumeister. Großartig für detaillierte Konstruktion.");
-        
+
         List<Block> blockList = convertStringListToBlocks(blocks);
-        BlockPack advancedPack = new BlockPack("advanced", names, descriptions, blockList, 
+        BlockPack advancedPack = new BlockPack("advanced", names, descriptions, blockList,
             BlockPackCategory.ADVANCED, DifficultyLevel.INTERMEDIATE, true);
         blockPacks.put("advanced", advancedPack);
     }
-    
+
     /**
      * Create creative block pack
      */
@@ -168,7 +168,7 @@ public final class BlockPackManager {
             "lapis_block", "redstone_block", "coal_block", "quartz_block",
             "beacon", "conduit", "dragon_egg", "elytra"
         );
-        
+
         Map<String, String> names = new HashMap<>();
         names.put("en_US", "Creative Blocks");
         names.put("ja_JP", "Creative Blocks");
@@ -178,7 +178,7 @@ public final class BlockPackManager {
         names.put("es_ES", "Bloques Creativos");
         names.put("fr_FR", "Blocs Créatifs");
         names.put("de_DE", "Kreative Blöcke");
-        
+
         Map<String, String> descriptions = new HashMap<>();
         descriptions.put("ja_JP", "Special blocks for creative building. Perfect for artistic projects.");
         descriptions.put("en_US", "Special blocks for creative building. Perfect for artistic projects.");
@@ -188,13 +188,13 @@ public final class BlockPackManager {
         descriptions.put("es_ES", "Bloques especiales para construcción creativa. Perfecto para proyectos artísticos.");
         descriptions.put("fr_FR", "Blocs spéciaux pour la construction créative. Parfait pour les projets artistiques.");
         descriptions.put("de_DE", "Besondere Blöcke für kreatives Bauen. Perfekt für künstlerische Projekte.");
-        
+
         List<Block> blockList = convertStringListToBlocks(blocks);
-        BlockPack creativePack = new BlockPack("creative", names, descriptions, blockList, 
+        BlockPack creativePack = new BlockPack("creative", names, descriptions, blockList,
             BlockPackCategory.CREATIVE, DifficultyLevel.ADVANCED, false);
         blockPacks.put("creative", creativePack);
     }
-    
+
     /**
      * Create redstone block pack for programming concepts
      */
@@ -204,7 +204,7 @@ public final class BlockPackManager {
             "piston", "sticky_piston", "lever", "button",
             "pressure_plate", "tripwire_hook", "observer", "dispenser"
         );
-        
+
         Map<String, String> names = new HashMap<>();
         names.put("en_US", "Redstone Blocks");
         names.put("ja_JP", "Redstone Blocks");
@@ -214,7 +214,7 @@ public final class BlockPackManager {
         names.put("es_ES", "Bloques de Redstone");
         names.put("fr_FR", "Blocs de Redstone");
         names.put("de_DE", "Redstone-Blöcke");
-        
+
         Map<String, String> descriptions = new HashMap<>();
         descriptions.put("ja_JP", "Redstone blocks for learning programming concepts and logic circuits.");
         descriptions.put("en_US", "Redstone blocks for learning programming concepts and logic circuits.");
@@ -224,34 +224,34 @@ public final class BlockPackManager {
         descriptions.put("es_ES", "Bloques de redstone para aprender conceptos de programación y circuitos lógicos.");
         descriptions.put("fr_FR", "Blocs de redstone pour apprendre les concepts de programmation et les circuits logiques.");
         descriptions.put("de_DE", "Redstone-Blöcke zum Erlernen von Programmierkonzepten und Logikschaltungen.");
-        
+
         List<Block> blockList = convertStringListToBlocks(blocks);
-        BlockPack redstonePack = new BlockPack("redstone", names, descriptions, blockList, 
+        BlockPack redstonePack = new BlockPack("redstone", names, descriptions, blockList,
             BlockPackCategory.PROGRAMMING, DifficultyLevel.EXPERT, true);
         blockPacks.put("redstone", redstonePack);
     }
-    
+
     /**
      * Get all available block packs
      */
     public Collection<BlockPack> getAllBlockPacks() {
         return blockPacks.values();
     }
-    
+
     /**
      * Get a specific block pack by ID
      */
     public BlockPack getBlockPack(String packId) {
         return blockPacks.get(packId);
     }
-    
+
     /**
      * Get the current active block pack
      */
     public BlockPack getCurrentBlockPack() {
         return blockPacks.get(currentPackId);
     }
-    
+
     /**
      * Set the current active block pack
      */
@@ -263,7 +263,7 @@ public final class BlockPackManager {
         }
         return false;
     }
-    
+
     /**
      * Check if a block is allowed in the current pack
      */
@@ -275,7 +275,7 @@ public final class BlockPackManager {
         Block block = getBlockByName(blockType);
         return block != null && currentPack.getAllowedBlocks().contains(block);
     }
-    
+
     /**
      * Get all allowed blocks for the current pack
      */
@@ -284,7 +284,7 @@ public final class BlockPackManager {
         if (currentPack == null) {
             return new ArrayList<>();
         }
-        
+
         // Convert Block objects back to string names
         List<String> blockNames = new ArrayList<>();
         for (Block block : currentPack.getAllowedBlocks()) {
@@ -293,24 +293,24 @@ public final class BlockPackManager {
         }
         return blockNames;
     }
-    
+
     /**
      * Create a custom block pack
      */
-    public boolean createCustomBlockPack(String packId, Map<String, String> names, 
+    public boolean createCustomBlockPack(String packId, Map<String, String> names,
                                        Map<String, String> descriptions, List<String> blocks) {
         if (blockPacks.containsKey(packId)) {
             return false; // Pack already exists
         }
-        
+
         List<Block> blockList = convertStringListToBlocks(blocks);
-        BlockPack customPack = new BlockPack(packId, names, descriptions, blockList, 
+        BlockPack customPack = new BlockPack(packId, names, descriptions, blockList,
             BlockPackCategory.CUSTOM, DifficultyLevel.INTERMEDIATE, true);
         blockPacks.put(packId, customPack);
         LOGGER.info("Created custom block pack: {}", packId);
         return true;
     }
-    
+
     /**
      * Remove a custom block pack (cannot remove default packs)
      */
@@ -319,21 +319,21 @@ public final class BlockPackManager {
         if (Arrays.asList("basic", "educational", "advanced", "creative", "redstone").contains(packId)) {
             return false;
         }
-        
+
         if (blockPacks.containsKey(packId)) {
             blockPacks.remove(packId);
-            
+
             // If this was the current pack, switch to basic
             if (currentPackId.equals(packId)) {
                 currentPackId = "basic";
             }
-            
+
             LOGGER.info("Removed custom block pack: {}", packId);
             return true;
         }
         return false;
     }
-    
+
     /**
      * Get pack info for display
      */
@@ -342,17 +342,17 @@ public final class BlockPackManager {
         if (pack == null) {
             return null;
         }
-        
+
         Map<String, Object> info = new HashMap<>();
         info.put("id", packId);
         info.put("name", pack.getName(languageCode));
         info.put("description", pack.getDescription(languageCode));
         info.put("blockCount", pack.getAllowedBlocks().size());
         info.put("blocks", pack.getAllowedBlocks());
-        
+
         return info;
     }
-    
+
     /**
      * Convert list of block names to Block objects
      */
@@ -370,41 +370,41 @@ public final class BlockPackManager {
         }
         return blocks;
     }
-    
+
     /**
      * Get Block by name
      */
     private Block getBlockByName(String blockName) {
         String normalizedName = blockName.toLowerCase();
-        
+
         // Try common blocks first
         Block commonBlock = getCommonBlock(normalizedName);
         if (commonBlock != null) {
             return commonBlock;
         }
-        
+
         // Try building blocks
         Block buildingBlock = getBuildingBlock(normalizedName);
         if (buildingBlock != null) {
             return buildingBlock;
         }
-        
+
         // Try utility blocks
         Block utilityBlock = getUtilityBlock(normalizedName);
         if (utilityBlock != null) {
             return utilityBlock;
         }
-        
+
         // Try redstone blocks
         Block redstoneBlock = getRedstoneBlock(normalizedName);
         if (redstoneBlock != null) {
             return redstoneBlock;
         }
-        
+
         // Fall back to registry lookup
         return getBlockFromRegistry(normalizedName);
     }
-    
+
     /**
      * Get common basic blocks
      * @param blockName Normalized block name
@@ -424,7 +424,7 @@ public final class BlockPackManager {
             default: return null;
         }
     }
-    
+
     /**
      * Get building and construction blocks
      * @param blockName Normalized block name
@@ -449,7 +449,7 @@ public final class BlockPackManager {
             default: return null;
         }
     }
-    
+
     /**
      * Get utility and functional blocks
      * @param blockName Normalized block name
@@ -466,7 +466,7 @@ public final class BlockPackManager {
             default: return null;
         }
     }
-    
+
     /**
      * Get redstone and ore blocks
      * @param blockName Normalized block name
@@ -487,7 +487,7 @@ public final class BlockPackManager {
             default: return null;
         }
     }
-    
+
     /**
      * Get block from Minecraft registry as fallback
      * @param blockName Normalized block name
@@ -497,7 +497,7 @@ public final class BlockPackManager {
         try {
             ResourceLocation location = new ResourceLocation("minecraft", blockName);
             Block registryBlock = BuiltInRegistries.BLOCK.get(location);
-            
+
             // Check if the block was actually found (registry returns air for unknown blocks)
             if (registryBlock != Blocks.AIR) {
                 return registryBlock;
@@ -505,11 +505,11 @@ public final class BlockPackManager {
         } catch (Exception e) {
             LOGGER.warn("Failed to get block from registry: {}", blockName, e);
         }
-        
+
         LOGGER.warn("Unknown block name: {}, using dirt as fallback", blockName);
         return Blocks.DIRT; // Default fallback
     }
-    
+
     /**
      * Get block name from Block object
      */

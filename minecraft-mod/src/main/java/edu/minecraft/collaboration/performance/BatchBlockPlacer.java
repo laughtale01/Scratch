@@ -29,33 +29,33 @@ public class BatchBlockPlacer {
     private static final int BATCH_SIZE = 1000;
     private static final int CHUNK_UPDATE_THRESHOLD = 10000;
     private static final long PLACEMENT_TIMEOUT_MS = 30000; // 30 seconds
-    
+
     private final ServerLevel world;
     private final Queue<BlockPlacement> placementQueue;
     private final AtomicInteger blocksPlaced;
     private final Set<LevelChunk> affectedChunks;
-    
+
     public BatchBlockPlacer(ServerLevel world) {
         this.world = world;
         this.placementQueue = new ConcurrentLinkedQueue<>();
         this.blocksPlaced = new AtomicInteger(0);
         this.affectedChunks = Collections.synchronizedSet(new HashSet<>());
     }
-    
+
     /**
      * Queue a block for placement
      */
     public void queueBlock(BlockPos pos, BlockState state) {
         placementQueue.offer(new BlockPlacement(pos, state));
     }
-    
+
     /**
      * Queue multiple blocks for placement
      */
     public void queueBlocks(Map<BlockPos, BlockState> blocks) {
         blocks.forEach((pos, state) -> queueBlock(pos, state));
     }
-    
+
     /**
      * Place all queued blocks efficiently
      */
@@ -65,29 +65,29 @@ public class BatchBlockPlacer {
             int totalBlocks = placementQueue.size();
             int successCount = 0;
             int failCount = 0;
-            
+
             LOGGER.info("Starting batch placement of {} blocks", totalBlocks);
-            
+
             List<BlockPlacement> batch = new ArrayList<>(BATCH_SIZE);
-            
+
             while (!placementQueue.isEmpty()) {
                 // Build batch
                 batch.clear();
                 for (int i = 0; i < BATCH_SIZE && !placementQueue.isEmpty(); i++) {
                     batch.add(placementQueue.poll());
                 }
-                
+
                 // Process batch
                 world.getProfiler().push("batch_block_placement");
                 for (BlockPlacement placement : batch) {
                     try {
                         // Place block with minimal updates
                         world.setBlock(placement.getPos(), placement.getState(), 2);
-                        
+
                         // Track affected chunk
                         LevelChunk chunk = world.getChunkAt(placement.getPos());
                         affectedChunks.add(chunk);
-                        
+
                         successCount++;
                         blocksPlaced.incrementAndGet();
                     } catch (Exception e) {
@@ -96,25 +96,25 @@ public class BatchBlockPlacer {
                     }
                 }
                 world.getProfiler().pop();
-                
+
                 // Update chunks periodically
                 if (blocksPlaced.get() % CHUNK_UPDATE_THRESHOLD == 0) {
                     updateAffectedChunks();
                 }
             }
-            
+
             // Final chunk update
             updateAffectedChunks();
-            
+
             long duration = System.currentTimeMillis() - startTime;
             double blocksPerSecond = (double) successCount / (duration / 1000.0);
-            
-            LOGGER.info("Batch placement complete: {} blocks placed in {}ms ({} blocks/sec)", 
+
+            LOGGER.info("Batch placement complete: {} blocks placed in {}ms ({} blocks/sec)",
                 successCount, duration, String.format("%.2f", blocksPerSecond));
-            
+
             return new PlacementResult(totalBlocks, successCount, failCount, duration);
         });
-        
+
         // Add timeout handling
         return future.orTimeout(PLACEMENT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .exceptionally(ex -> {
@@ -129,17 +129,17 @@ public class BatchBlockPlacer {
                 return new PlacementResult(0, 0, 0, 0);
             });
     }
-    
+
     /**
      * Place blocks in a specific pattern with optimization
      */
     public CompletableFuture<PlacementResult> placePattern(
             List<BlockPos> positions, BlockState state) {
-        
+
         if (positions == null || positions.isEmpty()) {
             return CompletableFuture.completedFuture(new PlacementResult(0, 0, 0, 0));
         }
-        
+
         // Sort positions by chunk for better cache locality
         positions.sort((a, b) -> {
             int chunkCompare = Long.compare(
@@ -148,7 +148,7 @@ public class BatchBlockPlacer {
             if (chunkCompare != 0) {
                 return chunkCompare;
             }
-            
+
             // Within same chunk, sort by Y then X then Z
             if (a.getY() != b.getY()) {
                 return Integer.compare(a.getY(), b.getY());
@@ -158,20 +158,20 @@ public class BatchBlockPlacer {
             }
             return Integer.compare(a.getZ(), b.getZ());
         });
-        
+
         // Queue all positions
         positions.forEach(pos -> queueBlock(pos, state));
-        
+
         // Place blocks
         return placeBlocks();
     }
-    
+
     /**
      * Update all affected chunks
      */
     private void updateAffectedChunks() {
         world.getProfiler().push("chunk_updates");
-        
+
         synchronized (affectedChunks) {
             for (LevelChunk chunk : affectedChunks) {
                 chunk.setUnsaved(true);
@@ -185,10 +185,10 @@ public class BatchBlockPlacer {
             }
             affectedChunks.clear();
         }
-        
+
         world.getProfiler().pop();
     }
-    
+
     /**
      * Get chunk key for sorting
      */
@@ -197,7 +197,7 @@ public class BatchBlockPlacer {
         int chunkZ = pos.getZ() >> 4;
         return ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
     }
-    
+
     /**
      * Clear the placement queue
      */
@@ -206,35 +206,35 @@ public class BatchBlockPlacer {
         blocksPlaced.set(0);
         affectedChunks.clear();
     }
-    
+
     /**
      * Get queue size
      */
     public int getQueueSize() {
         return placementQueue.size();
     }
-    
+
     /**
      * Block placement data
      */
     private static class BlockPlacement {
         private final BlockPos pos;
         private final BlockState state;
-        
+
         BlockPlacement(BlockPos pos, BlockState state) {
             this.pos = pos;
             this.state = state;
         }
-        
+
         public BlockPos getPos() {
             return pos;
         }
-        
+
         public BlockState getState() {
             return state;
         }
     }
-    
+
     /**
      * Result of batch placement operation
      */
@@ -244,7 +244,7 @@ public class BatchBlockPlacer {
         private final int failCount;
         private final long durationMs;
         private final double blocksPerSecond;
-        
+
         PlacementResult(int totalBlocks, int successCount, int failCount, long durationMs) {
             this.totalBlocks = totalBlocks;
             this.successCount = successCount;
@@ -253,37 +253,37 @@ public class BatchBlockPlacer {
             this.blocksPerSecond = durationMs > 0
                 ? (double) successCount / (durationMs / 1000.0) : 0;
         }
-        
+
         public int getTotalBlocks() {
             return totalBlocks;
         }
-        
+
         public int getSuccessCount() {
             return successCount;
         }
-        
+
         public int getFailCount() {
             return failCount;
         }
-        
+
         public long getDurationMs() {
             return durationMs;
         }
-        
+
         public double getBlocksPerSecond() {
             return blocksPerSecond;
         }
-        
+
         public boolean isSuccess() {
             return failCount == 0;
         }
-        
+
         public double getSuccessRate() {
             return totalBlocks > 0
-                ? 
+                ?
                 (double) successCount / totalBlocks * 100 : 0;
         }
-        
+
         @Override
         public String toString() {
             return String.format(

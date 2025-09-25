@@ -19,66 +19,66 @@ public class StudentProgress {
     private final UUID studentUUID;
     private final LocalDateTime sessionStart;
     private final AtomicInteger totalPoints = new AtomicInteger(0);
-    
+
     // Activity tracking
     private final Map<String, AtomicInteger> activityCounts = new ConcurrentHashMap<>();
     private final List<ActivityRecord> activityHistory = new ArrayList<>();
     private final Set<String> uniqueActivities = new HashSet<>();
-    
+
     // Achievements and milestones
     private final Set<String> completedMilestones = new HashSet<>();
     private final List<Achievement> earnedAchievements = new ArrayList<>();
-    
+
     // Statistics
     private final AtomicInteger totalBlocks = new AtomicInteger(0);
     private final AtomicInteger totalCommands = new AtomicInteger(0);
     private final AtomicInteger collaborationCount = new AtomicInteger(0);
-    
+
     // Learning metrics
     private LocalDateTime lastActivityTime;
     private int currentLevel = 1;
     private final Map<String, Integer> skillLevels = new ConcurrentHashMap<>();
-    
+
     public StudentProgress(UUID studentUUID) {
         this.studentUUID = studentUUID;
         this.sessionStart = LocalDateTime.now();
         this.lastActivityTime = LocalDateTime.now();
-        
+
         // Initialize skill levels
         skillLevels.put("building", 0);
         skillLevels.put("programming", 0);
         skillLevels.put("collaboration", 0);
         skillLevels.put("creativity", 0);
     }
-    
+
     /**
      * Record a new activity
      */
     public synchronized void recordActivity(String activity, String details) {
         LocalDateTime now = LocalDateTime.now();
-        
+
         // Update counts
         activityCounts.computeIfAbsent(activity, k -> new AtomicInteger(0)).incrementAndGet();
         uniqueActivities.add(activity);
-        
+
         // Add to history
         activityHistory.add(new ActivityRecord(activity, details, now));
-        
+
         // Update statistics
         updateStatistics(activity);
-        
+
         // Update skill levels
         updateSkillLevels(activity);
-        
+
         // Update last activity time
         lastActivityTime = now;
-        
+
         // Clean old history (keep last 1000 entries)
         if (activityHistory.size() > 1000) {
             activityHistory.remove(0);
         }
     }
-    
+
     /**
      * Update statistics based on activity
      */
@@ -107,13 +107,13 @@ public class StudentProgress {
                 break;
         }
     }
-    
+
     /**
      * Update skill levels based on activity
      */
     private void updateSkillLevels(String activity) {
         String skill = null;
-        
+
         switch (activity.toLowerCase()) {
             case "place_block":
             case "break_block":
@@ -140,25 +140,25 @@ public class StudentProgress {
                 // Other activities don't map to specific skills
                 break;
         }
-        
+
         if (skill != null) {
             skillLevels.put(skill, skillLevels.get(skill) + 1);
         }
     }
-    
+
     /**
      * Add points and update level
      */
     public void addPoints(int points) {
         int newTotal = totalPoints.addAndGet(points);
-        
+
         // Calculate new level (every 100 points = 1 level)
         int newLevel = (newTotal / 100) + 1;
         if (newLevel > currentLevel) {
             currentLevel = newLevel;
         }
     }
-    
+
     /**
      * Award achievement
      */
@@ -167,21 +167,21 @@ public class StudentProgress {
             earnedAchievements.add(achievement);
         }
     }
-    
+
     /**
      * Complete milestone
      */
     public void completeMilestone(String milestoneId) {
         completedMilestones.add(milestoneId);
     }
-    
+
     /**
      * Check if milestone is completed
      */
     public boolean isMilestoneCompleted(String milestoneId) {
         return completedMilestones.contains(milestoneId);
     }
-    
+
     /**
      * Get activity count for specific activity
      */
@@ -189,7 +189,7 @@ public class StudentProgress {
         AtomicInteger count = activityCounts.get(activity);
         return count != null ? count.get() : 0;
     }
-    
+
     /**
      * Get recent activities
      */
@@ -198,14 +198,14 @@ public class StudentProgress {
         int start = Math.max(0, size - count);
         return new ArrayList<>(activityHistory.subList(start, size));
     }
-    
+
     /**
      * Get session duration in minutes
      */
     public long getSessionMinutes() {
         return Duration.between(sessionStart, LocalDateTime.now()).toMinutes();
     }
-    
+
     /**
      * Check if student is currently active
      */
@@ -213,7 +213,7 @@ public class StudentProgress {
         Duration timeSinceLastActivity = Duration.between(lastActivityTime, LocalDateTime.now());
         return timeSinceLastActivity.toMinutes() < inactiveThresholdMinutes;
     }
-    
+
     /**
      * Get learning progress summary
      */
@@ -232,7 +232,7 @@ public class StudentProgress {
             new HashMap<>(skillLevels)
         );
     }
-    
+
     /**
      * Export progress data
      */
@@ -248,10 +248,10 @@ public class StudentProgress {
         data.put("completedMilestones", new HashSet<>(completedMilestones));
         data.put("earnedAchievements", earnedAchievements.size());
         data.put("isActive", isActive(5));
-        
+
         return data;
     }
-    
+
     // Getters
     public UUID getStudentUUID() {
         return studentUUID;
@@ -284,7 +284,7 @@ public class StudentProgress {
     public Map<String, AtomicInteger> getActivityCounts() { return new HashMap<>(activityCounts); }
     public Map<String, Integer> getSkillLevels() { return new HashMap<>(skillLevels); }
     public LocalDateTime getLastActivityTime() { return lastActivityTime; }
-    
+
     /**
      * Activity record for history tracking
      */
@@ -292,32 +292,32 @@ public class StudentProgress {
         private final String activity;
         private final String details;
         private final LocalDateTime timestamp;
-        
+
         public ActivityRecord(String activity, String details, LocalDateTime timestamp) {
             this.activity = activity;
             this.details = details;
             this.timestamp = timestamp;
         }
-        
+
         public String getActivity() {
             return activity;
         }
-        
+
         public String getDetails() {
             return details;
         }
-        
+
         public LocalDateTime getTimestamp() {
             return timestamp;
         }
-        
+
         @Override
         public String toString() {
-            return String.format("[%s] %s: %s", 
+            return String.format("[%s] %s: %s",
                 timestamp.toLocalTime(), activity, details);
         }
     }
-    
+
     /**
      * Progress summary for reporting
      */
@@ -333,10 +333,10 @@ public class StudentProgress {
         private final int milestoneCount;
         private final boolean isActive;
         private final Map<String, Integer> skillLevels;
-        
-        public ProgressSummary(UUID studentUUID, int totalPoints, int level, 
+
+        public ProgressSummary(UUID studentUUID, int totalPoints, int level,
                              long sessionMinutes, int totalBlocks, int totalCommands,
-                             int collaborationCount, int achievementCount, 
+                             int collaborationCount, int achievementCount,
                              int milestoneCount, boolean isActive,
                              Map<String, Integer> skillLevels) {
             this.studentUUID = studentUUID;
@@ -351,56 +351,56 @@ public class StudentProgress {
             this.isActive = isActive;
             this.skillLevels = new HashMap<>(skillLevels);
         }
-        
+
         public UUID getStudentUUID() {
             return studentUUID;
         }
-        
+
         public int getTotalPoints() {
             return totalPoints;
         }
-        
+
         public int getLevel() {
             return level;
         }
-        
+
         public long getSessionMinutes() {
             return sessionMinutes;
         }
-        
+
         public int getTotalBlocks() {
             return totalBlocks;
         }
-        
+
         public int getTotalCommands() {
             return totalCommands;
         }
-        
+
         public int getCollaborationCount() {
             return collaborationCount;
         }
-        
+
         public int getAchievementCount() {
             return achievementCount;
         }
-        
+
         public int getMilestoneCount() {
             return milestoneCount;
         }
-        
+
         public boolean isActive() {
             return isActive;
         }
-        
+
         public Map<String, Integer> getSkillLevels() {
             return new HashMap<>(skillLevels);
         }
-        
+
         @Override
         public String toString() {
             return String.format(
                 "ProgressSummary[student=%s, points=%d, level=%d, time=%dm, blocks=%d, commands=%d, collab=%d, achievements=%d, milestones=%d, active=%s]",
-                studentUUID, totalPoints, level, sessionMinutes, totalBlocks, 
+                studentUUID, totalPoints, level, sessionMinutes, totalBlocks,
                 totalCommands, collaborationCount, achievementCount, milestoneCount, isActive
             );
         }

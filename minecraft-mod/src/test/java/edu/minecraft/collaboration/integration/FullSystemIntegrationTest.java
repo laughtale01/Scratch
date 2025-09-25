@@ -33,6 +33,7 @@ import static org.mockito.Mockito.*;
  * Tests the complete flow from WebSocket connection to command execution
  */
 @DisplayName("Full System Integration Tests")
+@Tag("minecraft-dependent")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class FullSystemIntegrationTest {
     

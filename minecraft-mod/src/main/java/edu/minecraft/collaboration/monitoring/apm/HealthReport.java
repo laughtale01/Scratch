@@ -6,7 +6,7 @@ import java.time.Instant;
  * System health report containing key performance indicators
  */
 public class HealthReport {
-    
+
     private final double cpuUsage;
     private final long memoryUsage;
     private final int activeConnections;
@@ -14,7 +14,7 @@ public class HealthReport {
     private final double requestCount;
     private final double errorCount;
     private final Instant timestamp;
-    
+
     private HealthReport(Builder builder) {
         this.cpuUsage = builder.cpuUsage;
         this.memoryUsage = builder.memoryUsage;
@@ -24,7 +24,7 @@ public class HealthReport {
         this.errorCount = builder.errorCount;
         this.timestamp = Instant.now();
     }
-    
+
     public double getCpuUsage() { return cpuUsage; }
     public long getMemoryUsage() { return memoryUsage; }
     public int getActiveConnections() { return activeConnections; }
@@ -32,14 +32,14 @@ public class HealthReport {
     public double getRequestCount() { return requestCount; }
     public double getErrorCount() { return errorCount; }
     public Instant getTimestamp() { return timestamp; }
-    
+
     /**
      * Calculate error rate as percentage
      */
     public double getErrorRate() {
         return requestCount > 0 ? (errorCount / requestCount) * 100 : 0.0;
     }
-    
+
     /**
      * Get memory usage as percentage of max memory
      */
@@ -47,7 +47,7 @@ public class HealthReport {
         long maxMemory = Runtime.getRuntime().maxMemory();
         return ((double) memoryUsage / maxMemory) * 100;
     }
-    
+
     /**
      * Determine overall system health status
      */
@@ -62,11 +62,11 @@ public class HealthReport {
             return HealthStatus.HEALTHY;
         }
     }
-    
+
     public static Builder builder() {
         return new Builder();
     }
-    
+
     @Override
     public String toString() {
         return String.format(
@@ -83,7 +83,7 @@ public class HealthReport {
             getErrorRate()
         );
     }
-    
+
     public static class Builder {
         private double cpuUsage = 0.0;
         private long memoryUsage = 0L;
@@ -91,56 +91,56 @@ public class HealthReport {
         private double averageResponseTime = 0.0;
         private double requestCount = 0.0;
         private double errorCount = 0.0;
-        
+
         public Builder cpuUsage(double cpuUsage) {
             this.cpuUsage = cpuUsage;
             return this;
         }
-        
+
         public Builder memoryUsage(long memoryUsage) {
             this.memoryUsage = memoryUsage;
             return this;
         }
-        
+
         public Builder activeConnections(int activeConnections) {
             this.activeConnections = activeConnections;
             return this;
         }
-        
+
         public Builder averageResponseTime(double averageResponseTime) {
             this.averageResponseTime = averageResponseTime;
             return this;
         }
-        
+
         public Builder requestCount(double requestCount) {
             this.requestCount = requestCount;
             return this;
         }
-        
+
         public Builder errorCount(double errorCount) {
             this.errorCount = errorCount;
             return this;
         }
-        
+
         public HealthReport build() {
             return new HealthReport(this);
         }
     }
-    
+
     public enum HealthStatus {
         HEALTHY("Healthy", "green"),
         CAUTION("Caution", "yellow"),
         WARNING("Warning", "orange"),
         CRITICAL("Critical", "red");
-        
+
         private final String displayName;
         private final String color;
-        
+
         HealthStatus(String displayName, String color) {
             this.displayName = displayName;
             this.color = color;
         }
-        
+
         public String getDisplayName() { return displayName; }
         public String getColor() { return color; }
     }

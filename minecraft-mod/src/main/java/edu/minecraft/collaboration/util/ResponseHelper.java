@@ -10,22 +10,22 @@ import java.util.Map;
  * Helper class for creating consistent JSON responses
  */
 public final class ResponseHelper {
-    
+
     /**
      * Private constructor to prevent instantiation
      */
     private ResponseHelper() {
         throw new UnsupportedOperationException("Utility class");
     }
-    
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    
+
     // Response types
     public static final String TYPE_SUCCESS = "success";
     public static final String TYPE_ERROR = "error";
     public static final String TYPE_EVENT = "event";
     public static final String TYPE_DATA = "data";
-    
+
     // Common error codes
     public static final String ERROR_INVALID_PARAMS = "invalidParameters";
     public static final String ERROR_INVALID_ARGS = "invalidArguments";
@@ -48,7 +48,7 @@ public final class ResponseHelper {
     public static final String ERROR_AREA_TOO_LARGE = "areaTooLarge";
     public static final String ERROR_FORBIDDEN = "forbidden";
     public static final String ERROR_STUDENT_NOT_FOUND = "studentNotFound";
-    
+
     /**
      * Create a success response
      */
@@ -60,7 +60,7 @@ public final class ResponseHelper {
         response.put("status", "success");
         return GSON.toJson(response);
     }
-    
+
     /**
      * Create a success response with data
      */
@@ -73,7 +73,7 @@ public final class ResponseHelper {
         response.put("status", "success");
         return GSON.toJson(response);
     }
-    
+
     /**
      * Create an error response
      */
@@ -86,7 +86,7 @@ public final class ResponseHelper {
         response.put("status", "error");
         return GSON.toJson(response);
     }
-    
+
     /**
      * Create a data response
      */
@@ -98,7 +98,7 @@ public final class ResponseHelper {
         response.put("status", "success");
         return GSON.toJson(response);
     }
-    
+
     /**
      * Create an event response
      */
@@ -110,7 +110,7 @@ public final class ResponseHelper {
         response.put("status", "success");
         return GSON.toJson(response);
     }
-    
+
     /**
      * Create player position response
      */
@@ -121,7 +121,7 @@ public final class ResponseHelper {
         data.put("z", z);
         return data("playerPos", data);
     }
-    
+
     /**
      * Create block info response
      */
@@ -133,7 +133,7 @@ public final class ResponseHelper {
         data.put("z", z);
         return data("blockInfo", data);
     }
-    
+
     /**
      * Create invitation count response
      */
@@ -142,7 +142,7 @@ public final class ResponseHelper {
         data.put("count", count);
         return data("invitations", data);
     }
-    
+
     /**
      * Create current world response
      */
@@ -151,7 +151,7 @@ public final class ResponseHelper {
         data.put("world", worldName);
         return data("currentWorld", data);
     }
-    
+
     /**
      * Create welcome message
      */
@@ -160,7 +160,7 @@ public final class ResponseHelper {
         response.put("type", "welcome");
         response.put("message", "Connected to Minecraft Collaboration System v1.0");
         response.put("protocol", "1.0");
-        
+
         // Add available commands
         String[] commands = {
             "placeBlock", "removeBlock", "getBlock", "fill",
@@ -170,10 +170,10 @@ public final class ResponseHelper {
             "returnHome", "emergencyReturn", "getCurrentWorld", "getInvitations"
         };
         response.put("availableCommands", commands);
-        
+
         return GSON.toJson(response);
     }
-    
+
     /**
      * Create agent summoned response
      */
@@ -185,7 +185,7 @@ public final class ResponseHelper {
         data.put("z", z);
         return successWithData("summonAgent", "Agent summoned successfully", data);
     }
-    
+
     /**
      * Create teacher registered response
      */
@@ -195,28 +195,28 @@ public final class ResponseHelper {
         data.put("role", "teacher");
         return successWithData("registerTeacher", "Teacher registered successfully", data);
     }
-    
+
     /**
      * Create not found error
      */
     public static String notFound(String command, String itemType) {
         return error(command, ERROR_NOT_FOUND, itemType + " not found");
     }
-    
+
     /**
      * Create permission denied error
      */
     public static String permissionDenied(String command, String reason) {
         return error(command, ERROR_PERMISSION_DENIED, "Permission denied: " + reason);
     }
-    
+
     /**
      * Create invalid arguments error
      */
     public static String invalidArguments(String command, String expected) {
         return error(command, ERROR_INVALID_ARGS, "Invalid arguments. Expected: " + expected);
     }
-    
+
     /**
      * Create agent moved response
      */
@@ -227,7 +227,7 @@ public final class ResponseHelper {
         data.put("z", z);
         return successWithData("moveAgent", "Agent moved successfully", data);
     }
-    
+
     /**
      * Create students summoned response
      */
@@ -239,7 +239,7 @@ public final class ResponseHelper {
         data.put("z", z);
         return successWithData("summonAllStudents", "Students summoned successfully", data);
     }
-    
+
     /**
      * Create student activities response
      */
@@ -248,7 +248,7 @@ public final class ResponseHelper {
         data.put("activities", activities);
         return successWithData("getStudentActivities", "Student activities retrieved", data);
     }
-    
+
     /**
      * Create broadcast sent response
      */
@@ -258,7 +258,7 @@ public final class ResponseHelper {
         data.put("sentCount", sentCount);
         return successWithData("broadcastToStudents", "Message broadcast successfully", data);
     }
-    
+
     /**
      * Create classroom mode toggled response
      */
@@ -267,7 +267,7 @@ public final class ResponseHelper {
         data.put("classroomMode", enabled);
         return successWithData("toggleClassroomMode", "Classroom mode " + (enabled ? "enabled" : "disabled"), data);
     }
-    
+
     /**
      * Create permissions set response
      */
@@ -276,7 +276,7 @@ public final class ResponseHelper {
         data.put("permissionLevel", level);
         return successWithData("setGlobalPermissions", "Global permissions set to " + level, data);
     }
-    
+
     /**
      * Create agent following response
      */
@@ -285,7 +285,7 @@ public final class ResponseHelper {
         data.put("following", following);
         return successWithData("agentFollow", following ? "Agent is now following" : "Agent stopped following", data);
     }
-    
+
     /**
      * Create agent action result response
      */
@@ -295,7 +295,7 @@ public final class ResponseHelper {
         data.put("result", result);
         return successWithData("agentAction", "Agent action completed", data);
     }
-    
+
     /**
      * Create agent dismissed response
      */
@@ -304,7 +304,7 @@ public final class ResponseHelper {
         data.put("agentName", agentName);
         return successWithData("dismissAgent", "Agent dismissed successfully", data);
     }
-    
+
     /**
      * Create connected response
      */
@@ -315,7 +315,7 @@ public final class ResponseHelper {
         response.put("message", "Successfully connected to Minecraft Collaboration System");
         return GSON.toJson(response);
     }
-    
+
     /**
      * Create status response
      */
@@ -325,7 +325,7 @@ public final class ResponseHelper {
         data.put("playerCount", playerCount);
         return successWithData("status", "System status retrieved", data);
     }
-    
+
     /**
      * Create block set response
      */
@@ -337,7 +337,7 @@ public final class ResponseHelper {
         data.put("blockType", blockType);
         return successWithData("setBlock", "Block placed successfully", data);
     }
-    
+
     /**
      * Create chat sent response
      */
@@ -346,7 +346,7 @@ public final class ResponseHelper {
         data.put("message", message);
         return successWithData("chat", "Message sent successfully", data);
     }
-    
+
     /**
      * Data class for fill operation
      */
@@ -359,7 +359,7 @@ public final class ResponseHelper {
         private final int z2;
         private final String blockType;
         private final int blocksPlaced;
-        
+
         public FillData(int x1, int y1, int z1, int x2, int y2, int z2, String blockType, int blocksPlaced) {
             this.x1 = x1;
             this.y1 = y1;
@@ -370,7 +370,7 @@ public final class ResponseHelper {
             this.blockType = blockType;
             this.blocksPlaced = blocksPlaced;
         }
-        
+
         public int getX1() {
             return x1;
         }
@@ -396,7 +396,7 @@ public final class ResponseHelper {
             return blocksPlaced;
         }
     }
-    
+
     /**
      * Create fill completed response
      */
@@ -412,21 +412,21 @@ public final class ResponseHelper {
         data.put("blocksPlaced", fillData.getBlocksPlaced());
         return successWithData("fill", "Fill operation completed", data);
     }
-    
+
     /**
      * Create fill completed response (legacy method for compatibility)
      */
     public static String fillCompleted(int x1, int y1, int z1, int x2, int y2, int z2, String blockType, int blocksPlaced) {
         return fillCompleted(new FillData(x1, y1, z1, x2, y2, z2, blockType, blocksPlaced));
     }
-    
+
     /**
      * Create area filled response (alias for fillCompleted)
      */
     public static String areaFilled(int x1, int y1, int z1, int x2, int y2, int z2, String blockType, int blocksSet) {
         return fillCompleted(x1, y1, z1, x2, y2, z2, blockType, blocksSet);
     }
-    
+
     /**
      * Create time limit set response
      */
@@ -436,7 +436,7 @@ public final class ResponseHelper {
         data.put("timeLimit", minutes);
         return successWithData("setStudentTimeLimit", "Time limit set successfully", data);
     }
-    
+
     /**
      * Create restriction added response
      */
@@ -446,7 +446,7 @@ public final class ResponseHelper {
         data.put("restriction", restriction);
         return successWithData("addStudentRestriction", "Restriction added successfully", data);
     }
-    
+
     /**
      * Create students changed response
      */
@@ -456,7 +456,7 @@ public final class ResponseHelper {
         data.put("affectedStudents", count);
         return successWithData("freezeStudents", "Students " + action + " successfully", data);
     }
-    
+
     /**
      * Sanitize error messages to prevent information leakage
      * @param exception The exception that occurred
@@ -482,7 +482,7 @@ public final class ResponseHelper {
             return "An error occurred while processing your request";
         }
     }
-    
+
     /**
      * Create a safe error response that doesn't expose sensitive information
      * @param command The command that failed

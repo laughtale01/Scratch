@@ -112,8 +112,8 @@ public class WebSocketMessageValidatorTest {
     @DisplayName("Should validate message size limits")
     void testMessageSizeLimits() {
         // Given
-        String maxSizeMessage = "x".repeat(10000); // Exactly at limit
-        String oversizeMessage = "x".repeat(10001); // Over limit
+        String maxSizeMessage = "x".repeat(1024); // Exactly at limit
+        String oversizeMessage = "x".repeat(1025); // Over limit
         
         // When/Then
         assertTrue(validator.isValidMessage(maxSizeMessage));

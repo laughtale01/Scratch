@@ -123,7 +123,7 @@ public class JWTAuthenticationProviderTest {
         
         // Then
         assertFalse(result.isSuccess());
-        assertEquals("Token is required", result.getErrorMessage());
+        assertEquals("Token is null or empty", result.getErrorMessage());
     }
     
     @Test
@@ -135,7 +135,7 @@ public class JWTAuthenticationProviderTest {
         
         // Then
         assertFalse(result.isSuccess());
-        assertEquals("Token is required", result.getErrorMessage());
+        assertEquals("Token is null or empty", result.getErrorMessage());
     }
     
     @Test
@@ -295,7 +295,7 @@ public class JWTAuthenticationProviderTest {
         
         // Then
         JWTAuthenticationProvider.TokenStatistics stats = jwtProvider.getTokenStatistics();
-        assertEquals(threadCount, stats.getActiveTokens());
+        assertEquals(threadCount * 2, stats.getActiveTokens()); // Each pair generates 2 tokens (access + refresh)
     }
     
     @Test

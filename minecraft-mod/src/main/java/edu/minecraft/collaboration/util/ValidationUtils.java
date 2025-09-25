@@ -8,14 +8,14 @@ import java.util.regex.Pattern;
  * Provides common validation methods for coordinates, ranges, etc.
  */
 public final class ValidationUtils {
-    
+
     /**
      * Private constructor to prevent instantiation
      */
     private ValidationUtils() {
         throw new UnsupportedOperationException("Utility class");
     }
-    
+
     // Maximum allowed values for safety
     public static final int MAX_COORDINATE = 30000000;  // Minecraft world border
     public static final int MIN_COORDINATE = -30000000;
@@ -24,13 +24,13 @@ public final class ValidationUtils {
     public static final int MAX_FILL_VOLUME = 32768;    // Max blocks for fill operation
     public static final int MAX_RADIUS = 100;           // Max radius for circles/spheres
     public static final int MAX_BUILDING_SIZE = 100;    // Max size for buildings
-    
+
     // Username validation: 3-16 characters, alphanumeric and underscore only
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]{3,16}$");
-    
+
     // Agent name validation: 3-20 characters, alphanumeric, underscore, hyphen
     private static final Pattern AGENT_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{3,20}$");
-    
+
     /**
      * Validate a single coordinate value
      * @param coordinate The coordinate to validate
@@ -44,18 +44,18 @@ public final class ValidationUtils {
             return coordinate >= MIN_COORDINATE && coordinate <= MAX_COORDINATE;
         }
     }
-    
+
     /**
      * Validate a BlockPos
      * @param pos The position to validate
      * @return true if all coordinates are valid
      */
     public static boolean isValidBlockPos(BlockPos pos) {
-        return isValidCoordinate(pos.getX(), false) 
-                && isValidCoordinate(pos.getY(), true) 
+        return isValidCoordinate(pos.getX(), false)
+                && isValidCoordinate(pos.getY(), true)
                 && isValidCoordinate(pos.getZ(), false);
     }
-    
+
     /**
      * Validate a fill area
      * @param x1, y1, z1, x2, y2, z2 The coordinates of the fill area
@@ -63,17 +63,17 @@ public final class ValidationUtils {
      */
     public static boolean isValidFillArea(int x1, int y1, int z1, int x2, int y2, int z2) {
         // Check individual coordinates
-        if (!isValidCoordinate(x1, false) || !isValidCoordinate(x2, false) 
-                || !isValidCoordinate(z1, false) || !isValidCoordinate(z2, false) 
-                || !isValidCoordinate(y1, true) || !isValidCoordinate(y2, true)) {
+        if (!isValidCoordinate(x1, false) || !isValidCoordinate(x2, false)
+                || !isValidCoordinate(z1, false) || !isValidCoordinate(z2, false) ||
+             !isValidCoordinate(y1, true) || !isValidCoordinate(y2, true)) {
             return false;
         }
-        
+
         // Calculate volume
         int volume = Math.abs(x2 - x1 + 1) * Math.abs(y2 - y1 + 1) * Math.abs(z2 - z1 + 1);
         return volume > 0 && volume <= MAX_FILL_VOLUME;
     }
-    
+
     /**
      * Validate a radius value
      * @param radius The radius to validate
@@ -82,7 +82,7 @@ public final class ValidationUtils {
     public static boolean isValidRadius(int radius) {
         return radius > 0 && radius <= MAX_RADIUS;
     }
-    
+
     /**
      * Validate building dimensions
      * @param width The width of the building
@@ -91,11 +91,11 @@ public final class ValidationUtils {
      * @return true if all dimensions are valid
      */
     public static boolean isValidBuildingSize(int width, int height, int depth) {
-        return width > 0 && width <= MAX_BUILDING_SIZE 
-                && height > 0 && height <= MAX_BUILDING_SIZE 
+        return width > 0 && width <= MAX_BUILDING_SIZE
+                && height > 0 && height <= MAX_BUILDING_SIZE
                 && depth > 0 && depth <= MAX_BUILDING_SIZE;
     }
-    
+
     /**
      * Parse integer safely
      * @param value The string to parse
@@ -106,14 +106,14 @@ public final class ValidationUtils {
         if (value == null || value.isEmpty()) {
             return defaultValue;
         }
-        
+
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
             return defaultValue;
         }
     }
-    
+
     /**
      * Clamp a value between min and max
      * @param value The value to clamp
@@ -124,30 +124,30 @@ public final class ValidationUtils {
     public static int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(max, value));
     }
-    
+
     /**
      * Validate username format
      */
     public static boolean isValidUsername(String username) {
         return username != null && USERNAME_PATTERN.matcher(username).matches();
     }
-    
+
     /**
      * Validate agent name format
      */
     public static boolean isValidAgentName(String agentName) {
         return agentName != null && AGENT_NAME_PATTERN.matcher(agentName).matches();
     }
-    
+
     /**
      * Validate coordinate position (x, y, z)
      */
     public static boolean isValidCoordinate(int x, int y, int z) {
-        return isValidCoordinate(x, false) 
-                && isValidCoordinate(y, true) 
+        return isValidCoordinate(x, false)
+                && isValidCoordinate(y, true)
                 && isValidCoordinate(z, false);
     }
-    
+
     /**
      * Validate chat message
      */
@@ -158,7 +158,7 @@ public final class ValidationUtils {
         // Check length and basic content validation
         return message.length() <= 256 && !message.contains("<script");
     }
-    
+
     /**
      * Validate block type
      */
@@ -166,7 +166,7 @@ public final class ValidationUtils {
         if (blockType == null || blockType.trim().isEmpty()) {
             return false;
         }
-        
+
         // Basic block type validation
         String[] validBlocks = {
             "dirt", "stone", "grass_block", "cobblestone", "oak_planks", "sand", "gravel",
@@ -177,14 +177,14 @@ public final class ValidationUtils {
             "redstone_lamp", "oak_door", "iron_door", "oak_fence", "oak_fence_gate",
             "oak_stairs", "white_wool", "air"
         };
-        
+
         String normalizedType = blockType.toLowerCase().trim();
         for (String validBlock : validBlocks) {
             if (validBlock.equals(normalizedType)) {
                 return true;
             }
         }
-        
+
         // Also allow minecraft: prefix
         return normalizedType.startsWith("minecraft:") && normalizedType.length() > 10;
     }

@@ -9,22 +9,22 @@ import org.slf4j.LoggerFactory;
  * Validates WebSocket messages for authentication and content requirements
  */
 public class WebSocketMessageValidator {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketMessageValidator.class);
-    
+
     private final AuthenticationManager authManager;
     private final int maxCommandLength;
     private final boolean developmentMode;
     private String lastValidationError;
-    
-    public WebSocketMessageValidator(final AuthenticationManager authManager, 
-                                   final int maxCommandLength, 
+
+    public WebSocketMessageValidator(final AuthenticationManager authManager,
+                                   final int maxCommandLength,
                                    final boolean developmentMode) {
         this.authManager = authManager;
         this.maxCommandLength = maxCommandLength;
         this.developmentMode = developmentMode;
     }
-    
+
     /**
      * Default constructor for test compatibility
      */
@@ -33,7 +33,7 @@ public class WebSocketMessageValidator {
         this.maxCommandLength = 1024;
         this.developmentMode = false;
     }
-    
+
     /**
      * Validation result containing error information if validation fails
      */
@@ -41,30 +41,30 @@ public class WebSocketMessageValidator {
         private final boolean valid;
         private final String errorType;
         private final String errorMessage;
-        
+
         private ValidationResult(final boolean valid, final String errorType, final String errorMessage) {
             this.valid = valid;
             this.errorType = errorType;
             this.errorMessage = errorMessage;
         }
-        
+
         public static ValidationResult success() {
             return new ValidationResult(true, null, null);
         }
-        
+
         public static ValidationResult failure(final String errorType, final String errorMessage) {
             return new ValidationResult(false, errorType, errorMessage);
         }
-        
+
         public boolean isValid() { return valid; }
         public String getErrorType() { return errorType; }
         public String getErrorMessage() { return errorMessage; }
-        
+
         public String toJsonResponse() {
             return String.format(ErrorConstants.JSON_ERROR_TEMPLATE, errorType, errorMessage);
         }
     }
-    
+
     /**
      * Validate message length
      */
@@ -74,7 +74,7 @@ public class WebSocketMessageValidator {
         }
         return ValidationResult.success();
     }
-    
+
     /**
      * Validate authentication for non-auth commands
      */
@@ -83,28 +83,28 @@ public class WebSocketMessageValidator {
         if (message.contains("\"command\":\"auth\"")) {
             return ValidationResult.success();
         }
-        
+
         // Skip authentication check if in development mode
         if (developmentMode) {
             LOGGER.info("DEVELOPMENT MODE: Bypassing authentication check for command from {}", identifier);
             return ValidationResult.success();
         }
-        
+
         boolean isAuthenticated = authManager.isAuthenticated(identifier);
-        
+
         // Also check username-based connection IDs
         if (!isAuthenticated) {
             isAuthenticated = checkAlternativeAuthentication(message);
         }
-        
+
         if (!isAuthenticated) {
             LOGGER.warn("Unauthenticated request from {}", identifier);
             return ValidationResult.failure(ErrorConstants.ERROR_UNAUTHENTICATED, ErrorConstants.MSG_AUTHENTICATE_FIRST);
         }
-        
+
         return ValidationResult.success();
     }
-    
+
     /**
      * Check alternative authentication methods
      */
@@ -124,7 +124,7 @@ public class WebSocketMessageValidator {
         }
         return false;
     }
-    
+
     /**
      * Extract username from JSON message
      */
@@ -134,54 +134,57 @@ public class WebSocketMessageValidator {
         if (usernameIndex == -1) {
             return null;
         }
-        
+
         final int colonIndex = message.indexOf(":", usernameIndex);
         if (colonIndex == -1) {
             return null;
         }
-        
+
         final int startQuoteIndex = message.indexOf("\"", colonIndex);
         if (startQuoteIndex == -1) {
             return null;
         }
-        
+
         final int endQuoteIndex = message.indexOf("\"", startQuoteIndex + 1);
         if (endQuoteIndex == -1) {
             return null;
         }
-        
+
         return message.substring(startQuoteIndex + 1, endQuoteIndex);
     }
-    
+
     /**
      * Simple validation method for test compatibility
      */
     public boolean isValidMessage(String message) {
         // Reset last error
         lastValidationError = null;
-        
+
         // Basic validation checks
         if (message == null) {
             lastValidationError = "Message is null";
             return false;
         }
-        
+
         if (message.isEmpty() || message.trim().isEmpty()) {
             lastValidationError = "Message is empty";
             return false;
         }
-        
+
         if (message.length() > maxCommandLength) {
             lastValidationError = "Message exceeds maximum length";
             return false;
         }
-        
+
         // Check for dangerous patterns
         String[] dangerousPatterns = {
             "<script", "javascript:", "onclick", "onerror",
-            "DROP TABLE", "DELETE FROM", "; DROP", "--"
+            "DROP TABLE", "DELETE FROM", "; DROP", "--",
+            "$(", "${", "rm -rf", "sudo ", "/bin/", "/usr/bin/",
+            "chmod ", "wget ", "curl ", "nc ", "netcat",
+            "&&", "||", ";", "|", ">"
         };
-        
+
         String lowerMessage = message.toLowerCase();
         for (String pattern : dangerousPatterns) {
             if (lowerMessage.contains(pattern.toLowerCase())) {
@@ -189,7 +192,7 @@ public class WebSocketMessageValidator {
                 return false;
             }
         }
-        
+
         // Basic JSON validation if it looks like JSON
         if (message.trim().startsWith("{")) {
             try {
@@ -210,10 +213,10 @@ public class WebSocketMessageValidator {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     /**
      * Get the last validation error message
      */

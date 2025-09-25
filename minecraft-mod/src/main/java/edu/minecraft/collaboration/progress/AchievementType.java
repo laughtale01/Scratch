@@ -12,17 +12,17 @@ public enum AchievementType {
     PROBLEM_SOLVING("Problem Solving"),
     LEADERSHIP("Leadership"),
     EXPLORATION("Exploration & Discovery");
-    
+
     private final String displayName;
-    
+
     AchievementType(String displayName) {
         this.displayName = displayName;
     }
-    
+
     public String getDisplayName() {
         return displayName;
     }
-    
+
     @Override
     public String toString() {
         return displayName;

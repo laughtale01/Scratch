@@ -6,6 +6,7 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * Note: These tests require Docker environment for TestContainers
  */
 @IntegrationTest
+@Tag("docker-required")
 @Disabled("Requires Docker environment - enable when Docker is available")
 public class WebSocketContainerIntegrationTest {
     

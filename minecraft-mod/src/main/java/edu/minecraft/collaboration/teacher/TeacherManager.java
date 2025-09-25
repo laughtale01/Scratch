@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
  * Teacher management system for monitoring and controlling student activities
  */
 public final class TeacherManager {
-    
+
     /**
      * Permission levels for global settings
      */
@@ -32,7 +32,7 @@ public final class TeacherManager {
         READONLY,
         RESTRICTED
     }
-    
+
     /**
      * Restriction types for students
      */
@@ -47,30 +47,30 @@ public final class TeacherManager {
     private static volatile TeacherManager instance;
     private static final Object LOCK = new Object();
     private final LanguageManager languageManager;
-    
+
     // Teacher accounts
     private final Set<UUID> teacherAccounts = new HashSet<>();
-    
+
     // Student activity tracking
     private final Map<UUID, StudentActivity> studentActivities = new ConcurrentHashMap<>();
-    
+
     // Time limits (in minutes)
     private final Map<UUID, Integer> studentTimeLimits = new ConcurrentHashMap<>();
-    
+
     // Blocked actions per student
     private final Map<UUID, Set<String>> studentRestrictions = new ConcurrentHashMap<>();
-    
+
     // Global classroom settings
     private boolean classroomMode = false;
     private boolean allowBuilding = true;
     private boolean allowChat = true;
     private boolean allowVisits = true;
     private int maxSessionMinutes = 60;
-    
+
     private TeacherManager() {
         this.languageManager = DependencyInjector.getInstance().getService(LanguageManager.class);
     }
-    
+
     public static TeacherManager getInstance() {
         if (instance == null) {
             synchronized (LOCK) {
@@ -81,7 +81,7 @@ public final class TeacherManager {
         }
         return instance;
     }
-    
+
     /**
      * Register a teacher account
      */
@@ -90,14 +90,14 @@ public final class TeacherManager {
         teacherAccounts.add(playerUUID);
         LOGGER.info("Registered teacher account: {}", playerUUID);
     }
-    
+
     /**
      * Check if player is a teacher
      */
     public boolean isTeacher(UUID playerUUID) {
         return teacherAccounts.contains(playerUUID);
     }
-    
+
     /**
      * Enable/disable classroom mode
      */
@@ -105,14 +105,14 @@ public final class TeacherManager {
         this.classroomMode = enabled;
         LOGGER.info("Classroom mode: {}", enabled ? "ENABLED" : "DISABLED");
     }
-    
+
     /**
      * Get classroom mode status
      */
     public boolean isClassroomMode() {
         return classroomMode;
     }
-    
+
     /**
      * Set global permissions
      */
@@ -120,11 +120,11 @@ public final class TeacherManager {
         this.allowBuilding = building;
         this.allowChat = chat;
         this.allowVisits = visits;
-        
-        LOGGER.info("Global permissions updated - Building: {}, Chat: {}, Visits: {}", 
+
+        LOGGER.info("Global permissions updated - Building: {}, Chat: {}, Visits: {}",
             building, chat, visits);
     }
-    
+
     /**
      * Check if action is allowed
      */
@@ -132,7 +132,7 @@ public final class TeacherManager {
         if (!classroomMode) {
             return true; // All actions allowed outside classroom mode
         }
-        
+
         // Check global permissions
         switch (action.toLowerCase()) {
             case "build":
@@ -157,22 +157,22 @@ public final class TeacherManager {
                 // Unknown action - allow by default
                 break;
         }
-        
+
         // Check student-specific restrictions
         Set<String> restrictions = studentRestrictions.get(playerUUID);
         if (restrictions != null && restrictions.contains(action.toLowerCase())) {
             return false;
         }
-        
+
         // Check time limits
         Integer timeLimit = studentTimeLimits.get(playerUUID);
         if (timeLimit != null && timeLimit <= 0) {
             return false;
         }
-        
+
         return true;
     }
-    
+
     /**
      * Track student activity
      */
@@ -180,29 +180,29 @@ public final class TeacherManager {
         StudentActivity activityLog = studentActivities.computeIfAbsent(
             playerUUID, k -> new StudentActivity(playerUUID)
         );
-        
+
         activityLog.addActivity(activity, details);
-        
+
         // Check for concerning patterns
         if (activity.equals("emergency_return")) {
             notifyTeachers(playerUUID + " used emergency return");
         }
     }
-    
+
     /**
      * Get student activity report
      */
     public StudentActivity getStudentActivity(UUID playerUUID) {
         return studentActivities.get(playerUUID);
     }
-    
+
     /**
      * Get all student activities
      */
     public Map<UUID, StudentActivity> getAllStudentActivities() {
         return new HashMap<>(studentActivities);
     }
-    
+
     /**
      * Set time limit for student
      */
@@ -212,20 +212,20 @@ public final class TeacherManager {
         } else {
             studentTimeLimits.put(playerUUID, minutes);
         }
-        
+
         LOGGER.info("Set time limit for {}: {} minutes", playerUUID, minutes);
     }
-    
+
     /**
      * Add restriction for student
      */
     public void addStudentRestriction(UUID playerUUID, String action) {
         studentRestrictions.computeIfAbsent(playerUUID, k -> new HashSet<>())
             .add(action.toLowerCase());
-        
+
         LOGGER.info("Added restriction for {}: {}", playerUUID, action);
     }
-    
+
     /**
      * Remove restriction for student
      */
@@ -238,7 +238,7 @@ public final class TeacherManager {
             }
         }
     }
-    
+
     /**
      * Broadcast message to all students
      */
@@ -250,7 +250,7 @@ public final class TeacherManager {
                 .forEach(player -> player.sendSystemMessage(msg));
         }
     }
-    
+
     /**
      * Notify all teachers
      */
@@ -263,7 +263,7 @@ public final class TeacherManager {
                 .forEach(player -> player.sendSystemMessage(msg));
         }
     }
-    
+
     /**
      * Freeze/unfreeze all students
      */
@@ -285,7 +285,7 @@ public final class TeacherManager {
                 });
         }
     }
-    
+
     /**
      * Teleport all students to teacher
      */
@@ -300,13 +300,13 @@ public final class TeacherManager {
                         String message = languageManager.getMessage(player.getUUID(), "student.summoned");
                         player.sendSystemMessage(Component.literal("§e" + message));
                     });
-                
+
                 String teacherMessage = languageManager.getMessage(teacher.getUUID(), "classroom.students_summoned");
                 teacher.sendSystemMessage(Component.literal("§a" + teacherMessage));
             }
         }
     }
-    
+
     /**
      * Clear all student activities
      */
@@ -314,7 +314,7 @@ public final class TeacherManager {
         studentActivities.clear();
         LOGGER.info("Cleared all student activities");
     }
-    
+
     /**
      * Generate classroom report
      */
@@ -324,24 +324,24 @@ public final class TeacherManager {
         report.append("Time: ").append(LocalDateTime.now()).append("\n");
         report.append("Classroom Mode: ").append(classroomMode).append("\n");
         report.append("Active Students: ").append(studentActivities.size()).append("\n\n");
-        
+
         for (Map.Entry<UUID, StudentActivity> entry : studentActivities.entrySet()) {
             StudentActivity activity = entry.getValue();
             report.append("Student: ").append(entry.getKey()).append("\n");
             report.append("  Total Actions: ").append(activity.getTotalActions()).append("\n");
             report.append("  Session Time: ").append(activity.getSessionDuration()).append(" minutes\n");
             report.append("  Recent Activities:\n");
-            
+
             activity.getRecentActivities(5).forEach(log -> {
                 report.append("    - ").append(log).append("\n");
             });
             report.append("\n");
         }
-        
+
         return report.toString();
     }
-    
-    
+
+
     /**
      * Get student activities by name
      */
@@ -354,7 +354,7 @@ public final class TeacherManager {
         }
         return activities;
     }
-    
+
     /**
      * Check if player is a student
      */
@@ -367,7 +367,7 @@ public final class TeacherManager {
             return true; // Default to student
         }
     }
-    
+
     /**
      * Get active teacher count
      */
@@ -381,7 +381,7 @@ public final class TeacherManager {
         }
         return teacherAccounts.size();
     }
-    
+
     /**
      * Set global permissions
      */
@@ -412,7 +412,7 @@ public final class TeacherManager {
                 break;
         }
     }
-    
+
     /**
      * Set student time limit
      */
@@ -425,7 +425,7 @@ public final class TeacherManager {
             return false;
         }
     }
-    
+
     /**
      * Add student restriction
      */
@@ -438,5 +438,5 @@ public final class TeacherManager {
             return false;
         }
     }
-    
+
 }

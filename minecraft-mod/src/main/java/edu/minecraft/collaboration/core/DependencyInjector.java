@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 /**
  * Centralized dependency injector for managing service lifecycle and dependencies.
  * Replaces singleton patterns with proper dependency injection.
- * 
+ *
  * Features:
  * - Thread-safe service registration and retrieval
  * - Lazy initialization support
@@ -28,27 +28,27 @@ import java.util.function.Supplier;
  */
 public final class DependencyInjector {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
-    
+
     // Thread-safe singleton instance with double-checked locking
     private static volatile DependencyInjector instance;
     private static final Object LOCK = new Object();
-    
+
     // Service registry
     private final Map<Class<?>, Object> services = new ConcurrentHashMap<>();
     private final Map<Class<?>, Supplier<?>> serviceFactories = new ConcurrentHashMap<>();
     private final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
-    
+
     // Circular dependency detection
     private final ThreadLocal<Set<Class<?>>> initializationStack = ThreadLocal.withInitial(java.util.HashSet::new);
-    
+
     // Lifecycle state
     private volatile boolean isShutdown = false;
-    
+
     private DependencyInjector() {
         registerCoreServices();
         LOGGER.info("DependencyInjector initialized with core services");
     }
-    
+
     /**
      * Get the singleton instance using thread-safe double-checked locking
      */
@@ -62,14 +62,14 @@ public final class DependencyInjector {
         }
         return instance;
     }
-    
+
     /**
      * Register core services with their factories
      */
     private void registerCoreServices() {
         // Register ConfigurationManager first as other services may depend on it
         registerService(ConfigurationManager.class, () -> new ConfigurationManager());
-        
+
         // Register service factories for lazy initialization (with configuration dependency)
         registerService(RateLimiter.class, () -> {
             ConfigurationManager config = getService(ConfigurationManager.class);
@@ -79,10 +79,16 @@ public final class DependencyInjector {
         registerService(MetricsCollector.class, () -> new MetricsCollector());
         registerService(CollaborationManager.class, () -> new CollaborationManager());
         registerService(LanguageManager.class, () -> new LanguageManager());
-        
+
+        // Register missing services that were causing test failures
+        registerService(edu.minecraft.collaboration.network.CollaborationMessageProcessor.class, () ->
+            new edu.minecraft.collaboration.network.CollaborationMessageProcessor());
+        registerService(edu.minecraft.collaboration.blockpacks.BlockPackManager.class, () ->
+            edu.minecraft.collaboration.blockpacks.BlockPackManager.getInstance());
+
         LOGGER.info("Registered {} core service factories", serviceFactories.size());
     }
-    
+
     /**
      * Register a service with a factory for lazy initialization
      */
@@ -90,7 +96,7 @@ public final class DependencyInjector {
         if (isShutdown) {
             throw new IllegalStateException("DependencyInjector is shutdown");
         }
-        
+
         registryLock.writeLock().lock();
         try {
             serviceFactories.put(serviceClass, factory);
@@ -99,7 +105,7 @@ public final class DependencyInjector {
             registryLock.writeLock().unlock();
         }
     }
-    
+
     /**
      * Register a pre-created service instance
      */
@@ -107,11 +113,11 @@ public final class DependencyInjector {
         if (isShutdown) {
             throw new IllegalStateException("DependencyInjector is shutdown");
         }
-        
+
         if (instance == null) {
             throw new IllegalArgumentException("Service instance cannot be null");
         }
-        
+
         registryLock.writeLock().lock();
         try {
             services.put(serviceClass, instance);
@@ -120,7 +126,7 @@ public final class DependencyInjector {
             registryLock.writeLock().unlock();
         }
     }
-    
+
     /**
      * Get a service instance, creating it if necessary
      */
@@ -129,7 +135,7 @@ public final class DependencyInjector {
         if (isShutdown) {
             throw new IllegalStateException("DependencyInjector is shutdown");
         }
-        
+
         // Fast path: check if already initialized
         registryLock.readLock().lock();
         try {
@@ -140,11 +146,11 @@ public final class DependencyInjector {
         } finally {
             registryLock.readLock().unlock();
         }
-        
+
         // Slow path: create the service
         return createService(serviceClass);
     }
-    
+
     /**
      * Create a service instance with circular dependency detection
      */
@@ -155,7 +161,7 @@ public final class DependencyInjector {
         if (stack.contains(serviceClass)) {
             throw new IllegalStateException("Circular dependency detected for service: " + serviceClass.getSimpleName());
         }
-        
+
         registryLock.writeLock().lock();
         try {
             // Double-check pattern
@@ -163,39 +169,39 @@ public final class DependencyInjector {
             if (service != null) {
                 return (T) service;
             }
-            
+
             // Mark as being initialized
             stack.add(serviceClass);
-            
+
             try {
                 // Get factory
                 Supplier<?> factory = serviceFactories.get(serviceClass);
                 if (factory == null) {
                     throw new IllegalArgumentException("No factory registered for service: " + serviceClass.getSimpleName());
                 }
-                
+
                 // Create instance
                 T instance = (T) factory.get();
                 if (instance == null) {
                     throw new IllegalStateException("Factory returned null for service: " + serviceClass.getSimpleName());
                 }
-                
+
                 // Register instance
                 services.put(serviceClass, instance);
                 LOGGER.info("Created and registered service instance: {}", serviceClass.getSimpleName());
-                
+
                 return instance;
-                
+
             } finally {
                 // Remove from initialization stack
                 stack.remove(serviceClass);
             }
-            
+
         } finally {
             registryLock.writeLock().unlock();
         }
     }
-    
+
     /**
      * Check if a service is registered
      */
@@ -207,7 +213,7 @@ public final class DependencyInjector {
             registryLock.readLock().unlock();
         }
     }
-    
+
     /**
      * Check if a service instance exists (has been created)
      */
@@ -219,7 +225,7 @@ public final class DependencyInjector {
             registryLock.readLock().unlock();
         }
     }
-    
+
     /**
      * Get statistics about registered services
      */
@@ -235,7 +241,7 @@ public final class DependencyInjector {
             registryLock.readLock().unlock();
         }
     }
-    
+
     /**
      * Shutdown the dependency injector and cleanup all services
      */
@@ -243,18 +249,18 @@ public final class DependencyInjector {
         if (isShutdown) {
             return;
         }
-        
+
         LOGGER.info("Shutting down DependencyInjector...");
-        
+
         registryLock.writeLock().lock();
         try {
             isShutdown = true;
-            
+
             // Shutdown services that implement disposable interface
             for (Map.Entry<Class<?>, Object> entry : services.entrySet()) {
                 Object service = entry.getValue();
                 String serviceName = entry.getKey().getSimpleName();
-                
+
                 try {
                     // Check for known cleanup methods
                     if (service instanceof RateLimiter) {
@@ -263,25 +269,25 @@ public final class DependencyInjector {
                         ((MetricsCollector) service).shutdown();
                     }
                     // Add more cleanup methods as needed
-                    
+
                     LOGGER.debug("Cleaned up service: {}", serviceName);
-                    
+
                 } catch (Exception e) {
                     LOGGER.error("Error shutting down service: {}", serviceName, e);
                 }
             }
-            
+
             // Clear all registrations
             services.clear();
             serviceFactories.clear();
-            
+
             LOGGER.info("DependencyInjector shutdown complete");
-            
+
         } finally {
             registryLock.writeLock().unlock();
         }
     }
-    
+
     /**
      * Clear all services (for testing purposes)
      */
@@ -297,7 +303,7 @@ public final class DependencyInjector {
             registryLock.writeLock().unlock();
         }
     }
-    
+
     /**
      * Statistics about the service registry
      */
@@ -305,25 +311,25 @@ public final class DependencyInjector {
         private final int registeredFactories;
         private final int initializedServices;
         private final boolean isShutdown;
-        
+
         public ServiceStatistics(int registeredFactories, int initializedServices, boolean isShutdown) {
             this.registeredFactories = registeredFactories;
             this.initializedServices = initializedServices;
             this.isShutdown = isShutdown;
         }
-        
+
         public int getRegisteredFactories() {
             return registeredFactories;
         }
-        
+
         public int getInitializedServices() {
             return initializedServices;
         }
-        
+
         public boolean isShutdown() {
             return isShutdown;
         }
-        
+
         @Override
         public String toString() {
             return String.format("ServiceStatistics{registeredFactories=%d, initializedServices=%d, isShutdown=%s}",

@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  * Utility class for common error handling patterns
  */
 public final class ErrorHandlingUtils {
-    
+
     // Private constructor to prevent instantiation
     private ErrorHandlingUtils() {
         throw new UnsupportedOperationException("Utility class");
@@ -24,11 +24,11 @@ public final class ErrorHandlingUtils {
         return DependencyInjector.getInstance().getService(MetricsCollector.class);
     }
     private static final AdvancedErrorHandler ERROR_HANDLER = AdvancedErrorHandler.getInstance();
-    
+
     /**
      * Execute block operation with error handling
      */
-    public static boolean executeBlockOperation(String operationName, 
+    public static boolean executeBlockOperation(String operationName,
                                               Runnable operation,
                                               ServerPlayer player) {
         AdvancedErrorHandler.ErrorResult<Void> result = ERROR_HANDLER.execute(
@@ -38,16 +38,16 @@ public final class ErrorHandlingUtils {
                 return null;
             }
         );
-        
+
         if (!result.isSuccess()) {
             notifyPlayerError(player, "block.error." + operationName);
             return false;
         }
-        
+
         getMetrics().incrementCounter(MetricsCollector.Metrics.BLOCKS_PLACED);
         return true;
     }
-    
+
     /**
      * Execute WebSocket operation with retry
      */
@@ -60,10 +60,10 @@ public final class ErrorHandlingUtils {
             3,  // max retries
             1000  // retry delay
         );
-        
+
         return result.getValueOrDefault(defaultValue);
     }
-    
+
     /**
      * Execute command with timeout
      */
@@ -75,19 +75,19 @@ public final class ErrorHandlingUtils {
             command::get,
             timeoutMs
         );
-        
+
         if (!result.isSuccess()) {
             getMetrics().incrementCounter(MetricsCollector.Metrics.COMMANDS_FAILED);
             return createErrorResponse(commandName, result.getError());
         }
-        
+
         return result.getValue();
     }
-    
+
     /**
      * Safe player operation with null checks
      */
-    public static void safePlayerOperation(ServerPlayer player, 
+    public static void safePlayerOperation(ServerPlayer player,
                                          Consumer<ServerPlayer> operation,
                                          String operationName) {
         if (player == null) {
@@ -95,7 +95,7 @@ public final class ErrorHandlingUtils {
             getMetrics().incrementCounter("error.null_player." + operationName);
             return;
         }
-        
+
         try {
             operation.accept(player);
         } catch (Exception e) {
@@ -104,7 +104,7 @@ public final class ErrorHandlingUtils {
             notifyPlayerError(player, "error.operation.failed");
         }
     }
-    
+
     /**
      * Safe coordinate validation
      */
@@ -114,17 +114,17 @@ public final class ErrorHandlingUtils {
             LOGGER.warn("Invalid Y coordinate: {}", y);
             return false;
         }
-        
+
         // Reasonable bounds for X/Z
         int maxCoordinate = 30_000_000;
         if (Math.abs(x) > maxCoordinate || Math.abs(z) > maxCoordinate) {
             LOGGER.warn("Coordinates out of bounds: {}, {}", x, z);
             return false;
         }
-        
+
         return true;
     }
-    
+
     /**
      * Safe block validation
      */
@@ -132,12 +132,12 @@ public final class ErrorHandlingUtils {
         if (blockId == null || blockId.isEmpty()) {
             return false;
         }
-        
+
         // Check against dangerous blocks
         String[] dangerousBlocks = {
             "tnt", "end_crystal", "respawn_anchor", "bed"
         };
-        
+
         String lowerBlockId = blockId.toLowerCase();
         for (String dangerous : dangerousBlocks) {
             if (lowerBlockId.contains(dangerous)) {
@@ -146,10 +146,10 @@ public final class ErrorHandlingUtils {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     /**
      * Notify player of error with localization
      */
@@ -160,37 +160,37 @@ public final class ErrorHandlingUtils {
             );
         }
     }
-    
+
     /**
      * Create standardized error response
      */
     private static String createErrorResponse(String operation, Exception error) {
         String errorType = error.getClass().getSimpleName();
         String message = error.getMessage() != null ? error.getMessage() : "Unknown error";
-        
+
         return String.format(
             "{\"type\":\"error\",\"operation\":\"%s\",\"error\":\"%s\",\"message\":\"%s\"}",
             operation, errorType, message
         );
     }
-    
+
     /**
      * Wrap operation with comprehensive error logging
      */
     public static <T> T wrapWithErrorLogging(String context, Supplier<T> operation) {
         long startTime = System.currentTimeMillis();
-        
+
         try {
             T result = operation.get();
             long duration = System.currentTimeMillis() - startTime;
-            
+
             if (duration > 1000) {
                 LOGGER.warn("Slow operation in {}: {} ms", context, duration);
                 getMetrics().incrementCounter("performance.slow_operation." + context);
             }
-            
+
             return result;
-            
+
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             LOGGER.error("Error in {} after {} ms", context, duration, e);
@@ -198,7 +198,7 @@ public final class ErrorHandlingUtils {
             throw new RuntimeException("Error in " + context, e);
         }
     }
-    
+
     /**
      * Batch error handler for multiple operations
      */
@@ -206,27 +206,27 @@ public final class ErrorHandlingUtils {
         private int successCount = 0;
         private int failureCount = 0;
         private final String batchName;
-        
+
         public BatchErrorHandler(String batchName) {
             this.batchName = batchName;
         }
-        
+
         public void recordSuccess() {
             successCount++;
         }
-        
+
         public void recordFailure(String reason) {
             failureCount++;
             LOGGER.debug("Batch {} failure: {}", batchName, reason);
         }
-        
+
         public void complete() {
-            LOGGER.info("Batch {} completed: {} successes, {} failures", 
+            LOGGER.info("Batch {} completed: {} successes, {} failures",
                        batchName, successCount, failureCount);
-            
+
             getMetrics().incrementCounter("batch.success." + batchName, successCount);
             getMetrics().incrementCounter("batch.failure." + batchName, failureCount);
-            
+
             if (failureCount > 0) {
                 double failureRate = (failureCount * 100.0) / (successCount + failureCount);
                 if (failureRate > 50) {

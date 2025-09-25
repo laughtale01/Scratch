@@ -11,11 +11,11 @@ import java.util.Map;
  * Handles WebSocket-related metrics collection and reporting
  */
 public class WebSocketMetricsHandler {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketMetricsHandler.class);
-    
+
     private final MetricsCollector metrics;
-    
+
     // Static metrics for compatibility with existing code
     private static long startTime = System.currentTimeMillis();
     private static int totalMessages = 0;
@@ -24,11 +24,11 @@ public class WebSocketMetricsHandler {
     private static int successfulCommands = 0;
     private static int failedCommands = 0;
     private static int connectionCount = 0;
-    
+
     public WebSocketMetricsHandler(final MetricsCollector metrics) {
         this.metrics = metrics;
     }
-    
+
     /**
      * Record message received
      */
@@ -36,7 +36,7 @@ public class WebSocketMetricsHandler {
         metrics.incrementCounter(MetricsCollector.Metrics.WS_MESSAGES_RECEIVED);
         totalMessages++;
     }
-    
+
     /**
      * Record error occurred
      */
@@ -44,7 +44,7 @@ public class WebSocketMetricsHandler {
         metrics.incrementCounter(MetricsCollector.Metrics.WS_ERRORS);
         errorCount++;
     }
-    
+
     /**
      * Record successful command
      */
@@ -52,7 +52,7 @@ public class WebSocketMetricsHandler {
         totalCommands++;
         successfulCommands++;
     }
-    
+
     /**
      * Record failed command
      */
@@ -60,7 +60,7 @@ public class WebSocketMetricsHandler {
         totalCommands++;
         failedCommands++;
     }
-    
+
     /**
      * Record connection opened
      */
@@ -68,7 +68,7 @@ public class WebSocketMetricsHandler {
         connectionCount++;
         metrics.incrementCounter(MetricsCollector.Metrics.WS_CONNECTIONS_TOTAL);
     }
-    
+
     /**
      * Record connection closed
      */
@@ -78,13 +78,13 @@ public class WebSocketMetricsHandler {
             connectionCount = 0;
         }
     }
-    
+
     /**
      * Get comprehensive metrics
      */
     public Map<String, Object> getMetrics() {
         final Map<String, Object> metricsMap = new HashMap<>();
-        
+
         // Basic metrics
         metricsMap.put("totalMessages", totalMessages);
         metricsMap.put("errorCount", errorCount);
@@ -92,12 +92,12 @@ public class WebSocketMetricsHandler {
         metricsMap.put("successfulCommands", successfulCommands);
         metricsMap.put("failedCommands", failedCommands);
         metricsMap.put("connectionCount", connectionCount);
-        
+
         // Calculated metrics
         final long uptime = System.currentTimeMillis() - startTime;
         metricsMap.put("uptimeMs", uptime);
         metricsMap.put("uptimeSeconds", uptime / 1000);
-        
+
         if (totalCommands > 0) {
             metricsMap.put("successRate", (double) successfulCommands / totalCommands * 100);
             metricsMap.put("errorRate", (double) failedCommands / totalCommands * 100);
@@ -105,7 +105,7 @@ public class WebSocketMetricsHandler {
             metricsMap.put("successRate", 0.0);
             metricsMap.put("errorRate", 0.0);
         }
-        
+
         if (uptime > 0) {
             metricsMap.put("messagesPerSecond", (double) totalMessages / (uptime / 1000.0));
             metricsMap.put("commandsPerSecond", (double) totalCommands / (uptime / 1000.0));
@@ -113,10 +113,10 @@ public class WebSocketMetricsHandler {
             metricsMap.put("messagesPerSecond", 0.0);
             metricsMap.put("commandsPerSecond", 0.0);
         }
-        
+
         return metricsMap;
     }
-    
+
     /**
      * Reset all metrics (for testing)
      */
@@ -129,7 +129,7 @@ public class WebSocketMetricsHandler {
         failedCommands = 0;
         connectionCount = 0;
     }
-    
+
     /**
      * Log current metrics state
      */

@@ -13,15 +13,15 @@ public enum BlockPackCategory {
     PROGRAMMING("Programming", 7),
     ADVANCED("Advanced", 8),
     CUSTOM("Custom", 9);
-    
+
     private final String displayKey;
     private final int order;
-    
+
     BlockPackCategory(String displayKey, int order) {
         this.displayKey = displayKey;
         this.order = order;
     }
-    
+
     /**
      * Get display name based on language
      */
@@ -47,7 +47,7 @@ public enum BlockPackCategory {
                 return getEnglishName();
         }
     }
-    
+
     private String getJapaneseName() {
         switch (this) {
             case BASIC: return "基本";
@@ -62,7 +62,7 @@ public enum BlockPackCategory {
             default: return displayKey;
         }
     }
-    
+
     private String getEnglishName() {
         switch (this) {
             case BASIC: return "Basic";
@@ -77,7 +77,7 @@ public enum BlockPackCategory {
             default: return displayKey;
         }
     }
-    
+
     private String getChineseSimplifiedName() {
         switch (this) {
             case BASIC: return "基础";
@@ -92,7 +92,7 @@ public enum BlockPackCategory {
             default: return displayKey;
         }
     }
-    
+
     private String getChineseTraditionalName() {
         switch (this) {
             case BASIC: return "基礎";
@@ -107,7 +107,7 @@ public enum BlockPackCategory {
             default: return displayKey;
         }
     }
-    
+
     private String getKoreanName() {
         switch (this) {
             case BASIC: return "기본";
@@ -122,7 +122,7 @@ public enum BlockPackCategory {
             default: return displayKey;
         }
     }
-    
+
     private String getSpanishName() {
         switch (this) {
             case BASIC: return "Básico";
@@ -137,7 +137,7 @@ public enum BlockPackCategory {
             default: return displayKey;
         }
     }
-    
+
     private String getFrenchName() {
         switch (this) {
             case BASIC: return "De base";
@@ -152,7 +152,7 @@ public enum BlockPackCategory {
             default: return displayKey;
         }
     }
-    
+
     private String getGermanName() {
         switch (this) {
             case BASIC: return "Grundlegend";
@@ -167,11 +167,11 @@ public enum BlockPackCategory {
             default: return displayKey;
         }
     }
-    
+
     public String getDisplayKey() {
         return displayKey;
     }
-    
+
     public int getOrder() {
         return order;
     }

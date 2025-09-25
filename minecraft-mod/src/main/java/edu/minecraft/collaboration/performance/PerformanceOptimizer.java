@@ -21,15 +21,15 @@ public class PerformanceOptimizer {
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private static final int BATCH_SIZE = 1000; // Blocks per batch
     private static final int MAX_CONCURRENT_BATCHES = 4;
-    
+
     private final ExecutorService executorService;
     private final Semaphore batchSemaphore;
-    
+
     public PerformanceOptimizer() {
         this.executorService = Executors.newFixedThreadPool(MAX_CONCURRENT_BATCHES);
         this.batchSemaphore = new Semaphore(MAX_CONCURRENT_BATCHES);
     }
-    
+
     /**
      * Optimized bulk block placement
      */
@@ -38,12 +38,12 @@ public class PerformanceOptimizer {
             int totalPlaced = 0;
             List<List<BlockPlacement>> batches = createBatches(placements, BATCH_SIZE);
             List<CompletableFuture<Integer>> futures = new ArrayList<>();
-            
+
             for (List<BlockPlacement> batch : batches) {
                 CompletableFuture<Integer> future = processBatch(level, batch);
                 futures.add(future);
             }
-            
+
             // Wait for all batches to complete
             for (CompletableFuture<Integer> future : futures) {
                 try {
@@ -52,11 +52,11 @@ public class PerformanceOptimizer {
                     LOGGER.error("Error processing batch", e);
                 }
             }
-            
+
             return totalPlaced;
         }, executorService);
     }
-    
+
     /**
      * Process a single batch of block placements
      */
@@ -64,22 +64,22 @@ public class PerformanceOptimizer {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 batchSemaphore.acquire();
-                
+
                 int placed = 0;
-                
+
                 // Group by chunk for better performance
                 batch.sort((a, b) -> {
                     int chunkA = (a.pos.getX() >> 4) + (a.pos.getZ() >> 4) * 1000;
                     int chunkB = (b.pos.getX() >> 4) + (b.pos.getZ() >> 4) * 1000;
                     return Integer.compare(chunkA, chunkB);
                 });
-                
+
                 for (BlockPlacement placement : batch) {
                     if (level.setBlockAndUpdate(placement.pos, placement.state)) {
                         placed++;
                     }
                 }
-                
+
                 return placed;
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -89,32 +89,32 @@ public class PerformanceOptimizer {
             }
         }, executorService);
     }
-    
+
     /**
      * Create batches from a list of items
      */
     private <T> List<List<T>> createBatches(List<T> items, int batchSize) {
         List<List<T>> batches = new ArrayList<>();
-        
+
         for (int i = 0; i < items.size(); i += batchSize) {
             int end = Math.min(i + batchSize, items.size());
             batches.add(items.subList(i, end));
         }
-        
+
         return batches;
     }
-    
+
     /**
      * Optimized circle building with caching
      */
     public List<BlockPos> generateCirclePositions(BlockPos center, int radius, int y) {
         List<BlockPos> positions = new ArrayList<>();
-        
+
         // Use midpoint circle algorithm for efficiency
         int x = radius;
         int z = 0;
         int err = 0;
-        
+
         while (x >= z) {
             // Add 8 symmetric points
             positions.add(new BlockPos(center.getX() + x, y, center.getZ() + z));
@@ -125,7 +125,7 @@ public class PerformanceOptimizer {
             positions.add(new BlockPos(center.getX() - z, y, center.getZ() - x));
             positions.add(new BlockPos(center.getX() + z, y, center.getZ() - x));
             positions.add(new BlockPos(center.getX() + x, y, center.getZ() - z));
-            
+
             if (err <= 0) {
                 z += 1;
                 err += 2 * z + 1;
@@ -135,24 +135,24 @@ public class PerformanceOptimizer {
                 err -= 2 * x + 1;
             }
         }
-        
+
         return positions;
     }
-    
+
     /**
      * Optimized sphere generation
      */
     public List<BlockPos> generateSpherePositions(BlockPos center, int radius) {
         List<BlockPos> positions = new ArrayList<>();
         int radiusSquared = radius * radius;
-        
+
         // Only check blocks within bounding cube
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
                     // Use squared distance to avoid sqrt calculation
                     int distSquared = x * x + y * y + z * z;
-                    
+
                     // Hollow sphere - only outer shell
                     if (distSquared <= radiusSquared && distSquared >= (radius - 1) * (radius - 1)) {
                         positions.add(center.offset(x, y, z));
@@ -160,10 +160,10 @@ public class PerformanceOptimizer {
                 }
             }
         }
-        
+
         return positions;
     }
-    
+
     /**
      * Shutdown the optimizer
      */
@@ -178,23 +178,23 @@ public class PerformanceOptimizer {
             Thread.currentThread().interrupt();
         }
     }
-    
+
     /**
      * Block placement data
      */
     public static class BlockPlacement {
         private final BlockPos pos;
         private final BlockState state;
-        
+
         public BlockPlacement(BlockPos pos, BlockState state) {
             this.pos = pos;
             this.state = state;
         }
-        
+
         public BlockPos getPos() {
             return pos;
         }
-        
+
         public BlockState getState() {
             return state;
         }

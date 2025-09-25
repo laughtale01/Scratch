@@ -16,38 +16,38 @@ import java.util.Map;
  * Includes authentication, user management, and world management
  */
 public class CollaborationCommandProcessor {
-    
+
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private final AuthenticationManager authManager;
     private final CollaborationManager collaborationManager;
     private final Gson gson;
-    
+
     // Current WebSocket connection identifier for authentication
     private String currentConnectionId;
-    
+
     public CollaborationCommandProcessor() {
         DependencyInjector injector = DependencyInjector.getInstance();
         this.authManager = injector.getService(AuthenticationManager.class);
         this.collaborationManager = injector.getService(CollaborationManager.class);
         this.gson = new Gson();
     }
-    
+
     public void setConnectionId(String connectionId) {
         this.currentConnectionId = connectionId;
     }
-    
+
     /**
      * Handle authentication requests
      */
     public String handleAuthentication(Map<String, String> args) {
         String username = args.get("username");
         String token = args.get("token");
-        
+
         // Validate username
         if (!InputValidator.validateUsername(username)) {
             return createErrorResponse("invalidUsername", "Invalid username format");
         }
-        
+
         // If token is provided, validate it
         if (token != null && !token.isEmpty()) {
             if (authManager.validateToken(token)) {
@@ -60,10 +60,10 @@ public class CollaborationCommandProcessor {
             }
             return createErrorResponse("authFailed", "Invalid token");
         }
-        
+
         // Generate new token for student
         String newToken = authManager.generateToken(username, AuthenticationManager.UserRole.STUDENT);
-        
+
         // Authenticate both username-based and WebSocket-based connection IDs
         String usernameConnectionId = "conn_" + username;
         if (authManager.authenticateConnection(usernameConnectionId, newToken)) {
@@ -71,7 +71,7 @@ public class CollaborationCommandProcessor {
         } else {
             LOGGER.error("Failed to authenticate new student username connection: {}", username);
         }
-        
+
         // Also authenticate the actual WebSocket connection ID if available
         if (currentConnectionId != null) {
             if (authManager.authenticateConnection(currentConnectionId, newToken)) {
@@ -80,10 +80,10 @@ public class CollaborationCommandProcessor {
                 LOGGER.error("Failed to authenticate new student WebSocket connection: {}", username);
             }
         }
-        
+
         return "{\"type\":\"auth\",\"status\":\"success\",\"token\":\"" + newToken + "\",\"role\":\"student\"}";
     }
-    
+
     /**
      * Handle user info requests
      */
@@ -92,20 +92,20 @@ public class CollaborationCommandProcessor {
         if (connectionId == null) {
             connectionId = "conn_" + args.get("username");
         }
-        
+
         if (!authManager.isAuthenticated(connectionId)) {
             return createErrorResponse("unauthenticated", "User not authenticated");
         }
-        
+
         String username = authManager.getUsername(connectionId);
         AuthenticationManager.UserRole role = authManager.getRoleForConnection(connectionId);
         boolean hasElevated = authManager.hasElevatedPrivileges(connectionId);
-        
+
         return "{\"type\":\"userInfo\",\"username\":\"" + username
                + "\",\"role\":\"" + role.toString().toLowerCase()
                + "\",\"hasElevatedPrivileges\":" + hasElevated + "}";
     }
-    
+
     /**
      * Get current world name for player
      */
@@ -115,16 +115,16 @@ public class CollaborationCommandProcessor {
             if (server != null && !server.getPlayerList().getPlayers().isEmpty()) {
                 net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                 String playerName = player.getName().getString();
-                
+
                 // Get current world from CollaborationManager
                 String worldName = collaborationManager.getPlayerCurrentWorld(playerName);
-                
+
                 // If unknown, get from server
                 if ("unknown".equals(worldName)) {
                     worldName = player.level().dimension().location().toString();
                     collaborationManager.setPlayerWorld(playerName, worldName);
                 }
-                
+
                 return ResponseHelper.currentWorld(worldName);
             }
             return ResponseHelper.currentWorld("overworld");
@@ -133,7 +133,7 @@ public class CollaborationCommandProcessor {
             return ResponseHelper.error("getCurrentWorld", ResponseHelper.ERROR_INTERNAL, e.getMessage());
         }
     }
-    
+
     // Helper methods for creating responses
     private String createErrorResponse(String errorType, String details) {
         JsonObject response = new JsonObject();
@@ -142,7 +142,7 @@ public class CollaborationCommandProcessor {
         response.addProperty("message", details);
         return gson.toJson(response);
     }
-    
+
     private String createSuccessResponse(String type, String message) {
         JsonObject response = new JsonObject();
         response.addProperty("type", type);

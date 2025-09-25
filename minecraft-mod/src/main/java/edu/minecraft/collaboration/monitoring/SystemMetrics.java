@@ -13,43 +13,43 @@ import java.lang.management.ThreadMXBean;
  */
 public class SystemMetrics {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemMetrics.class);
-    
+
     private final OperatingSystemMXBean osBean;
     private final MemoryMXBean memoryBean;
     private final ThreadMXBean threadBean;
     private final Runtime runtime;
-    
+
     // Cached values
     private double cpuUsage = 0;
     private long lastCpuTime = 0;
     private long lastSystemTime = 0;
-    
+
     public SystemMetrics() {
         this.osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         this.memoryBean = ManagementFactory.getMemoryMXBean();
         this.threadBean = ManagementFactory.getThreadMXBean();
         this.runtime = Runtime.getRuntime();
     }
-    
+
     /**
      * Update system metrics
      */
     public void update() {
         updateCpuUsage();
     }
-    
+
     /**
      * Collect current system metrics
      */
     public SystemSnapshot collect() {
         SystemSnapshot snapshot = new SystemSnapshot();
-        
+
         // CPU metrics
         snapshot.setCpuUsage(cpuUsage);
         snapshot.setProcessCpuUsage(osBean.getProcessCpuLoad() * 100);
         snapshot.setSystemCpuUsage(osBean.getCpuLoad() * 100);
         snapshot.setAvailableProcessors(runtime.availableProcessors());
-        
+
         // Memory metrics
         snapshot.setHeapUsed(memoryBean.getHeapMemoryUsage().getUsed());
         snapshot.setHeapMax(memoryBean.getHeapMemoryUsage().getMax());
@@ -58,41 +58,41 @@ public class SystemMetrics {
         snapshot.setTotalMemory(runtime.totalMemory());
         snapshot.setFreeMemory(runtime.freeMemory());
         snapshot.setMaxMemory(runtime.maxMemory());
-        
+
         // Thread metrics
         snapshot.setThreadCount(threadBean.getThreadCount());
         snapshot.setPeakThreadCount(threadBean.getPeakThreadCount());
         snapshot.setDaemonThreadCount(threadBean.getDaemonThreadCount());
-        
+
         // System info
         snapshot.setOsName(System.getProperty("os.name"));
         snapshot.setOsVersion(System.getProperty("os.version"));
         snapshot.setJavaVersion(System.getProperty("java.version"));
-        
+
         return snapshot;
     }
-    
+
     /**
      * Update CPU usage calculation
      */
     private void updateCpuUsage() {
         long currentCpuTime = getCurrentCpuTime();
         long currentSystemTime = System.nanoTime();
-        
+
         if (lastSystemTime > 0) {
             long cpuTimeDiff = currentCpuTime - lastCpuTime;
             long systemTimeDiff = currentSystemTime - lastSystemTime;
-            
+
             if (systemTimeDiff > 0) {
                 cpuUsage = (cpuTimeDiff * 100.0) / systemTimeDiff / runtime.availableProcessors();
                 cpuUsage = Math.min(100.0, Math.max(0.0, cpuUsage));
             }
         }
-        
+
         lastCpuTime = currentCpuTime;
         lastSystemTime = currentSystemTime;
     }
-    
+
     /**
      * Get current CPU time for all threads
      */
@@ -106,7 +106,7 @@ public class SystemMetrics {
         }
         return cpuTime;
     }
-    
+
     /**
      * System metrics snapshot
      */
@@ -116,7 +116,7 @@ public class SystemMetrics {
         private double processCpuUsage;
         private double systemCpuUsage;
         private int availableProcessors;
-        
+
         // Memory metrics (bytes)
         private long heapUsed;
         private long heapMax;
@@ -125,17 +125,17 @@ public class SystemMetrics {
         private long totalMemory;
         private long freeMemory;
         private long maxMemory;
-        
+
         // Thread metrics
         private int threadCount;
         private int peakThreadCount;
         private int daemonThreadCount;
-        
+
         // System info
         private String osName;
         private String osVersion;
         private String javaVersion;
-        
+
         // CPU getters/setters
         public double getCpuUsage() {
             return cpuUsage;
@@ -161,7 +161,7 @@ public class SystemMetrics {
         public void setAvailableProcessors(int availableProcessors) {
             this.availableProcessors = availableProcessors;
         }
-        
+
         // Memory getters/setters
         public long getHeapUsed() {
             return heapUsed;
@@ -205,7 +205,7 @@ public class SystemMetrics {
         public void setMaxMemory(long maxMemory) {
             this.maxMemory = maxMemory;
         }
-        
+
         // Thread getters/setters
         public int getThreadCount() {
             return threadCount;
@@ -225,7 +225,7 @@ public class SystemMetrics {
         public void setDaemonThreadCount(int daemonThreadCount) {
             this.daemonThreadCount = daemonThreadCount;
         }
-        
+
         // System info getters/setters
         public String getOsName() {
             return osName;
@@ -245,21 +245,21 @@ public class SystemMetrics {
         public void setJavaVersion(String javaVersion) {
             this.javaVersion = javaVersion;
         }
-        
+
         /**
          * Get memory usage percentage
          */
         public double getMemoryUsagePercent() {
             return (heapUsed * 100.0) / heapMax;
         }
-        
+
         /**
          * Get available memory in MB
          */
         public long getAvailableMemoryMB() {
             return (maxMemory - totalMemory + freeMemory) / (1024 * 1024);
         }
-        
+
         /**
          * Get used memory in MB
          */

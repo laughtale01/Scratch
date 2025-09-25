@@ -8,15 +8,15 @@ public enum DifficultyLevel {
     INTERMEDIATE(2, "Intermediate"),
     ADVANCED(3, "Advanced"),
     EXPERT(4, "Expert");
-    
+
     private final int level;
     private final String displayKey;
-    
+
     DifficultyLevel(int level, String displayKey) {
         this.level = level;
         this.displayKey = displayKey;
     }
-    
+
     /**
      * 險隱槭↓蠢懊§縺溯｡ｨ遉ｺ蜷阪ｒ蜿門ｾ・     */
     public String getDisplayName(String language) {
@@ -41,7 +41,7 @@ public enum DifficultyLevel {
                 return getEnglishName();
         }
     }
-    
+
     private String getJapaneseName() {
         switch (this) {
             case BEGINNER: return "蛻晏ｿ・・";
@@ -51,7 +51,7 @@ public enum DifficultyLevel {
             default: return displayKey;
         }
     }
-    
+
     private String getEnglishName() {
         switch (this) {
             case BEGINNER: return "Beginner";
@@ -61,7 +61,7 @@ public enum DifficultyLevel {
             default: return displayKey;
         }
     }
-    
+
     private String getChineseSimplifiedName() {
         switch (this) {
             case BEGINNER: return "初学者";
@@ -71,7 +71,7 @@ public enum DifficultyLevel {
             default: return displayKey;
         }
     }
-    
+
     private String getChineseTraditionalName() {
         switch (this) {
             case BEGINNER: return "初學者";
@@ -81,7 +81,7 @@ public enum DifficultyLevel {
             default: return displayKey;
         }
     }
-    
+
     private String getKoreanName() {
         switch (this) {
             case BEGINNER: return "초급자";
@@ -91,7 +91,7 @@ public enum DifficultyLevel {
             default: return displayKey;
         }
     }
-    
+
     private String getSpanishName() {
         switch (this) {
             case BEGINNER: return "Principiante";
@@ -101,7 +101,7 @@ public enum DifficultyLevel {
             default: return displayKey;
         }
     }
-    
+
     private String getFrenchName() {
         switch (this) {
             case BEGINNER: return "Débutant";
@@ -111,7 +111,7 @@ public enum DifficultyLevel {
             default: return displayKey;
         }
     }
-    
+
     private String getGermanName() {
         switch (this) {
             case BEGINNER: return "Anfänger";
@@ -121,19 +121,19 @@ public enum DifficultyLevel {
             default: return displayKey;
         }
     }
-    
+
     /**
      * 謨ｰ蛟､繝ｬ繝吶Ν繧貞叙蠕・     */
     public int getLevel() {
         return level;
     }
-    
+
     /**
      * 陦ｨ遉ｺ繧ｭ繝ｼ繧貞叙蠕・     */
     public String getDisplayKey() {
         return displayKey;
     }
-    
+
     /**
      * 謨ｰ蛟､繝ｬ繝吶Ν縺九ｉ髮｣譏灘ｺｦ繧貞叙蠕・     */
     public static DifficultyLevel fromLevel(int level) {
@@ -144,14 +144,14 @@ public enum DifficultyLevel {
         }
         return BEGINNER;
     }
-    
+
     /**
      * 謖・ｮ壹＠縺滄屮譏灘ｺｦ莉･荳翫°繝√ぉ繝・け
      */
     public boolean isAtLeast(DifficultyLevel other) {
         return this.level >= other.level;
     }
-    
+
     /**
      * 謖・ｮ壹＠縺滄屮譏灘ｺｦ莉･荳九°繝√ぉ繝・け
      */

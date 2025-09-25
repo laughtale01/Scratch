@@ -17,31 +17,31 @@ import edu.minecraft.collaboration.monitoring.MetricsCollector;
  * Handler for agent-related commands (summon, move, actions, dismiss)
  */
 public class AgentCommandHandler {
-    
+
     private static final Logger LOGGER = MinecraftCollaborationMod.getLogger();
     private final MetricsCollector metricsCollector;
-    
+
     public AgentCommandHandler(MetricsCollector metricsCollector) {
         this.metricsCollector = metricsCollector;
     }
-    
+
     /**
      * Handle summon agent command
      */
     public String handleSummonAgent(String[] args) {
         try {
             String agentName = args.length > 0 ? args[0] : "Agent";
-            
+
             // Validate agent name
             if (!ValidationUtils.isValidAgentName(agentName)) {
                 return ResponseHelper.error("summonAgent", ResponseHelper.ERROR_INVALID_ARGS, "Invalid agent name");
             }
-            
+
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             if (server != null && !server.getPlayerList().getPlayers().isEmpty()) {
                 ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                 BlockPos playerPos = player.blockPosition();
-                
+
                 // Summon agent using the correct API
                 var agent = AgentManager.getInstance().summonAgent(player, agentName);
                 if (agent != null) {
@@ -58,7 +58,7 @@ public class AgentCommandHandler {
             return ResponseHelper.error("summonAgent", ResponseHelper.ERROR_INTERNAL, e.getMessage());
         }
     }
-    
+
     /**
      * Handle move agent command
      */
@@ -66,13 +66,13 @@ public class AgentCommandHandler {
         if (args.length < 1) {
             return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_INVALID_ARGS, "Expected: direction [distance] OR x y z");
         }
-        
+
         try {
             CollaborationAgent agent = AgentManager.getInstance().getActiveAgent();
             if (agent == null) {
                 return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_NO_AGENT, "No active agent");
             }
-            
+
             if (args.length == 3) {
                 return handleMoveAgentToCoordinates(agent, args);
             } else {
@@ -85,7 +85,7 @@ public class AgentCommandHandler {
             return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_INTERNAL, e.getMessage());
         }
     }
-    
+
     /**
      * Handle moving agent to specific coordinates
      * @param agent The agent to move
@@ -96,14 +96,14 @@ public class AgentCommandHandler {
         int x = Integer.parseInt(args[0]);
         int y = Integer.parseInt(args[1]);
         int z = Integer.parseInt(args[2]);
-        
+
         if (!ValidationUtils.isValidCoordinate(x, y, z)) {
             return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_INVALID_COORDS, "Invalid coordinates");
         }
-        
+
         BlockPos targetPos = new BlockPos(x, y, z);
         boolean success = agent.moveToTarget(Vec3.atCenterOf(targetPos));
-        
+
         if (success) {
             metricsCollector.incrementCounter("commands.moveAgent");
             return ResponseHelper.agentMoved(x, y, z);
@@ -111,7 +111,7 @@ public class AgentCommandHandler {
             return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_MOVE_FAILED, "Cannot move to that position");
         }
     }
-    
+
     /**
      * Handle moving agent in a specific direction
      * @param agent The agent to move
@@ -121,20 +121,20 @@ public class AgentCommandHandler {
     private String handleMoveAgentInDirection(CollaborationAgent agent, String[] args) {
         String direction = args[0].toLowerCase();
         int distance = args.length > 1 ? Integer.parseInt(args[1]) : 1;
-        
+
         if (distance < 1 || distance > 50) {
             return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_INVALID_ARGS, "Distance must be between 1 and 50");
         }
-        
+
         BlockPos currentPos = agent.blockPosition();
         BlockPos targetPos = calculateTargetPosition(currentPos, direction, distance);
-        
+
         if (targetPos == null) {
             return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_INVALID_ARGS, "Invalid direction: " + direction);
         }
-        
+
         boolean success = agent.moveToTarget(Vec3.atCenterOf(targetPos));
-        
+
         if (success) {
             metricsCollector.incrementCounter("commands.moveAgent");
             return ResponseHelper.agentMoved(targetPos.getX(), targetPos.getY(), targetPos.getZ());
@@ -142,7 +142,7 @@ public class AgentCommandHandler {
             return ResponseHelper.error("moveAgent", ResponseHelper.ERROR_MOVE_FAILED, "Cannot move in that direction");
         }
     }
-    
+
     /**
      * Calculate target position based on direction and distance
      * @param currentPos Current agent position
@@ -172,23 +172,23 @@ public class AgentCommandHandler {
                 return null;
         }
     }
-    
+
     /**
      * Handle agent follow command
      */
     public String handleAgentFollow(String[] args) {
         try {
             boolean follow = args.length == 0 || Boolean.parseBoolean(args[0]);
-            
+
             CollaborationAgent agent = AgentManager.getInstance().getActiveAgent();
             if (agent == null) {
                 return ResponseHelper.error("agentFollow", ResponseHelper.ERROR_NO_AGENT, "No active agent");
             }
-            
+
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             if (server != null && !server.getPlayerList().getPlayers().isEmpty()) {
                 ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                
+
                 if (follow) {
                     agent.setFollowTarget(player);
                     metricsCollector.incrementCounter("commands.agentFollow");
@@ -205,7 +205,7 @@ public class AgentCommandHandler {
             return ResponseHelper.error("agentFollow", ResponseHelper.ERROR_INTERNAL, e.getMessage());
         }
     }
-    
+
     /**
      * Handle agent action command
      */
@@ -213,17 +213,17 @@ public class AgentCommandHandler {
         if (args.length < 1) {
             return ResponseHelper.error("agentAction", ResponseHelper.ERROR_INVALID_ARGS, "Expected: action");
         }
-        
+
         try {
             String action = args[0].toLowerCase();
-            
+
             CollaborationAgent agent = AgentManager.getInstance().getActiveAgent();
             if (agent == null) {
                 return ResponseHelper.error("agentAction", ResponseHelper.ERROR_NO_AGENT, "No active agent");
             }
-            
+
             AgentActionResult result = executeAgentAction(agent, action, args);
-            
+
             if (result.success) {
                 metricsCollector.incrementCounter("commands.agentAction");
                 return ResponseHelper.agentActionResult(action, result.message);
@@ -235,7 +235,7 @@ public class AgentCommandHandler {
             return ResponseHelper.error("agentAction", ResponseHelper.ERROR_INTERNAL, e.getMessage());
         }
     }
-    
+
     /**
      * Execute specific agent action
      * @param agent The agent to perform action on
@@ -262,7 +262,7 @@ public class AgentCommandHandler {
                 return new AgentActionResult(false, "Unknown action: " + action);
         }
     }
-    
+
     /**
      * Execute dig/mine action
      * @param agent The agent
@@ -273,7 +273,7 @@ public class AgentCommandHandler {
         String message = success ? "Block dug" : "Cannot dig here";
         return new AgentActionResult(success, message);
     }
-    
+
     /**
      * Execute place/build action
      * @param agent The agent
@@ -286,7 +286,7 @@ public class AgentCommandHandler {
         String message = success ? "Block placed" : "Cannot place block";
         return new AgentActionResult(success, message);
     }
-    
+
     /**
      * Execute collect/pickup action
      * @param agent The agent
@@ -297,7 +297,7 @@ public class AgentCommandHandler {
         String message = success ? "Items collected" : "No items to collect";
         return new AgentActionResult(success, message);
     }
-    
+
     /**
      * Execute drop action
      * @param agent The agent
@@ -308,7 +308,7 @@ public class AgentCommandHandler {
         String message = success ? "Items dropped" : "No items to drop";
         return new AgentActionResult(success, message);
     }
-    
+
     /**
      * Execute turn action
      * @param agent The agent
@@ -321,28 +321,28 @@ public class AgentCommandHandler {
         String message = success ? "Turned " + direction : "Cannot turn";
         return new AgentActionResult(success, message);
     }
-    
+
     /**
      * Helper class to encapsulate action results
      */
     private static class AgentActionResult {
         private final boolean success;
         private final String message;
-        
+
         AgentActionResult(boolean success, String message) {
             this.success = success;
             this.message = message;
         }
-        
+
         public boolean isSuccess() {
             return success;
         }
-        
+
         public String getMessage() {
             return message;
         }
     }
-    
+
     /**
      * Handle dismiss agent command
      */
@@ -352,10 +352,10 @@ public class AgentCommandHandler {
             if (agent == null) {
                 return ResponseHelper.error("dismissAgent", ResponseHelper.ERROR_NO_AGENT, "No active agent");
             }
-            
+
             String agentName = agent.getName().getString();
             boolean success = AgentManager.getInstance().dismissAgent(agent.getAgentIdString());
-            
+
             if (success) {
                 metricsCollector.incrementCounter("commands.dismissAgent");
                 return ResponseHelper.agentDismissed(agentName);

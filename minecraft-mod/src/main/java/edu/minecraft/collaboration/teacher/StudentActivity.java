@@ -22,7 +22,7 @@ public class StudentActivity {
     private final Deque<ActivityLog> activityLogs = new ConcurrentLinkedDeque<>();
     private final Map<String, AtomicInteger> activityCounts = new ConcurrentHashMap<>();
     private final Map<String, LocalDateTime> lastActivityTime = new ConcurrentHashMap<>();
-    
+
     // Statistics
     private final AtomicInteger totalBlocks = new AtomicInteger(0);
     private final AtomicInteger totalCommands = new AtomicInteger(0);
@@ -30,16 +30,16 @@ public class StudentActivity {
     private final AtomicInteger totalVisits = new AtomicInteger(0);
     private final AtomicInteger emergencyReturns = new AtomicInteger(0);
     private final AtomicInteger totalActions = new AtomicInteger(0);
-    
+
     // Configuration
     private static final int MAX_ACTIVITY_LOGS = 1000;
     private static final int MAX_ACTIVITY_AGE_MINUTES = 60;
-    
+
     public StudentActivity(UUID playerUUID) {
         this.playerUUID = playerUUID;
         this.sessionStart = LocalDateTime.now();
     }
-    
+
     /**
      * Get player name from UUID (simplified implementation)
      */
@@ -48,28 +48,28 @@ public class StudentActivity {
         // For now, return a simplified name based on UUID
         return "Student_" + playerUUID.toString().substring(0, 8);
     }
-    
+
     /**
      * Add a new activity
      */
     public void addActivity(String activity, String details) {
         LocalDateTime now = LocalDateTime.now();
-        
+
         // Create activity log
         ActivityLog log = new ActivityLog(activity, details, now);
         activityLogs.addFirst(log);
-        
+
         // Update counts
         activityCounts.computeIfAbsent(activity, k -> new AtomicInteger(0)).incrementAndGet();
         lastActivityTime.put(activity, now);
-        
+
         // Update statistics based on activity type
         updateStatistics(activity, details);
-        
+
         // Clean old logs
         cleanOldLogs();
     }
-    
+
     /**
      * Update statistics based on activity type
      */
@@ -98,42 +98,42 @@ public class StudentActivity {
                 break;
         }
     }
-    
+
     /**
      * Clean old activity logs
      */
     private void cleanOldLogs() {
         LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(MAX_ACTIVITY_AGE_MINUTES);
-        
+
         // Remove old logs
         while (activityLogs.size() > MAX_ACTIVITY_LOGS) {
             activityLogs.removeLast();
         }
-        
+
         // Remove logs older than cutoff time
         activityLogs.removeIf(log -> log.timestamp.isBefore(cutoffTime));
     }
-    
+
     /**
      * Get recent activities
      */
     public List<String> getRecentActivities(int count) {
         List<String> recent = new ArrayList<>();
         int i = 0;
-        
+
         for (ActivityLog log : activityLogs) {
             if (i++ >= count) {
                 break;
             }
-            recent.add(String.format("[%s] %s: %s", 
-                log.getTimestamp().toLocalTime(), 
-                log.getActivity(), 
+            recent.add(String.format("[%s] %s: %s",
+                log.getTimestamp().toLocalTime(),
+                log.getActivity(),
                 log.getDetails()));
         }
-        
+
         return recent;
     }
-    
+
     /**
      * Get activity count for specific type
      */
@@ -141,7 +141,7 @@ public class StudentActivity {
         AtomicInteger count = activityCounts.get(activity);
         return count != null ? count.get() : 0;
     }
-    
+
     /**
      * Get total number of actions
      */
@@ -150,21 +150,21 @@ public class StudentActivity {
             .mapToInt(AtomicInteger::get)
             .sum();
     }
-    
+
     /**
      * Get session duration in minutes
      */
     public long getSessionDuration() {
         return Duration.between(sessionStart, LocalDateTime.now()).toMinutes();
     }
-    
+
     /**
      * Get last activity time for specific type
      */
     public LocalDateTime getLastActivityTime(String activity) {
         return lastActivityTime.get(activity);
     }
-    
+
     /**
      * Get activity summary
      */
@@ -180,7 +180,7 @@ public class StudentActivity {
             .mostFrequentActivity(getMostFrequentActivity())
             .build();
     }
-    
+
     /**
      * Get most frequent activity
      */
@@ -190,7 +190,7 @@ public class StudentActivity {
             .map(Map.Entry::getKey)
             .orElse("none");
     }
-    
+
     /**
      * Check if student is currently active
      */
@@ -198,12 +198,12 @@ public class StudentActivity {
         if (activityLogs.isEmpty()) {
             return false;
         }
-        
+
         ActivityLog lastLog = activityLogs.peekFirst();
         Duration timeSinceLastActivity = Duration.between(lastLog.timestamp, LocalDateTime.now());
         return timeSinceLastActivity.toMinutes() < inactiveThresholdMinutes;
     }
-    
+
     /**
      * Export activity data for reporting
      */
@@ -223,10 +223,10 @@ public class StudentActivity {
         data.put("activityCounts", new HashMap<>(activityCounts));
         data.put("recentActivities", getRecentActivities(10));
         data.put("isActive", isActive(5));
-        
+
         return data;
     }
-    
+
     /**
      * Activity log entry
      */
@@ -234,7 +234,7 @@ public class StudentActivity {
         private final String activity;
         private final String details;
         private final LocalDateTime timestamp;
-        
+
         public String getActivity() {
             return activity;
         }
@@ -244,14 +244,14 @@ public class StudentActivity {
         public LocalDateTime getTimestamp() {
             return timestamp;
         }
-        
+
         ActivityLog(String activity, String details, LocalDateTime timestamp) {
             this.activity = activity;
             this.details = details;
             this.timestamp = timestamp;
         }
     }
-    
+
     /**
      * Activity summary for reporting
      */
@@ -266,7 +266,7 @@ public class StudentActivity {
         private final int emergencyReturns;
         private final long sessionMinutes;
         private final String mostFrequentActivity;
-        
+
         public UUID getPlayerUUID() {
             return playerUUID;
         }
@@ -297,7 +297,7 @@ public class StudentActivity {
         public String getMostFrequentActivity() {
             return mostFrequentActivity;
         }
-        
+
         // Private constructor for builder pattern
         private ActivitySummary(Builder builder) {
             this.playerUUID = builder.playerUUID;
@@ -311,7 +311,7 @@ public class StudentActivity {
             this.sessionMinutes = builder.sessionMinutes;
             this.mostFrequentActivity = builder.mostFrequentActivity;
         }
-        
+
         // Builder class
         public static class Builder {
             private final UUID playerUUID;
@@ -324,62 +324,62 @@ public class StudentActivity {
             private int emergencyReturns;
             private long sessionMinutes;
             private String mostFrequentActivity;
-            
+
             public Builder(UUID playerUUID, LocalDateTime sessionStart) {
                 this.playerUUID = playerUUID;
                 this.sessionStart = sessionStart;
             }
-            
+
             public Builder totalActions(int totalActions) {
                 this.totalActions = totalActions;
                 return this;
             }
-            
+
             public Builder totalBlocks(int totalBlocks) {
                 this.totalBlocks = totalBlocks;
                 return this;
             }
-            
+
             public Builder totalCommands(int totalCommands) {
                 this.totalCommands = totalCommands;
                 return this;
             }
-            
+
             public Builder totalMessages(int totalMessages) {
                 this.totalMessages = totalMessages;
                 return this;
             }
-            
+
             public Builder totalVisits(int totalVisits) {
                 this.totalVisits = totalVisits;
                 return this;
             }
-            
+
             public Builder emergencyReturns(int emergencyReturns) {
                 this.emergencyReturns = emergencyReturns;
                 return this;
             }
-            
+
             public Builder sessionMinutes(long sessionMinutes) {
                 this.sessionMinutes = sessionMinutes;
                 return this;
             }
-            
+
             public Builder mostFrequentActivity(String mostFrequentActivity) {
                 this.mostFrequentActivity = mostFrequentActivity;
                 return this;
             }
-            
+
             public ActivitySummary build() {
                 return new ActivitySummary(this);
             }
         }
-        
+
         @Override
         public String toString() {
             return String.format(
                 "StudentActivity[player=%s, duration=%dm, actions=%d, blocks=%d, commands=%d, messages=%d, visits=%d, emergencies=%d, mostFrequent=%s]",
-                playerUUID, sessionMinutes, totalActions, totalBlocks, totalCommands, 
+                playerUUID, sessionMinutes, totalActions, totalBlocks, totalCommands,
                 totalMessages, totalVisits, emergencyReturns, mostFrequentActivity
             );
         }

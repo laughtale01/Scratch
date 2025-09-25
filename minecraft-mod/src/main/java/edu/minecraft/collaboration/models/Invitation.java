@@ -15,14 +15,14 @@ public class Invitation {
     private final Instant timestamp;
     private final int expiryMinutes;
     private InvitationStatus status;
-    
+
     public enum InvitationStatus {
         PENDING,
         ACCEPTED,
         DECLINED,
         EXPIRED
     }
-    
+
     public Invitation(String senderName, String recipientName) {
         this.id = UUID.randomUUID();
         this.senderId = UUID.randomUUID();
@@ -33,7 +33,7 @@ public class Invitation {
         this.expiryMinutes = 5;
         this.status = InvitationStatus.PENDING;
     }
-    
+
     /**
      * Constructor with all parameters for test compatibility
      */
@@ -47,41 +47,41 @@ public class Invitation {
         this.expiryMinutes = expiryMinutes;
         this.status = InvitationStatus.PENDING;
     }
-    
+
     // Getters
     public UUID getId() {
         return id;
     }
-    
+
     public UUID getSenderId() {
         return senderId;
     }
-    
+
     public UUID getRecipientId() {
         return recipientId;
     }
-    
+
     public String getSenderName() {
         return senderName;
     }
-    
+
     public String getRecipientName() {
         return recipientName;
     }
-    
+
     public Instant getTimestamp() {
         return timestamp;
     }
-    
+
     public InvitationStatus getStatus() {
         return status;
     }
-    
+
     // Setters
     public void setStatus(InvitationStatus status) {
         this.status = status;
     }
-    
+
     // Check if invitation is expired
     public boolean isExpired() {
         return Instant.now().isAfter(timestamp.plusSeconds(expiryMinutes * 60));

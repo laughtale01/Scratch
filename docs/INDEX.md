@@ -1,149 +1,152 @@
-# 📚 Scratch × Minecraft 協調学習システム - ドキュメント索引
+# 📚 Scratch × Minecraft Collaborative Learning System - Documentation Index
 
-Scratch公式フォークベースのMinecraft拡張機能プロジェクトのドキュメントガイド
-
----
-
-## 🚀 クイックスタート
-
-**開発者向けクイックスタート:**
-- [CLAUDE.md](../CLAUDE.md) - プロジェクト概要と開発規約
-- [README.md](../README.md) - プロジェクトの詳細説明
-- [scratch-gui/README.md](../scratch-gui/README.md) - Scratch GUI公式フォーク
-
-## 🏠 メインドキュメント
-
-### プロジェクト概要
-- [README.md](../README.md) - プロジェクトの概要と基本情報
-- [LICENSE](../LICENSE) - MITライセンス
-
-### プロジェクト状態
-- **[最新] VSCode統合最適化完了 (2025-08-08)**
-  - Java 17自動設定、ワンクリックビルド実現
-  - タスクランナーによる自動デプロイ対応
-  - Git Bash統合、開発効率大幅向上
-- **WebSocket通信動作確認完了 (2025-08-05)**
-  - ping/pong、chat、getPlayerPos全て正常動作
-  - NoClassDefFoundError解決（リフレクション使用）
+Official Scratch GUI fork-based Minecraft extension project documentation guide
 
 ---
 
-## 📋 セットアップ・利用ガイド
+## 🚀 Quick Start
 
-### セットアップ
-- [setup/QUICK_START.md](setup/QUICK_START.md) - クイックスタートガイド ⭐新規・推奨
-- [setup/UNIFIED_SETUP_GUIDE.md](setup/UNIFIED_SETUP_GUIDE.md) - 統合セットアップガイド
-- [user/USER_MANUAL.md](user/USER_MANUAL.md) - ユーザーマニュアル
+**Developer Quick Start:**
+- [CLAUDE.md](../CLAUDE.md) - Project overview and development guidelines
+- [README.md](../README.md) - Detailed project description  
+- [scratch-gui/README.md](../scratch-gui/README.md) - Official Scratch GUI fork
 
-### 開発ガイド
-- [architecture.md](architecture.md) - システムアーキテクチャ
-- [dependencies.md](dependencies.md) - 依存関係の詳細
-- [patterns.md](patterns.md) - 実装パターン
-- [tdd-guidelines.md](tdd-guidelines.md) - TDD実装ガイドライン
-- **[vscode-integration.md](vscode-integration.md) - VSCode統合ガイド** ⭐新規 (2025-08-08)
+## 🏠 Main Documentation
 
----
+### Project Overview
+- [README.md](../README.md) - Project overview and basic information
+- [LICENSE](../LICENSE) - MIT License
 
-## 🔧 技術ドキュメント
-
-### Scratch GUI統合
-- [scratch-gui/](../scratch-gui/) - Scratch公式フォーク (v5.1.88)
-- **開発サーバー**: http://localhost:8601 (既に起動中)
-- `scratch-gui/src/lib/libraries/extensions/minecraft/` - Minecraft拡張定義
-- `scratch-extension/src/index.js` - Minecraft拡張ソースコード
-
-### テスト・品質管理
-- [testing-guide.md](testing-guide.md) - テストガイド
-
-### トラブルシューティング
-- [troubleshooting.md](troubleshooting.md) - トラブルシューティングガイド
-- [regression-prevention.md](regression-prevention.md) - リグレッション防止策
+### Project Status
+- **[Latest] VSCode Integration Optimization Complete (2025-08-08)**
+  - Java 17 auto-configuration, one-click build implementation
+  - Task runner automated deployment support
+  - Git Bash integration, significantly improved development efficiency
+- **WebSocket Communication Verification Complete (2025-08-05)**
+  - ping/pong, chat, getPlayerPos all functioning normally
+  - NoClassDefFoundError resolved (using reflection)
 
 ---
 
-## 🚀 デプロイ・リリース
+## 📋 Setup & Usage Guides
 
-### デプロイメント
-- [deployment/FIREBASE.md](deployment/FIREBASE.md) - Firebase Hostingガイド ⭐新規
-- [deployment/GITHUB_PAGES.md](deployment/GITHUB_PAGES.md) - GitHub Pagesガイド ⭐新規
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - デプロイメント総合ガイド
+### Setup
+- [setup/QUICK_START.md](setup/QUICK_START.md) - Quick start guide ⭐ New & Recommended
+- [setup/UNIFIED_SETUP_GUIDE.md](setup/UNIFIED_SETUP_GUIDE.md) - Unified setup guide
+- [guides/USER_MANUAL_FOR_BEGINNERS.md](guides/USER_MANUAL_FOR_BEGINNERS.md) - User manual
 
-### リリース管理
-- [DEPLOY_INSTRUCTIONS.md](../DEPLOY_INSTRUCTIONS.md) - デプロイメント手順
-- [QUICK_DEPLOYMENT.md](../QUICK_DEPLOYMENT.md) - クイックデプロイガイド
-
----
-
-## 📁 プロジェクト構造
-
-### 構造ガイド
-- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - プロジェクト構造の詳細説明
-
-### Minecraft Mod関連
-- [minecraft-mod/README_INSTALLATION.md](../minecraft-mod/README_INSTALLATION.md) - Modインストールガイド
+### Development Guides
+- [architecture.md](architecture.md) - System architecture
+- [dependencies.md](dependencies.md) - Dependency details
+- [patterns.md](patterns.md) - Implementation patterns
+- [tdd-guidelines.md](tdd-guidelines.md) - TDD implementation guidelines
+- **[vscode-integration.md](vscode-integration.md) - VSCode integration guide** ⭐ New (2025-08-08)
 
 ---
 
-## 🗄️ アーカイブ
+## 🔧 Technical Documentation
 
-過去のドキュメントや作業ログは[archives/](archives/)ディレクトリに保存されています：
+### Scratch GUI Integration
+- [scratch-gui/](../scratch-gui/) - Official Scratch fork (v5.1.88)
+- **Development Server**: http://localhost:8601 (currently running)
+- `scratch-gui/src/lib/libraries/extensions/minecraft/` - Minecraft extension definitions
+- `scratch-extension/src/index.js` - Minecraft extension source code
 
-### セッションログ
-- SESSION_LOG_2025-07-14.md
-- SESSION_LOG_2025-07-15.md
+### Testing & Quality Management
+- [testing-guide.md](testing-guide.md) - Testing guide
+- [testing/INTEGRATION_TEST_GUIDE.md](testing/INTEGRATION_TEST_GUIDE.md) - Integration testing guide
+- [regression-prevention.md](regression-prevention.md) - Regression prevention strategies
 
-### 過去の状態レポート
-- PROJECT_STATUS_2025-07-20.md
-- PROJECT_STATUS_2025-07-25.md
+### System Architecture
+- [SYSTEM_OVERVIEW.md](SYSTEM_OVERVIEW.md) - Complete system overview
+- [development/SYSTEM_ARCHITECTURE_COMPLETE.md](development/SYSTEM_ARCHITECTURE_COMPLETE.md) - Detailed architecture
+- [API_REFERENCE.md](API_REFERENCE.md) - API reference documentation
 
-### 旧セットアップガイド
-- SETUP_GUIDE.md
-- SIMPLE_SETUP.md
-- COMPLETE_SETUP_GUIDE.md
-- QUICKSTART.md
-
-### GitHub関連（統合済み）
-- GITHUB_CREATE_REPO.md
-- GITHUB_PRIVATE_REPO_PUSH.md
-- その他GitHub関連ドキュメント
-
----
-
-## 🔍 ドキュメント検索のヒント
-
-### 目的別
-- **初めての方**: [README.md](../README.md) → [QUICK_START.md](setup/QUICK_START.md)
-- **開発者**: [CLAUDE.md](../CLAUDE.md) → [scratch-gui/README.md](../scratch-gui/README.md)
-- **トラブル対応**: [troubleshooting.md](troubleshooting.md)
-- **デプロイ作業**: [QUICK_DEPLOYMENT.md](../QUICK_DEPLOYMENT.md)
-
-### キーワード別
-- **Scratch GUI**: scratch-gui/README.md, CLAUDE.md
-- **Minecraft拡張**: scratch-gui/static/extensions/minecraft-unified.js
-- **WebSocket**: minecraft-mod/, ポート14711
-- **ビルド**: README.md のセットアップ手順
-- **デプロイ**: QUICK_DEPLOYMENT.md, firebase.json
+### Troubleshooting
+- [troubleshooting.md](troubleshooting.md) - Troubleshooting guide
+- [CURRENT_PROJECT_STATUS.md](CURRENT_PROJECT_STATUS.md) - Current project status
 
 ---
 
-## 📝 ドキュメント管理方針
+## 🚀 Deployment & Release
 
-1. **最新性**: 常に最新情報はREADME.mdとこのINDEX.mdに反映
-2. **整理**: 古いドキュメントはarchives/へ移動
-3. **統合**: 重複する内容は統合して一元管理
-4. **アクセス性**: 明確な構造と索引で素早くアクセス
+### Deployment
+- [deployment/FIREBASE.md](deployment/FIREBASE.md) - Firebase Hosting guide ⭐ New
+- [deployment/GITHUB_PAGES.md](deployment/GITHUB_PAGES.md) - GitHub Pages guide ⭐ New  
+- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Comprehensive deployment guide
+
+### Release Management
+- [guides/RELEASE_CHECKLIST.md](guides/RELEASE_CHECKLIST.md) - Release checklist
+- [guides/RELEASE_NOTES_v1.0.0.md](guides/RELEASE_NOTES_v1.0.0.md) - Release notes
+- [guides/ROADMAP.md](guides/ROADMAP.md) - Project roadmap
 
 ---
 
-最終更新: 2025年8月8日
+## 📁 Project Structure
 
-### 📝 最新の変更点 (2025-08-08)
-- VSCode統合最適化完了
-- Java 17自動環境設定スクリプト追加
-- タスクランナーによるワンクリックビルド・デプロイ
-- 開発ドキュメント更新（vscode-integration.md追加）
+### Structure Guides
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Detailed project structure explanation
+- [PROJECT_STATISTICS.md](PROJECT_STATISTICS.md) - Project statistics and metrics
 
-### 📝 前回の変更点 (2025-08-05)
-- WebSocket通信の完全動作確認
-- NoClassDefFoundError修正（リフレクションベースの実装）
-- test-websocket.htmlデバッグツール追加
+### Minecraft Mod Related
+- [minecraft-mod/](../minecraft-mod/) - Minecraft Forge mod source code
+- Java 17 required, Gradle build system
+
+---
+
+## 🗄️ Archives
+
+Historical documents and work logs are stored in the [archives/](archives/) directory:
+
+### Session Logs
+- Historical development session logs (2025-07 series)
+- Implementation progress reports  
+- Quality improvement reports
+
+### Legacy Setup Guides
+- Multiple historical setup guides (consolidated into current unified guide)
+- GitHub integration guides
+- Firebase deployment evolution
+
+### Status Reports Archive
+- Monthly project status reports
+- Quality assessment reports
+- Performance benchmark reports
+
+---
+
+## 🎯 For New Developers
+
+### Essential Reading Order
+1. [README.md](../README.md) - Start here for project overview
+2. [CLAUDE.md](../CLAUDE.md) - Development environment and guidelines  
+3. [setup/QUICK_START.md](setup/QUICK_START.md) - Get running quickly
+4. [architecture.md](architecture.md) - Understand the system design
+5. [testing-guide.md](testing-guide.md) - Quality and testing practices
+
+### Educational Context
+This project is designed for educational use in programming classes, particularly:
+- Elementary to high school computer science education
+- Scratch visual programming integration with Minecraft
+- Collaborative learning through real-time world sharing
+- Japanese classroom compatibility maintained where appropriate
+
+---
+
+## 📞 Support & Community
+
+### Documentation Updates
+- All documentation follows English-first policy for international accessibility
+- Educational content maintains bilingual support (English/Japanese) where needed
+- Contributions welcome through standard GitHub PR process
+
+### Getting Help
+- Check [troubleshooting.md](troubleshooting.md) for common issues
+- Review [CURRENT_PROJECT_STATUS.md](CURRENT_PROJECT_STATUS.md) for known issues
+- Submit issues via GitHub Issues with appropriate labels
+
+---
+
+*Last Updated: 2025-08-08*  
+*Language: English (Primary) / Bilingual Support Available*  
+*Project Version: v1.5.0*

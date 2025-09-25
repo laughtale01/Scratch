@@ -44,22 +44,25 @@ public class RateLimiterTest {
         // Given
         String identifier = "spammer";
         
-        // When - Send many commands quickly
+        // When - Send exactly the limit + 1 command
         int allowed = 0;
         int blocked = 0;
         
-        for (int i = 0; i < 50; i++) {
+        // First, send exactly the rate limit number of commands
+        for (int i = 0; i < 10; i++) {
             if (rateLimiter.allowCommand(identifier)) {
                 allowed++;
-            } else {
-                blocked++;
             }
         }
         
+        // Then send one more command - this should be blocked
+        if (!rateLimiter.allowCommand(identifier)) {
+            blocked++;
+        }
+        
         // Then
-        assertTrue(allowed > 0, "Some commands should be allowed");
-        assertTrue(blocked > 0, "Some commands should be blocked");
-        assertTrue(allowed <= 10, "Should not allow more than rate limit");
+        assertEquals(10, allowed, "Should allow exactly the rate limit");
+        assertTrue(blocked > 0, "Should not allow more than rate limit");
     }
     
     @Test
