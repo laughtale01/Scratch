@@ -1,8 +1,11 @@
 package edu.minecraft.collaboration.integration;
 
+import edu.minecraft.collaboration.test.DockerTestUtils;
 import edu.minecraft.collaboration.test.util.MinecraftContainer;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -17,21 +20,37 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * TestContainers integration setup and verification
+ * These tests require Docker to be installed and running
  */
 @Testcontainers
+@EnabledIf("edu.minecraft.collaboration.test.DockerTestUtils#isDockerAvailable")
 public class TestContainersSetup {
-    
+
     @Container
-    private static final MinecraftContainer minecraft = new MinecraftContainer()
-        .withMod(getModPath());
-    
+    private static final MinecraftContainer minecraft = createContainer();
+
+    private static MinecraftContainer createContainer() {
+        if (!DockerTestUtils.isDockerAvailable()) {
+            return null;
+        }
+        return new MinecraftContainer().withMod(getModPath());
+    }
+
     private static Path getModPath() {
         // Get the built mod JAR path
         return Paths.get("build/libs/minecraft-collaboration-mod-1.0.0-all.jar");
     }
-    
+
+    @BeforeEach
+    void checkDocker() {
+        DockerTestUtils.assumeDockerAvailable();
+    }
+
     @BeforeAll
     static void setup() {
+        if (!DockerTestUtils.isDockerAvailable()) {
+            return; // Skip setup if Docker is not available
+        }
         // Ensure the container is started
         assertTrue(minecraft.isRunning(), "Minecraft container should be running");
     }

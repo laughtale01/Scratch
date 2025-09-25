@@ -19,21 +19,30 @@ public abstract class MinecraftTestBase {
         if (!bootstrapped) {
             try {
                 LOGGER.info("Bootstrapping Minecraft test environment...");
-                
-                // Initialize shared constants
-                SharedConstants.tryDetectVersion();
-                
-                // Bootstrap Minecraft registries
-                Bootstrap.bootStrap();
-                
-                bootstrapped = true;
-                LOGGER.info("Minecraft test environment ready");
+
+                // Check if we're in a test environment without Minecraft runtime
+                try {
+                    Class.forName("net.minecraft.core.registries.BuiltInRegistries");
+
+                    // Initialize shared constants
+                    SharedConstants.tryDetectVersion();
+
+                    // Bootstrap Minecraft registries
+                    Bootstrap.bootStrap();
+
+                    bootstrapped = true;
+                    LOGGER.info("Minecraft test environment ready");
+                } catch (ClassNotFoundException e) {
+                    LOGGER.warn("Minecraft runtime not available in test environment - tests requiring Minecraft will be skipped");
+                    bootstrapped = false;
+                }
             } catch (Exception e) {
                 LOGGER.error("Failed to bootstrap Minecraft environment", e);
-                // Continue anyway - some tests might still work
+                bootstrapped = false;
+                // Continue anyway - some tests might still work without full Minecraft
             }
         }
-        
+
         // WebSocket server will be started by individual tests if needed
     }
     

@@ -96,7 +96,15 @@ public class JWTAuthenticationProvider {
     public TokenValidation validateToken(String token) {
         try {
             // Decode token
-            String payload = new String(Base64.getDecoder().decode(token));
+            String payload;
+            try {
+                payload = new String(Base64.getDecoder().decode(token));
+            } catch (IllegalArgumentException e) {
+                // Handle invalid Base64 input
+                auditLogger.logTokenValidation("invalid", false);
+                return TokenValidation.invalid("Invalid token");
+            }
+
             String[] parts = payload.split("\\|");
 
             if (parts.length != 5) {
