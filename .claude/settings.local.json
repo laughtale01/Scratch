@@ -151,7 +151,8 @@
       "Bash(./set-java17-vscode.bat)",
       "Bash(tee:*)",
       "Bash(python3:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "WebFetch(domain:docs.github.com)"
     ],
     "deny": []
   }

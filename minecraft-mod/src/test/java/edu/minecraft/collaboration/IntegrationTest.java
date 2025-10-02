@@ -78,7 +78,7 @@ public class IntegrationTest {
         
         // When - send multiple messages rapidly
         boolean rateLimitTriggered = false;
-        for (int i = 0; i < 15; i++) { // Exceed rate limit of 10
+        for (int i = 0; i < 25; i++) { // Exceed rate limit of 20 (from application.properties)
             boolean allowed = rateLimiter.allowCommand(userId);
             if (!allowed) {
                 rateLimitTriggered = true;

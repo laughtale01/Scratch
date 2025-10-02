@@ -332,7 +332,7 @@ class CacheManagerTest {
         assertEquals(0, stats.getMisses());
         assertEquals(100.0, stats.getHitRate(), 0.01);
 
-        verify(metricsCollector).incrementCounter("performance.cache.hits");
+        verify(metricsCollector).incrementCounter(edu.minecraft.collaboration.monitoring.MetricsCollector.Metrics.CACHE_HITS);
     }
 
     @Test
@@ -348,7 +348,7 @@ class CacheManagerTest {
         assertEquals(1, stats.getMisses());
         assertEquals(0.0, stats.getHitRate(), 0.01);
 
-        verify(metricsCollector).incrementCounter("performance.cache.misses");
+        verify(metricsCollector).incrementCounter(edu.minecraft.collaboration.monitoring.MetricsCollector.Metrics.CACHE_MISSES);
     }
 
     @Test

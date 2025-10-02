@@ -50,12 +50,12 @@ class ConfigurationIntegrationTest {
         String testUser = "testUser";
         
         // Should allow commands up to the configured limit
-        for (int i = 0; i < 10; i++) { // Default limit is 10
+        for (int i = 0; i < 20; i++) { // Default limit is 20 (from application.properties)
             assertTrue(rateLimiter.allowCommand(testUser), "Command " + i + " should be allowed");
         }
-        
-        // 11th command should be blocked
-        assertFalse(rateLimiter.allowCommand(testUser), "11th command should be blocked");
+
+        // 21st command should be blocked
+        assertFalse(rateLimiter.allowCommand(testUser), "21st command should be blocked");
     }
     
     @Test

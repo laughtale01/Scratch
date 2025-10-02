@@ -33,6 +33,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("WebSocket Connection Integration Tests")
+@org.junit.jupiter.api.Tag("minecraft-dependent")
+@org.junit.jupiter.api.Disabled("Requires Minecraft runtime - run in integration environment")
 public class WebSocketConnectionIntegrationTest extends MinecraftTestBase {
     
     private WebSocket webSocket;

@@ -30,10 +30,10 @@ public class RateLimiterTest {
     void testAllowCommandsWithinLimit() {
         // Given
         String identifier = "test-player";
-        
-        // When & Then
-        for (int i = 0; i < 10; i++) {
-            assertTrue(rateLimiter.allowCommand(identifier), 
+
+        // When & Then - Rate limit is 20 commands/second
+        for (int i = 0; i < 20; i++) {
+            assertTrue(rateLimiter.allowCommand(identifier),
                 "Command " + (i + 1) + " should be allowed");
         }
     }
@@ -48,20 +48,21 @@ public class RateLimiterTest {
         int allowed = 0;
         int blocked = 0;
         
+        // Rate limit is 20 commands/second (from application.properties)
         // First, send exactly the rate limit number of commands
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             if (rateLimiter.allowCommand(identifier)) {
                 allowed++;
             }
         }
-        
+
         // Then send one more command - this should be blocked
         if (!rateLimiter.allowCommand(identifier)) {
             blocked++;
         }
-        
+
         // Then
-        assertEquals(10, allowed, "Should allow exactly the rate limit");
+        assertEquals(20, allowed, "Should allow exactly the rate limit");
         assertTrue(blocked > 0, "Should not allow more than rate limit");
     }
     

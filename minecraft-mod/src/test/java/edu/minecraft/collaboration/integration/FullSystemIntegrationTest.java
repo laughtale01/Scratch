@@ -34,6 +34,7 @@ import static org.mockito.Mockito.*;
  */
 @DisplayName("Full System Integration Tests")
 @Tag("minecraft-dependent")
+@org.junit.jupiter.api.Disabled("Requires Minecraft runtime - run in integration environment")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class FullSystemIntegrationTest {
     

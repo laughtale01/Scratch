@@ -140,8 +140,8 @@ class DependencyInjectorTest {
         DependencyInjector.ServiceStatistics stats = injector.getStatistics();
         assertNotNull(stats);
         
-        // Should have 6 core services registered (including ResourceManager)
-        assertEquals(6, stats.getRegisteredFactories());
+        // Should have 8 core services registered (including CollaborationMessageProcessor and BlockPackManager)
+        assertEquals(8, stats.getRegisteredFactories());
         
         // Initially no services should be initialized
         assertEquals(0, stats.getInitializedServices());

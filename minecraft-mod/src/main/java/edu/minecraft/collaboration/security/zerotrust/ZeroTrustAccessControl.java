@@ -86,16 +86,20 @@ public class ZeroTrustAccessControl {
      * Authorize an operation for a user on a resource
      */
     public AuthorizationResult authorizeOperation(User user, Operation operation, Resource resource) {
-        if (user == null || operation == null || resource == null) {
+        // Validate input parameters
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null");
+        }
+        if (operation == null || resource == null) {
             return AuthorizationResult.denied("Invalid parameters");
         }
 
         // Check if user role meets operation requirements
         if (user.getRole().ordinal() < operation.getRequiredRole().ordinal()) {
-            String reason = String.format("User role %s insufficient for operation %s",
-                user.getRole(), operation.getName());
+            String reason = getDenialReasonForRole(user.getRole(), operation);
             if (auditLogger != null) {
-                auditLogger.logAccessAttempt(user.getUsername(), resource.getName(), false, reason);
+                auditLogger.logAccessDenied(user.getUsername(), operation.getName(),
+                    resource.getName(), reason);
             }
             return AuthorizationResult.denied(reason);
         }
@@ -105,7 +109,8 @@ public class ZeroTrustAccessControl {
             String reason = String.format("User role %s insufficient for resource %s",
                 user.getRole(), resource.getName());
             if (auditLogger != null) {
-                auditLogger.logAccessAttempt(user.getUsername(), resource.getName(), false, reason);
+                auditLogger.logAccessDenied(user.getUsername(), operation.getName(),
+                    resource.getName(), reason);
             }
             return AuthorizationResult.denied(reason);
         }
@@ -116,16 +121,27 @@ public class ZeroTrustAccessControl {
         if (policy != null && !policy.isAllowed(user.getRole())) {
             String reason = "Policy restriction for resource: " + resource.getName();
             if (auditLogger != null) {
-                auditLogger.logAccessAttempt(user.getUsername(), resource.getName(), false, reason);
+                auditLogger.logAccessDenied(user.getUsername(), operation.getName(),
+                    resource.getName(), reason);
             }
             return AuthorizationResult.denied(reason);
         }
 
-        // All checks passed
+        // All checks passed - grant access
         if (auditLogger != null) {
-            auditLogger.logAccessAttempt(user.getUsername(), resource.getName(), true, "Access granted");
+            auditLogger.logAccessGranted(user.getUsername(), operation.getName(), resource.getName());
         }
         return AuthorizationResult.authorized();
+    }
+
+    /**
+     * Get a user-friendly denial reason based on role and operation
+     */
+    private String getDenialReasonForRole(UserRole role, Operation operation) {
+        if (role == UserRole.STUDENT && operation.getCategory() == OperationCategory.ADMINISTRATIVE) {
+            return "Students cannot perform administrative operations";
+        }
+        return String.format("User role %s insufficient for operation %s", role, operation.getName());
     }
 
     /**
@@ -180,13 +196,32 @@ public class ZeroTrustAccessControl {
         public Operation(String name, OperationCategory category) {
             this.name = name;
             this.category = category;
-            this.requiredRole = UserRole.STUDENT; // Default minimum role
+            // Map category to required role
+            this.requiredRole = getRequiredRoleForCategory(category);
         }
 
         public Operation(String name, OperationCategory category, UserRole requiredRole) {
             this.name = name;
             this.category = category;
             this.requiredRole = requiredRole;
+        }
+
+        /**
+         * Map operation category to required role
+         */
+        private static UserRole getRequiredRoleForCategory(OperationCategory category) {
+            switch (category) {
+                case ADMINISTRATIVE:
+                case SECURITY:
+                    return UserRole.ADMIN;
+                case COLLABORATION:
+                case BUILDING:
+                    return UserRole.TEACHER;
+                case BASIC:
+                case COMMUNICATION:
+                default:
+                    return UserRole.STUDENT;
+            }
         }
 
         public String getName() { return name; }

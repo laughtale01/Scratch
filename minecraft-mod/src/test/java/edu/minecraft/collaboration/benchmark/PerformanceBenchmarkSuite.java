@@ -31,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @DisplayName("Performance Benchmark Suite")
 @PerformanceTest
+@org.junit.jupiter.api.Tag("minecraft-dependent")
+@org.junit.jupiter.api.Disabled("Requires Minecraft runtime - run in integration environment")
 public class PerformanceBenchmarkSuite {
     
     private static final int WARMUP_ITERATIONS = 100;

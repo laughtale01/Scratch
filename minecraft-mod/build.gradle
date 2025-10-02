@@ -25,7 +25,17 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // Enable JUnit 5 testing
 test {
     useJUnitPlatform {
-        includeTags 'unit'
+        // Exclude tests that require Minecraft runtime (Blocks, registries, etc.)
+        excludeTags 'minecraft-dependent'
+    }
+    // Continue on test failure to see all failures at once
+    ignoreFailures = false
+
+    // Show test output
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = false
     }
 }
 

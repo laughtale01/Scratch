@@ -42,6 +42,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @IntegrationTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("WebSocket Performance Tests")
+@org.junit.jupiter.api.Tag("minecraft-dependent")
+@org.junit.jupiter.api.Disabled("Requires Minecraft runtime - run in integration environment")
 public class WebSocketPerformanceTest extends edu.minecraft.collaboration.test.MinecraftTestBase {
     
     private static String WS_URL;

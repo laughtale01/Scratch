@@ -1,0 +1,921 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Configure project :
+Java: 17.0.12, JVM: 17.0.12+8-LTS-286 (Oracle Corporation), Arch: amd64
+WARNING: This project is configured to use the official obfuscation mappings provided by Mojang. These mapping fall under their associated license, you should be fully aware of this license. For the latest license text, refer below, or the reference copy here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md, You can hide this warning by running the `hideOfficialWarningUntilChanged` task
+WARNING: (c) 2020 Microsoft Corporation. These mappings are provided "as-is" and you bear the risk of using them. You may copy and use the mappings for development purposes, but you may not redistribute the mappings complete and unmodified. Microsoft makes no warranties, express or implied, with respect to the mappings provided here.  Use and modification of this document or the source code (in any form) of Minecraft: Java Edition is governed by the Minecraft End User License Agreement available at https://account.mojang.com/documents/minecraft_eula.
+
+> Task :compileJava
+ノート:一部の入力ファイルは推奨されないAPIを使用またはオーバーライドしています。
+ノート:詳細は、-Xlint:deprecationオプションを指定して再コンパイルしてください。
+
+> Task :processResources
+> Task :classes
+
+> Task :compileTestJava
+ノート:D:\minecraft_collaboration_project\minecraft-mod\src\test\java\edu\minecraft\collaboration\security\threat\ThreatDetectionEngineTest.javaの操作は、未チェックまたは安全ではありません。
+ノート:詳細は、-Xlint:uncheckedオプションを指定して再コンパイルしてください。
+
+> Task :processTestResources NO-SOURCE
+> Task :testClasses
+
+> Task :test
+
+Integration Tests > Should handle complete message processing flow PASSED
+
+Integration Tests > Should handle multiple component interaction PASSED
+
+Integration Tests > Should handle concurrent requests PASSED
+
+Integration Tests > Should handle error propagation across components PASSED
+
+Integration Tests > Should integrate authentication with command execution PASSED
+
+Integration Tests > Should handle collaboration workflow PASSED
+
+Integration Tests > Should handle invalid message gracefully PASSED
+
+Integration Tests > Should integrate rate limiting with message processing FAILED
+    org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+        at app//org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+        at app//org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)
+        at app//org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:179)
+        at app//edu.minecraft.collaboration.IntegrationTest.testRateLimitingIntegration(IntegrationTest.java:90)
+
+Integration Tests > Should validate input before processing PASSED
+
+Integration Tests > Should handle resource cleanup PASSED
+
+Integration Tests > Should maintain data consistency across components PASSED
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+CacheManager Tests > Should expire entries after TTL PASSED
+
+CacheManager Tests > Should record cache hits FAILED
+    Wanted but not invoked:
+    metricsCollector.incrementCounter(
+        "performance.cache.hits"
+    );
+    -> at edu.minecraft.collaboration.monitoring.MetricsCollector.incrementCounter(MetricsCollector.java:77)
+    Actually, there were zero interactions with this mock.
+        at app//edu.minecraft.collaboration.monitoring.MetricsCollector.incrementCounter(MetricsCollector.java:77)
+        at app//edu.minecraft.collaboration.core.CacheManagerTest.testRecordCacheHit(CacheManagerTest.java:335)
+
+CacheManager Tests > Should track memory pressure correctly PASSED
+
+CacheManager Tests > Should handle evictLRU on empty cache gracefully PASSED
+
+CacheManager Tests > Should handle zero total in hit rate calculation PASSED
+
+CacheManager Tests > Should handle concurrent cache operations safely PASSED
+
+CacheManager Tests > Should create cache with custom settings PASSED
+
+CacheManager Tests > Should evict oldest entry when max size is reached PASSED
+
+CacheManager Tests > Should clear all entries from cache PASSED
+
+CacheManager Tests > Should adjust cache max size PASSED
+
+CacheManager Tests > Should record cache misses FAILED
+    Wanted but not invoked:
+    metricsCollector.incrementCounter(
+        "performance.cache.misses"
+    );
+    -> at edu.minecraft.collaboration.monitoring.MetricsCollector.incrementCounter(MetricsCollector.java:77)
+    Actually, there were zero interactions with this mock.
+        at app//edu.minecraft.collaboration.monitoring.MetricsCollector.incrementCounter(MetricsCollector.java:77)
+        at app//edu.minecraft.collaboration.core.CacheManagerTest.testRecordCacheMiss(CacheManagerTest.java:351)
+
+CacheManager Tests > Should return same instance for multiple getInstance() calls PASSED
+
+CacheManager Tests > Should remove cache successfully PASSED
+
+CacheManager Tests > Should handle evictLRU with zero count gracefully PASSED
+
+CacheManager Tests > Should put and get values from cache PASSED
+
+CacheManager Tests > Should return null for non-existent key PASSED
+
+CacheManager Tests > Should test MemoryPressureInfo toString PASSED
+
+CacheManager Tests > Should create cache with default settings PASSED
+
+CacheManager Tests > Should shutdown gracefully PASSED
+
+CacheManager Tests > Should clear all caches PASSED
+
+CacheManager Tests > Should reset cache statistics PASSED
+
+CacheManager Tests > Should handle statistics for non-existent cache gracefully PASSED
+
+CacheManager Tests > Should test MemoryPressureInfo getters PASSED
+
+CacheManager Tests > Should handle complete cache lifecycle PASSED
+
+CacheManager Tests > Should return false when removing non-existent cache PASSED
+
+CacheManager Tests > Should return existing cache when requested again PASSED
+
+CacheManager Tests > Should handle setMaxSize with size larger than current PASSED
+
+CacheManager Tests > Should evict LRU entries PASSED
+
+CacheManager Tests > Should test CacheStatistics toString PASSED
+
+CacheManager Tests > Should get memory pressure info PASSED
+
+CacheManager Tests > Should cleanup expired entries PASSED
+
+CacheManager Tests > Should remove values from cache PASSED
+
+CacheManager Tests > Should handle null value PASSED
+
+CacheManager Tests > Should calculate hit rate correctly PASSED
+
+CacheManager Tests > Should handle concurrent cache access PASSED
+
+CacheManager Tests > Should handle very large cache size PASSED
+
+CacheManager Tests > Should get all cache statistics PASSED
+
+CacheManager Tests > Should handle null key gracefully PASSED
+
+DependencyInjectorTest > Should create single instance of DependencyInjector PASSED
+
+DependencyInjectorTest > Should handle custom service registration PASSED
+
+DependencyInjectorTest > Should register and retrieve MetricsCollector service PASSED
+
+DependencyInjectorTest > Should throw exception for null service instance registration PASSED
+
+DependencyInjectorTest > Should provide service statistics FAILED
+    org.opentest4j.AssertionFailedError: expected: <6> but was: <8>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+        at app//org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+        at app//org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)
+        at app//org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:527)
+        at app//edu.minecraft.collaboration.core.DependencyInjectorTest.testServiceStatistics(DependencyInjectorTest.java:144)
+
+DependencyInjectorTest > Should throw exception for unregistered service PASSED
+
+DependencyInjectorTest > Should prevent circular dependencies PASSED
+
+DependencyInjectorTest > Should register and retrieve RateLimiter service PASSED
+
+DependencyInjectorTest > Should register and retrieve CollaborationManager service PASSED
+
+DependencyInjectorTest > Should handle shutdown properly PASSED
+
+DependencyInjectorTest > Should handle instance registration PASSED
+
+DependencyInjectorTest > Should register and retrieve AuthenticationManager service PASSED
+
+DependencyInjectorTest > Should register and retrieve LanguageManager service PASSED
+
+ConfigurationIntegrationTest > testConfigurationManagerRegistration() PASSED
+
+ConfigurationIntegrationTest > testMultipleConfigurationInstances() PASSED
+
+ConfigurationIntegrationTest > testRateLimiterWithSystemPropertyOverride() PASSED
+
+ConfigurationIntegrationTest > testIPAddressFiltering() PASSED
+
+ConfigurationIntegrationTest > testRateLimiterWithConfiguration() FAILED
+    org.opentest4j.AssertionFailedError: 11th command should be blocked ==> expected: <false> but was: <true>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+        at app//org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+        at app//org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:235)
+        at app//edu.minecraft.collaboration.integration.ConfigurationIntegrationTest.testRateLimiterWithConfiguration(ConfigurationIntegrationTest.java:58)
+
+ConfigurationIntegrationTest > testBlockAndCommandFiltering() PASSED
+
+ConfigurationIntegrationTest > testSecurityConfigWithConfiguration() PASSED
+
+ConfigurationIntegrationTest > testSecurityConfigWithSystemPropertyOverride() PASSED
+
+ConfigurationIntegrationTest > testChatMessageSanitization() PASSED
+
+WebSocketMessageValidator Tests > Should validate nested JSON structures PASSED
+
+WebSocketMessageValidator Tests > Should validate message size limits PASSED
+
+WebSocketMessageValidator Tests > Should validate too long messages PASSED
+
+WebSocketMessageValidator Tests > Should validate common command formats PASSED
+
+WebSocketMessageValidator Tests > Should validate valid JSON messages PASSED
+
+WebSocketMessageValidator Tests > Should validate dangerous content in messages PASSED
+
+WebSocketMessageValidator Tests > Should get validation error messages FAILED
+    org.opentest4j.AssertionFailedError: expected: not <null>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertNotNull.failNull(AssertNotNull.java:49)
+        at app//org.junit.jupiter.api.AssertNotNull.assertNotNull(AssertNotNull.java:35)
+        at app//org.junit.jupiter.api.AssertNotNull.assertNotNull(AssertNotNull.java:30)
+        at app//org.junit.jupiter.api.Assertions.assertNotNull(Assertions.java:300)
+        at app//edu.minecraft.collaboration.network.WebSocketMessageValidatorTest.testValidationErrorMessages(WebSocketMessageValidatorTest.java:158)
+
+WebSocketMessageValidator Tests > Should validate blank messages PASSED
+
+WebSocketMessageValidator Tests > Should validate invalid JSON messages FAILED
+    org.opentest4j.AssertionFailedError: expected: <false> but was: <true>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+        at app//org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+        at app//org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:31)
+        at app//org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:227)
+        at app//edu.minecraft.collaboration.network.WebSocketMessageValidatorTest.testInvalidJsonMessage(WebSocketMessageValidatorTest.java:90)
+
+WebSocketMessageValidator Tests > Should handle unicode characters PASSED
+
+WebSocketMessageValidator Tests > Should validate empty messages PASSED
+
+WebSocketMessageValidator Tests > Should validate null messages PASSED
+
+WebSocketMessageValidator Tests > Should validate array JSON messages PASSED
+
+RateLimiter Tests > Should reset limit manually PASSED
+
+RateLimiter Tests > Should track different identifiers separately PASSED
+
+RateLimiter Tests > Should reset rate limit after time window PASSED
+
+RateLimiter Tests > Should block commands exceeding rate limit FAILED
+    org.opentest4j.AssertionFailedError: Should not allow more than rate limit ==> expected: <true> but was: <false>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+        at app//org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+        at app//org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:210)
+        at app//edu.minecraft.collaboration.security.RateLimiterTest.testBlockCommandsExceedingLimit(RateLimiterTest.java:65)
+
+RateLimiter Tests > Should get current command count PASSED
+
+RateLimiter Tests > Should allow commands within rate limit PASSED
+
+JWT Authentication Provider Tests > Should reject null token PASSED
+
+JWT Authentication Provider Tests > Should handle revoke of invalid token gracefully PASSED
+
+JWT Authentication Provider Tests > Should handle concurrent token generation PASSED
+
+JWT Authentication Provider Tests > Should reject empty token PASSED
+
+JWT Authentication Provider Tests > Should revoke token successfully SKIPPED
+
+JWT Authentication Provider Tests > Should handle token generation failure gracefully SKIPPED
+
+JWT Authentication Provider Tests > Should reject refresh with access token SKIPPED
+
+JWT Authentication Provider Tests > Should authenticate valid access token FAILED
+    Argument(s) are different! Wanted:
+    auditLogger.logTokenValidation(
+        "test_user",
+        true
+    );
+    -> at edu.minecraft.collaboration.security.SecurityAuditLogger.logTokenValidation(SecurityAuditLogger.java:83)
+    Actual invocations have different arguments at position [0]:
+    auditLogger.logTokenValidation(
+        "6b95c819-2b61-4984-b21f-a73900a84a92",
+        true
+    );
+    -> at edu.minecraft.collaboration.security.jwt.JWTAuthenticationProvider.generateToken(JWTAuthenticationProvider.java:58)
+    auditLogger.logSuccessfulAuthentication(
+        "test_user",
+        TEACHER
+    );
+    -> at edu.minecraft.collaboration.security.jwt.JWTAuthenticationProvider.generateTokenPair(JWTAuthenticationProvider.java:285)
+    auditLogger.logTokenValidation(
+        "6b95c819-2b61-4984-b21f-a73900a84a92",
+        true
+    );
+    -> at edu.minecraft.collaboration.security.jwt.JWTAuthenticationProvider.validateToken(JWTAuthenticationProvider.java:140)
+        at app//edu.minecraft.collaboration.security.SecurityAuditLogger.logTokenValidation(SecurityAuditLogger.java:83)
+        at app//edu.minecraft.collaboration.security.jwt.JWTAuthenticationProviderTest.testAuthenticateValidToken(JWTAuthenticationProviderTest.java:115)
+
+JWT Authentication Provider Tests > Should generate valid token pair for admin user PASSED
+
+JWT Authentication Provider Tests > Should generate valid token pair for student user PASSED
+
+JWT Authentication Provider Tests > Should generate valid token pair for teacher user PASSED
+
+JWT Authentication Provider Tests > Should refresh token successfully SKIPPED
+
+JWT Authentication Provider Tests > Should reject invalid token PASSED
+
+JWT Authentication Provider Tests > Should get token statistics SKIPPED
+
+JWT Authentication Provider Tests > Should validate token claims correctly SKIPPED
+
+JWT Authentication Provider Tests > Should cleanup expired tokens PASSED
+
+Threat Detection Engine Tests > Should detect data exfiltration pattern PASSED
+
+Threat Detection Engine Tests > Should handle insider threat patterns PASSED
+
+Threat Detection Engine Tests > Should detect bot behavior pattern PASSED
+
+Threat Detection Engine Tests > Should detect brute force attack pattern FAILED
+    org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+        at app//org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+        at app//org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)
+        at app//org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:179)
+        at app//edu.minecraft.collaboration.security.threat.ThreatDetectionEngineTest.testBruteForceDetection(ThreatDetectionEngineTest.java:91)
+
+Threat Detection Engine Tests > Should enable and disable threat detection PASSED
+
+Threat Detection Engine Tests > Should get threat metrics correctly PASSED
+
+Threat Detection Engine Tests > Should detect privilege escalation attempt PASSED
+
+Threat Detection Engine Tests > Should get recent threat events PASSED
+
+Threat Detection Engine Tests > Should handle network-based threats FAILED
+    java.lang.NumberFormatException: For input string: "suspicious-client"
+        at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)
+        at java.base/java.lang.Integer.parseInt(Integer.java:668)
+        at java.base/java.lang.Integer.parseInt(Integer.java:786)
+        at edu.minecraft.collaboration.security.threat.NetworkInfo.<init>(NetworkInfo.java:23)
+        at edu.minecraft.collaboration.security.threat.ThreatDetectionEngineTest.testNetworkThreatDetection(ThreatDetectionEngineTest.java:184)
+
+Threat Detection Engine Tests > Should handle concurrent threat analysis PASSED
+
+Threat Detection Engine Tests > Should detect no threat for normal user activity PASSED
+
+Threat Detection Engine Tests > Should classify threat levels correctly PASSED
+
+Zero Trust Access Control Tests > Should perform continuous verification successfully PASSED
+
+Zero Trust Access Control Tests > Should grant student access to basic operations during allowed hours PASSED
+
+Zero Trust Access Control Tests > Should grant access to teacher for collaboration operations FAILED
+    Wanted but not invoked:
+    auditLogger.logAccessGranted(
+        "teacher_user",
+        "send_invitation",
+        "collaboration_session"
+    );
+    -> at edu.minecraft.collaboration.security.SecurityAuditLogger.logAccessGranted(SecurityAuditLogger.java:209)
+
+    However, there was exactly 1 interaction with this mock:
+    auditLogger.logAccessAttempt(
+        "teacher_user",
+        "collaboration_session",
+        true,
+        "Access granted"
+    );
+    -> at edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControl.authorizeOperation(ZeroTrustAccessControl.java:126)
+        at app//edu.minecraft.collaboration.security.SecurityAuditLogger.logAccessGranted(SecurityAuditLogger.java:209)
+        at app//edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControlTest.testTeacherAccessToCollaborationOperations(ZeroTrustAccessControlTest.java:78)
+
+Zero Trust Access Control Tests > Should deny access from untrusted network FAILED
+    org.opentest4j.AssertionFailedError: expected: <false> but was: <true>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+        at app//org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+        at app//org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:31)
+        at app//org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:227)
+        at app//edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControlTest.testDenyAccessFromUntrustedNetwork(ZeroTrustAccessControlTest.java:155)
+
+Zero Trust Access Control Tests > Should require additional verification for high-risk operations PASSED
+
+Zero Trust Access Control Tests > Should handle authorization with null user gracefully FAILED
+    org.opentest4j.AssertionFailedError: Expected java.lang.Exception to be thrown, but nothing was thrown.
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+        at app//org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:73)
+        at app//org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+        at app//org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3111)
+        at app//edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControlTest.testAuthorizationWithNullUser(ZeroTrustAccessControlTest.java:230)
+
+Zero Trust Access Control Tests > Should create proper access context FAILED
+    org.opentest4j.AssertionFailedError: expected: <edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControl$Operation@71285693> but was: <null>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+        at app//org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+        at app//org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+        at app//org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1141)
+        at app//edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControlTest.testAccessContextCreation(ZeroTrustAccessControlTest.java:283)
+
+Zero Trust Access Control Tests > Should validate time-based access restrictions PASSED
+
+Zero Trust Access Control Tests > Should deny student access to administrative operations FAILED
+    org.opentest4j.AssertionFailedError: expected: <false> but was: <true>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+        at app//org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+        at app//org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:31)
+        at app//org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:227)
+        at app//edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControlTest.testStudentDeniedAdministrativeOperations(ZeroTrustAccessControlTest.java:100)
+
+Zero Trust Access Control Tests > Should grant access to admin for administrative operations FAILED
+    Wanted but not invoked:
+    auditLogger.logAccessGranted(
+        "admin_user",
+        "manage_users",
+        "user_management"
+    );
+    -> at edu.minecraft.collaboration.security.SecurityAuditLogger.logAccessGranted(SecurityAuditLogger.java:209)
+
+    However, there was exactly 1 interaction with this mock:
+    auditLogger.logAccessAttempt(
+        "admin_user",
+        "user_management",
+        true,
+        "Access granted"
+    );
+    -> at edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControl.authorizeOperation(ZeroTrustAccessControl.java:126)
+        at app//edu.minecraft.collaboration.security.SecurityAuditLogger.logAccessGranted(SecurityAuditLogger.java:209)
+        at app//edu.minecraft.collaboration.security.zerotrust.ZeroTrustAccessControlTest.testAdminAccessToAdministrativeOperations(ZeroTrustAccessControlTest.java:53)
+
+Zero Trust Access Control Tests > Should handle multiple concurrent authorization requests PASSED
+
+SimpleIntegrationTest > WebSocket handler should be initialized PASSED
+
+SimpleIntegrationTest > WebSocket port should be 14711 PASSED
+
+SimpleIntegrationTest > Basic command handler should be initialized PASSED
+
+SimpleIntegrationTest > Rate limiter should allow 10 commands per second PASSED
+
+SimpleIntegrationTest > Collaboration command handler should be initialized PASSED
+
+SimpleIntegrationTest > Ping command should return pong PASSED
+
+Performance Benchmark Suite > Configuration Manager Performance Benchmark SKIPPED
+
+Performance Benchmark Suite > Memory Usage Benchmark SKIPPED
+
+Performance Benchmark Suite > Authentication Performance Benchmark SKIPPED
+
+Performance Benchmark Suite > Message Processing Performance Benchmark SKIPPED
+
+Performance Benchmark Suite > Rate Limiter Performance Benchmark SKIPPED
+
+Performance Benchmark Suite > Input Validation Performance Benchmark SKIPPED
+
+BlockPackManager Tests > Should handle block pack switching requests PASSED
+
+BlockPackManager Tests > Should handle invalid pack names gracefully PASSED
+
+BlockPackManager Tests > Should test singleton pattern concept PASSED
+
+BlockPackManager Tests > Should handle block permission checking logic PASSED
+
+BlockPackManager Tests > Should handle block pack creation with valid parameters PASSED
+
+BlockPackManager Tests > Should handle concurrent access gracefully PASSED
+
+BlockPackManager Tests > Should handle difficulty level enum values PASSED
+
+BlockPackManager Tests > Should validate block type strings PASSED
+
+CollaborationManager Tests > Should get singleton instance PASSED
+
+CollaborationManager Tests > Should create visit request successfully PASSED
+
+CollaborationManager Tests > Should create invitation successfully PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle Unicode characters in chat messages PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle negative coordinate values PASSED
+
+CollaborationCommandHandler Simple Tests > Should validate coordinate arguments PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle classroom mode commands PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle visit commands PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle agent commands PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle block operations PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle empty arguments gracefully PASSED
+
+CollaborationCommandHandler Simple Tests > Should return error messages for invalid arguments PASSED
+
+CollaborationCommandHandler Simple Tests > Should create command handler instance PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle command methods consistently PASSED
+
+CollaborationCommandHandler Simple Tests > Should maintain thread safety PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle special characters in chat messages PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle very large coordinate values PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle very long chat messages PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle null arguments gracefully PASSED
+
+CollaborationCommandHandler Simple Tests > Should handle invitation commands PASSED
+
+CollaborationCommandHandler Tests > Should handle getInvitations command PASSED
+
+CollaborationCommandHandler Tests > Should handle setBlock with invalid block type PASSED
+
+CollaborationCommandHandler Tests > Should handle approveVisit command PASSED
+
+CollaborationCommandHandler Tests > Should handle dismissAgent command PASSED
+
+CollaborationCommandHandler Tests > Should handle getCurrentWorld command PASSED
+
+CollaborationCommandHandler Tests > Should handle fillArea command PASSED
+
+CollaborationCommandHandler Tests > Should handle special characters in chat PASSED
+
+CollaborationCommandHandler Tests > Should handle emergencyReturn command PASSED
+
+CollaborationCommandHandler Tests > Should handle requestVisit command PASSED
+
+CollaborationCommandHandler Tests > Should handle connect command PASSED
+
+CollaborationCommandHandler Tests > Should handle chatMessage with empty arguments PASSED
+
+CollaborationCommandHandler Tests > Should handle commands with null arguments gracefully PASSED
+
+CollaborationCommandHandler Tests > Should maintain response format consistency PASSED
+
+CollaborationCommandHandler Tests > Should handle agentAction command PASSED
+
+CollaborationCommandHandler Tests > Should handle agentFollow command PASSED
+
+CollaborationCommandHandler Tests > Should handle setGlobalPermissions command PASSED
+
+CollaborationCommandHandler Tests > Should handle status command PASSED
+
+CollaborationCommandHandler Tests > Should handle setBlock with insufficient arguments PASSED
+
+CollaborationCommandHandler Tests > Should handle setBlock command with valid parameters PASSED
+
+CollaborationCommandHandler Tests > Should handle chatMessage with null arguments PASSED
+
+CollaborationCommandHandler Tests > Should handle setBlock with invalid coordinates PASSED
+
+CollaborationCommandHandler Tests > Should handle summonAgent command PASSED
+
+CollaborationCommandHandler Tests > Should handle concurrent command execution PASSED
+
+CollaborationCommandHandler Tests > Should handle chatMessage command PASSED
+
+CollaborationCommandHandler Tests > Should handle getBlock command PASSED
+
+CollaborationCommandHandler Tests > Should handle long chat messages PASSED
+
+CollaborationCommandHandler Tests > Should handle returnHome command PASSED
+
+CollaborationCommandHandler Tests > Should handle moveAgent command PASSED
+
+CollaborationCommandHandler Tests > Should handle toggleClassroomMode command PASSED
+
+CollaborationCommandHandler Tests > Should handle inviteFriend command PASSED
+
+CollaborationCommandHandler Tests > Should handle getPlayerPosition command PASSED
+
+CollaborationCommandHandler Tests > Should handle registerTeacher command PASSED
+
+ConfigurationManagerTest > testSystemPropertyOverride() PASSED
+
+ConfigurationManagerTest > testIntPropertyWithDefault() PASSED
+
+ConfigurationManagerTest > testBooleanPropertyLoading() PASSED
+
+ConfigurationManagerTest > testStringPropertyLoading() PASSED
+
+ConfigurationManagerTest > testPropertyKeys() PASSED
+
+ConfigurationManagerTest > testDoubleProperty() PASSED
+
+ConfigurationManagerTest > testHasProperty() PASSED
+
+ConfigurationManagerTest > testWebSocketPortConfiguration() PASSED
+
+ConfigurationManagerTest > testEnvironmentProfileDetection() PASSED
+
+ConfigurationManagerTest > testDefaultConfigurationLoading() PASSED
+
+ConfigurationManagerTest > testReload() PASSED
+
+ConfigurationManagerTest > testInvalidIntProperty() PASSED
+
+ConfigurationManagerTest > testPropertyWithDefault() PASSED
+
+ConfigurationManagerTest > testLongProperty() PASSED
+
+ConfigurationManagerTest > testConfigurationStatistics() PASSED
+
+ResourceManagerTest > Should handle null resources gracefully PASSED
+
+ResourceManagerTest > Should handle resource closing exceptions gracefully PASSED
+
+ResourceManagerTest > Should register and execute shutdown hooks PASSED
+
+ResourceManagerTest > Should provide accurate statistics PASSED
+
+ResourceManagerTest > Should register and manage ExecutorService PASSED
+
+ResourceManagerTest > Should replace existing resources correctly PASSED
+
+ResourceManagerTest > Should prevent resource registration during shutdown PASSED
+
+ResourceManagerTest > Should handle executor shutdown exceptions gracefully PASSED
+
+ResourceManagerTest > Should register and manage AutoCloseable resources PASSED
+
+CollaborationCommandIntegrationTest > testSetBlockCommand() SKIPPED
+
+CollaborationCommandIntegrationTest > testConcurrentCommands() SKIPPED
+
+CollaborationCommandIntegrationTest > testCollaborationInvitation() SKIPPED
+
+CollaborationCommandIntegrationTest > testVisitRequest() SKIPPED
+
+Collaboration Feature Integration Tests > Should create and accept invitation SKIPPED
+
+Collaboration Feature Integration Tests > Should handle visit request workflow SKIPPED
+
+Collaboration Feature Integration Tests > Should execute building commands SKIPPED
+
+Collaboration Feature Integration Tests > Should handle chat messages SKIPPED
+
+Collaboration Feature Integration Tests > Should get player position SKIPPED
+
+Full System Integration Tests > Should perform complete authentication flow SKIPPED
+
+Full System Integration Tests > Should enforce zero-trust access control SKIPPED
+
+Full System Integration Tests > Should detect and respond to threats SKIPPED
+
+Full System Integration Tests > Should handle collaboration invitation flow end-to-end SKIPPED
+
+Full System Integration Tests > Should monitor performance and generate metrics SKIPPED
+
+Full System Integration Tests > Should handle predictive alerts SKIPPED
+
+Full System Integration Tests > Should handle WebSocket message processing SKIPPED
+
+Full System Integration Tests > Should handle concurrent operations safely SKIPPED
+
+Full System Integration Tests > Should handle system recovery after failure SKIPPED
+
+Full System Integration Tests > Should validate complete command execution flow SKIPPED
+
+TestContainersSetup > testMinecraftServerIsAccessible() SKIPPED
+
+TestContainersSetup > testPortMapping() SKIPPED
+
+TestContainersSetup > testWebSocketServerIsAccessible() SKIPPED
+
+TestContainersSetup > testHealthCheckEndpoint() SKIPPED
+
+WebSocket Connection Integration Tests > Should connect to WebSocket server SKIPPED
+
+WebSocket Connection Integration Tests > Should execute getPlayerPos command SKIPPED
+
+WebSocket Connection Integration Tests > Should handle invalid commands SKIPPED
+
+WebSocket Connection Integration Tests > Should enforce rate limiting SKIPPED
+
+WebSocketContainerIntegrationTest > testWebSocketConnection() SKIPPED
+
+WebSocketContainerIntegrationTest > testWebSocketAuthentication() SKIPPED
+
+LanguageManager Tests > Should handle invalid language codes PASSED
+
+LanguageManager Tests > Should translate common messages using language code PASSED
+
+LanguageManager Tests > Should remove player language preference PASSED
+
+LanguageManager Tests > Should get singleton instance PASSED
+
+LanguageManager Tests > Should handle null UUID gracefully PASSED
+
+LanguageManager Tests > Should translate common messages using player UUID PASSED
+
+LanguageManager Tests > Should handle default language setting PASSED
+
+LanguageManager Tests > Should check if language is supported PASSED
+
+LanguageManager Tests > Should handle Japanese localization PASSED
+
+LanguageManager Tests > Should handle language persistence per player PASSED
+
+LanguageManager Tests > Should handle English localization PASSED
+
+LanguageManager Tests > Should get supported languages PASSED
+
+LanguageManager Tests > Should get message count for languages PASSED
+
+LanguageManager Tests > Should translate messages with parameters PASSED
+
+LanguageManager Tests > Should handle custom message addition PASSED
+
+LanguageManager Tests > Should handle default language fallback PASSED
+
+LanguageManager Tests > Should handle player language setting PASSED
+
+LanguageManager Tests > Should get language display names PASSED
+
+LanguageManager Tests > Should handle missing message keys PASSED
+
+LanguageManager Tests > Should handle concurrent language operations PASSED
+
+CollaborationMessageProcessor Tests > Should handle malformed legacy format PASSED
+
+CollaborationMessageProcessor Tests > Should return JSON format response PASSED
+
+CollaborationMessageProcessor Tests > Should handle empty message PASSED
+
+CollaborationMessageProcessor Tests > Should handle whitespace-only message PASSED
+
+CollaborationMessageProcessor Tests > Should handle legacy format command PASSED
+
+CollaborationMessageProcessor Tests > Should handle valid JSON with unknown command PASSED
+
+CollaborationMessageProcessor Tests > Should handle extremely long message PASSED
+
+CollaborationMessageProcessor Tests > Should handle null message PASSED
+
+CollaborationMessageProcessor Tests > Should handle valid getPlayerPos command JSON PASSED
+
+CollaborationMessageProcessor Tests > Should handle valid placeBlock command JSON PASSED
+
+CollaborationMessageProcessor Tests > Should handle message with special characters PASSED
+
+CollaborationMessageProcessor Tests > Should handle valid chat command JSON PASSED
+
+CollaborationMessageProcessor Tests > Should handle invalid JSON PASSED
+
+WebSocket Performance Tests > Should handle single client throughput SKIPPED
+
+WebSocket Performance Tests > Should handle concurrent clients SKIPPED
+
+WebSocket Performance Tests > Should maintain performance under load SKIPPED
+
+AuthenticationManager Tests > Should get singleton instance PASSED
+
+AuthenticationManager Tests > Should handle concurrent token generation PASSED
+
+AuthenticationManager Tests > Should check elevated privileges PASSED
+
+AuthenticationManager Tests > Should revoke token PASSED
+
+AuthenticationManager Tests > Should authenticate connection with valid token PASSED
+
+AuthenticationManager Tests > Should reject connection with invalid token PASSED
+
+AuthenticationManager Tests > Should remove connection PASSED
+
+AuthenticationManager Tests > Should reject empty token PASSED
+
+AuthenticationManager Tests > Should generate token for user PASSED
+
+AuthenticationManager Tests > Should get role for connection PASSED
+
+AuthenticationManager Tests > Should check if connection is authenticated PASSED
+
+AuthenticationManager Tests > Should return null for non-authenticated connection PASSED
+
+AuthenticationManager Tests > Should get role for token PASSED
+
+AuthenticationManager Tests > Should get authentication statistics PASSED
+
+AuthenticationManager Tests > Should return STUDENT role for invalid token PASSED
+
+AuthenticationManager Tests > Should return false for non-authenticated connection PASSED
+
+AuthenticationManager Tests > Should handle null connection authentication PASSED
+
+AuthenticationManager Tests > Should handle role-based access PASSED
+
+AuthenticationManager Tests > Should validate generated token PASSED
+
+AuthenticationManager Tests > Should get username for authenticated connection PASSED
+
+AuthenticationManager Tests > Should reject null token PASSED
+
+AuthenticationManager Tests > Should add teacher token PASSED
+
+InputValidator Tests > Should validate coordinate strings PASSED
+
+InputValidator Tests > Should validate block type patterns PASSED
+
+InputValidator Tests > Should handle null HTML escaping PASSED
+
+InputValidator Tests > Should escape HTML entities PASSED
+
+InputValidator Tests > Should validate username length limits PASSED
+
+InputValidator Tests > Should validate empty input PASSED
+
+InputValidator Tests > Should validate Japanese characters in chat PASSED
+
+InputValidator Tests > Should validate single coordinates PASSED
+
+InputValidator Tests > Should validate normal username PASSED
+
+InputValidator Tests > Should reject dangerous chat patterns PASSED
+
+InputValidator Tests > Should handle concurrent validation requests PASSED
+
+InputValidator Tests > Should validate and sanitize chat messages PASSED
+
+InputValidator Tests > Should validate world names PASSED
+
+InputValidator Tests > Should validate coordinate bounds PASSED
+
+InputValidator Tests > Should validate common block types PASSED
+
+InputValidator Tests > Should validate null input PASSED
+
+InputValidator Tests > Should validate commands PASSED
+
+InputValidator Tests > Should validate block types PASSED
+
+InputValidator Tests > Should handle edge cases for usernames PASSED
+
+InputValidator Tests > Should validate numeric ranges PASSED
+
+InputValidator Tests > Should validate JSON format PASSED
+
+BlockUtils Tests > Should check if block is dangerous PASSED
+
+BlockUtils Tests > Should get block from valid string PASSED
+
+BlockUtils Tests > Should handle null block in string conversion PASSED
+
+BlockUtils Tests > Should handle common building blocks PASSED
+
+BlockUtils Tests > Should return null for invalid block string PASSED
+
+BlockUtils Tests > Should round trip block conversion PASSED
+
+BlockUtils Tests > Should handle case insensitive block names PASSED
+
+BlockUtils Tests > Should check if block is solid PASSED
+
+BlockUtils Tests > Should get block hardness PASSED
+
+BlockUtils Tests > Should get block light level PASSED
+
+BlockUtils Tests > Should handle invalid block hardness PASSED
+
+BlockUtils Tests > Should validate block names PASSED
+
+BlockUtils Tests > Should get string from block PASSED
+
+BlockUtils Tests > Should get block from namespaced string PASSED
+[ResourceManager-ShutdownHook] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Starting ResourceManager shutdown...
+[ResourceManager-ShutdownHook] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Running 2 shutdown hooks
+[ResourceManager-ShutdownHook] INFO edu.minecraft.collaboration.core.ResourceManagerTest - Test shutdown hook executed
+[ResourceManager-ShutdownHook] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Shutting down 1 executors
+[Thread-4] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Performing resource cleanup...
+[Thread-4] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Starting resource cleanup...
+[Thread-4] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Shutting down 2 executors
+[Resource-Cleanup-Shutdown] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Starting resource cleanup...
+[Resource-Cleanup-Shutdown] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Shutting down 2 executors
+[ResourceManager-ShutdownHook] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - ResourceManager shutdown completed successfully in 3 ms
+[Thread-4] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Resource cleanup completed in 7 ms
+[Resource-Cleanup-Shutdown] INFO edu.minecraft.collaboration.MinecraftCollaborationMod - Resource cleanup completed in 18 ms
+
+347 tests completed, 17 failed, 44 skipped
+
+> Task :test FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':test'.
+> There were failing tests. See the report at: file:///D:/minecraft_collaboration_project/minecraft-mod/build/reports/tests/test/index.html
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 8.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+See https://docs.gradle.org/7.6.4/userguide/command_line_interface.html#sec:command_line_warnings
+
+BUILD FAILED in 27s
+4 actionable tasks: 4 executed
