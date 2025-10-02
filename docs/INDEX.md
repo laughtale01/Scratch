@@ -35,6 +35,15 @@ Official Scratch GUI fork-based Minecraft extension project documentation guide
 - [setup/UNIFIED_SETUP_GUIDE.md](setup/UNIFIED_SETUP_GUIDE.md) - Unified setup guide
 - [guides/USER_MANUAL_FOR_BEGINNERS.md](guides/USER_MANUAL_FOR_BEGINNERS.md) - User manual
 
+### Comprehensive Usage Guide
+- **[COMPREHENSIVE_USAGE_GUIDE.md](COMPREHENSIVE_USAGE_GUIDE.md) - Complete usage guide** ⭐ New (2025-10-02)
+  - Quick start (5 minutes)
+  - Basic usage for students and teachers
+  - Complete Scratch blocks reference
+  - Developer guide
+  - Troubleshooting
+  - FAQ
+
 ### Development Guides
 - [architecture.md](architecture.md) - System architecture
 - [dependencies.md](dependencies.md) - Dependency details
@@ -119,10 +128,11 @@ Historical documents and work logs are stored in the [archives/](archives/) dire
 
 ### Essential Reading Order
 1. [README.md](../README.md) - Start here for project overview
-2. [CLAUDE.md](../CLAUDE.md) - Development environment and guidelines  
-3. [setup/QUICK_START.md](setup/QUICK_START.md) - Get running quickly
-4. [architecture.md](architecture.md) - Understand the system design
-5. [testing-guide.md](testing-guide.md) - Quality and testing practices
+2. [CLAUDE.md](../CLAUDE.md) - Development environment and guidelines
+3. **[COMPREHENSIVE_USAGE_GUIDE.md](COMPREHENSIVE_USAGE_GUIDE.md) - Complete usage guide** ⭐ Recommended
+4. [setup/QUICK_START.md](setup/QUICK_START.md) - Get running quickly
+5. [architecture.md](architecture.md) - Understand the system design
+6. [testing-guide.md](testing-guide.md) - Quality and testing practices
 
 ### Educational Context
 This project is designed for educational use in programming classes, particularly:

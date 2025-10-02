@@ -148,7 +148,10 @@
       "Bash(flutter:*)",
       "Bash(./fix-checkstyle.sh:*)",
       "Read(//c/Program Files/Java/**)",
-      "Bash(./set-java17-vscode.bat)"
+      "Bash(./set-java17-vscode.bat)",
+      "Bash(tee:*)",
+      "Bash(python3:*)",
+      "Bash(awk:*)"
     ],
     "deny": []
   }

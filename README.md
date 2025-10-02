@@ -429,7 +429,16 @@ npm install
 
 
 ### 📚 ドキュメント索引
+
 すべてのドキュメントへのアクセスは[docs/INDEX.md](docs/INDEX.md)からどうぞ。
+
+**🆕 完全使い方ガイド**: [docs/COMPREHENSIVE_USAGE_GUIDE.md](docs/COMPREHENSIVE_USAGE_GUIDE.md)
+- クイックスタート（5分）
+- 学生・教師向け基本操作
+- 全Scratchブロックリファレンス
+- 開発者ガイド
+- トラブルシューティング
+- FAQ
 
 ### よくある問題と解決方法
 
