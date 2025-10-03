@@ -152,7 +152,8 @@
       "Bash(tee:*)",
       "Bash(python3:*)",
       "Bash(awk:*)",
-      "WebFetch(domain:docs.github.com)"
+      "WebFetch(domain:docs.github.com)",
+      "Bash(tree:*)"
     ],
     "deny": []
   }
