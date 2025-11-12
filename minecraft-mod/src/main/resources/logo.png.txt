@@ -1,0 +1,16 @@
+This is a placeholder for the MOD icon (logo.png)
+
+To add a MOD icon:
+1. Create or obtain a 256x256 pixel PNG image
+2. Name it "logo.png"
+3. Place it in this directory (src/main/resources/)
+4. Delete this .txt file
+
+The icon will be displayed in Minecraft's Mods menu.
+
+Recommended:
+- Size: 256x256 pixels
+- Format: PNG with transparency
+- Content: MinecraftEdu logo or related imagery
+
+Without a logo.png file, Minecraft will use a default icon.

@@ -1,0 +1,37 @@
+{
+  "name": "minecraftedu-scratch-client",
+  "version": "0.1.0",
+  "description": "Scratch Client for MinecraftEdu - includes VM and GUI",
+  "private": true,
+  "scripts": {
+    "setup": "npm run setup:vm && npm run setup:gui && npm run link",
+    "setup:vm": "cd scratch-vm && npm install",
+    "setup:gui": "cd scratch-gui && npm install",
+    "link": "cd scratch-vm && npm link && cd ../scratch-gui && npm link scratch-vm",
+    "start": "npm run start:gui",
+    "start:vm": "cd scratch-vm && npm start",
+    "start:gui": "cd scratch-gui && npm start",
+    "build": "npm run build:vm && npm run build:gui",
+    "build:vm": "cd scratch-vm && npm run build",
+    "build:gui": "cd scratch-gui && npm run build",
+    "clean": "npm run clean:vm && npm run clean:gui",
+    "clean:vm": "cd scratch-vm && rm -rf node_modules",
+    "clean:gui": "cd scratch-gui && rm -rf node_modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laughtale01/Scratch.git"
+  },
+  "keywords": [
+    "scratch",
+    "minecraft",
+    "education",
+    "programming"
+  ],
+  "author": "laughtale01",
+  "license": "BSD-3-Clause",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
