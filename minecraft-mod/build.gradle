@@ -47,7 +47,9 @@ minecraft {
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
 
-    // Netty for WebSocket (included in Minecraft/Forge)
+    // Netty for WebSocket - explicitly declare even though Forge includes it
+    implementation 'io.netty:netty-all:4.1.77.Final'
+
     // Gson for JSON parsing (included in Minecraft/Forge)
 }
 
