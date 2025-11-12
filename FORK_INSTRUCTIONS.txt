@@ -1,0 +1,60 @@
+========================================
+GitHubリポジトリをForkする手順（5分）
+========================================
+
+以下の3つのURLをブラウザで開いて、それぞれ「Fork」ボタンをクリックしてください。
+
+---
+【ステップ1】Scratch VM をFork
+---
+1. 以下のURLをコピーしてブラウザのアドレスバーに貼り付け、Enterキーを押す：
+
+https://github.com/takecx/scratch-vm
+
+2. ページが開いたら、右上にある緑色の「Fork」ボタンをクリック
+
+3. 次のページで「Create fork」ボタン（緑色）をクリック
+
+4. 数秒待つと、あなたのアカウントにコピーされます
+   → https://github.com/laughtale01/scratch-vm が表示されればOK！
+
+---
+【ステップ2】Scratch GUI をFork
+---
+1. 以下のURLをブラウザで開く：
+
+https://github.com/takecx/scratch-gui
+
+2. 右上の「Fork」ボタンをクリック
+
+3. 「Create fork」をクリック
+
+4. → https://github.com/laughtale01/scratch-gui が表示されればOK！
+
+---
+【ステップ3】RemoteControllerMod をFork
+---
+1. 以下のURLをブラウザで開く：
+
+https://github.com/takecx/RemoteControllerMod
+
+2. 右上の「Fork」ボタンをクリック
+
+3. 「Create fork」をクリック
+
+4. → https://github.com/laughtale01/RemoteControllerMod が表示されればOK！
+
+========================================
+完了確認
+========================================
+
+以下の3つのURLをブラウザで開いて、すべて正常に表示されることを確認してください：
+
+✓ https://github.com/laughtale01/scratch-vm
+✓ https://github.com/laughtale01/scratch-gui
+✓ https://github.com/laughtale01/RemoteControllerMod
+
+すべて表示されたら、チャットで「完了しました」とお知らせください！
+次のステップに進みます。
+
+========================================

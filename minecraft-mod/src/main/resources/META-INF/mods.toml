@@ -1,0 +1,32 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+issueTrackerURL="https://github.com/laughtale01/Scratch/issues"
+
+[[mods]]
+modId="minecraftedu"
+version="0.1.0"
+displayName="MinecraftEdu Scratch Controller"
+updateJSONURL="https://github.com/laughtale01/Scratch/releases"
+displayURL="https://github.com/laughtale01/Scratch"
+logoFile="logo.png"
+credits="Based on concepts from takecx's Scratch-Minecraft integration"
+authors="MinecraftEdu Team"
+description='''
+Educational Minecraft controller with Scratch 3.0.
+Features: Multiplayer support, Tutorial system, Progress tracking.
+'''
+
+[[dependencies.minecraftedu]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.minecraftedu]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="BOTH"
