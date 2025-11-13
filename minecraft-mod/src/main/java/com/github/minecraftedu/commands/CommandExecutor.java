@@ -198,10 +198,10 @@ public class CommandExecutor {
         int minZ = Math.min(fromZ, toZ);
         int maxZ = Math.max(fromZ, toZ);
 
-        // 範囲チェック（最大10000ブロックまで）
+        // 範囲チェック（最大20000ブロックまで）
         int volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-        if (volume > 10000) {
-            MinecraftEduMod.LOGGER.warn("Fill volume too large: " + volume + " blocks");
+        if (volume > 20000) {
+            MinecraftEduMod.LOGGER.warn("Fill volume too large: " + volume + " blocks (max: 20000)");
             return false;
         }
 
