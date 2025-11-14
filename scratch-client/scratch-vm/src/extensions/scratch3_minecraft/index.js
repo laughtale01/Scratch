@@ -346,12 +346,12 @@ class Scratch3MinecraftBlocks {
 
     /**
      * ブロック配置（絶対座標）
-     * Y座標変換: ScratchのY=0 → MinecraftのY=4（スーパーフラット地表）
+     * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     setBlock(args) {
         return this.sendCommand('setBlock', {
             x: Number(args.X),
-            y: Number(args.Y) + 4,  // Y座標変換: +4でスーパーフラット地表に対応
+            y: Number(args.Y) - 60,  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
             z: Number(args.Z),
             blockType: 'minecraft:' + args.BLOCK
         });
@@ -371,13 +371,13 @@ class Scratch3MinecraftBlocks {
 
     /**
      * ブロック範囲設置
-     * Y座標変換: ScratchのY=0 → MinecraftのY=4（スーパーフラット地表）
+     * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     setBlockRange(args) {
         const x1 = Math.floor(Number(args.X1));
         const x2 = Math.floor(Number(args.X2));
-        const y1 = Math.floor(Number(args.Y1)) + 4;  // Y座標変換: +4でスーパーフラット地表に対応
-        const y2 = Math.floor(Number(args.Y2)) + 4;  // Y座標変換: +4でスーパーフラット地表に対応
+        const y1 = Math.floor(Number(args.Y1)) - 60;  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
+        const y2 = Math.floor(Number(args.Y2)) - 60;  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
         const z1 = Math.floor(Number(args.Z1));
         const z2 = Math.floor(Number(args.Z2));
         const blockType = 'minecraft:' + args.BLOCK;
@@ -426,32 +426,32 @@ class Scratch3MinecraftBlocks {
 
     /**
      * エンティティ召喚
-     * Y座標変換: ScratchのY=0 → MinecraftのY=4（スーパーフラット地表）
+     * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     summonEntity(args) {
         return this.sendCommand('summonEntity', {
             entityType: 'minecraft:' + args.ENTITY,
             x: Number(args.X),
-            y: Number(args.Y) + 4,  // Y座標変換: +4でスーパーフラット地表に対応
+            y: Number(args.Y) - 60,  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
             z: Number(args.Z)
         });
     }
 
     /**
      * テレポート
-     * Y座標変換: ScratchのY=0 → MinecraftのY=4（スーパーフラット地表）
+     * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     teleport(args) {
         return this.sendCommand('teleport', {
             x: Number(args.X),
-            y: Number(args.Y) + 4,  // Y座標変換: +4でスーパーフラット地表に対応
+            y: Number(args.Y) - 60,  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
             z: Number(args.Z)
         });
     }
 
     /**
      * プレイヤー位置取得
-     * Y座標変換: MinecraftのY=4（スーパーフラット地表） → ScratchのY=0
+     * Y座標変換: MinecraftのY=-60（スーパーフラット地表） → ScratchのY=0
      */
     getPosition(args) {
         const coord = args.COORD || 'x';
@@ -464,8 +464,8 @@ class Scratch3MinecraftBlocks {
                         case 'x':
                             return result.x || 0;
                         case 'y':
-                            // Y座標逆変換: -4でScratch座標系に変換（スーパーフラット対応）
-                            return (result.y || 0) - 4;
+                            // Y座標逆変換: +60でScratch座標系に変換（スーパーフラット地表Y=-60対応）
+                            return (result.y || 0) + 60;
                         case 'z':
                             return result.z || 0;
                         default:
