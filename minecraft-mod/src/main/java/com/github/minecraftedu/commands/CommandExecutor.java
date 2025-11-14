@@ -12,6 +12,11 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 public class CommandExecutor {
 
@@ -113,16 +118,14 @@ public class CommandExecutor {
             z = (int) player.getZ() + relZ;
         }
 
-        // ブロックタイプ取得
-        ResourceLocation blockId = new ResourceLocation(blockType);
-        Block block = BuiltInRegistries.BLOCK.get(blockId);
+        // ブロック状態を解析（プロパティを含む）
+        BlockState blockState = parseBlockState(blockType);
 
-        if (block == null) {
-            MinecraftEduMod.LOGGER.warn("Unknown block type: " + blockType);
+        if (blockState == null) {
+            MinecraftEduMod.LOGGER.warn("Failed to parse block state: " + blockType);
             return false;
         }
 
-        BlockState blockState = block.defaultBlockState();
         BlockPos pos = new BlockPos(x, y, z);
 
         // ブロック配置
@@ -205,16 +208,13 @@ public class CommandExecutor {
             return false;
         }
 
-        // ブロックタイプ取得
-        ResourceLocation blockId = new ResourceLocation(blockType);
-        Block block = BuiltInRegistries.BLOCK.get(blockId);
+        // ブロック状態を解析（プロパティを含む）
+        BlockState blockState = parseBlockState(blockType);
 
-        if (block == null) {
-            MinecraftEduMod.LOGGER.warn("Unknown block type: " + blockType);
+        if (blockState == null) {
+            MinecraftEduMod.LOGGER.warn("Failed to parse block state: " + blockType);
             return false;
         }
-
-        BlockState blockState = block.defaultBlockState();
 
         // ブロック配置
         server.execute(() -> {
@@ -397,6 +397,82 @@ public class CommandExecutor {
         lastResult.addProperty("playerName", player.getName().getString());
 
         return true;
+    }
+
+    /**
+     * ブロックタイプ文字列からBlockStateを解析する
+     * 形式: "oak_stairs[half=top,facing=north]" または "stone"
+     */
+    private BlockState parseBlockState(String blockTypeString) {
+        // [properties] 部分があるかチェック
+        int bracketIndex = blockTypeString.indexOf('[');
+
+        String blockTypeName;
+        Map<String, String> properties = new HashMap<>();
+
+        if (bracketIndex > 0) {
+            // ブロック名とプロパティを分離
+            blockTypeName = blockTypeString.substring(0, bracketIndex);
+            String propertiesString = blockTypeString.substring(bracketIndex + 1, blockTypeString.length() - 1);
+
+            // プロパティをパース
+            if (!propertiesString.isEmpty()) {
+                String[] pairs = propertiesString.split(",");
+                for (String pair : pairs) {
+                    String[] keyValue = pair.split("=");
+                    if (keyValue.length == 2) {
+                        properties.put(keyValue[0].trim(), keyValue[1].trim());
+                    }
+                }
+            }
+        } else {
+            blockTypeName = blockTypeString;
+        }
+
+        // ブロックを取得
+        ResourceLocation blockId = new ResourceLocation(blockTypeName);
+        Block block = BuiltInRegistries.BLOCK.get(blockId);
+
+        if (block == null) {
+            MinecraftEduMod.LOGGER.warn("Unknown block type: " + blockTypeName);
+            return null;
+        }
+
+        // デフォルトのBlockStateを取得
+        BlockState blockState = block.defaultBlockState();
+
+        // プロパティを適用
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            String propertyName = entry.getKey();
+            String propertyValue = entry.getValue();
+
+            // ブロックのプロパティを検索
+            Optional<Property<?>> optionalProperty = blockState.getProperties().stream()
+                .filter(p -> p.getName().equals(propertyName))
+                .findFirst();
+
+            if (optionalProperty.isPresent()) {
+                blockState = setPropertyValue(blockState, optionalProperty.get(), propertyValue);
+            } else {
+                MinecraftEduMod.LOGGER.warn("Unknown property '" + propertyName + "' for block " + blockTypeName);
+            }
+        }
+
+        return blockState;
+    }
+
+    /**
+     * BlockStateに特定のプロパティ値を設定する
+     */
+    @SuppressWarnings("unchecked")
+    private <T extends Comparable<T>> BlockState setPropertyValue(BlockState state, Property<T> property, String value) {
+        Optional<T> optionalValue = property.getValue(value);
+        if (optionalValue.isPresent()) {
+            return state.setValue(property, optionalValue.get());
+        } else {
+            MinecraftEduMod.LOGGER.warn("Invalid value '" + value + "' for property '" + property.getName() + "'");
+            return state;
+        }
     }
 
     private ServerPlayer getFirstPlayer() {
