@@ -443,15 +443,15 @@ class Scratch3MinecraftBlocks {
         const minZ = Math.min(z1, z2);
         const maxZ = Math.max(z1, z2);
 
-        // 範囲が大きすぎる場合は制限（最大200,000ブロック）
+        // 範囲が大きすぎる場合は制限（最大2,000,000ブロック）
         const rangeX = maxX - minX + 1;
         const rangeY = maxY - minY + 1;
         const rangeZ = maxZ - minZ + 1;
         const volume = rangeX * rangeY * rangeZ;
 
-        if (volume > 200000) {
-            console.warn('範囲が大きすぎます。最大200,000ブロックまでです。');
-            return Promise.reject(new Error('範囲が大きすぎます（最大200,000ブロック）'));
+        if (volume > 2000000) {
+            console.warn('範囲が大きすぎます。最大2,000,000ブロックまでです。');
+            return Promise.reject(new Error('範囲が大きすぎます（最大2,000,000ブロック）'));
         }
 
         // fillBlocksコマンドでサーバー側に一括処理を依頼
@@ -756,7 +756,7 @@ class Scratch3MinecraftBlocks {
 
     /**
      * 全エンティティをクリア
-     * X:-25～25、Y:-64～100、Z:-25～25の範囲のエンティティを削除（プレイヤーを除く）
+     * X:-50～50、Y:-64～100、Z:-50～50の範囲のエンティティを削除（プレイヤーを除く）
      */
     clearAllEntities() {
         console.log('全エンティティクリア開始');

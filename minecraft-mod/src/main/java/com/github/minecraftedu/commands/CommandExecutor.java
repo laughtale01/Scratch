@@ -207,10 +207,10 @@ public class CommandExecutor {
         int minZ = Math.min(fromZ, toZ);
         int maxZ = Math.max(fromZ, toZ);
 
-        // 範囲チェック（最大200000ブロックまで）
+        // 範囲チェック（最大2000000ブロックまで）
         int volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-        if (volume > 200000) {
-            MinecraftEduMod.LOGGER.warn("Fill volume too large: " + volume + " blocks (max: 200000)");
+        if (volume > 2000000) {
+            MinecraftEduMod.LOGGER.warn("Fill volume too large: " + volume + " blocks (max: 2000000)");
             return false;
         }
 
@@ -529,15 +529,15 @@ public class CommandExecutor {
 
     /**
      * 全エンティティをクリア
-     * X:-25～25、Y:-64～100、Z:-25～25の範囲のエンティティを削除（プレイヤーを除く）
+     * X:-50～50、Y:-64～100、Z:-50～50の範囲のエンティティを削除（プレイヤーを除く）
      */
     private boolean executeClearAllEntities(JsonObject params) {
         server.execute(() -> {
             ServerLevel world = server.overworld();
 
             net.minecraft.world.phys.AABB bounds = new net.minecraft.world.phys.AABB(
-                -25, -64, -25,
-                25, 100, 25
+                -50, -64, -50,
+                50, 100, 50
             );
 
             int entitiesRemoved = 0;
