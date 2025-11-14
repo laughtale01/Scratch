@@ -102,6 +102,42 @@ class Scratch3MinecraftBlocks {
                         }
                     }
                 },
+                {
+                    opcode: 'setBlockRange',
+                    blockType: 'command',
+                    text: 'X:[X1] Y:[Y1] Z:[Z1] からX:[X2] Y:[Y2] Z:[Z2] ブロック:[BLOCK]',
+                    arguments: {
+                        X1: {
+                            type: 'number',
+                            defaultValue: 0
+                        },
+                        Y1: {
+                            type: 'number',
+                            defaultValue: 0
+                        },
+                        Z1: {
+                            type: 'number',
+                            defaultValue: 0
+                        },
+                        X2: {
+                            type: 'number',
+                            defaultValue: 5
+                        },
+                        Y2: {
+                            type: 'number',
+                            defaultValue: 5
+                        },
+                        Z2: {
+                            type: 'number',
+                            defaultValue: 5
+                        },
+                        BLOCK: {
+                            type: 'string',
+                            menu: 'blockTypes',
+                            defaultValue: 'stone'
+                        }
+                    }
+                },
                 '---',
                 {
                     opcode: 'summonEntity',
@@ -330,6 +366,61 @@ class Scratch3MinecraftBlocks {
             relativeY: Number(args.Y),
             relativeZ: Number(args.Z),
             blockType: 'minecraft:' + args.BLOCK
+        });
+    }
+
+    /**
+     * ブロック範囲設置
+     * Y座標変換: ScratchのY=0 → MinecraftのY=64（地表）
+     */
+    setBlockRange(args) {
+        const x1 = Math.floor(Number(args.X1));
+        const x2 = Math.floor(Number(args.X2));
+        const y1 = Math.floor(Number(args.Y1)) + 64;  // Y座標変換: +64で地表に対応
+        const y2 = Math.floor(Number(args.Y2)) + 64;  // Y座標変換: +64で地表に対応
+        const z1 = Math.floor(Number(args.Z1));
+        const z2 = Math.floor(Number(args.Z2));
+        const blockType = 'minecraft:' + args.BLOCK;
+
+        // 座標を正規化（小さい方から大きい方へ）
+        const minX = Math.min(x1, x2);
+        const maxX = Math.max(x1, x2);
+        const minY = Math.min(y1, y2);
+        const maxY = Math.max(y1, y2);
+        const minZ = Math.min(z1, z2);
+        const maxZ = Math.max(z1, z2);
+
+        // 範囲が大きすぎる場合は制限（最大200,000ブロック）
+        const rangeX = maxX - minX + 1;
+        const rangeY = maxY - minY + 1;
+        const rangeZ = maxZ - minZ + 1;
+        const volume = rangeX * rangeY * rangeZ;
+
+        if (volume > 200000) {
+            console.warn('範囲が大きすぎます。最大200,000ブロックまでです。');
+            return Promise.reject(new Error('範囲が大きすぎます（最大200,000ブロック）'));
+        }
+
+        // fillBlocksコマンドでサーバー側に一括処理を依頼
+        console.log(`範囲設置開始: ${volume}ブロック (${rangeX}×${rangeY}×${rangeZ})`);
+
+        return this.sendCommand('fillBlocks', {
+            from: {
+                x: minX,
+                y: minY,
+                z: minZ
+            },
+            to: {
+                x: maxX,
+                y: maxY,
+                z: maxZ
+            },
+            blockType: blockType
+        }).then(() => {
+            console.log(`範囲設置完了: ${volume}ブロック`);
+        }).catch(error => {
+            console.error('範囲設置エラー:', error);
+            throw error;
         });
     }
 
