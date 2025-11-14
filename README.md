@@ -5,6 +5,40 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-green.svg)](https://minecraft.net)
 [![Scratch](https://img.shields.io/badge/Scratch-3.0-orange.svg)](https://scratch.mit.edu)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen)](https://laughtale01.github.io/Scratch/)
+
+---
+
+## 🎮 今すぐ試す！
+
+### **ステップ1: MODをダウンロード**
+
+[📥 minecraftedu-mod-0.1.0-1.20.1.jar をダウンロード](https://github.com/laughtale01/Scratch/blob/main/release/minecraft-scratch-controller/minecraftedu-mod-0.1.0-1.20.1.jar)
+
+「Download」ボタンをクリックしてMODファイルを入手
+
+### **ステップ2: MODをインストール**
+
+1. [Minecraft Forge 1.20.1](https://files.minecraftforge.net/)をインストール
+2. ダウンロードしたMODファイルを以下のフォルダにコピー：
+   - **Windows**: `%APPDATA%\.minecraft\mods\`
+   - **macOS**: `~/Library/Application Support/minecraft/mods/`
+   - **Linux**: `~/.minecraft/mods/`
+
+### **ステップ3: Scratch GUIにアクセス**
+
+[🌐 https://laughtale01.github.io/Scratch/](https://laughtale01.github.io/Scratch/)
+
+ブラウザで開くだけ！インストール不要！
+
+### **ステップ4: 接続して遊ぶ**
+
+1. Minecraftを起動してワールドを開く
+2. Scratchで「拡張機能を追加」→「Minecraft」を選択
+3. 「Minecraftに接続」ブロックを実行
+4. 接続成功！🎉
+
+詳しいインストール手順は [INSTALL.md](release/minecraft-scratch-controller/INSTALL.md) を参照してください。
 
 ---
 
@@ -19,15 +53,24 @@
 - コーディング不要！ブロックをつなげるだけ
 - プログラミング初心者に最適
 
+🌐 **どこからでもアクセス可能**
+- GitHub Pagesで公開されたScratch GUI
+- インストール不要、ブラウザだけでOK
+- 常に最新版が使用可能
+
 🎨 **日本語対応 & Minecraftテーマ**
 - 全てのブロック名・エンティティ名が日本語
 - Minecraftの緑色をテーマにした統一デザイン
 - 直感的で分かりやすいインターフェース
 
-⚡ **強力な範囲設置機能**
-- 一度に最大1000ブロックを設置可能
+⚡ **超強力な範囲設置機能**
+- 一度に最大**200,000ブロック**を設置可能
 - 座標範囲を指定して効率的にビルド
 - 大規模な建築もすぐに完成
+
+🔧 **Y座標自動変換機能**
+- Y座標が負の値の場合、自動的に正の値に変換
+- 座標計算ミスを気にせず安心してプログラミング
 
 🔌 **リアルタイム通信**
 - WebSocketによる高速通信
@@ -45,75 +88,10 @@
 [Minecraftに接続 ▼] ホスト [localhost ▼] ポート [14711 ▼]
 [チャットで言う ▼] [Hello, Minecraft!]
 [ブロックを置く ▼] x [~0 ▼] y [~1 ▼] z [~2 ▼] ブロック [石 ▼]
-[ブロックを範囲設置 ▼] x [0~5 ▼] y [64~64 ▼] z [0~5 ▼] ブロック [草ブロック ▼]
+[ブロックを範囲設置 ▼] x1 [0 ▼] y1 [64 ▼] z1 [0 ▼] x2 [10 ▼] y2 [64 ▼] z2 [10 ▼] ブロック [草ブロック ▼]
 ```
 
-→ Minecraftの画面に「Hello, Minecraft!」が表示され、プレイヤーの目の前に石ブロックが出現！さらに、6×1×6の草ブロックの床が一瞬で完成！
-
----
-
-## クイックスタート
-
-### 必要なもの
-
-- Minecraft Java Edition 1.20.1
-- Minecraft Forge 1.20.1
-- Webブラウザ（Chrome、Firefox、Edge推奨）
-- Node.js 16.x以上（開発環境の場合）
-
-### インストール（5分で完了！）
-
-#### 1. Minecraft Forgeをインストール
-
-1. [Minecraft Forge公式サイト](https://files.minecraftforge.net/)から1.20.1用のForgeをダウンロード
-2. ダウンロードしたインストーラーを実行
-3. "Install client"を選択してインストール
-
-#### 2. Minecraft MODをインストール
-
-```
-1. ビルド済みMODファイルを以下に配置：
-   Windows: %APPDATA%\.minecraft\mods\
-   macOS: ~/Library/Application Support/minecraft/mods/
-   Linux: ~/.minecraft/mods/
-
-   または、自分でビルド：
-   cd minecraft-mod/RemoteControllerMod
-   ./gradlew build
-   # → build/libs/にJARファイルが生成されます
-```
-
-#### 3. Minecraftを起動
-
-```
-Minecraftランチャーで「forge-1.20.1」プロファイルを選択して起動
-→ ワールドを開くと、コンソールに"WebSocket server started on port 14711"と表示されます
-```
-
-#### 4. Scratchクライアントをセットアップ
-
-```bash
-# Scratch VMをビルド
-cd scratch-client/scratch-vm-official
-npm install
-npm run build
-npm link
-
-# Scratch GUIをセットアップ
-cd ../scratch-gui-official
-npm install
-npm link scratch-vm
-npm start
-
-# → ブラウザで http://localhost:8601/ が自動的に開きます
-```
-
-#### 5. 接続！
-
-1. Scratchの「拡張機能を追加」ボタンをクリック
-2. 「Minecraft」拡張機能を選択（緑色のアイコン）
-3. 「Minecraftに接続」ブロックを実行
-4. 接続成功！🎉
+→ Minecraftの画面に「Hello, Minecraft!」が表示され、プレイヤーの目の前に石ブロックが出現！さらに、11×1×11の草ブロックの床が一瞬で完成！
 
 ---
 
@@ -146,12 +124,12 @@ npm start
 ```
 プレイヤーの現在位置を基準とした相対的な位置に配置できます。
 
-#### 5. 範囲でブロックを設置（新機能！）
+#### 5. 範囲でブロックを設置（超強力！）
 
 ```scratch
-[ブロックを範囲設置] x [0~10] y [64~66] z [0~10] ブロック [ガラス]
+[ブロックを範囲設置] x1 [0] y1 [64] z1 [0] x2 [100] y2 [100] z2 [100] ブロック [ガラス]
 ```
-指定した範囲内に一括でブロックを設置できます（最大1000ブロック）。
+指定した範囲内に一括でブロックを設置できます（**最大200,000ブロック**）。
 
 #### 6. エンティティを召喚
 
@@ -211,7 +189,7 @@ x、y、zの座標を個別に取得できます。
 |-----------|------|
 | ブロックを置く (絶対座標) | 指定した座標にブロックを配置 |
 | ブロックを置く (相対座標) | プレイヤーの位置からの相対座標にブロックを配置 |
-| ブロックを範囲設置 | 指定範囲内にブロックを一括配置（最大1000個） |
+| ブロックを範囲設置 | 指定範囲内にブロックを一括配置（最大200,000個） |
 
 **対応ブロックタイプ（18種類）:**
 石、土、草ブロック、丸石、オークの板材、ガラス、砂、砂利、金ブロック、ダイヤモンドブロック、エメラルドブロック、鉄ブロック、石炭ブロック、レッドストーンブロック、レンガ、オークの原木、水、溶岩
@@ -241,6 +219,31 @@ x、y、zの座標を個別に取得できます。
 
 ---
 
+## 配布・インストール
+
+### ユーザー向け
+
+#### MODのダウンロード
+
+[📥 minecraftedu-mod-0.1.0-1.20.1.jar](https://github.com/laughtale01/Scratch/blob/main/release/minecraft-scratch-controller/minecraftedu-mod-0.1.0-1.20.1.jar)
+
+GitHubから直接ダウンロードできます（ページ内の「Download」ボタンをクリック）
+
+#### Scratch GUI
+
+[🌐 https://laughtale01.github.io/Scratch/](https://laughtale01.github.io/Scratch/)
+
+ブラウザでアクセスするだけ！インストール不要！
+
+#### インストール手順
+
+詳細な手順は以下を参照：
+- [INSTALL.md](release/minecraft-scratch-controller/INSTALL.md) - インストールガイド
+- [RELEASE_NOTES.md](release/minecraft-scratch-controller/RELEASE_NOTES.md) - リリースノート
+- [GITHUB_PAGES_SETUP.md](GITHUB_PAGES_SETUP.md) - GitHub Pages設定（管理者向け）
+
+---
+
 ## プロジェクト構成
 
 ```
@@ -252,21 +255,30 @@ minecraft-laughtare-project/
 ├── scratch-client/                         # Scratchクライアント
 │   ├── scratch-vm-official/                # Scratch VM (カスタム版)
 │   │   ├── src/extensions/scratch3_minecraft/  # Minecraft拡張機能
-│   │   └── dist/                           # ビルド成果物
+│   │   └── build/                          # ビルド成果物
 │   │
 │   └── scratch-gui-official/               # Scratch GUI (カスタム版)
 │       ├── src/lib/libraries/extensions/   # 拡張機能ライブラリ
-│       └── dist/                           # ビルド成果物
+│       └── build/                          # 本番用ビルド → GitHub Pages
 │
 ├── minecraft-mod/                          # Minecraft MOD
-│   └── RemoteControllerMod/                # MODプロジェクト
-│       ├── src/main/java/                  # Javaソースコード
-│       │   └── net/sevenparallel/minecraft/
-│       │       ├── RemoteControllerMod.java
-│       │       ├── WebSocketServer.java
-│       │       └── CommandHandler.java
-│       └── build/libs/                     # ビルド成果物
+│   ├── src/main/java/                      # Javaソースコード
+│   │   └── com/github/minecraftedu/
+│   │       ├── MinecraftEduMod.java
+│   │       ├── WebSocketServer.java
+│   │       └── commands/
+│   └── build/libs/                         # ビルド成果物
+│       └── minecraftedu-mod-0.1.0-1.20.1.jar
 │
+├── release/                                # リリースパッケージ
+│   ├── minecraft-scratch-controller/       # 配布用ファイル
+│   │   ├── minecraftedu-mod-0.1.0-1.20.1.jar
+│   │   ├── INSTALL.md
+│   │   ├── README.md
+│   │   └── RELEASE_NOTES.md
+│   └── DEPLOYMENT_GUIDE.md                 # デプロイガイド
+│
+├── GITHUB_PAGES_SETUP.md                   # GitHub Pages設定手順
 └── README.md                               # このファイル
 ```
 
@@ -278,7 +290,7 @@ minecraft-laughtare-project/
 
 **Scratch側:**
 - Scratch VM 5.0.x (Node.js)
-- Scratch GUI 5.2.x (React)
+- Scratch GUI 5.2.14 (React)
 - WebSocket Client (Browser API)
 - Webpack 5
 
@@ -311,14 +323,20 @@ npm link
 cd ../scratch-gui-official
 npm install
 npm link scratch-vm
+
+# 開発サーバー起動
 npm start
 # → http://localhost:8601/ で開発サーバーが起動
+
+# 本番用ビルド
+npm run build
+# → build/ ディレクトリに成果物が生成
 ```
 
 #### Minecraft MODのビルド
 
 ```bash
-cd minecraft-mod/RemoteControllerMod
+cd minecraft-mod
 
 # Windowsの場合
 .\gradlew.bat build
@@ -326,7 +344,7 @@ cd minecraft-mod/RemoteControllerMod
 # Mac/Linuxの場合
 ./gradlew build
 
-# ビルド成果物: build/libs/RemoteControllerMod-1.0.jar
+# ビルド成果物: build/libs/minecraftedu-mod-0.1.0-1.20.1.jar
 ```
 
 ### 通信プロトコル
@@ -345,13 +363,41 @@ Scratch拡張機能とMinecraft MODはWebSocket (JSON形式) で通信します�
   "sessionId": "session-id",
   "type": "command|query|event",
   "payload": {
-    "action": "setBlock|teleport|chat|...",
+    "action": "setBlock|fillBlocks|teleport|chat|...",
     "params": { /* アクション固有のパラメータ */ }
   }
 }
 ```
 
-詳細な仕様は `minecraft-mod/RemoteControllerMod/src/main/java/net/sevenparallel/minecraft/` のソースコードを参照してください。
+詳細な仕様は `minecraft-mod/src/main/java/com/github/minecraftedu/` のソースコードを参照してください。
+
+### GitHub Pagesへのデプロイ
+
+Scratch GUIの更新をGitHub Pagesに反映する方法：
+
+```bash
+# 1. Scratch GUIをビルド
+cd scratch-client/scratch-gui-official
+npm run build
+
+# 2. gh-pagesブランチに切り替え
+git checkout gh-pages
+
+# 3. ビルド成果物をコピー
+cp -r build/* .
+
+# 4. コミット＆プッシュ
+git add -A
+git commit -m "Update Scratch GUI"
+git push origin gh-pages
+
+# 5. mainブランチに戻る
+git checkout main
+```
+
+数分後、自動的にGitHub Pagesが更新されます。
+
+詳細は [GITHUB_PAGES_SETUP.md](GITHUB_PAGES_SETUP.md) を参照してください。
 
 ### 貢献方法
 
@@ -403,20 +449,33 @@ A: 現在はJava Editionのみ対応しています。
 
 A: サーバーのポート（14711）を適切に設定すれば可能ですが、セキュリティに注意してください。
 
-### Q: 範囲設置ブロックの制限（1000ブロック）を変更できますか？
+### Q: 範囲設置ブロックの制限（200,000ブロック）を変更できますか？
 
-A: はい、`scratch-vm-official/src/extensions/scratch3_minecraft/index.js` の `setBlockRange` メソッド内の制限値を変更できます。
+A: はい、`CommandExecutor.java` の制限値を変更して再ビルドできます。ただし、大量のブロック設置はゲームのパフォーマンスに影響する可能性があります。
+
+### Q: Scratch GUIをローカルで動かすことはできますか？
+
+A: はい、開発者向け手順に従って `npm start` を実行すれば、ローカルサーバー（http://localhost:8601/）で動作します。
 
 ---
 
 ## 変更履歴
+
+### Version 1.0.0 (2025-11-14) 🎉
+
+- 🎉 **本番リリース！**
+- 🌐 GitHub Pagesで公開（https://laughtale01.github.io/Scratch/）
+- ⚡ ブロック設置上限を**200,000ブロック**に拡大
+- 🔧 Y座標自動変換機能を実装（負の値を自動的に正の値に変換）
+- 📦 配布パッケージとドキュメントを整備
+- ✅ 本番環境での動作確認完了
 
 ### Version 0.2.0 (2025-11-13)
 
 - ✨ ブロックの色を緑系に変更（Minecraftテーマに合わせて）
 - ✨ ブロック名を日本語化（18種類）
 - ✨ エンティティ名を日本語化（12種類）
-- ✨ 範囲設置ブロックを新規追加（最大1000ブロック対応）
+- ✨ 範囲設置ブロックを新規追加
 - 🐛 WebSocket通信の安定性を改善
 
 ### Version 0.1.0 (2025-11-12)
@@ -441,7 +500,7 @@ A: はい、`scratch-vm-official/src/extensions/scratch3_minecraft/index.js` の
 ### 将来的に検討中
 
 - [ ] 教育向けチュートリアルシステム
-- [ ] マルチプレイヤー対応
+- [ ] マルチプレイヤー対応の強化
 - [ ] 進捗管理システム
 - [ ] Scratch作品の共有機能
 
@@ -454,13 +513,14 @@ A: はい、`scratch-vm-official/src/extensions/scratch3_minecraft/index.js` の
 1. Minecraftでワールドを開いていることを確認
 2. コンソールに "WebSocket server started on port 14711" が表示されていることを確認
 3. ファイアウォールでポート14711が許可されていることを確認
-4. localhostではなくIPアドレスで接続してみる
+4. localhostではなくIPアドレス（127.0.0.1）で接続してみる
 
 ### ブロックが表示されない場合
 
 1. ブラウザのキャッシュをクリア（Ctrl+Shift+Delete）
 2. ページをリロード（Ctrl+R）
 3. 開発者ツール（F12）でエラーメッセージを確認
+4. 拡張機能が正しくロードされているか確認
 
 ### MODが読み込まれない場合
 
@@ -468,6 +528,13 @@ A: はい、`scratch-vm-official/src/extensions/scratch3_minecraft/index.js` の
 2. MODファイルが `mods` フォルダに配置されているか確認
 3. Minecraftのバージョンが1.20.1であることを確認
 4. ログファイル（`.minecraft/logs/latest.log`）でエラーを確認
+
+### GitHub Pagesにアクセスできない場合
+
+1. GitHubリポジトリの設定でPagesが有効になっているか確認
+2. `gh-pages` ブランチが存在し、最新のファイルがプッシュされているか確認
+3. デプロイに数分かかることがあるので、少し待ってから再度アクセス
+4. ブラウザのキャッシュをクリアして再試行
 
 ---
 
@@ -483,8 +550,8 @@ A: はい、`scratch-vm-official/src/extensions/scratch3_minecraft/index.js` の
 ---
 
 **作成日**: 2025-11-12
-**最終更新**: 2025-11-13
-**バージョン**: 0.2.0
+**最終更新**: 2025-11-14
+**バージョン**: 1.0.0
 
 ---
 
