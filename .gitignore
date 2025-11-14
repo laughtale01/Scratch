@@ -69,3 +69,8 @@ site/
 
 # Claude settings
 .claude/
+
+# Large release packages (use GitHub Releases for distribution)
+*.tar.gz
+*.tgz
+release/minecraft-scratch-controller/scratch-gui.tar.gz
