@@ -545,7 +545,12 @@ public class CommandExecutor {
                     net.minecraft.world.entity.Entity.class, bounds)) {
                 // プレイヤーは除外
                 if (!(entity instanceof ServerPlayer)) {
-                    entity.discard();
+                    String entityType = entity.getType().toString();
+                    MinecraftEduMod.LOGGER.info("エンティティ削除: " + entityType + " at " + entity.blockPosition());
+
+                    // より確実な削除方法：remove()とkill()を両方試行
+                    entity.remove(net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+                    entity.kill();
                     entitiesRemoved++;
                 }
             }
