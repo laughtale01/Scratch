@@ -483,7 +483,7 @@ public class CommandExecutor {
 
     /**
      * 周囲クリア
-     * X:-25～25、Y:-64～100、Z:-25～25の範囲をスーパーフラットの初期状態に戻す
+     * X:-50～50、Y:-64～100、Z:-50～50の範囲をスーパーフラットの初期状態に戻す
      * Y=-64: 岩盤
      * Y=-63～-62: 土（2層）
      * Y=-61: 草ブロック
@@ -498,9 +498,9 @@ public class CommandExecutor {
             BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
 
             int blocksCleared = 0;
-            for (int x = -25; x <= 25; x++) {
+            for (int x = -50; x <= 50; x++) {
                 for (int y = -64; y <= 100; y++) {
-                    for (int z = -25; z <= 25; z++) {
+                    for (int z = -50; z <= 50; z++) {
                         BlockPos pos = new BlockPos(x, y, z);
                         BlockState blockToPlace;
 
@@ -523,7 +523,7 @@ public class CommandExecutor {
             MinecraftEduMod.LOGGER.info("周囲クリア完了: " + blocksCleared + "ブロック（スーパーフラット初期状態）");
         });
 
-        lastResult.addProperty("blocksCleared", 428715);  // 51 * 165 * 51
+        lastResult.addProperty("blocksCleared", 1683165);  // 101 * 165 * 101
         return true;
     }
 
