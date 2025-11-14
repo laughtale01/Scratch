@@ -483,28 +483,47 @@ public class CommandExecutor {
 
     /**
      * 周囲クリア
-     * X:-25～25、Y:-4～100、Z:-25～25の範囲を空気ブロックで埋める
+     * X:-25～25、Y:-4～100、Z:-25～25の範囲をスーパーフラットの初期状態に戻す
+     * Y=-64: 岩盤
+     * Y=-63～-61: 土（2層）
+     * Y=-60: 草ブロック
+     * Y=-59～100: 空気
      */
     private boolean executeClearArea(JsonObject params) {
         server.execute(() -> {
             ServerLevel world = server.overworld();
+            BlockState bedrock = net.minecraft.world.level.block.Blocks.BEDROCK.defaultBlockState();
+            BlockState dirt = net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState();
+            BlockState grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
             BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
 
             int blocksCleared = 0;
             for (int x = -25; x <= 25; x++) {
-                for (int y = -4; y <= 100; y++) {
+                for (int y = -64; y <= 100; y++) {
                     for (int z = -25; z <= 25; z++) {
                         BlockPos pos = new BlockPos(x, y, z);
-                        world.setBlock(pos, air, 3);
+                        BlockState blockToPlace;
+
+                        if (y == -64) {
+                            blockToPlace = bedrock;
+                        } else if (y >= -63 && y <= -61) {
+                            blockToPlace = dirt;
+                        } else if (y == -60) {
+                            blockToPlace = grass;
+                        } else {
+                            blockToPlace = air;
+                        }
+
+                        world.setBlock(pos, blockToPlace, 3);
                         blocksCleared++;
                     }
                 }
             }
 
-            MinecraftEduMod.LOGGER.info("周囲クリア完了: " + blocksCleared + "ブロック");
+            MinecraftEduMod.LOGGER.info("周囲クリア完了: " + blocksCleared + "ブロック（スーパーフラット初期状態）");
         });
 
-        lastResult.addProperty("blocksCleared", 273255);
+        lastResult.addProperty("blocksCleared", 428715);  // 51 * 165 * 51
         return true;
     }
 
