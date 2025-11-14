@@ -88,7 +88,7 @@ class Scratch3MinecraftBlocks {
                 {
                     opcode: 'setBlock',
                     blockType: 'command',
-                    text: 'ブロックを置く x:[X] y:[Y] z:[Z] ブロック:[BLOCK] 配置:[PLACEMENT]',
+                    text: 'ブロックを置く x:[X] y:[Y] z:[Z] ブロック:[BLOCK] 配置:[PLACEMENT] 向き:[FACING]',
                     arguments: {
                         X: {
                             type: 'number',
@@ -111,13 +111,18 @@ class Scratch3MinecraftBlocks {
                             type: 'string',
                             menu: 'blockPlacement',
                             defaultValue: 'bottom'
+                        },
+                        FACING: {
+                            type: 'string',
+                            menu: 'blockFacing',
+                            defaultValue: 'none'
                         }
                     }
                 },
                 {
                     opcode: 'setBlockRelative',
                     blockType: 'command',
-                    text: 'ブロックを置く ~[X] ~[Y] ~[Z] ブロック:[BLOCK] 配置:[PLACEMENT]',
+                    text: 'ブロックを置く ~[X] ~[Y] ~[Z] ブロック:[BLOCK] 配置:[PLACEMENT] 向き:[FACING]',
                     arguments: {
                         X: {
                             type: 'number',
@@ -140,13 +145,18 @@ class Scratch3MinecraftBlocks {
                             type: 'string',
                             menu: 'blockPlacement',
                             defaultValue: 'bottom'
+                        },
+                        FACING: {
+                            type: 'string',
+                            menu: 'blockFacing',
+                            defaultValue: 'none'
                         }
                     }
                 },
                 {
                     opcode: 'setBlockRange',
                     blockType: 'command',
-                    text: 'X:[X1] Y:[Y1] Z:[Z1] からX:[X2] Y:[Y2] Z:[Z2] ブロック:[BLOCK] 配置:[PLACEMENT]',
+                    text: 'X:[X1] Y:[Y1] Z:[Z1] からX:[X2] Y:[Y2] Z:[Z2] ブロック:[BLOCK] 配置:[PLACEMENT] 向き:[FACING]',
                     arguments: {
                         X1: {
                             type: 'number',
@@ -181,6 +191,11 @@ class Scratch3MinecraftBlocks {
                             type: 'string',
                             menu: 'blockPlacement',
                             defaultValue: 'bottom'
+                        },
+                        FACING: {
+                            type: 'string',
+                            menu: 'blockFacing',
+                            defaultValue: 'none'
                         }
                     }
                 },
@@ -288,6 +303,16 @@ class Scratch3MinecraftBlocks {
                     items: [
                         { text: '通常（下）', value: 'bottom' },
                         { text: '上下反転（上）', value: 'top' }
+                    ]
+                },
+                blockFacing: {
+                    acceptReporters: false,
+                    items: [
+                        { text: 'デフォルト', value: 'none' },
+                        { text: '北', value: 'north' },
+                        { text: '南', value: 'south' },
+                        { text: '東', value: 'east' },
+                        { text: '西', value: 'west' }
                     ]
                 },
                 entityTypes: {
@@ -403,9 +428,22 @@ class Scratch3MinecraftBlocks {
     setBlock(args) {
         let blockType = 'minecraft:' + args.BLOCK;
 
+        // プロパティの配列を作成
+        const properties = [];
+
         // 配置パラメータを適用（階段ブロックなどの上下反転）
         if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
-            blockType += '[half=' + args.PLACEMENT + ']';
+            properties.push('half=' + args.PLACEMENT);
+        }
+
+        // 向きパラメータを適用（階段ブロックなどの方向）
+        if (args.FACING && args.FACING !== 'none') {
+            properties.push('facing=' + args.FACING);
+        }
+
+        // プロパティを結合
+        if (properties.length > 0) {
+            blockType += '[' + properties.join(',') + ']';
         }
 
         return this.sendCommand('setBlock', {
@@ -422,9 +460,22 @@ class Scratch3MinecraftBlocks {
     setBlockRelative(args) {
         let blockType = 'minecraft:' + args.BLOCK;
 
+        // プロパティの配列を作成
+        const properties = [];
+
         // 配置パラメータを適用（階段ブロックなどの上下反転）
         if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
-            blockType += '[half=' + args.PLACEMENT + ']';
+            properties.push('half=' + args.PLACEMENT);
+        }
+
+        // 向きパラメータを適用（階段ブロックなどの方向）
+        if (args.FACING && args.FACING !== 'none') {
+            properties.push('facing=' + args.FACING);
+        }
+
+        // プロパティを結合
+        if (properties.length > 0) {
+            blockType += '[' + properties.join(',') + ']';
         }
 
         return this.sendCommand('setBlock', {
@@ -449,9 +500,22 @@ class Scratch3MinecraftBlocks {
 
         let blockType = 'minecraft:' + args.BLOCK;
 
+        // プロパティの配列を作成
+        const properties = [];
+
         // 配置パラメータを適用（階段ブロックなどの上下反転）
         if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
-            blockType += '[half=' + args.PLACEMENT + ']';
+            properties.push('half=' + args.PLACEMENT);
+        }
+
+        // 向きパラメータを適用（階段ブロックなどの方向）
+        if (args.FACING && args.FACING !== 'none') {
+            properties.push('facing=' + args.FACING);
+        }
+
+        // プロパティを結合
+        if (properties.length > 0) {
+            blockType += '[' + properties.join(',') + ']';
         }
 
         // 座標を正規化（小さい方から大きい方へ）
