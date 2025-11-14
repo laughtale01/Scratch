@@ -115,7 +115,7 @@ class Scratch3MinecraftBlocks {
                 {
                     opcode: 'setBlockRange',
                     blockType: 'command',
-                    text: 'X:[X1] Y:[Y1] Z:[Z1] からX:[X2] Y:[Y2] Z:[Z2] ブロック:[BLOCK]',
+                    text: 'X:[X1] Y:[Y1] Z:[Z1] からX:[X2] Y:[Y2] Z:[Z2] ブロック:[BLOCK] 配置:[PLACEMENT]',
                     arguments: {
                         X1: {
                             type: 'number',
@@ -145,6 +145,11 @@ class Scratch3MinecraftBlocks {
                             type: 'string',
                             menu: 'blockTypes',
                             defaultValue: 'stone'
+                        },
+                        PLACEMENT: {
+                            type: 'string',
+                            menu: 'blockPlacement',
+                            defaultValue: 'bottom'
                         }
                     }
                 },
@@ -411,7 +416,13 @@ class Scratch3MinecraftBlocks {
         const y2 = Math.floor(Number(args.Y2)) - 60;  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
         const z1 = Math.floor(Number(args.Z1));
         const z2 = Math.floor(Number(args.Z2));
-        const blockType = 'minecraft:' + args.BLOCK;
+
+        let blockType = 'minecraft:' + args.BLOCK;
+
+        // 配置パラメータを適用（階段ブロックなどの上下反転）
+        if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
+            blockType += '[half=' + args.PLACEMENT + ']';
+        }
 
         // 座標を正規化（小さい方から大きい方へ）
         const minX = Math.min(x1, x2);
