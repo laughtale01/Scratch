@@ -310,11 +310,12 @@ class Scratch3MinecraftBlocks {
 
     /**
      * ブロック配置（絶対座標）
+     * Y座標変換: ScratchのY=0 → MinecraftのY=64（地表）
      */
     setBlock(args) {
         return this.sendCommand('setBlock', {
             x: Number(args.X),
-            y: Number(args.Y),
+            y: Number(args.Y) + 64,  // Y座標変換: +64で地表に対応
             z: Number(args.Z),
             blockType: 'minecraft:' + args.BLOCK
         });
@@ -334,29 +335,32 @@ class Scratch3MinecraftBlocks {
 
     /**
      * エンティティ召喚
+     * Y座標変換: ScratchのY=0 → MinecraftのY=64（地表）
      */
     summonEntity(args) {
         return this.sendCommand('summonEntity', {
             entityType: 'minecraft:' + args.ENTITY,
             x: Number(args.X),
-            y: Number(args.Y),
+            y: Number(args.Y) + 64,  // Y座標変換: +64で地表に対応
             z: Number(args.Z)
         });
     }
 
     /**
      * テレポート
+     * Y座標変換: ScratchのY=0 → MinecraftのY=64（地表）
      */
     teleport(args) {
         return this.sendCommand('teleport', {
             x: Number(args.X),
-            y: Number(args.Y),
+            y: Number(args.Y) + 64,  // Y座標変換: +64で地表に対応
             z: Number(args.Z)
         });
     }
 
     /**
      * プレイヤー位置取得
+     * Y座標変換: MinecraftのY=64（地表） → ScratchのY=0
      */
     getPosition(args) {
         const coord = args.COORD || 'x';
@@ -369,7 +373,8 @@ class Scratch3MinecraftBlocks {
                         case 'x':
                             return result.x || 0;
                         case 'y':
-                            return result.y || 0;
+                            // Y座標逆変換: -64でScratch座標系に変換
+                            return (result.y || 0) - 64;
                         case 'z':
                             return result.z || 0;
                         default:
