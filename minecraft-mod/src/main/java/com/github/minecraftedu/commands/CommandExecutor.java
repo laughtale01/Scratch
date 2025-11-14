@@ -529,14 +529,14 @@ public class CommandExecutor {
 
     /**
      * 全エンティティをクリア
-     * X:-25～25、Y:-4～100、Z:-25～25の範囲のエンティティを削除（プレイヤーを除く）
+     * X:-25～25、Y:-64～100、Z:-25～25の範囲のエンティティを削除（プレイヤーを除く）
      */
     private boolean executeClearAllEntities(JsonObject params) {
         server.execute(() -> {
             ServerLevel world = server.overworld();
 
             net.minecraft.world.phys.AABB bounds = new net.minecraft.world.phys.AABB(
-                -25, -4, -25,
+                -25, -64, -25,
                 25, 100, 25
             );
 
@@ -553,6 +553,7 @@ public class CommandExecutor {
             MinecraftEduMod.LOGGER.info("エンティティクリア完了: " + entitiesRemoved + "体");
         });
 
+        lastResult.addProperty("entitiesRemoved", true);
         return true;
     }
 
