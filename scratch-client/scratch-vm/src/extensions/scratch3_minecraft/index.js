@@ -57,7 +57,7 @@ class Scratch3MinecraftBlocks {
                 {
                     opcode: 'setBlock',
                     blockType: 'command',
-                    text: 'ブロックを置く x:[X] y:[Y] z:[Z] ブロック:[BLOCK]',
+                    text: 'ブロックを置く x:[X] y:[Y] z:[Z] ブロック:[BLOCK] 配置:[PLACEMENT]',
                     arguments: {
                         X: {
                             type: 'number',
@@ -75,13 +75,18 @@ class Scratch3MinecraftBlocks {
                             type: 'string',
                             menu: 'blockTypes',
                             defaultValue: 'stone'
+                        },
+                        PLACEMENT: {
+                            type: 'string',
+                            menu: 'blockPlacement',
+                            defaultValue: 'bottom'
                         }
                     }
                 },
                 {
                     opcode: 'setBlockRelative',
                     blockType: 'command',
-                    text: 'ブロックを置く ~[X] ~[Y] ~[Z] ブロック:[BLOCK]',
+                    text: 'ブロックを置く ~[X] ~[Y] ~[Z] ブロック:[BLOCK] 配置:[PLACEMENT]',
                     arguments: {
                         X: {
                             type: 'number',
@@ -99,6 +104,11 @@ class Scratch3MinecraftBlocks {
                             type: 'string',
                             menu: 'blockTypes',
                             defaultValue: 'stone'
+                        },
+                        PLACEMENT: {
+                            type: 'string',
+                            menu: 'blockPlacement',
+                            defaultValue: 'bottom'
                         }
                     }
                 },
@@ -232,10 +242,17 @@ class Scratch3MinecraftBlocks {
                     acceptReporters: true,
                     items: [
                         'stone', 'dirt', 'grass_block', 'cobblestone',
-                        'oak_planks', 'glass', 'sand', 'gravel',
+                        'oak_planks', 'oak_stairs', 'stone_stairs', 'glass', 'sand', 'gravel',
                         'gold_block', 'diamond_block', 'emerald_block',
                         'iron_block', 'coal_block', 'redstone_block',
                         'brick', 'oak_log', 'water', 'lava'
+                    ]
+                },
+                blockPlacement: {
+                    acceptReporters: false,
+                    items: [
+                        { text: '通常（下）', value: 'bottom' },
+                        { text: '上下反転（上）', value: 'top' }
                     ]
                 },
                 entityTypes: {
@@ -349,11 +366,18 @@ class Scratch3MinecraftBlocks {
      * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     setBlock(args) {
+        let blockType = 'minecraft:' + args.BLOCK;
+
+        // 配置パラメータを適用（階段ブロックなどの上下反転）
+        if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
+            blockType += '[half=' + args.PLACEMENT + ']';
+        }
+
         return this.sendCommand('setBlock', {
             x: Number(args.X),
             y: Number(args.Y) - 60,  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
             z: Number(args.Z),
-            blockType: 'minecraft:' + args.BLOCK
+            blockType: blockType
         });
     }
 
@@ -361,11 +385,18 @@ class Scratch3MinecraftBlocks {
      * ブロック配置（相対座標）
      */
     setBlockRelative(args) {
+        let blockType = 'minecraft:' + args.BLOCK;
+
+        // 配置パラメータを適用（階段ブロックなどの上下反転）
+        if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
+            blockType += '[half=' + args.PLACEMENT + ']';
+        }
+
         return this.sendCommand('setBlock', {
             relativeX: Number(args.X),
             relativeY: Number(args.Y),
             relativeZ: Number(args.Z),
-            blockType: 'minecraft:' + args.BLOCK
+            blockType: blockType
         });
     }
 
