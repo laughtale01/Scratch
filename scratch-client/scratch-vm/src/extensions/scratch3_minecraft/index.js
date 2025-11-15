@@ -523,36 +523,36 @@ class Scratch3MinecraftBlocks {
                 blockPlacement: {
                     acceptReporters: false,
                     items: [
-                        { text: '通常（下）', value: 'bottom' },
-                        { text: '上下反転（上）', value: 'top' },
-                        { text: 'ダブル', value: 'double' }
+                        {text: '通常（下）', value: 'bottom'},
+                        {text: '上下反転（上）', value: 'top'},
+                        {text: 'ダブル', value: 'double'}
                     ]
                 },
                 blockFacing: {
                     acceptReporters: false,
                     items: [
-                        { text: 'デフォルト', value: 'none' },
-                        { text: '北', value: 'north' },
-                        { text: '南', value: 'south' },
-                        { text: '東', value: 'east' },
-                        { text: '西', value: 'west' }
+                        {text: 'デフォルト', value: 'none'},
+                        {text: '北', value: 'north'},
+                        {text: '南', value: 'south'},
+                        {text: '東', value: 'east'},
+                        {text: '西', value: 'west'}
                     ]
                 },
                 entityTypes: {
                     acceptReporters: true,
                     items: [
-                        { text: 'ブタ', value: 'pig' },
-                        { text: 'ウシ', value: 'cow' },
-                        { text: 'ヒツジ', value: 'sheep' },
-                        { text: 'ニワトリ', value: 'chicken' },
-                        { text: 'ゾンビ', value: 'zombie' },
-                        { text: 'スケルトン', value: 'skeleton' },
-                        { text: 'クリーパー', value: 'creeper' },
-                        { text: 'クモ', value: 'spider' },
-                        { text: 'ウマ', value: 'horse' },
-                        { text: 'オオカミ', value: 'wolf' },
-                        { text: 'ネコ', value: 'cat' },
-                        { text: '村人', value: 'villager' }
+                        {text: 'ブタ', value: 'pig'},
+                        {text: 'ウシ', value: 'cow'},
+                        {text: 'ヒツジ', value: 'sheep'},
+                        {text: 'ニワトリ', value: 'chicken'},
+                        {text: 'ゾンビ', value: 'zombie'},
+                        {text: 'スケルトン', value: 'skeleton'},
+                        {text: 'クリーパー', value: 'creeper'},
+                        {text: 'クモ', value: 'spider'},
+                        {text: 'ウマ', value: 'horse'},
+                        {text: 'オオカミ', value: 'wolf'},
+                        {text: 'ネコ', value: 'cat'},
+                        {text: '村人', value: 'villager'}
                     ]
                 },
                 coordinates: {
@@ -562,19 +562,19 @@ class Scratch3MinecraftBlocks {
                 weatherTypes: {
                     acceptReporters: false,
                     items: [
-                        { text: '晴れ', value: 'clear' },
-                        { text: '雨', value: 'rain' },
-                        { text: '雷雨', value: 'thunder' }
+                        {text: '晴れ', value: 'clear'},
+                        {text: '雨', value: 'rain'},
+                        {text: '雷雨', value: 'thunder'}
                     ]
                 },
                 timeValues: {
                     acceptReporters: true,
                     items: [
-                        { text: '朝', value: 'day' },
-                        { text: '昼', value: 'noon' },
-                        { text: '夕方', value: 'sunset' },
-                        { text: '夜', value: 'night' },
-                        { text: '真夜中', value: 'midnight' }
+                        {text: '朝', value: 'day'},
+                        {text: '昼', value: 'noon'},
+                        {text: '夕方', value: 'sunset'},
+                        {text: '夜', value: 'night'},
+                        {text: '真夜中', value: 'midnight'}
                     ]
                 }
             }
@@ -600,7 +600,7 @@ class Scratch3MinecraftBlocks {
                     this.sendMessage({
                         type: 'connect',
                         payload: {
-                            clientId: 'scratch_client_' + Date.now(),
+                            clientId: `scratch_client_${Date.now()}`,
                             authToken: this._generateClientToken(),
                             clientInfo: {
                                 userAgent: 'Scratch 3.0',
@@ -613,11 +613,11 @@ class Scratch3MinecraftBlocks {
                     resolve();
                 };
 
-                this.socket.onmessage = (event) => {
+                this.socket.onmessage = event => {
                     this.handleMessage(JSON.parse(event.data));
                 };
 
-                this.socket.onerror = (error) => {
+                this.socket.onerror = error => {
                     console.error('WebSocket error:', error);
                     this.connected = false;
 
@@ -641,11 +641,11 @@ class Scratch3MinecraftBlocks {
                 this.connected = false;
 
                 // ユーザーに分かりやすいエラーメッセージを作成
-                const userMessage = '接続中にエラーが発生しました。\n\n' +
-                    '以下を確認してください：\n' +
-                    '1. インターネット接続が正常か\n' +
-                    '2. ファイアウォールでブロックされていないか\n' +
-                    '3. ホスト名（' + (args.HOST || 'localhost') + '）が正しいか';
+                const userMessage = `接続中にエラーが発生しました。\n\n` +
+                    `以下を確認してください：\n` +
+                    `1. インターネット接続が正常か\n` +
+                    `2. ファイアウォールでブロックされていないか\n` +
+                    `3. ホスト名（${args.HOST || 'localhost'}）が正しいか`;
 
                 reject(new Error(userMessage));
             }
@@ -682,7 +682,7 @@ class Scratch3MinecraftBlocks {
         }
 
         return this.sendCommand('chat', {
-            message: message
+            message
         });
     }
 
@@ -712,7 +712,7 @@ class Scratch3MinecraftBlocks {
      * @returns {string} 完全なブロックタイプ文字列（例: 'minecraft:stone_slab[type=top]'）
      */
     _buildBlockTypeWithProperties(blockId, placement, facing) {
-        let blockType = 'minecraft:' + blockId;
+        let blockType = `minecraft:${blockId}`;
         const properties = [];
 
         // スラブかどうかを判定
@@ -722,21 +722,21 @@ class Scratch3MinecraftBlocks {
         if (placement && placement !== 'bottom') {
             if (isSlab) {
                 // スラブの場合: type プロパティを使用
-                properties.push('type=' + placement);
+                properties.push(`type=${placement}`);
             } else {
                 // 階段などの場合: half プロパティを使用
-                properties.push('half=' + placement);
+                properties.push(`half=${placement}`);
             }
         }
 
         // 向きパラメータを適用（階段ブロックなどの方向）
         if (facing && facing !== 'none') {
-            properties.push('facing=' + facing);
+            properties.push(`facing=${facing}`);
         }
 
         // プロパティを結合
         if (properties.length > 0) {
-            blockType += '[' + properties.join(',') + ']';
+            blockType += `[${properties.join(',')}]`;
         }
 
         return blockType;
@@ -821,10 +821,10 @@ class Scratch3MinecraftBlocks {
         const z = this._validateXZCoordinate(args.Z, 'Z座標');
 
         return this.sendCommand('setBlock', {
-            x: x,
+            x,
             y: this._toMinecraftY(y),
-            z: z,
-            blockType: blockType
+            z,
+            blockType
         });
     }
 
@@ -843,7 +843,7 @@ class Scratch3MinecraftBlocks {
             relativeX: relX,
             relativeY: relY,
             relativeZ: relZ,
-            blockType: blockType
+            blockType
         });
     }
 
@@ -898,7 +898,7 @@ class Scratch3MinecraftBlocks {
                 y: maxY,
                 z: maxZ
             },
-            blockType: blockType
+            blockType
         }).then(() => {
             console.log(`範囲設置完了: ${volume}ブロック`);
         }).catch(error => {
@@ -918,10 +918,10 @@ class Scratch3MinecraftBlocks {
         const z = this._validateXZCoordinate(args.Z, 'Z座標');
 
         return this.sendCommand('summonEntity', {
-            entityType: 'minecraft:' + args.ENTITY,
-            x: x,
+            entityType: `minecraft:${args.ENTITY}`,
+            x,
             y: this._toMinecraftY(y),
-            z: z
+            z
         });
     }
 
@@ -936,9 +936,9 @@ class Scratch3MinecraftBlocks {
         const z = this._validateXZCoordinate(args.Z, 'Z座標');
 
         return this.sendCommand('teleport', {
-            x: x,
+            x,
             y: this._toMinecraftY(y),
-            z: z
+            z
         });
     }
 
@@ -952,7 +952,7 @@ class Scratch3MinecraftBlocks {
         return this.sendCommandWithResponse('getPosition', {})
             .then(response => {
                 if (response && response.payload && response.payload.result) {
-                    const result = response.payload.result;
+                    const {result} = response.payload;
                     switch (coord) {
                         case 'x':
                             return result.x || 0;
@@ -1018,8 +1018,8 @@ class Scratch3MinecraftBlocks {
         return this.sendMessage({
             type: 'command',
             payload: {
-                action: action,
-                params: params
+                action,
+                params
             }
         });
     }
@@ -1042,12 +1042,12 @@ class Scratch3MinecraftBlocks {
             }, this.requestTimeout);
 
             this.pendingRequests.set(messageId, {
-                resolve: (response) => {
+                resolve: response => {
                     clearTimeout(timeoutId);
                     this.pendingRequests.delete(messageId);
                     resolve(response);
                 },
-                reject: (error) => {
+                reject: error => {
                     clearTimeout(timeoutId);
                     this.pendingRequests.delete(messageId);
                     reject(error);
@@ -1057,8 +1057,8 @@ class Scratch3MinecraftBlocks {
             this.sendMessageWithId(messageId, {
                 type: 'command',
                 payload: {
-                    action: action,
-                    params: params
+                    action,
+                    params
                 }
             }).catch(error => {
                 clearTimeout(timeoutId);
@@ -1099,7 +1099,7 @@ class Scratch3MinecraftBlocks {
             try {
                 const fullMessage = {
                     version: '1.0',
-                    messageId: messageId,
+                    messageId,
                     timestamp: Date.now(),
                     sessionId: this.sessionId || '',
                     ...message
@@ -1195,8 +1195,8 @@ class Scratch3MinecraftBlocks {
         const centerZ = this._validateXZCoordinate(args.Z || 0, 'Z座標');
         console.log(`周囲クリア開始: 中心(${centerX}, ${centerZ}) から±50ブロック範囲`);
         return this.sendCommand('clearArea', {
-            centerX: centerX,
-            centerZ: centerZ
+            centerX,
+            centerZ
         });
     }
 
@@ -1210,8 +1210,8 @@ class Scratch3MinecraftBlocks {
         const centerZ = this._validateXZCoordinate(args.Z || 0, 'Z座標');
         console.log(`全エンティティクリア開始: 中心(${centerX}, ${centerZ}) から±50ブロック範囲`);
         return this.sendCommand('clearAllEntities', {
-            centerX: centerX,
-            centerZ: centerZ
+            centerX,
+            centerZ
         });
     }
 
@@ -1219,7 +1219,7 @@ class Scratch3MinecraftBlocks {
      * UUID生成
      */
     generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
             const r = Math.random() * 16 | 0;
             const v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
