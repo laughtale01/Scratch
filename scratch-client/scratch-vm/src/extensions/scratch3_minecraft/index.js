@@ -291,13 +291,130 @@ class Scratch3MinecraftBlocks {
                 blockTypes: {
                     acceptReporters: true,
                     items: [
-                        'stone', 'dirt', 'grass_block', 'cobblestone',
-                        'oak_planks', 'oak_stairs', 'stone_stairs',
-                        'oak_slab', 'stone_slab', 'cobblestone_slab', 'brick_slab',
-                        'glass', 'sand', 'gravel',
-                        'gold_block', 'diamond_block', 'emerald_block',
-                        'iron_block', 'coal_block', 'redstone_block',
-                        'brick', 'oak_log', 'water', 'lava'
+                        // 基本ブロック
+                        'stone', 'dirt', 'grass_block', 'cobblestone', 'bedrock',
+                        'sand', 'red_sand', 'gravel', 'clay', 'terracotta',
+
+                        // 木材系（全種類）
+                        'oak_planks', 'spruce_planks', 'birch_planks', 'jungle_planks',
+                        'acacia_planks', 'dark_oak_planks', 'mangrove_planks', 'cherry_planks',
+                        'bamboo_planks', 'bamboo_mosaic', 'crimson_planks', 'warped_planks',
+
+                        // 原木
+                        'oak_log', 'spruce_log', 'birch_log', 'jungle_log',
+                        'acacia_log', 'dark_oak_log', 'mangrove_log', 'cherry_log',
+
+                        // ハーフブロック（全種類）
+                        'oak_slab', 'spruce_slab', 'birch_slab', 'jungle_slab',
+                        'acacia_slab', 'dark_oak_slab', 'mangrove_slab', 'cherry_slab',
+                        'bamboo_slab', 'bamboo_mosaic_slab', 'crimson_slab', 'warped_slab',
+                        'stone_slab', 'cobblestone_slab', 'stone_brick_slab', 'brick_slab',
+                        'nether_brick_slab', 'quartz_slab', 'sandstone_slab', 'red_sandstone_slab',
+                        'prismarine_slab', 'prismarine_brick_slab', 'dark_prismarine_slab',
+                        'smooth_stone_slab', 'smooth_sandstone_slab', 'smooth_red_sandstone_slab', 'smooth_quartz_slab',
+                        'granite_slab', 'polished_granite_slab', 'diorite_slab', 'polished_diorite_slab',
+                        'andesite_slab', 'polished_andesite_slab',
+
+                        // 階段（全種類）
+                        'oak_stairs', 'spruce_stairs', 'birch_stairs', 'jungle_stairs',
+                        'acacia_stairs', 'dark_oak_stairs', 'mangrove_stairs', 'cherry_stairs',
+                        'bamboo_stairs', 'bamboo_mosaic_stairs', 'crimson_stairs', 'warped_stairs',
+                        'stone_stairs', 'cobblestone_stairs', 'stone_brick_stairs', 'brick_stairs',
+                        'nether_brick_stairs', 'red_nether_brick_stairs', 'quartz_stairs',
+                        'sandstone_stairs', 'red_sandstone_stairs', 'smooth_sandstone_stairs', 'smooth_red_sandstone_stairs',
+                        'prismarine_stairs', 'prismarine_brick_stairs', 'dark_prismarine_stairs',
+                        'granite_stairs', 'polished_granite_stairs', 'diorite_stairs', 'polished_diorite_stairs',
+                        'andesite_stairs', 'polished_andesite_stairs', 'end_stone_brick_stairs',
+                        'purpur_stairs', 'blackstone_stairs', 'polished_blackstone_stairs',
+
+                        // 石材系
+                        'smooth_stone', 'stone_bricks', 'cracked_stone_bricks', 'mossy_stone_bricks', 'chiseled_stone_bricks',
+                        'granite', 'polished_granite', 'diorite', 'polished_diorite', 'andesite', 'polished_andesite',
+                        'calcite', 'tuff', 'dripstone_block', 'moss_block',
+
+                        // ディープスレート系
+                        'deepslate', 'cobbled_deepslate', 'polished_deepslate', 'deepslate_bricks',
+                        'deepslate_tiles', 'chiseled_deepslate', 'cracked_deepslate_bricks', 'cracked_deepslate_tiles',
+
+                        // レンガ系
+                        'bricks', 'nether_bricks', 'red_nether_bricks', 'cracked_nether_bricks', 'chiseled_nether_bricks',
+                        'end_stone_bricks', 'prismarine', 'prismarine_bricks', 'dark_prismarine',
+                        'mud_bricks', 'packed_mud',
+
+                        // クォーツ系
+                        'quartz_block', 'smooth_quartz', 'quartz_bricks', 'quartz_pillar', 'chiseled_quartz_block',
+
+                        // 砂岩系
+                        'sandstone', 'smooth_sandstone', 'chiseled_sandstone', 'cut_sandstone',
+                        'red_sandstone', 'smooth_red_sandstone', 'chiseled_red_sandstone', 'cut_red_sandstone',
+
+                        // 羊毛（全16色）
+                        'white_wool', 'orange_wool', 'magenta_wool', 'light_blue_wool',
+                        'yellow_wool', 'lime_wool', 'pink_wool', 'gray_wool',
+                        'light_gray_wool', 'cyan_wool', 'purple_wool', 'blue_wool',
+                        'brown_wool', 'green_wool', 'red_wool', 'black_wool',
+
+                        // カーペット（全16色）
+                        'white_carpet', 'orange_carpet', 'magenta_carpet', 'light_blue_carpet',
+                        'yellow_carpet', 'lime_carpet', 'pink_carpet', 'gray_carpet',
+                        'light_gray_carpet', 'cyan_carpet', 'purple_carpet', 'blue_carpet',
+                        'brown_carpet', 'green_carpet', 'red_carpet', 'black_carpet',
+
+                        // コンクリート（全16色）
+                        'white_concrete', 'orange_concrete', 'magenta_concrete', 'light_blue_concrete',
+                        'yellow_concrete', 'lime_concrete', 'pink_concrete', 'gray_concrete',
+                        'light_gray_concrete', 'cyan_concrete', 'purple_concrete', 'blue_concrete',
+                        'brown_concrete', 'green_concrete', 'red_concrete', 'black_concrete',
+
+                        // コンクリートパウダー
+                        'white_concrete_powder', 'orange_concrete_powder', 'magenta_concrete_powder', 'light_blue_concrete_powder',
+                        'yellow_concrete_powder', 'lime_concrete_powder', 'pink_concrete_powder', 'gray_concrete_powder',
+
+                        // テラコッタ（全16色）
+                        'white_terracotta', 'orange_terracotta', 'magenta_terracotta', 'light_blue_terracotta',
+                        'yellow_terracotta', 'lime_terracotta', 'pink_terracotta', 'gray_terracotta',
+                        'light_gray_terracotta', 'cyan_terracotta', 'purple_terracotta', 'blue_terracotta',
+                        'brown_terracotta', 'green_terracotta', 'red_terracotta', 'black_terracotta',
+
+                        // 彩釉テラコッタ（主要色）
+                        'white_glazed_terracotta', 'orange_glazed_terracotta', 'magenta_glazed_terracotta',
+                        'light_blue_glazed_terracotta', 'yellow_glazed_terracotta', 'lime_glazed_terracotta',
+                        'pink_glazed_terracotta', 'cyan_glazed_terracotta', 'purple_glazed_terracotta',
+                        'blue_glazed_terracotta', 'red_glazed_terracotta', 'black_glazed_terracotta',
+
+                        // ガラス系
+                        'glass', 'tinted_glass',
+                        'white_stained_glass', 'orange_stained_glass', 'magenta_stained_glass', 'light_blue_stained_glass',
+                        'yellow_stained_glass', 'lime_stained_glass', 'pink_stained_glass', 'gray_stained_glass',
+                        'cyan_stained_glass', 'purple_stained_glass', 'blue_stained_glass',
+                        'red_stained_glass', 'green_stained_glass', 'black_stained_glass',
+
+                        // 鉱石ブロック
+                        'gold_block', 'iron_block', 'copper_block', 'diamond_block', 'emerald_block',
+                        'coal_block', 'redstone_block', 'lapis_block', 'quartz_block',
+                        'netherite_block', 'amethyst_block', 'raw_iron_block', 'raw_copper_block', 'raw_gold_block',
+
+                        // 自然ブロック
+                        'grass_block', 'podzol', 'mycelium', 'dirt_path', 'farmland',
+                        'coarse_dirt', 'rooted_dirt', 'mud', 'ice', 'packed_ice', 'blue_ice',
+                        'snow_block', 'snow', 'powder_snow',
+
+                        // 植物系
+                        'oak_leaves', 'spruce_leaves', 'birch_leaves', 'jungle_leaves',
+                        'acacia_leaves', 'dark_oak_leaves', 'mangrove_leaves', 'cherry_leaves',
+                        'azalea_leaves', 'flowering_azalea_leaves',
+
+                        // その他重要ブロック
+                        'obsidian', 'crying_obsidian', 'netherrack', 'soul_sand', 'soul_soil',
+                        'basalt', 'smooth_basalt', 'polished_basalt', 'blackstone', 'polished_blackstone',
+                        'gilded_blackstone', 'polished_blackstone_bricks', 'cracked_polished_blackstone_bricks',
+                        'end_stone', 'purpur_block', 'purpur_pillar',
+                        'bone_block', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore',
+                        'emerald_ore', 'lapis_ore', 'redstone_ore', 'copper_ore',
+                        'glowstone', 'sea_lantern', 'shroomlight',
+                        'sponge', 'wet_sponge', 'slime_block', 'honey_block',
+                        'tnt', 'bookshelf', 'crafting_table', 'furnace', 'chest',
+                        'water', 'lava', 'magma_block'
                     ]
                 },
                 blockPlacement: {
