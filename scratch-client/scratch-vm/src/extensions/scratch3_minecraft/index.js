@@ -389,7 +389,12 @@ class Scratch3MinecraftBlocks {
                         'yellow_stained_glass', 'lime_stained_glass', 'pink_stained_glass', 'gray_stained_glass',
                         'light_gray_stained_glass', 'cyan_stained_glass', 'purple_stained_glass', 'blue_stained_glass',
                         'brown_stained_glass', 'green_stained_glass', 'red_stained_glass', 'black_stained_glass',
-                        'white_stained_glass_pane', 'black_stained_glass_pane',
+                        // ガラス板（全種類）
+                        'glass_pane',
+                        'white_stained_glass_pane', 'orange_stained_glass_pane', 'magenta_stained_glass_pane', 'light_blue_stained_glass_pane',
+                        'yellow_stained_glass_pane', 'lime_stained_glass_pane', 'pink_stained_glass_pane', 'gray_stained_glass_pane',
+                        'light_gray_stained_glass_pane', 'cyan_stained_glass_pane', 'purple_stained_glass_pane', 'blue_stained_glass_pane',
+                        'brown_stained_glass_pane', 'green_stained_glass_pane', 'red_stained_glass_pane', 'black_stained_glass_pane',
 
                         // 鉱石ブロック
                         'gold_block', 'iron_block', 'copper_block', 'diamond_block', 'emerald_block',
@@ -411,10 +416,41 @@ class Scratch3MinecraftBlocks {
                         'acacia_fence', 'dark_oak_fence', 'mangrove_fence', 'cherry_fence',
                         'bamboo_fence', 'crimson_fence', 'warped_fence', 'nether_brick_fence',
 
+                        // フェンスゲート（全種類）
+                        'oak_fence_gate', 'spruce_fence_gate', 'birch_fence_gate', 'jungle_fence_gate',
+                        'acacia_fence_gate', 'dark_oak_fence_gate', 'mangrove_fence_gate', 'cherry_fence_gate',
+                        'bamboo_fence_gate', 'crimson_fence_gate', 'warped_fence_gate',
+
                         // 塀（全種類）
                         'cobblestone_wall', 'mossy_cobblestone_wall', 'stone_brick_wall', 'brick_wall',
                         'granite_wall', 'diorite_wall', 'andesite_wall', 'sandstone_wall', 'red_sandstone_wall',
                         'nether_brick_wall', 'red_nether_brick_wall', 'prismarine_wall', 'end_stone_brick_wall', 'mud_brick_wall',
+
+                        // ドア（全種類）
+                        'oak_door', 'spruce_door', 'birch_door', 'jungle_door',
+                        'acacia_door', 'dark_oak_door', 'mangrove_door', 'cherry_door',
+                        'bamboo_door', 'crimson_door', 'warped_door', 'iron_door',
+
+                        // トラップドア（全種類）
+                        'oak_trapdoor', 'spruce_trapdoor', 'birch_trapdoor', 'jungle_trapdoor',
+                        'acacia_trapdoor', 'dark_oak_trapdoor', 'mangrove_trapdoor', 'cherry_trapdoor',
+                        'bamboo_trapdoor', 'crimson_trapdoor', 'warped_trapdoor', 'iron_trapdoor',
+
+                        // ボタン（全種類）
+                        'oak_button', 'spruce_button', 'birch_button', 'jungle_button',
+                        'acacia_button', 'dark_oak_button', 'mangrove_button', 'cherry_button',
+                        'bamboo_button', 'crimson_button', 'warped_button', 'stone_button',
+
+                        // 感圧板（全種類）
+                        'oak_pressure_plate', 'spruce_pressure_plate', 'birch_pressure_plate', 'jungle_pressure_plate',
+                        'acacia_pressure_plate', 'dark_oak_pressure_plate', 'mangrove_pressure_plate', 'cherry_pressure_plate',
+                        'bamboo_pressure_plate', 'crimson_pressure_plate', 'warped_pressure_plate', 'stone_pressure_plate',
+                        'heavy_weighted_pressure_plate', 'light_weighted_pressure_plate',
+
+                        // 建築用装飾ブロック
+                        'ladder', 'chain', 'lantern', 'soul_lantern', 'iron_bars',
+                        'bell', 'anvil', 'barrel', 'brewing_stand', 'cauldron',
+                        'composter', 'grindstone', 'lectern', 'stonecutter',
 
                         // その他重要ブロック
                         'obsidian', 'crying_obsidian', 'netherrack', 'soul_sand', 'soul_soil',
