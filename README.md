@@ -7,6 +7,16 @@
 [![Scratch](https://img.shields.io/badge/Scratch-3.0-orange.svg)](https://scratch.mit.edu)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen)](https://laughtale01.github.io/Scratch/)
 
+## 📚 Quick Links
+
+- **[🎮 Try it Now](https://laughtale01.github.io/Scratch/)** - Start programming Minecraft with Scratch!
+- **[📖 Block Reference](BLOCK_REFERENCE.md)** - Complete guide to all 15+ blocks and 400+ block types
+- **[📥 Download MOD](https://github.com/laughtale01/Scratch/blob/main/release/minecraft-scratch-controller/minecraftedu-mod-0.1.0-1.20.1.jar)** - Get the Minecraft mod
+- **[📝 Installation Guide](release/minecraft-scratch-controller/INSTALL.md)** - Step-by-step setup instructions
+- **[🤝 Contributing](CONTRIBUTING.md)** - Help improve this project
+- **[📜 Changelog](CHANGELOG.md)** - Version history and updates
+- **[❓ Issues](https://github.com/laughtale01/Scratch/issues)** - Report bugs or request features
+
 ---
 
 ## 🎮 今すぐ試す！
@@ -178,6 +188,8 @@ x、y、zの座標を個別に取得できます。
 ---
 
 ## 対応ブロック一覧
+
+**📖 詳しい使い方とサンプルコードは [BLOCK_REFERENCE.md](BLOCK_REFERENCE.md) をご覧ください**
 
 ### 接続・通信
 
@@ -430,13 +442,19 @@ git checkout main
 
 ### 貢献方法
 
-プルリクエスト大歓迎です！以下の手順でご協力ください：
+プルリクエスト大歓迎です！
+
+**詳しい貢献ガイドラインは [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。**
+
+以下の手順でご協力ください：
 
 1. このリポジトリをフォーク
 2. 機能ブランチを作成（`git checkout -b feature/amazing-feature`）
 3. 変更をコミット（`git commit -m 'feat: add amazing feature'`）
 4. ブランチにプッシュ（`git push origin feature/amazing-feature`）
 5. プルリクエストを作成
+
+**コーディング規約、テスト、コミットメッセージのガイドライン**については [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
 
 ---
 
