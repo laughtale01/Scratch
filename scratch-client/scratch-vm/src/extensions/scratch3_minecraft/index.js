@@ -11,6 +11,11 @@ class Scratch3MinecraftBlocks {
         this.sessionId = null;
         this.pendingRequests = new Map();
         this.requestTimeout = 5000;
+
+        // 座標変換定数
+        // スーパーフラットワールドの地表がY=-60のため、
+        // Scratch Y座標から60を引いてMinecraft座標に変換
+        this.Y_OFFSET = -60;
     }
 
     getInfo() {
@@ -577,7 +582,7 @@ class Scratch3MinecraftBlocks {
                         type: 'connect',
                         payload: {
                             clientId: 'scratch_client_' + Date.now(),
-                            authToken: 'student-token-scratch',
+                            authToken: this._generateClientToken(),
                             clientInfo: {
                                 userAgent: 'Scratch 3.0',
                                 version: '0.1.0'
@@ -634,32 +639,51 @@ class Scratch3MinecraftBlocks {
     }
 
     /**
-     * ブロック配置（絶対座標）
-     * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
+     * Scratch Y座標をMinecraft Y座標に変換
+     * @param {number} scratchY - Scratch Y座標
+     * @returns {number} Minecraft Y座標
      */
-    setBlock(args) {
-        let blockType = 'minecraft:' + args.BLOCK;
+    _toMinecraftY(scratchY) {
+        return Number(scratchY) + this.Y_OFFSET;
+    }
 
-        // プロパティの配列を作成
+    /**
+     * Minecraft Y座標をScratch Y座標に変換
+     * @param {number} minecraftY - Minecraft Y座標
+     * @returns {number} Scratch Y座標
+     */
+    _toScratchY(minecraftY) {
+        return Number(minecraftY) - this.Y_OFFSET;
+    }
+
+    /**
+     * ブロックタイプとプロパティを構築
+     * @param {string} blockId - ブロックID（例: 'stone_slab'）
+     * @param {string} placement - 配置タイプ（'bottom', 'top', 'double'）
+     * @param {string} facing - 向き（'north', 'south', 'east', 'west', 'none'）
+     * @returns {string} 完全なブロックタイプ文字列（例: 'minecraft:stone_slab[type=top]'）
+     */
+    _buildBlockTypeWithProperties(blockId, placement, facing) {
+        let blockType = 'minecraft:' + blockId;
         const properties = [];
 
         // スラブかどうかを判定
-        const isSlab = args.BLOCK.includes('_slab');
+        const isSlab = blockId.includes('_slab');
 
         // 配置パラメータを適用
-        if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
+        if (placement && placement !== 'bottom') {
             if (isSlab) {
                 // スラブの場合: type プロパティを使用
-                properties.push('type=' + args.PLACEMENT);
+                properties.push('type=' + placement);
             } else {
                 // 階段などの場合: half プロパティを使用
-                properties.push('half=' + args.PLACEMENT);
+                properties.push('half=' + placement);
             }
         }
 
         // 向きパラメータを適用（階段ブロックなどの方向）
-        if (args.FACING && args.FACING !== 'none') {
-            properties.push('facing=' + args.FACING);
+        if (facing && facing !== 'none') {
+            properties.push('facing=' + facing);
         }
 
         // プロパティを結合
@@ -667,9 +691,30 @@ class Scratch3MinecraftBlocks {
             blockType += '[' + properties.join(',') + ']';
         }
 
+        return blockType;
+    }
+
+    /**
+     * クライアント用の一意な認証トークンを生成
+     * @returns {string} 生成されたトークン
+     */
+    _generateClientToken() {
+        // タイムスタンプとランダム値を組み合わせて一意なトークンを生成
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 15);
+        return `scratch_token_${timestamp}_${random}`;
+    }
+
+    /**
+     * ブロック配置（絶対座標）
+     * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
+     */
+    setBlock(args) {
+        const blockType = this._buildBlockTypeWithProperties(args.BLOCK, args.PLACEMENT, args.FACING);
+
         return this.sendCommand('setBlock', {
             x: Number(args.X),
-            y: Number(args.Y) - 60,  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
+            y: this._toMinecraftY(args.Y),
             z: Number(args.Z),
             blockType: blockType
         });
@@ -679,34 +724,7 @@ class Scratch3MinecraftBlocks {
      * ブロック配置（相対座標）
      */
     setBlockRelative(args) {
-        let blockType = 'minecraft:' + args.BLOCK;
-
-        // プロパティの配列を作成
-        const properties = [];
-
-        // スラブかどうかを判定
-        const isSlab = args.BLOCK.includes('_slab');
-
-        // 配置パラメータを適用
-        if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
-            if (isSlab) {
-                // スラブの場合: type プロパティを使用
-                properties.push('type=' + args.PLACEMENT);
-            } else {
-                // 階段などの場合: half プロパティを使用
-                properties.push('half=' + args.PLACEMENT);
-            }
-        }
-
-        // 向きパラメータを適用（階段ブロックなどの方向）
-        if (args.FACING && args.FACING !== 'none') {
-            properties.push('facing=' + args.FACING);
-        }
-
-        // プロパティを結合
-        if (properties.length > 0) {
-            blockType += '[' + properties.join(',') + ']';
-        }
+        const blockType = this._buildBlockTypeWithProperties(args.BLOCK, args.PLACEMENT, args.FACING);
 
         return this.sendCommand('setBlock', {
             relativeX: Number(args.X),
@@ -723,39 +741,12 @@ class Scratch3MinecraftBlocks {
     setBlockRange(args) {
         const x1 = Math.floor(Number(args.X1));
         const x2 = Math.floor(Number(args.X2));
-        const y1 = Math.floor(Number(args.Y1)) - 60;  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
-        const y2 = Math.floor(Number(args.Y2)) - 60;  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
+        const y1 = Math.floor(this._toMinecraftY(args.Y1));
+        const y2 = Math.floor(this._toMinecraftY(args.Y2));
         const z1 = Math.floor(Number(args.Z1));
         const z2 = Math.floor(Number(args.Z2));
 
-        let blockType = 'minecraft:' + args.BLOCK;
-
-        // プロパティの配列を作成
-        const properties = [];
-
-        // スラブかどうかを判定
-        const isSlab = args.BLOCK.includes('_slab');
-
-        // 配置パラメータを適用
-        if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
-            if (isSlab) {
-                // スラブの場合: type プロパティを使用
-                properties.push('type=' + args.PLACEMENT);
-            } else {
-                // 階段などの場合: half プロパティを使用
-                properties.push('half=' + args.PLACEMENT);
-            }
-        }
-
-        // 向きパラメータを適用（階段ブロックなどの方向）
-        if (args.FACING && args.FACING !== 'none') {
-            properties.push('facing=' + args.FACING);
-        }
-
-        // プロパティを結合
-        if (properties.length > 0) {
-            blockType += '[' + properties.join(',') + ']';
-        }
+        const blockType = this._buildBlockTypeWithProperties(args.BLOCK, args.PLACEMENT, args.FACING);
 
         // 座標を正規化（小さい方から大きい方へ）
         const minX = Math.min(x1, x2);
@@ -807,7 +798,7 @@ class Scratch3MinecraftBlocks {
         return this.sendCommand('summonEntity', {
             entityType: 'minecraft:' + args.ENTITY,
             x: Number(args.X),
-            y: Number(args.Y) - 60,  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
+            y: this._toMinecraftY(args.Y),
             z: Number(args.Z)
         });
     }
@@ -819,7 +810,7 @@ class Scratch3MinecraftBlocks {
     teleport(args) {
         return this.sendCommand('teleport', {
             x: Number(args.X),
-            y: Number(args.Y) - 60,  // Y座標変換: -60でスーパーフラット地表(Y=-60)に対応
+            y: this._toMinecraftY(args.Y),
             z: Number(args.Z)
         });
     }
@@ -839,8 +830,8 @@ class Scratch3MinecraftBlocks {
                         case 'x':
                             return result.x || 0;
                         case 'y':
-                            // Y座標逆変換: +60でScratch座標系に変換（スーパーフラット地表Y=-60対応）
-                            return (result.y || 0) + 60;
+                            // Y座標逆変換: Minecraft座標をScratch座標に変換
+                            return this._toScratchY(result.y || 0);
                         case 'z':
                             return result.z || 0;
                         default:
