@@ -300,9 +300,23 @@ class Scratch3MinecraftBlocks {
                         'acacia_planks', 'dark_oak_planks', 'mangrove_planks', 'cherry_planks',
                         'bamboo_planks', 'bamboo_mosaic', 'crimson_planks', 'warped_planks',
 
-                        // 原木
+                        // 原木（通常版）
                         'oak_log', 'spruce_log', 'birch_log', 'jungle_log',
                         'acacia_log', 'dark_oak_log', 'mangrove_log', 'cherry_log',
+                        // 原木（剥皮版）
+                        'stripped_oak_log', 'stripped_spruce_log', 'stripped_birch_log', 'stripped_jungle_log',
+                        'stripped_acacia_log', 'stripped_dark_oak_log', 'stripped_mangrove_log', 'stripped_cherry_log',
+                        // 木ブロック（全面樹皮版）
+                        'oak_wood', 'spruce_wood', 'birch_wood', 'jungle_wood',
+                        'acacia_wood', 'dark_oak_wood', 'mangrove_wood', 'cherry_wood',
+                        // 木ブロック（剥皮版）
+                        'stripped_oak_wood', 'stripped_spruce_wood', 'stripped_birch_wood', 'stripped_jungle_wood',
+                        'stripped_acacia_wood', 'stripped_dark_oak_wood', 'stripped_mangrove_wood', 'stripped_cherry_wood',
+                        // ネザー原木
+                        'crimson_stem', 'warped_stem', 'stripped_crimson_stem', 'stripped_warped_stem',
+                        'crimson_hyphae', 'warped_hyphae', 'stripped_crimson_hyphae', 'stripped_warped_hyphae',
+                        // 竹ブロック
+                        'bamboo_block', 'stripped_bamboo_block',
 
                         // ハーフブロック（全種類）
                         'oak_slab', 'spruce_slab', 'birch_slab', 'jungle_slab',
@@ -310,10 +324,14 @@ class Scratch3MinecraftBlocks {
                         'bamboo_slab', 'bamboo_mosaic_slab', 'crimson_slab', 'warped_slab',
                         'stone_slab', 'cobblestone_slab', 'stone_brick_slab', 'brick_slab',
                         'nether_brick_slab', 'quartz_slab', 'sandstone_slab', 'red_sandstone_slab',
+                        'cut_sandstone_slab', 'cut_red_sandstone_slab',
                         'prismarine_slab', 'prismarine_brick_slab', 'dark_prismarine_slab',
                         'smooth_stone_slab', 'smooth_sandstone_slab', 'smooth_red_sandstone_slab', 'smooth_quartz_slab',
                         'granite_slab', 'polished_granite_slab', 'diorite_slab', 'polished_diorite_slab',
                         'andesite_slab', 'polished_andesite_slab',
+                        'cobbled_deepslate_slab', 'polished_deepslate_slab', 'deepslate_brick_slab', 'deepslate_tile_slab',
+                        'blackstone_slab', 'polished_blackstone_slab', 'polished_blackstone_brick_slab',
+                        'end_stone_brick_slab', 'purpur_slab',
 
                         // 階段（全種類）
                         'oak_stairs', 'spruce_stairs', 'birch_stairs', 'jungle_stairs',
@@ -325,7 +343,8 @@ class Scratch3MinecraftBlocks {
                         'prismarine_stairs', 'prismarine_brick_stairs', 'dark_prismarine_stairs',
                         'granite_stairs', 'polished_granite_stairs', 'diorite_stairs', 'polished_diorite_stairs',
                         'andesite_stairs', 'polished_andesite_stairs', 'end_stone_brick_stairs',
-                        'purpur_stairs', 'blackstone_stairs', 'polished_blackstone_stairs',
+                        'purpur_stairs', 'blackstone_stairs', 'polished_blackstone_stairs', 'polished_blackstone_brick_stairs',
+                        'cobbled_deepslate_stairs', 'polished_deepslate_stairs', 'deepslate_brick_stairs', 'deepslate_tile_stairs',
 
                         // 石材系
                         'smooth_stone', 'stone_bricks', 'cracked_stone_bricks', 'mossy_stone_bricks', 'chiseled_stone_bricks',
@@ -366,9 +385,11 @@ class Scratch3MinecraftBlocks {
                         'light_gray_concrete', 'cyan_concrete', 'purple_concrete', 'blue_concrete',
                         'brown_concrete', 'green_concrete', 'red_concrete', 'black_concrete',
 
-                        // コンクリートパウダー
+                        // コンクリートパウダー（全16色）
                         'white_concrete_powder', 'orange_concrete_powder', 'magenta_concrete_powder', 'light_blue_concrete_powder',
                         'yellow_concrete_powder', 'lime_concrete_powder', 'pink_concrete_powder', 'gray_concrete_powder',
+                        'light_gray_concrete_powder', 'cyan_concrete_powder', 'purple_concrete_powder', 'blue_concrete_powder',
+                        'brown_concrete_powder', 'green_concrete_powder', 'red_concrete_powder', 'black_concrete_powder',
 
                         // テラコッタ（全16色）
                         'white_terracotta', 'orange_terracotta', 'magenta_terracotta', 'light_blue_terracotta',
@@ -405,6 +426,7 @@ class Scratch3MinecraftBlocks {
                         'grass_block', 'podzol', 'mycelium', 'dirt_path', 'farmland',
                         'coarse_dirt', 'rooted_dirt', 'mud', 'ice', 'packed_ice', 'blue_ice',
                         'snow_block', 'snow', 'powder_snow',
+                        'mangrove_roots', 'muddy_mangrove_roots',
 
                         // 植物系
                         'oak_leaves', 'spruce_leaves', 'birch_leaves', 'jungle_leaves',
@@ -425,6 +447,8 @@ class Scratch3MinecraftBlocks {
                         'cobblestone_wall', 'mossy_cobblestone_wall', 'stone_brick_wall', 'brick_wall',
                         'granite_wall', 'diorite_wall', 'andesite_wall', 'sandstone_wall', 'red_sandstone_wall',
                         'nether_brick_wall', 'red_nether_brick_wall', 'prismarine_wall', 'end_stone_brick_wall', 'mud_brick_wall',
+                        'cobbled_deepslate_wall', 'polished_deepslate_wall', 'deepslate_brick_wall', 'deepslate_tile_wall',
+                        'blackstone_wall', 'polished_blackstone_wall', 'polished_blackstone_brick_wall',
 
                         // ドア（全種類）
                         'oak_door', 'spruce_door', 'birch_door', 'jungle_door',
