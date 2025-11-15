@@ -419,11 +419,11 @@ class Scratch3MinecraftBlocks {
 
                         // 鉱石ブロック
                         'gold_block', 'iron_block', 'copper_block', 'diamond_block', 'emerald_block',
-                        'coal_block', 'redstone_block', 'lapis_block', 'quartz_block',
+                        'coal_block', 'redstone_block', 'lapis_block',
                         'netherite_block', 'amethyst_block', 'raw_iron_block', 'raw_copper_block', 'raw_gold_block',
 
                         // 自然ブロック
-                        'grass_block', 'podzol', 'mycelium', 'dirt_path', 'farmland',
+                        'podzol', 'mycelium', 'dirt_path', 'farmland',
                         'coarse_dirt', 'rooted_dirt', 'mud', 'ice', 'packed_ice', 'blue_ice',
                         'snow_block', 'snow', 'powder_snow',
                         'mangrove_roots', 'muddy_mangrove_roots',
@@ -486,7 +486,27 @@ class Scratch3MinecraftBlocks {
                         'glowstone', 'sea_lantern', 'shroomlight',
                         'sponge', 'wet_sponge', 'slime_block', 'honey_block',
                         'tnt', 'bookshelf', 'crafting_table', 'furnace', 'chest',
-                        'water', 'lava', 'magma_block'
+                        'water', 'lava', 'magma_block',
+
+                        // シュルカーボックス（全17種類）
+                        'shulker_box',
+                        'white_shulker_box', 'orange_shulker_box', 'magenta_shulker_box', 'light_blue_shulker_box',
+                        'yellow_shulker_box', 'lime_shulker_box', 'pink_shulker_box', 'gray_shulker_box',
+                        'light_gray_shulker_box', 'cyan_shulker_box', 'purple_shulker_box', 'blue_shulker_box',
+                        'brown_shulker_box', 'green_shulker_box', 'red_shulker_box', 'black_shulker_box',
+
+                        // ベッド（全16色）
+                        'white_bed', 'orange_bed', 'magenta_bed', 'light_blue_bed',
+                        'yellow_bed', 'lime_bed', 'pink_bed', 'gray_bed',
+                        'light_gray_bed', 'cyan_bed', 'purple_bed', 'blue_bed',
+                        'brown_bed', 'green_bed', 'red_bed', 'black_bed',
+
+                        // キャンドル（全17種類）
+                        'candle',
+                        'white_candle', 'orange_candle', 'magenta_candle', 'light_blue_candle',
+                        'yellow_candle', 'lime_candle', 'pink_candle', 'gray_candle',
+                        'light_gray_candle', 'cyan_candle', 'purple_candle', 'blue_candle',
+                        'brown_candle', 'green_candle', 'red_candle', 'black_candle'
                     ]
                 },
                 blockPlacement: {
