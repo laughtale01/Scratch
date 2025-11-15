@@ -16,6 +16,12 @@ class Scratch3MinecraftBlocks {
         // スーパーフラットワールドの地表がY=-60のため、
         // Scratch Y座標から60を引いてMinecraft座標に変換
         this.Y_OFFSET = -60;
+
+        // 座標範囲の制限（Minecraft 1.20.1の仕様）
+        this.MAX_XZ_COORD = 30000000;   // X/Z座標の最大値
+        this.MIN_XZ_COORD = -30000000;  // X/Z座標の最小値
+        this.MAX_Y_COORD = 319;         // Y座標の最大値（Minecraft座標系）
+        this.MIN_Y_COORD = -64;         // Y座標の最小値（Minecraft座標系）
     }
 
     getInfo() {
@@ -601,7 +607,15 @@ class Scratch3MinecraftBlocks {
                 this.socket.onerror = (error) => {
                     console.error('WebSocket error:', error);
                     this.connected = false;
-                    reject(error);
+
+                    // ユーザーに分かりやすいエラーメッセージを作成
+                    const userMessage = 'Minecraftに接続できませんでした。\n\n' +
+                        '以下を確認してください：\n' +
+                        '1. Minecraftが起動しているか\n' +
+                        '2. MODが正しくインストールされているか\n' +
+                        '3. ホストとポートが正しいか（デフォルト: localhost:14711）';
+
+                    reject(new Error(userMessage));
                 };
 
                 this.socket.onclose = () => {
@@ -612,7 +626,15 @@ class Scratch3MinecraftBlocks {
             } catch (error) {
                 console.error('Connection error:', error);
                 this.connected = false;
-                reject(error);
+
+                // ユーザーに分かりやすいエラーメッセージを作成
+                const userMessage = '接続中にエラーが発生しました。\n\n' +
+                    '以下を確認してください：\n' +
+                    '1. インターネット接続が正常か\n' +
+                    '2. ファイアウォールでブロックされていないか\n' +
+                    '3. ホスト名（' + (args.HOST || 'localhost') + '）が正しいか';
+
+                reject(new Error(userMessage));
             }
         });
     }
@@ -633,8 +655,21 @@ class Scratch3MinecraftBlocks {
      * チャット送信
      */
     chat(args) {
+        // メッセージを検証
+        let message = String(args.MESSAGE || '').trim();
+
+        if (!message) {
+            console.warn('チャットメッセージが空です。送信をスキップします。');
+            return Promise.resolve();  // 空メッセージは無視
+        }
+
+        if (message.length > 256) {
+            console.warn(`チャットメッセージが長すぎます（${message.length}文字）。256文字に短縮します。`);
+            message = message.substring(0, 256);
+        }
+
         return this.sendCommand('chat', {
-            message: args.MESSAGE
+            message: message
         });
     }
 
@@ -706,16 +741,76 @@ class Scratch3MinecraftBlocks {
     }
 
     /**
+     * 座標値を検証（汎用）
+     * @param {*} coord - 検証する座標値
+     * @param {string} name - 座標名（エラーメッセージ用）
+     * @param {number} min - 最小値
+     * @param {number} max - 最大値
+     * @returns {number} 検証済みの座標値
+     * @throws {Error} 無効な座標値の場合
+     */
+    _validateCoordinate(coord, name, min, max) {
+        const value = Number(coord);
+
+        if (isNaN(value)) {
+            console.error(`${name}が数値ではありません: ${coord}`);
+            return 0;  // デフォルト値として0を返す（子供向けのため、エラーで止めない）
+        }
+
+        if (value < min || value > max) {
+            console.warn(`${name}が範囲外です（${min}〜${max}）: ${value}。範囲内に収めます。`);
+            // 範囲内に収める（clamp）
+            return Math.max(min, Math.min(max, value));
+        }
+
+        return value;
+    }
+
+    /**
+     * X/Z座標を検証
+     * @param {*} coord - 検証する座標値
+     * @param {string} name - 座標名（'X'または'Z'）
+     * @returns {number} 検証済みの座標値
+     */
+    _validateXZCoordinate(coord, name) {
+        return this._validateCoordinate(coord, name, this.MIN_XZ_COORD, this.MAX_XZ_COORD);
+    }
+
+    /**
+     * Y座標を検証
+     * @param {*} coord - 検証する座標値
+     * @param {string} name - 座標名（'Y'）
+     * @param {boolean} isScratchY - Scratch座標系かどうか（true: Scratch、false: Minecraft）
+     * @returns {number} 検証済みの座標値
+     */
+    _validateYCoordinate(coord, name, isScratchY = true) {
+        if (isScratchY) {
+            // Scratch座標系の場合: Minecraft座標系に変換してから範囲チェック
+            const minScratchY = this.MIN_Y_COORD - this.Y_OFFSET;  // -64 - (-60) = -4
+            const maxScratchY = this.MAX_Y_COORD - this.Y_OFFSET;  // 319 - (-60) = 379
+            return this._validateCoordinate(coord, name, minScratchY, maxScratchY);
+        } else {
+            // Minecraft座標系の場合
+            return this._validateCoordinate(coord, name, this.MIN_Y_COORD, this.MAX_Y_COORD);
+        }
+    }
+
+    /**
      * ブロック配置（絶対座標）
      * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     setBlock(args) {
         const blockType = this._buildBlockTypeWithProperties(args.BLOCK, args.PLACEMENT, args.FACING);
 
+        // 座標を検証
+        const x = this._validateXZCoordinate(args.X, 'X座標');
+        const y = this._validateYCoordinate(args.Y, 'Y座標', true);  // Scratch座標系
+        const z = this._validateXZCoordinate(args.Z, 'Z座標');
+
         return this.sendCommand('setBlock', {
-            x: Number(args.X),
-            y: this._toMinecraftY(args.Y),
-            z: Number(args.Z),
+            x: x,
+            y: this._toMinecraftY(y),
+            z: z,
             blockType: blockType
         });
     }
@@ -726,10 +821,15 @@ class Scratch3MinecraftBlocks {
     setBlockRelative(args) {
         const blockType = this._buildBlockTypeWithProperties(args.BLOCK, args.PLACEMENT, args.FACING);
 
+        // 相対座標の検証（NaNチェックのみ、範囲は現在位置次第）
+        const relX = Number(args.X) || 0;
+        const relY = Number(args.Y) || 0;
+        const relZ = Number(args.Z) || 0;
+
         return this.sendCommand('setBlock', {
-            relativeX: Number(args.X),
-            relativeY: Number(args.Y),
-            relativeZ: Number(args.Z),
+            relativeX: relX,
+            relativeY: relY,
+            relativeZ: relZ,
             blockType: blockType
         });
     }
@@ -739,12 +839,15 @@ class Scratch3MinecraftBlocks {
      * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     setBlockRange(args) {
-        const x1 = Math.floor(Number(args.X1));
-        const x2 = Math.floor(Number(args.X2));
-        const y1 = Math.floor(this._toMinecraftY(args.Y1));
-        const y2 = Math.floor(this._toMinecraftY(args.Y2));
-        const z1 = Math.floor(Number(args.Z1));
-        const z2 = Math.floor(Number(args.Z2));
+        // 座標を検証
+        const x1 = Math.floor(this._validateXZCoordinate(args.X1, 'X1座標'));
+        const x2 = Math.floor(this._validateXZCoordinate(args.X2, 'X2座標'));
+        const y1Scratch = this._validateYCoordinate(args.Y1, 'Y1座標', true);
+        const y2Scratch = this._validateYCoordinate(args.Y2, 'Y2座標', true);
+        const y1 = Math.floor(this._toMinecraftY(y1Scratch));
+        const y2 = Math.floor(this._toMinecraftY(y2Scratch));
+        const z1 = Math.floor(this._validateXZCoordinate(args.Z1, 'Z1座標'));
+        const z2 = Math.floor(this._validateXZCoordinate(args.Z2, 'Z2座標'));
 
         const blockType = this._buildBlockTypeWithProperties(args.BLOCK, args.PLACEMENT, args.FACING);
 
@@ -763,8 +866,9 @@ class Scratch3MinecraftBlocks {
         const volume = rangeX * rangeY * rangeZ;
 
         if (volume > 2000000) {
-            console.warn('範囲が大きすぎます。最大2,000,000ブロックまでです。');
-            return Promise.reject(new Error('範囲が大きすぎます（最大2,000,000ブロック）'));
+            const userMessage = `置こうとしているブロックが多すぎます！\n現在: ${volume.toLocaleString()}個\nもう少し小さい範囲にしてみてください（最大200万個まで）。`;
+            console.warn(userMessage);
+            return Promise.reject(new Error(userMessage));
         }
 
         // fillBlocksコマンドでサーバー側に一括処理を依頼
@@ -795,11 +899,16 @@ class Scratch3MinecraftBlocks {
      * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     summonEntity(args) {
+        // 座標を検証
+        const x = this._validateXZCoordinate(args.X, 'X座標');
+        const y = this._validateYCoordinate(args.Y, 'Y座標', true);
+        const z = this._validateXZCoordinate(args.Z, 'Z座標');
+
         return this.sendCommand('summonEntity', {
             entityType: 'minecraft:' + args.ENTITY,
-            x: Number(args.X),
-            y: this._toMinecraftY(args.Y),
-            z: Number(args.Z)
+            x: x,
+            y: this._toMinecraftY(y),
+            z: z
         });
     }
 
@@ -808,10 +917,15 @@ class Scratch3MinecraftBlocks {
      * Y座標変換: ScratchのY=0 → MinecraftのY=-60（スーパーフラット地表）
      */
     teleport(args) {
+        // 座標を検証
+        const x = this._validateXZCoordinate(args.X, 'X座標');
+        const y = this._validateYCoordinate(args.Y, 'Y座標', true);
+        const z = this._validateXZCoordinate(args.Z, 'Z座標');
+
         return this.sendCommand('teleport', {
-            x: Number(args.X),
-            y: this._toMinecraftY(args.Y),
-            z: Number(args.Z)
+            x: x,
+            y: this._toMinecraftY(y),
+            z: z
         });
     }
 
@@ -1063,8 +1177,9 @@ class Scratch3MinecraftBlocks {
      * Y=-64: 岩盤、Y=-63～-62: 土（2層）、Y=-61: 草ブロック、Y=-60～100: 空気
      */
     clearArea(args) {
-        const centerX = Number(args.X) || 0;
-        const centerZ = Number(args.Z) || 0;
+        // 座標を検証
+        const centerX = this._validateXZCoordinate(args.X || 0, 'X座標');
+        const centerZ = this._validateXZCoordinate(args.Z || 0, 'Z座標');
         console.log(`周囲クリア開始: 中心(${centerX}, ${centerZ}) から±50ブロック範囲`);
         return this.sendCommand('clearArea', {
             centerX: centerX,
@@ -1077,8 +1192,9 @@ class Scratch3MinecraftBlocks {
      * 指定された中心座標(X, Z)から±50ブロック、Y:-64～100の範囲のエンティティを削除（プレイヤーを除く）
      */
     clearAllEntities(args) {
-        const centerX = Number(args.X) || 0;
-        const centerZ = Number(args.Z) || 0;
+        // 座標を検証
+        const centerX = this._validateXZCoordinate(args.X || 0, 'X座標');
+        const centerZ = this._validateXZCoordinate(args.Z || 0, 'Z座標');
         console.log(`全エンティティクリア開始: 中心(${centerX}, ${centerZ}) から±50ブロック範囲`);
         return this.sendCommand('clearAllEntities', {
             centerX: centerX,
