@@ -729,8 +729,9 @@ class Scratch3MinecraftBlocks {
             }
         }
 
-        // 向きパラメータを適用（階段ブロックなどの方向）
-        if (facing && facing !== 'none') {
+        // 向きパラメータを適用（階段、ドア、フェンスゲートなど - スラブ以外）
+        // スラブには方向性がないため、isSlab=trueの場合はfacingを追加しない
+        if (facing && facing !== 'none' && !isSlab) {
             properties.push(`facing=${facing}`);
         }
 

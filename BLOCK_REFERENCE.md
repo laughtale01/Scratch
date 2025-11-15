@@ -442,6 +442,8 @@ Oak, Spruce, Birch, Jungle, Acacia, Dark Oak, Mangrove, Cherry, Bamboo, Crimson,
 ### Block Placement
 Controls vertical orientation for slabs and stairs.
 
+**📝 Note**: For slabs, this controls the **only** directional property they have. Slabs do not have horizontal facing directions - only vertical positioning (bottom/top/double).
+
 **Options**:
 - `通常（下）` (bottom): Normal placement at bottom half
 - `上下反転（上）` (top): Upside-down placement at top half
@@ -463,6 +465,16 @@ Place block x:[0] y:[64] z:[0] [stone_slab] [double] [none]
 
 ### Block Facing
 Controls horizontal direction for directional blocks (stairs, doors, etc.).
+
+**⚠️ Important Note**:
+- **Slabs do NOT have a facing property** in Minecraft 1.20.1
+- If you select a slab and set a facing direction, it will be **automatically ignored**
+- Facing only works for: stairs, doors, fence gates, trapdoors, chests, furnaces, ladders, etc.
+- Slabs only have vertical positioning (bottom/top/double) and cannot face directions
+
+**適用可能なブロック（日本語）**:
+- ✅ 使用可能: 階段、ドア、フェンスゲート、トラップドア、チェスト、かまど、はしごなど
+- ❌ 使用不可: **スラブ（ハーフブロック）**、カーペット、羊毛、コンクリートなど
 
 **Options**:
 - `デフォルト` (none): No specific direction
