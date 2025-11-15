@@ -1,8 +1,16 @@
 {
   "name": "minecraftedu-scratch-vm",
   "version": "0.1.0",
-  "description": "Virtual machine for MinecraftEdu Scratch integration",
+  "description": "Virtual machine for MinecraftEdu Scratch integration - Control Minecraft from Scratch for educational programming",
   "main": "./src/index.js",
+  "homepage": "https://laughtale01.github.io/Scratch/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laughtale01/Scratch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/laughtale01/Scratch/issues"
+  },
   "scripts": {
     "build": "webpack --mode=production",
     "dev": "webpack --mode=development --watch",
@@ -15,10 +23,29 @@
     "scratch",
     "minecraft",
     "education",
-    "programming"
+    "programming",
+    "stem",
+    "coding",
+    "learning",
+    "teaching",
+    "visual-programming",
+    "scratch3",
+    "minecraft-mod",
+    "forge",
+    "websocket",
+    "educational-software",
+    "block-programming",
+    "kids",
+    "children",
+    "japan",
+    "japanese"
   ],
   "author": "MinecraftEdu Team",
   "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
   "dependencies": {
     "scratch-vm": "^2.3.2"
   },

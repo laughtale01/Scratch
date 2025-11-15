@@ -541,9 +541,18 @@ class Scratch3MinecraftBlocks {
                 entityTypes: {
                     acceptReporters: true,
                     items: [
-                        'pig', 'cow', 'sheep', 'chicken',
-                        'zombie', 'skeleton', 'creeper', 'spider',
-                        'horse', 'wolf', 'cat', 'villager'
+                        { text: 'ブタ', value: 'pig' },
+                        { text: 'ウシ', value: 'cow' },
+                        { text: 'ヒツジ', value: 'sheep' },
+                        { text: 'ニワトリ', value: 'chicken' },
+                        { text: 'ゾンビ', value: 'zombie' },
+                        { text: 'スケルトン', value: 'skeleton' },
+                        { text: 'クリーパー', value: 'creeper' },
+                        { text: 'クモ', value: 'spider' },
+                        { text: 'ウマ', value: 'horse' },
+                        { text: 'オオカミ', value: 'wolf' },
+                        { text: 'ネコ', value: 'cat' },
+                        { text: '村人', value: 'villager' }
                     ]
                 },
                 coordinates: {
@@ -552,7 +561,11 @@ class Scratch3MinecraftBlocks {
                 },
                 weatherTypes: {
                     acceptReporters: false,
-                    items: ['clear', 'rain', 'thunder']
+                    items: [
+                        { text: '晴れ', value: 'clear' },
+                        { text: '雨', value: 'rain' },
+                        { text: '雷雨', value: 'thunder' }
+                    ]
                 },
                 timeValues: {
                     acceptReporters: true,
