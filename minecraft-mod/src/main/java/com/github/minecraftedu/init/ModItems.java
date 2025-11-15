@@ -36,9 +36,283 @@ public class ModItems {
         )
     );
 
-    // Future vertical slab items can be added here:
-    // public static final RegistryObject<Item> VERTICAL_STONE_SLAB = ITEMS.register(
-    //     "vertical_stone_slab",
-    //     () -> new BlockItem(ModBlocks.VERTICAL_STONE_SLAB.get(), new Item.Properties())
-    // );
+    // ========================================
+    // 木材系垂直スラブアイテム (Wood Vertical Slab Items)
+    // ========================================
+
+    public static final RegistryObject<Item> VERTICAL_BIRCH_SLAB = ITEMS.register(
+        "vertical_birch_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_BIRCH_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_SPRUCE_SLAB = ITEMS.register(
+        "vertical_spruce_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_SPRUCE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_JUNGLE_SLAB = ITEMS.register(
+        "vertical_jungle_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_JUNGLE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_ACACIA_SLAB = ITEMS.register(
+        "vertical_acacia_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_ACACIA_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_DARK_OAK_SLAB = ITEMS.register(
+        "vertical_dark_oak_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_DARK_OAK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_CHERRY_SLAB = ITEMS.register(
+        "vertical_cherry_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_CHERRY_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_MANGROVE_SLAB = ITEMS.register(
+        "vertical_mangrove_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_MANGROVE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_CRIMSON_SLAB = ITEMS.register(
+        "vertical_crimson_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_CRIMSON_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WARPED_SLAB = ITEMS.register(
+        "vertical_warped_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WARPED_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    // ========================================
+    // 石材系垂直スラブアイテム (Stone Vertical Slab Items)
+    // ========================================
+
+    public static final RegistryObject<Item> VERTICAL_STONE_SLAB = ITEMS.register(
+        "vertical_stone_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_STONE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_COBBLESTONE_SLAB = ITEMS.register(
+        "vertical_cobblestone_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_COBBLESTONE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_STONE_BRICK_SLAB = ITEMS.register(
+        "vertical_stone_brick_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_STONE_BRICK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_SMOOTH_STONE_SLAB = ITEMS.register(
+        "vertical_smooth_stone_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_SMOOTH_STONE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_ANDESITE_SLAB = ITEMS.register(
+        "vertical_andesite_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_ANDESITE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_GRANITE_SLAB = ITEMS.register(
+        "vertical_granite_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_GRANITE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_DIORITE_SLAB = ITEMS.register(
+        "vertical_diorite_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_DIORITE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_SANDSTONE_SLAB = ITEMS.register(
+        "vertical_sandstone_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_SANDSTONE_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_BRICK_SLAB = ITEMS.register(
+        "vertical_brick_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_BRICK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_QUARTZ_SLAB = ITEMS.register(
+        "vertical_quartz_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_QUARTZ_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    // ========================================
+    // 鉱石・鉱物系垂直スラブアイテム (Ore/Mineral Vertical Slab Items)
+    // ========================================
+
+    public static final RegistryObject<Item> VERTICAL_IRON_BLOCK_SLAB = ITEMS.register(
+        "vertical_iron_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_IRON_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_GOLD_BLOCK_SLAB = ITEMS.register(
+        "vertical_gold_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_GOLD_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_DIAMOND_BLOCK_SLAB = ITEMS.register(
+        "vertical_diamond_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_DIAMOND_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_EMERALD_BLOCK_SLAB = ITEMS.register(
+        "vertical_emerald_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_EMERALD_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_COPPER_BLOCK_SLAB = ITEMS.register(
+        "vertical_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_LAPIS_BLOCK_SLAB = ITEMS.register(
+        "vertical_lapis_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_LAPIS_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_REDSTONE_BLOCK_SLAB = ITEMS.register(
+        "vertical_redstone_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_REDSTONE_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_COAL_BLOCK_SLAB = ITEMS.register(
+        "vertical_coal_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_COAL_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_NETHERITE_BLOCK_SLAB = ITEMS.register(
+        "vertical_netherite_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_NETHERITE_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_AMETHYST_BLOCK_SLAB = ITEMS.register(
+        "vertical_amethyst_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_AMETHYST_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    // ========================================
+    // 銅系垂直スラブアイテム - 日本建築の屋根用 (Copper Vertical Slab Items - For Japanese Architecture Roofs)
+    // ========================================
+
+    public static final RegistryObject<Item> VERTICAL_CUT_COPPER_SLAB = ITEMS.register(
+        "vertical_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_EXPOSED_CUT_COPPER_SLAB = ITEMS.register(
+        "vertical_exposed_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_EXPOSED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WEATHERED_CUT_COPPER_SLAB = ITEMS.register(
+        "vertical_weathered_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WEATHERED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_OXIDIZED_CUT_COPPER_SLAB = ITEMS.register(
+        "vertical_oxidized_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_OXIDIZED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
 }

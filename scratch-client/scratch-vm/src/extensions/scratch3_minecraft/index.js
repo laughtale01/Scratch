@@ -293,6 +293,19 @@ class Scratch3MinecraftBlocks {
                 },
                 '---',
                 {
+                    opcode: 'blockSlab',
+                    blockType: 'reporter',
+                    text: 'スラブ [SLAB]',
+                    arguments: {
+                        SLAB: {
+                            type: 'string',
+                            menu: 'slabBlocks',
+                            defaultValue: 'vertical_oak_slab'
+                        }
+                    }
+                },
+                '---',
+                {
                     opcode: 'isConnected',
                     blockType: 'Boolean',
                     text: '接続中？'
@@ -345,7 +358,20 @@ class Scratch3MinecraftBlocks {
                         'end_stone_brick_slab', 'purpur_slab',
 
                         // 垂直ハーフブロック（MOD追加ブロック）
-                        'vertical_oak_slab',
+                        // 木材系
+                        'vertical_oak_slab', 'vertical_birch_slab', 'vertical_spruce_slab', 'vertical_jungle_slab',
+                        'vertical_acacia_slab', 'vertical_dark_oak_slab', 'vertical_cherry_slab', 'vertical_mangrove_slab',
+                        'vertical_crimson_slab', 'vertical_warped_slab',
+                        // 石材系
+                        'vertical_stone_slab', 'vertical_cobblestone_slab', 'vertical_stone_brick_slab', 'vertical_smooth_stone_slab',
+                        'vertical_andesite_slab', 'vertical_granite_slab', 'vertical_diorite_slab', 'vertical_sandstone_slab',
+                        'vertical_brick_slab', 'vertical_quartz_slab',
+                        // 鉱石・鉱物系
+                        'vertical_iron_block_slab', 'vertical_gold_block_slab', 'vertical_diamond_block_slab', 'vertical_emerald_block_slab',
+                        'vertical_copper_block_slab', 'vertical_lapis_block_slab', 'vertical_redstone_block_slab', 'vertical_coal_block_slab',
+                        'vertical_netherite_block_slab', 'vertical_amethyst_block_slab',
+                        // 銅系（日本建築の屋根用）
+                        'vertical_cut_copper_slab', 'vertical_exposed_cut_copper_slab', 'vertical_weathered_cut_copper_slab', 'vertical_oxidized_cut_copper_slab',
 
                         // 階段（全種類）
                         'oak_stairs', 'spruce_stairs', 'birch_stairs', 'jungle_stairs',
@@ -578,6 +604,52 @@ class Scratch3MinecraftBlocks {
                         {text: '夕方', value: 'sunset'},
                         {text: '夜', value: 'night'},
                         {text: '真夜中', value: 'midnight'}
+                    ]
+                },
+                slabBlocks: {
+                    acceptReporters: true,
+                    items: [
+                        // 木材系垂直スラブ
+                        {text: 'オークの垂直スラブ', value: 'vertical_oak_slab'},
+                        {text: 'シラカバの垂直スラブ', value: 'vertical_birch_slab'},
+                        {text: 'マツの垂直スラブ', value: 'vertical_spruce_slab'},
+                        {text: 'ジャングルの垂直スラブ', value: 'vertical_jungle_slab'},
+                        {text: 'アカシアの垂直スラブ', value: 'vertical_acacia_slab'},
+                        {text: 'ダークオークの垂直スラブ', value: 'vertical_dark_oak_slab'},
+                        {text: 'サクラの垂直スラブ', value: 'vertical_cherry_slab'},
+                        {text: 'マングローブの垂直スラブ', value: 'vertical_mangrove_slab'},
+                        {text: '真紅の垂直スラブ', value: 'vertical_crimson_slab'},
+                        {text: '歪んだ垂直スラブ', value: 'vertical_warped_slab'},
+
+                        // 石材系垂直スラブ
+                        {text: '石の垂直スラブ', value: 'vertical_stone_slab'},
+                        {text: '丸石の垂直スラブ', value: 'vertical_cobblestone_slab'},
+                        {text: '石レンガの垂直スラブ', value: 'vertical_stone_brick_slab'},
+                        {text: '滑らかな石の垂直スラブ', value: 'vertical_smooth_stone_slab'},
+                        {text: '安山岩の垂直スラブ', value: 'vertical_andesite_slab'},
+                        {text: '花崗岩の垂直スラブ', value: 'vertical_granite_slab'},
+                        {text: '閃緑岩の垂直スラブ', value: 'vertical_diorite_slab'},
+                        {text: '砂岩の垂直スラブ', value: 'vertical_sandstone_slab'},
+                        {text: 'レンガの垂直スラブ', value: 'vertical_brick_slab'},
+                        {text: 'クォーツの垂直スラブ', value: 'vertical_quartz_slab'},
+
+                        // 鉱石・鉱物系垂直スラブ
+                        {text: '鉄ブロックの垂直スラブ', value: 'vertical_iron_block_slab'},
+                        {text: '金ブロックの垂直スラブ', value: 'vertical_gold_block_slab'},
+                        {text: 'ダイヤブロックの垂直スラブ', value: 'vertical_diamond_block_slab'},
+                        {text: 'エメラルドブロックの垂直スラブ', value: 'vertical_emerald_block_slab'},
+                        {text: '銅ブロックの垂直スラブ', value: 'vertical_copper_block_slab'},
+                        {text: 'ラピスラズリブロックの垂直スラブ', value: 'vertical_lapis_block_slab'},
+                        {text: 'レッドストーンブロックの垂直スラブ', value: 'vertical_redstone_block_slab'},
+                        {text: '石炭ブロックの垂直スラブ', value: 'vertical_coal_block_slab'},
+                        {text: 'ネザライトブロックの垂直スラブ', value: 'vertical_netherite_block_slab'},
+                        {text: 'アメジストブロックの垂直スラブ', value: 'vertical_amethyst_block_slab'},
+
+                        // 銅系垂直スラブ（日本建築の屋根用）
+                        {text: '切り込み入り銅の垂直スラブ', value: 'vertical_cut_copper_slab'},
+                        {text: '風化した切り込み入り銅の垂直スラブ', value: 'vertical_exposed_cut_copper_slab'},
+                        {text: '錆びた切り込み入り銅の垂直スラブ', value: 'vertical_weathered_cut_copper_slab'},
+                        {text: '酸化した切り込み入り銅の垂直スラブ', value: 'vertical_oxidized_cut_copper_slab'}
                     ]
                 }
             }
@@ -1021,6 +1093,16 @@ class Scratch3MinecraftBlocks {
      */
     isConnected() {
         return this.connected;
+    }
+
+    /**
+     * スラブレポーター
+     * @param {object} args - ブロック引数
+     * @param {string} args.SLAB - スラブの種類
+     * @returns {string} スラブID
+     */
+    blockSlab(args) {
+        return args.SLAB;
     }
 
     /**
