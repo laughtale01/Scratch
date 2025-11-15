@@ -59,6 +59,25 @@ describe('Scratch3MinecraftBlocks', () => {
             expect(result).toBe('minecraft:stone_slab');
         });
 
+        // スラブにfacingを設定した場合のテスト（修正の検証）
+        test('should ignore facing property for slabs (type=top)', () => {
+            const result = instance._buildBlockTypeWithProperties('stone_slab', 'top', 'north');
+            expect(result).toBe('minecraft:stone_slab[type=top]');
+            // facingが無視されることを確認
+        });
+
+        test('should ignore facing property for slabs (type=bottom)', () => {
+            const result = instance._buildBlockTypeWithProperties('oak_slab', 'bottom', 'east');
+            expect(result).toBe('minecraft:oak_slab');
+            // bottomとfacingの両方が無視されることを確認
+        });
+
+        test('should ignore facing property for slabs (type=double)', () => {
+            const result = instance._buildBlockTypeWithProperties('birch_slab', 'double', 'west');
+            expect(result).toBe('minecraft:birch_slab[type=double]');
+            // facingが無視されることを確認
+        });
+
         test('should build stairs with half=top property', () => {
             const result = instance._buildBlockTypeWithProperties('oak_stairs', 'top', 'none');
             expect(result).toBe('minecraft:oak_stairs[half=top]');
