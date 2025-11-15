@@ -292,7 +292,9 @@ class Scratch3MinecraftBlocks {
                     acceptReporters: true,
                     items: [
                         'stone', 'dirt', 'grass_block', 'cobblestone',
-                        'oak_planks', 'oak_stairs', 'stone_stairs', 'glass', 'sand', 'gravel',
+                        'oak_planks', 'oak_stairs', 'stone_stairs',
+                        'oak_slab', 'stone_slab', 'cobblestone_slab', 'brick_slab',
+                        'glass', 'sand', 'gravel',
                         'gold_block', 'diamond_block', 'emerald_block',
                         'iron_block', 'coal_block', 'redstone_block',
                         'brick', 'oak_log', 'water', 'lava'
@@ -302,7 +304,8 @@ class Scratch3MinecraftBlocks {
                     acceptReporters: false,
                     items: [
                         { text: '通常（下）', value: 'bottom' },
-                        { text: '上下反転（上）', value: 'top' }
+                        { text: '上下反転（上）', value: 'top' },
+                        { text: 'ダブル', value: 'double' }
                     ]
                 },
                 blockFacing: {
@@ -431,9 +434,18 @@ class Scratch3MinecraftBlocks {
         // プロパティの配列を作成
         const properties = [];
 
-        // 配置パラメータを適用（階段ブロックなどの上下反転）
+        // スラブかどうかを判定
+        const isSlab = args.BLOCK.includes('_slab');
+
+        // 配置パラメータを適用
         if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
-            properties.push('half=' + args.PLACEMENT);
+            if (isSlab) {
+                // スラブの場合: type プロパティを使用
+                properties.push('type=' + args.PLACEMENT);
+            } else {
+                // 階段などの場合: half プロパティを使用
+                properties.push('half=' + args.PLACEMENT);
+            }
         }
 
         // 向きパラメータを適用（階段ブロックなどの方向）
@@ -463,9 +475,18 @@ class Scratch3MinecraftBlocks {
         // プロパティの配列を作成
         const properties = [];
 
-        // 配置パラメータを適用（階段ブロックなどの上下反転）
+        // スラブかどうかを判定
+        const isSlab = args.BLOCK.includes('_slab');
+
+        // 配置パラメータを適用
         if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
-            properties.push('half=' + args.PLACEMENT);
+            if (isSlab) {
+                // スラブの場合: type プロパティを使用
+                properties.push('type=' + args.PLACEMENT);
+            } else {
+                // 階段などの場合: half プロパティを使用
+                properties.push('half=' + args.PLACEMENT);
+            }
         }
 
         // 向きパラメータを適用（階段ブロックなどの方向）
@@ -503,9 +524,18 @@ class Scratch3MinecraftBlocks {
         // プロパティの配列を作成
         const properties = [];
 
-        // 配置パラメータを適用（階段ブロックなどの上下反転）
+        // スラブかどうかを判定
+        const isSlab = args.BLOCK.includes('_slab');
+
+        // 配置パラメータを適用
         if (args.PLACEMENT && args.PLACEMENT !== 'bottom') {
-            properties.push('half=' + args.PLACEMENT);
+            if (isSlab) {
+                // スラブの場合: type プロパティを使用
+                properties.push('type=' + args.PLACEMENT);
+            } else {
+                // 階段などの場合: half プロパティを使用
+                properties.push('half=' + args.PLACEMENT);
+            }
         }
 
         // 向きパラメータを適用（階段ブロックなどの方向）
