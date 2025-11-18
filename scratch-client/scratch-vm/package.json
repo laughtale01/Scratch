@@ -49,7 +49,7 @@
     "npm": ">=8.0.0"
   },
   "dependencies": {
-    "scratch-vm": "^2.3.2"
+    "scratch-vm": "^5.0.300"
   },
   "devDependencies": {
     "@babel/core": "^7.22.0",
