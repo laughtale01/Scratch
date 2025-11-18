@@ -315,4 +315,161 @@ public class ModItems {
             new Item.Properties()
         )
     );
+
+    // ========================================
+    // Copper Slab Items
+    // ========================================
+
+    public static final RegistryObject<Item> VERTICAL_EXPOSED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "vertical_exposed_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_EXPOSED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WEATHERED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "vertical_weathered_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WEATHERED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_OXIDIZED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "vertical_oxidized_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_OXIDIZED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WAXED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "vertical_waxed_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WAXED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WAXED_EXPOSED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "vertical_waxed_exposed_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WAXED_EXPOSED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WAXED_WEATHERED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "vertical_waxed_weathered_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WAXED_WEATHERED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WAXED_OXIDIZED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "vertical_waxed_oxidized_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WAXED_OXIDIZED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WAXED_CUT_COPPER_SLAB = ITEMS.register(
+        "vertical_waxed_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WAXED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WAXED_EXPOSED_CUT_COPPER_SLAB = ITEMS.register(
+        "vertical_waxed_exposed_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WAXED_EXPOSED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WAXED_WEATHERED_CUT_COPPER_SLAB = ITEMS.register(
+        "vertical_waxed_weathered_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WAXED_WEATHERED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> VERTICAL_WAXED_OXIDIZED_CUT_COPPER_SLAB = ITEMS.register(
+        "vertical_waxed_oxidized_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.VERTICAL_WAXED_OXIDIZED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> COPPER_BLOCK_SLAB = ITEMS.register(
+        "copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> EXPOSED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "exposed_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.EXPOSED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WEATHERED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "weathered_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.WEATHERED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> OXIDIZED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "oxidized_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.OXIDIZED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WAXED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "waxed_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WAXED_EXPOSED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "waxed_exposed_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_EXPOSED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WAXED_WEATHERED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "waxed_weathered_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_WEATHERED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WAXED_OXIDIZED_COPPER_BLOCK_SLAB = ITEMS.register(
+        "waxed_oxidized_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_OXIDIZED_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
 }

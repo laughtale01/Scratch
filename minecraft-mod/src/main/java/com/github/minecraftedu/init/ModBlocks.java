@@ -4,6 +4,7 @@ import com.github.minecraftedu.MinecraftEduMod;
 import com.github.minecraftedu.block.VerticalSlabBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -332,4 +333,169 @@ public class ModBlocks {
                 .requiresCorrectToolForDrops()
         )
     );
+
+    // ========================================
+    // Copper Block Vertical Slabs - Oxidation Stages
+    // ========================================
+
+    public static final RegistryObject<Block> VERTICAL_EXPOSED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "vertical_exposed_copper_block_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.EXPOSED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_WEATHERED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "vertical_weathered_copper_block_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WEATHERED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_OXIDIZED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "vertical_oxidized_copper_block_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.OXIDIZED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    // ========================================
+    // Waxed Copper Vertical Slabs
+    // ========================================
+
+    public static final RegistryObject<Block> VERTICAL_WAXED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "vertical_waxed_copper_block_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.COPPER_BLOCK)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_WAXED_EXPOSED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "vertical_waxed_exposed_copper_block_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.EXPOSED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_WAXED_WEATHERED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "vertical_waxed_weathered_copper_block_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WEATHERED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_WAXED_OXIDIZED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "vertical_waxed_oxidized_copper_block_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.OXIDIZED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_WAXED_CUT_COPPER_SLAB = BLOCKS.register(
+        "vertical_waxed_cut_copper_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_WAXED_EXPOSED_CUT_COPPER_SLAB = BLOCKS.register(
+        "vertical_waxed_exposed_cut_copper_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.EXPOSED_CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_WAXED_WEATHERED_CUT_COPPER_SLAB = BLOCKS.register(
+        "vertical_waxed_weathered_cut_copper_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WEATHERED_CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> VERTICAL_WAXED_OXIDIZED_CUT_COPPER_SLAB = BLOCKS.register(
+        "vertical_waxed_oxidized_cut_copper_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.OXIDIZED_CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    // ========================================
+    // Copper Block Horizontal Slabs
+    // ========================================
+
+    public static final RegistryObject<Block> COPPER_BLOCK_SLAB = BLOCKS.register(
+        "copper_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.COPPER_BLOCK)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> EXPOSED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "exposed_copper_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.EXPOSED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WEATHERED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "weathered_copper_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WEATHERED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> OXIDIZED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "oxidized_copper_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.OXIDIZED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WAXED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "waxed_copper_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.COPPER_BLOCK)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WAXED_EXPOSED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "waxed_exposed_copper_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.EXPOSED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WAXED_WEATHERED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "waxed_weathered_copper_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WEATHERED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WAXED_OXIDIZED_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "waxed_oxidized_copper_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.OXIDIZED_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
 }

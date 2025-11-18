@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "type=bottom,waterlogged=false": {
+      "model": "minecraftedu:block/copper_block_slab"
+    },
+    "type=bottom,waterlogged=true": {
+      "model": "minecraftedu:block/copper_block_slab"
+    },
+    "type=top,waterlogged=false": {
+      "model": "minecraftedu:block/copper_block_slab_top"
+    },
+    "type=top,waterlogged=true": {
+      "model": "minecraftedu:block/copper_block_slab_top"
+    },
+    "type=double,waterlogged=false": {
+      "model": "minecraftedu:block/copper_block_slab_double"
+    },
+    "type=double,waterlogged=true": {
+      "model": "minecraftedu:block/copper_block_slab_double"
+    }
+  }
+}
