@@ -43,78 +43,80 @@ public class MinecraftEduMod {
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
+        LOGGER.info("BuildCreativeModeTabContentsEvent called for tab: {}", event.getTabKey().location());
         // Add all custom blocks to the Building Blocks creative tab
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            LOGGER.info("Adding custom blocks to Building Blocks tab");
             // Wood vertical slabs
-            event.accept(ModItems.VERTICAL_OAK_SLAB);
-            event.accept(ModItems.VERTICAL_BIRCH_SLAB);
-            event.accept(ModItems.VERTICAL_SPRUCE_SLAB);
-            event.accept(ModItems.VERTICAL_JUNGLE_SLAB);
-            event.accept(ModItems.VERTICAL_ACACIA_SLAB);
-            event.accept(ModItems.VERTICAL_DARK_OAK_SLAB);
-            event.accept(ModItems.VERTICAL_CHERRY_SLAB);
-            event.accept(ModItems.VERTICAL_MANGROVE_SLAB);
-            event.accept(ModItems.VERTICAL_CRIMSON_SLAB);
-            event.accept(ModItems.VERTICAL_WARPED_SLAB);
+            event.accept(ModItems.VERTICAL_OAK_SLAB.get());
+            event.accept(ModItems.VERTICAL_BIRCH_SLAB.get());
+            event.accept(ModItems.VERTICAL_SPRUCE_SLAB.get());
+            event.accept(ModItems.VERTICAL_JUNGLE_SLAB.get());
+            event.accept(ModItems.VERTICAL_ACACIA_SLAB.get());
+            event.accept(ModItems.VERTICAL_DARK_OAK_SLAB.get());
+            event.accept(ModItems.VERTICAL_CHERRY_SLAB.get());
+            event.accept(ModItems.VERTICAL_MANGROVE_SLAB.get());
+            event.accept(ModItems.VERTICAL_CRIMSON_SLAB.get());
+            event.accept(ModItems.VERTICAL_WARPED_SLAB.get());
 
             // Stone vertical slabs
-            event.accept(ModItems.VERTICAL_STONE_SLAB);
-            event.accept(ModItems.VERTICAL_COBBLESTONE_SLAB);
-            event.accept(ModItems.VERTICAL_STONE_BRICK_SLAB);
-            event.accept(ModItems.VERTICAL_SMOOTH_STONE_SLAB);
-            event.accept(ModItems.VERTICAL_ANDESITE_SLAB);
-            event.accept(ModItems.VERTICAL_GRANITE_SLAB);
-            event.accept(ModItems.VERTICAL_DIORITE_SLAB);
-            event.accept(ModItems.VERTICAL_SANDSTONE_SLAB);
-            event.accept(ModItems.VERTICAL_BRICK_SLAB);
-            event.accept(ModItems.VERTICAL_QUARTZ_SLAB);
+            event.accept(ModItems.VERTICAL_STONE_SLAB.get());
+            event.accept(ModItems.VERTICAL_COBBLESTONE_SLAB.get());
+            event.accept(ModItems.VERTICAL_STONE_BRICK_SLAB.get());
+            event.accept(ModItems.VERTICAL_SMOOTH_STONE_SLAB.get());
+            event.accept(ModItems.VERTICAL_ANDESITE_SLAB.get());
+            event.accept(ModItems.VERTICAL_GRANITE_SLAB.get());
+            event.accept(ModItems.VERTICAL_DIORITE_SLAB.get());
+            event.accept(ModItems.VERTICAL_SANDSTONE_SLAB.get());
+            event.accept(ModItems.VERTICAL_BRICK_SLAB.get());
+            event.accept(ModItems.VERTICAL_QUARTZ_SLAB.get());
 
             // Mineral vertical slabs
-            event.accept(ModItems.VERTICAL_IRON_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_GOLD_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_DIAMOND_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_EMERALD_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_LAPIS_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_REDSTONE_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_COAL_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_NETHERITE_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_AMETHYST_BLOCK_SLAB);
+            event.accept(ModItems.VERTICAL_IRON_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_GOLD_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_DIAMOND_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_EMERALD_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_LAPIS_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_REDSTONE_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_COAL_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_NETHERITE_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_AMETHYST_BLOCK_SLAB.get());
 
             // Copper vertical slabs - cut copper variants
-            event.accept(ModItems.VERTICAL_CUT_COPPER_SLAB);
-            event.accept(ModItems.VERTICAL_EXPOSED_CUT_COPPER_SLAB);
-            event.accept(ModItems.VERTICAL_WEATHERED_CUT_COPPER_SLAB);
-            event.accept(ModItems.VERTICAL_OXIDIZED_CUT_COPPER_SLAB);
+            event.accept(ModItems.VERTICAL_CUT_COPPER_SLAB.get());
+            event.accept(ModItems.VERTICAL_EXPOSED_CUT_COPPER_SLAB.get());
+            event.accept(ModItems.VERTICAL_WEATHERED_CUT_COPPER_SLAB.get());
+            event.accept(ModItems.VERTICAL_OXIDIZED_CUT_COPPER_SLAB.get());
 
             // NEW: Copper vertical slabs - block variants with oxidation stages
-            event.accept(ModItems.VERTICAL_EXPOSED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_WEATHERED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_OXIDIZED_COPPER_BLOCK_SLAB);
+            event.accept(ModItems.VERTICAL_EXPOSED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_WEATHERED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_OXIDIZED_COPPER_BLOCK_SLAB.get());
 
             // NEW: Waxed copper vertical slabs - block variants
-            event.accept(ModItems.VERTICAL_WAXED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_WAXED_EXPOSED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_WAXED_WEATHERED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.VERTICAL_WAXED_OXIDIZED_COPPER_BLOCK_SLAB);
+            event.accept(ModItems.VERTICAL_WAXED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_WAXED_EXPOSED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_WAXED_WEATHERED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.VERTICAL_WAXED_OXIDIZED_COPPER_BLOCK_SLAB.get());
 
             // NEW: Waxed copper vertical slabs - cut copper variants
-            event.accept(ModItems.VERTICAL_WAXED_CUT_COPPER_SLAB);
-            event.accept(ModItems.VERTICAL_WAXED_EXPOSED_CUT_COPPER_SLAB);
-            event.accept(ModItems.VERTICAL_WAXED_WEATHERED_CUT_COPPER_SLAB);
-            event.accept(ModItems.VERTICAL_WAXED_OXIDIZED_CUT_COPPER_SLAB);
+            event.accept(ModItems.VERTICAL_WAXED_CUT_COPPER_SLAB.get());
+            event.accept(ModItems.VERTICAL_WAXED_EXPOSED_CUT_COPPER_SLAB.get());
+            event.accept(ModItems.VERTICAL_WAXED_WEATHERED_CUT_COPPER_SLAB.get());
+            event.accept(ModItems.VERTICAL_WAXED_OXIDIZED_CUT_COPPER_SLAB.get());
 
             // NEW: Horizontal copper slabs - normal oxidation stages
-            event.accept(ModItems.COPPER_BLOCK_SLAB);
-            event.accept(ModItems.EXPOSED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.WEATHERED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.OXIDIZED_COPPER_BLOCK_SLAB);
+            event.accept(ModItems.COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.EXPOSED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.WEATHERED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.OXIDIZED_COPPER_BLOCK_SLAB.get());
 
             // NEW: Horizontal waxed copper slabs
-            event.accept(ModItems.WAXED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.WAXED_EXPOSED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.WAXED_WEATHERED_COPPER_BLOCK_SLAB);
-            event.accept(ModItems.WAXED_OXIDIZED_COPPER_BLOCK_SLAB);
+            event.accept(ModItems.WAXED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.WAXED_EXPOSED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.WAXED_WEATHERED_COPPER_BLOCK_SLAB.get());
+            event.accept(ModItems.WAXED_OXIDIZED_COPPER_BLOCK_SLAB.get());
 
             LOGGER.info("Added all custom blocks to Building Blocks creative tab");
         }

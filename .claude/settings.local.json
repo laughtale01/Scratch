@@ -6,7 +6,19 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(tree:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebSearch",
+      "WebFetch(domain:minecraft.wiki)",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(iconv:*)",
+      "Bash(./gradlew classes:*)",
+      "Bash(./gradlew:*)",
+      "Bash(javac:*)",
+      "Bash(python3:*)",
+      "Bash(jar tf:*)",
+      "Bash(git reset:*)",
+      "Bash(git tag:*)",
+      "Bash(git describe:*)"
     ],
     "deny": [],
     "ask": []
