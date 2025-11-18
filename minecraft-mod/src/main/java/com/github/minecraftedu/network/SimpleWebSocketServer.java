@@ -11,8 +11,6 @@ import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class SimpleWebSocketServer {
     private static final String WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -91,7 +89,8 @@ public class SimpleWebSocketServer {
                 int firstByte = in.read();
                 if (firstByte == -1) break;
 
-                boolean fin = (firstByte & 0x80) != 0;
+                // FIN bit indicates if this is the final fragment (not currently used)
+                // boolean fin = (firstByte & 0x80) != 0;
                 int opcode = firstByte & 0x0F;
 
                 int secondByte = in.read();

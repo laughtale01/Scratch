@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@SuppressWarnings("deprecation") // BuiltInRegistries is deprecated but still functional in 1.20.1
 public class CommandExecutor {
 
     private final MinecraftServer server;

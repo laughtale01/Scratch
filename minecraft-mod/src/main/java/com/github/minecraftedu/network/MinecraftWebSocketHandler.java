@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public class MinecraftWebSocketHandler {
 
+    @SuppressWarnings("FieldCanBeLocal")
     private final MinecraftServer minecraftServer;
     private final Gson gson;
     private final CommandExecutor commandExecutor;

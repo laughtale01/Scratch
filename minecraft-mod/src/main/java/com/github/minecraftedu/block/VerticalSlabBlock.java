@@ -165,7 +165,7 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
      */
     @Override
     public FluidState getFluidState(BlockState state) {
-        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
+        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : Fluids.EMPTY.defaultFluidState();
     }
 
     // Future enhancement: Allow combining two vertical slabs into a full block
