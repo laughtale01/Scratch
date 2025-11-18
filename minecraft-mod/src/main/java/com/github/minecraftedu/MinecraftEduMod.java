@@ -2,6 +2,7 @@ package com.github.minecraftedu;
 
 import com.github.minecraftedu.init.ModBlocks;
 import com.github.minecraftedu.init.ModItems;
+import com.github.minecraftedu.init.ModCreativeTabs;
 import com.github.minecraftedu.network.SimpleWebSocketServer;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.common.MinecraftForge;
@@ -31,6 +32,7 @@ public class MinecraftEduMod {
         // Register deferred registries to the MOD event bus
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
 
         // Register creative mode tab handler
         modEventBus.addListener(this::addCreative);
@@ -42,7 +44,7 @@ public class MinecraftEduMod {
         LOGGER.info("Registered custom blocks and items");
     }
 
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
+    public void addCreative(BuildCreativeModeTabContentsEvent event) {
         LOGGER.info("BuildCreativeModeTabContentsEvent called for tab: {}", event.getTabKey().location());
         // Add all custom blocks to the Building Blocks creative tab
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {

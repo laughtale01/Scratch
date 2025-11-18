@@ -18,7 +18,9 @@
       "Bash(jar tf:*)",
       "Bash(git reset:*)",
       "Bash(git tag:*)",
-      "Bash(git describe:*)"
+      "Bash(git describe:*)",
+      "WebFetch(domain:docs.minecraftforge.net)",
+      "WebFetch(domain:gist.github.com)"
     ],
     "deny": [],
     "ask": []
