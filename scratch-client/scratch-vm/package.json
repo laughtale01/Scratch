@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "description": "Virtual machine for MinecraftEdu Scratch integration - Control Minecraft from Scratch for educational programming",
   "main": "./src/index.js",
-  "homepage": "https://laughtale01.github.io/Scratch/",
+  "homepage": "https://laughtale01.github.io/scratch/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/laughtale01/Scratch.git"
+    "url": "https://github.com/laughtale01/scratch.git"
   },
   "bugs": {
-    "url": "https://github.com/laughtale01/Scratch/issues"
+    "url": "https://github.com/laughtale01/scratch/issues"
   },
   "scripts": {
     "build": "webpack --mode=production",
