@@ -1949,6 +1949,30 @@ const BUILDING_BLOCKS = [{
   text: 'プルパーの階段',
   value: 'purpur_stairs'
 }, {
+  text: '切り込み入りの銅の階段',
+  value: 'cut_copper_stairs'
+}, {
+  text: '風化した切り込み入りの銅の階段',
+  value: 'exposed_cut_copper_stairs'
+}, {
+  text: '錆びた切り込み入りの銅の階段',
+  value: 'weathered_cut_copper_stairs'
+}, {
+  text: '酸化した切り込み入りの銅の階段',
+  value: 'oxidized_cut_copper_stairs'
+}, {
+  text: '錆止めされた切り込み入りの銅の階段',
+  value: 'waxed_cut_copper_stairs'
+}, {
+  text: '錆止めされた風化した切り込み入りの銅の階段',
+  value: 'waxed_exposed_cut_copper_stairs'
+}, {
+  text: '錆止めされた錆びた切り込み入りの銅の階段',
+  value: 'waxed_weathered_cut_copper_stairs'
+}, {
+  text: '錆止めされた酸化した切り込み入りの銅の階段',
+  value: 'waxed_oxidized_cut_copper_stairs'
+}, {
   text: 'オークのハーフブロック',
   value: 'oak_slab'
 }, {
@@ -2080,6 +2104,45 @@ const BUILDING_BLOCKS = [{
 }, {
   text: 'プルプァのハーフブロック',
   value: 'purpur_slab'
+}, {
+  text: '切り込み入りの銅のハーフブロック',
+  value: 'cut_copper_slab'
+}, {
+  text: '風化した切り込み入りの銅のハーフブロック',
+  value: 'exposed_cut_copper_slab'
+}, {
+  text: '錆びた切り込み入りの銅のハーフブロック',
+  value: 'weathered_cut_copper_slab'
+}, {
+  text: '酸化した切り込み入りの銅のハーフブロック',
+  value: 'oxidized_cut_copper_slab'
+}, {
+  text: '錆止めされた切り込み入りの銅のハーフブロック',
+  value: 'waxed_cut_copper_slab'
+}, {
+  text: '錆止めされた風化した切り込み入りの銅のハーフブロック',
+  value: 'waxed_exposed_cut_copper_slab'
+}, {
+  text: '錆止めされた錆びた切り込み入りの銅のハーフブロック',
+  value: 'waxed_weathered_cut_copper_slab'
+}, {
+  text: '錆止めされた酸化した切り込み入りの銅のハーフブロック',
+  value: 'waxed_oxidized_cut_copper_slab'
+}, {
+  text: '錆止めされた銅ブロックのスラブ（垂直）',
+  value: 'waxed_vertical_copper_block_slab'
+}, {
+  text: '錆止めされた切り込み入りの銅のスラブ（垂直）',
+  value: 'waxed_vertical_cut_copper_slab'
+}, {
+  text: '錆止めされた風化した切り込み入りの銅のスラブ（垂直）',
+  value: 'waxed_vertical_exposed_cut_copper_slab'
+}, {
+  text: '錆止めされた酸化した切り込み入りの銅のスラブ（垂直）',
+  value: 'waxed_vertical_oxidized_cut_copper_slab'
+}, {
+  text: '錆止めされた錆びた切り込み入りの銅のスラブ（垂直）',
+  value: 'waxed_vertical_weathered_cut_copper_slab'
 }, {
   text: 'アカシアのスラブ（垂直）',
   value: 'vertical_acacia_slab'
@@ -3487,9 +3550,6 @@ const ORE_BLOCKS = [{
   text: '鉄ブロック',
   value: 'iron_block'
 }, {
-  text: '銅ブロック',
-  value: 'copper_block'
-}, {
   text: '金ブロック',
   value: 'gold_block'
 }, {
@@ -3514,6 +3574,36 @@ const ORE_BLOCKS = [{
   text: 'ネザライトブロック',
   value: 'netherite_block'
 }, {
+  text: '銅ブロック',
+  value: 'copper_block'
+}, {
+  text: '切り込み入りの銅',
+  value: 'cut_copper'
+}, {
+  text: '風化した銅',
+  value: 'exposed_copper'
+}, {
+  text: '風化した銅',
+  value: 'weathered_copper'
+}, {
+  text: '錆びた銅',
+  value: 'oxidized_copper'
+}, {
+  text: 'ワックスを塗った銅',
+  value: 'waxed_copper_block'
+}, {
+  text: 'ワックスを塗った切り込み入りの銅',
+  value: 'waxed_cut_copper'
+}, {
+  text: '錆止めされた風化した銅',
+  value: 'waxed_exposed_copper'
+}, {
+  text: '錆止めされた錆びた銅',
+  value: 'waxed_weathered_copper'
+}, {
+  text: '錆止めされた酸化した銅',
+  value: 'waxed_oxidized_copper'
+}, {
   text: '鉄の原石',
   value: 'raw_iron_block'
 }, {
@@ -3525,21 +3615,6 @@ const ORE_BLOCKS = [{
 }, {
   text: '古代の残骸',
   value: 'ancient_debris'
-}, {
-  text: '切り込み入りの銅',
-  value: 'cut_copper'
-}, {
-  text: '錆びた銅',
-  value: 'oxidized_copper'
-}, {
-  text: 'ワックスを塗った銅',
-  value: 'waxed_copper_block'
-}, {
-  text: 'ワックスを塗った切り込み入りの銅',
-  value: 'waxed_cut_copper'
-}, {
-  text: '風化した銅',
-  value: 'weathered_copper'
 }];
 const SPECIAL_BLOCKS = [{
   text: '空気（空）',
