@@ -2945,7 +2945,18 @@ const DECORATION_BLOCKS = [
         {text: 'サクラの看板', value: 'cherry_sign'},
         {text: '竹の看板', value: 'bamboo_sign'},
         {text: '真紅の看板', value: 'crimson_sign'},
-        {text: '歪んだ看板', value: 'warped_sign'}
+        {text: '歪んだ看板', value: 'warped_sign'},
+        {text: 'オークの吊り看板', value: 'oak_hanging_sign'},
+        {text: 'トウヒの吊り看板', value: 'spruce_hanging_sign'},
+        {text: 'シラカバの吊り看板', value: 'birch_hanging_sign'},
+        {text: 'ジャングルの吊り看板', value: 'jungle_hanging_sign'},
+        {text: 'アカシアの吊り看板', value: 'acacia_hanging_sign'},
+        {text: 'ダークオークの吊り看板', value: 'dark_oak_hanging_sign'},
+        {text: 'マングローブの吊り看板', value: 'mangrove_hanging_sign'},
+        {text: 'サクラの吊り看板', value: 'cherry_hanging_sign'},
+        {text: '竹の吊り看板', value: 'bamboo_hanging_sign'},
+        {text: '真紅の吊り看板', value: 'crimson_hanging_sign'},
+        {text: '歪んだ吊り看板', value: 'warped_hanging_sign'}
     ];
 const NATURE_BLOCKS = [{
   text: '土',
