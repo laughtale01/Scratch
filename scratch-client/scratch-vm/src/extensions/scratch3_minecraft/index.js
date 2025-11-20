@@ -2174,7 +2174,7 @@ const BUILDING_BLOCKS = [{
   text: '真紅のスラブ（垂直）',
   value: 'vertical_crimson_slab'
 }, {
-  text: '切り込み入り銅のスラブ（垂直）',
+  text: '切り込み入りの銅のスラブ（垂直）',
   value: 'vertical_cut_copper_slab'
 }, {
   text: 'ダークオークのスラブ（垂直）',
@@ -2189,7 +2189,7 @@ const BUILDING_BLOCKS = [{
   text: 'エメラルドブロックのスラブ（垂直）',
   value: 'vertical_emerald_block_slab'
 }, {
-  text: '風化した切り込み入り銅のスラブ（垂直）',
+  text: '風化した切り込み入りの銅のスラブ（垂直）',
   value: 'vertical_exposed_cut_copper_slab'
 }, {
   text: '金ブロックのスラブ（垂直）',
@@ -2216,7 +2216,7 @@ const BUILDING_BLOCKS = [{
   text: 'オークのスラブ（垂直）',
   value: 'vertical_oak_slab'
 }, {
-  text: '酸化した切り込み入り銅のスラブ（垂直）',
+  text: '酸化した切り込み入りの銅のスラブ（垂直）',
   value: 'vertical_oxidized_cut_copper_slab'
 }, {
   text: 'クォーツのスラブ（垂直）',
@@ -2243,7 +2243,7 @@ const BUILDING_BLOCKS = [{
   text: '歪んだスラブ（垂直）',
   value: 'vertical_warped_slab'
 }, {
-  text: '錆びた切り込み入り銅のスラブ（垂直）',
+  text: '錆びた切り込み入りの銅のスラブ（垂直）',
   value: 'vertical_weathered_cut_copper_slab'
 }, {
   text: '丸石の塀',
@@ -3145,7 +3145,7 @@ const NATURE_BLOCKS = [{
   text: 'グロウベリー',
   value: 'glow_berries'
 }, {
-  text: 'ツツジの葉',
+  text: 'ツツジ',
   value: 'azalea'
 }, {
   text: '脳サンゴブロック',
@@ -3444,16 +3444,16 @@ const ORE_BLOCKS = [{
   text: '風化した銅',
   value: 'exposed_copper'
 }, {
-  text: '風化した銅',
+  text: '錆びた銅',
   value: 'weathered_copper'
 }, {
-  text: '錆びた銅',
+  text: '酸化した銅',
   value: 'oxidized_copper'
 }, {
-  text: 'ワックスを塗った銅',
+  text: '錆止めされた銅ブロック',
   value: 'waxed_copper_block'
 }, {
-  text: 'ワックスを塗った切り込み入りの銅',
+  text: '錆止めされた切り込み入りの銅',
   value: 'waxed_cut_copper'
 }, {
   text: '錆止めされた風化した銅',
@@ -3465,13 +3465,13 @@ const ORE_BLOCKS = [{
   text: '錆止めされた酸化した銅',
   value: 'waxed_oxidized_copper'
 }, {
-  text: '鉄の原石',
+  text: '鉄の原石ブロック',
   value: 'raw_iron_block'
 }, {
-  text: '銅の原石',
+  text: '銅の原石ブロック',
   value: 'raw_copper_block'
 }, {
-  text: '金の原石',
+  text: '金の原石ブロック',
   value: 'raw_gold_block'
 }, {
   text: '古代の残骸',
