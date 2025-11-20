@@ -2853,250 +2853,100 @@ const LIGHTING_BLOCKS = [{
   text: 'ソウルファイア',
   value: 'soul_fire'
 }];
-const DECORATION_BLOCKS = [{
-  text: '白色の羊毛',
-  value: 'white_wool'
-}, {
-  text: '橙色の羊毛',
-  value: 'orange_wool'
-}, {
-  text: '赤紫色の羊毛',
-  value: 'magenta_wool'
-}, {
-  text: '空色の羊毛',
-  value: 'light_blue_wool'
-}, {
-  text: '黄色の羊毛',
-  value: 'yellow_wool'
-}, {
-  text: '黄緑色の羊毛',
-  value: 'lime_wool'
-}, {
-  text: '桃色の羊毛',
-  value: 'pink_wool'
-}, {
-  text: '灰色の羊毛',
-  value: 'gray_wool'
-}, {
-  text: '薄灰色の羊毛',
-  value: 'light_gray_wool'
-}, {
-  text: '青緑色の羊毛',
-  value: 'cyan_wool'
-}, {
-  text: '紫色の羊毛',
-  value: 'purple_wool'
-}, {
-  text: '青色の羊毛',
-  value: 'blue_wool'
-}, {
-  text: '茶色の羊毛',
-  value: 'brown_wool'
-}, {
-  text: '緑色の羊毛',
-  value: 'green_wool'
-}, {
-  text: '赤色の羊毛',
-  value: 'red_wool'
-}, {
-  text: '黒色の羊毛',
-  value: 'black_wool'
-}, {
-  text: '苔のカーペット',
-  value: 'moss_carpet'
-}, {
-  text: '白色のカーペット',
-  value: 'white_carpet'
-}, {
-  text: '橙色のカーペット',
-  value: 'orange_carpet'
-}, {
-  text: '赤紫色のカーペット',
-  value: 'magenta_carpet'
-}, {
-  text: '空色のカーペット',
-  value: 'light_blue_carpet'
-}, {
-  text: '黄色のカーペット',
-  value: 'yellow_carpet'
-}, {
-  text: '黄緑色のカーペット',
-  value: 'lime_carpet'
-}, {
-  text: '桃色のカーペット',
-  value: 'pink_carpet'
-}, {
-  text: '灰色のカーペット',
-  value: 'gray_carpet'
-}, {
-  text: '白色のテラコッタ',
-  value: 'white_terracotta'
-}, {
-  text: '橙色のテラコッタ',
-  value: 'orange_terracotta'
-}, {
-  text: '赤紫色のテラコッタ',
-  value: 'magenta_terracotta'
-}, {
-  text: '空色のテラコッタ',
-  value: 'light_blue_terracotta'
-}, {
-  text: '黄色のテラコッタ',
-  value: 'yellow_terracotta'
-}, {
-  text: '黄緑色のテラコッタ',
-  value: 'lime_terracotta'
-}, {
-  text: '桃色のテラコッタ',
-  value: 'pink_terracotta'
-}, {
-  text: '灰色のテラコッタ',
-  value: 'gray_terracotta'
-}, {
-  text: '薄灰色のテラコッタ',
-  value: 'light_gray_terracotta'
-}, {
-  text: '青緑色のテラコッタ',
-  value: 'cyan_terracotta'
-}, {
-  text: '紫色のテラコッタ',
-  value: 'purple_terracotta'
-}, {
-  text: '青色のテラコッタ',
-  value: 'blue_terracotta'
-}, {
-  text: '茶色のテラコッタ',
-  value: 'brown_terracotta'
-}, {
-  text: '緑色のテラコッタ',
-  value: 'green_terracotta'
-}, {
-  text: '赤色のテラコッタ',
-  value: 'red_terracotta'
-}, {
-  text: '黒色のテラコッタ',
-  value: 'black_terracotta'
-}, {
-  text: '白色の彩釉テラコッタ',
-  value: 'white_glazed_terracotta'
-}, {
-  text: '橙色の彩釉テラコッタ',
-  value: 'orange_glazed_terracotta'
-}, {
-  text: '青色の彩釉テラコッタ',
-  value: 'blue_glazed_terracotta'
-}, {
-  text: '緑色の彩釉テラコッタ',
-  value: 'green_glazed_terracotta'
-}, {
-  text: 'ガラス',
-  value: 'glass'
-}, {
-  text: '白色の色付きガラス',
-  value: 'white_stained_glass'
-}, {
-  text: '橙色の色付きガラス',
-  value: 'orange_stained_glass'
-}, {
-  text: '赤紫色の色付きガラス',
-  value: 'magenta_stained_glass'
-}, {
-  text: '空色の色付きガラス',
-  value: 'light_blue_stained_glass'
-}, {
-  text: '黄色の色付きガラス',
-  value: 'yellow_stained_glass'
-}, {
-  text: '黄緑色の色付きガラス',
-  value: 'lime_stained_glass'
-}, {
-  text: '桃色の色付きガラス',
-  value: 'pink_stained_glass'
-}, {
-  text: '灰色の色付きガラス',
-  value: 'gray_stained_glass'
-}, {
-  text: '薄灰色の色付きガラス',
-  value: 'light_gray_stained_glass'
-}, {
-  text: '青緑色の色付きガラス',
-  value: 'cyan_stained_glass'
-}, {
-  text: '紫色の色付きガラス',
-  value: 'purple_stained_glass'
-}, {
-  text: '青色の色付きガラス',
-  value: 'blue_stained_glass'
-}, {
-  text: '茶色の色付きガラス',
-  value: 'brown_stained_glass'
-}, {
-  text: '緑色の色付きガラス',
-  value: 'green_stained_glass'
-}, {
-  text: '赤色の色付きガラス',
-  value: 'red_stained_glass'
-}, {
-  text: '黒色の色付きガラス',
-  value: 'black_stained_glass'
-}, {
-  text: '白色のベッド',
-  value: 'white_bed'
-}, {
-  text: '黄色のベッド',
-  value: 'yellow_bed'
-}, {
-  text: '青色のベッド',
-  value: 'blue_bed'
-}, {
-  text: '緑色のベッド',
-  value: 'green_bed'
-}, {
-  text: '赤色のベッド',
-  value: 'red_bed'
-}, {
-  text: '黒色のベッド',
-  value: 'black_bed'
-}, {
-  text: 'シュルカーボックス',
-  value: 'shulker_box'
-}, {
-  text: '白色のシュルカーボックス',
-  value: 'white_shulker_box'
-}, {
-  text: '青色のシュルカーボックス',
-  value: 'blue_shulker_box'
-}, {
-  text: '緑色のシュルカーボックス',
-  value: 'green_shulker_box'
-}, {
-  text: '赤色のシュルカーボックス',
-  value: 'red_shulker_box'
-}, {
-  text: '本棚',
-  value: 'bookshelf'
-}, {
-  text: '芽生えたアメジスト',
-  value: 'budding_amethyst'
-}, {
-  text: 'ドリップストーンブロック',
-  value: 'dripstone_block'
-}, {
-  text: '植木鉢',
-  value: 'flower_pot'
-}, {
-  text: '額縁',
-  value: 'item_frame'
-}, {
-  text: '苔ブロック',
-  value: 'moss_block'
-}, {
-  text: '絵画',
-  value: 'painting'
-}, {
-  text: '滑らかな玄武岩',
-  value: 'smooth_basalt'
-}];
+const DECORATION_BLOCKS = [
+        {text: '白色の羊毛', value: 'white_wool'},
+        {text: '橙色の羊毛', value: 'orange_wool'},
+        {text: '赤紫色の羊毛', value: 'magenta_wool'},
+        {text: '空色の羊毛', value: 'light_blue_wool'},
+        {text: '黄色の羊毛', value: 'yellow_wool'},
+        {text: '黄緑色の羊毛', value: 'lime_wool'},
+        {text: '桃色の羊毛', value: 'pink_wool'},
+        {text: '灰色の羊毛', value: 'gray_wool'},
+        {text: '薄灰色の羊毛', value: 'light_gray_wool'},
+        {text: '青緑色の羊毛', value: 'cyan_wool'},
+        {text: '紫色の羊毛', value: 'purple_wool'},
+        {text: '青色の羊毛', value: 'blue_wool'},
+        {text: '茶色の羊毛', value: 'brown_wool'},
+        {text: '緑色の羊毛', value: 'green_wool'},
+        {text: '赤色の羊毛', value: 'red_wool'},
+        {text: '黒色の羊毛', value: 'black_wool'},
+        {text: '苔のカーペット', value: 'moss_carpet'},
+        {text: '白色のカーペット', value: 'white_carpet'},
+        {text: '橙色のカーペット', value: 'orange_carpet'},
+        {text: '赤紫色のカーペット', value: 'magenta_carpet'},
+        {text: '空色のカーペット', value: 'light_blue_carpet'},
+        {text: '黄色のカーペット', value: 'yellow_carpet'},
+        {text: '黄緑色のカーペット', value: 'lime_carpet'},
+        {text: '桃色のカーペット', value: 'pink_carpet'},
+        {text: '灰色のカーペット', value: 'gray_carpet'},
+        {text: '白色のテラコッタ', value: 'white_terracotta'},
+        {text: '橙色のテラコッタ', value: 'orange_terracotta'},
+        {text: '赤紫色のテラコッタ', value: 'magenta_terracotta'},
+        {text: '空色のテラコッタ', value: 'light_blue_terracotta'},
+        {text: '黄色のテラコッタ', value: 'yellow_terracotta'},
+        {text: '黄緑色のテラコッタ', value: 'lime_terracotta'},
+        {text: '桃色のテラコッタ', value: 'pink_terracotta'},
+        {text: '灰色のテラコッタ', value: 'gray_terracotta'},
+        {text: '薄灰色のテラコッタ', value: 'light_gray_terracotta'},
+        {text: '青緑色のテラコッタ', value: 'cyan_terracotta'},
+        {text: '紫色のテラコッタ', value: 'purple_terracotta'},
+        {text: '青色のテラコッタ', value: 'blue_terracotta'},
+        {text: '茶色のテラコッタ', value: 'brown_terracotta'},
+        {text: '緑色のテラコッタ', value: 'green_terracotta'},
+        {text: '赤色のテラコッタ', value: 'red_terracotta'},
+        {text: '黒色のテラコッタ', value: 'black_terracotta'},
+        {text: '白色の彩釉テラコッタ', value: 'white_glazed_terracotta'},
+        {text: '橙色の彩釉テラコッタ', value: 'orange_glazed_terracotta'},
+        {text: '青色の彩釉テラコッタ', value: 'blue_glazed_terracotta'},
+        {text: '緑色の彩釉テラコッタ', value: 'green_glazed_terracotta'},
+        {text: 'ガラス', value: 'glass'},
+        {text: '白色の色付きガラス', value: 'white_stained_glass'},
+        {text: '橙色の色付きガラス', value: 'orange_stained_glass'},
+        {text: '赤紫色の色付きガラス', value: 'magenta_stained_glass'},
+        {text: '空色の色付きガラス', value: 'light_blue_stained_glass'},
+        {text: '黄色の色付きガラス', value: 'yellow_stained_glass'},
+        {text: '黄緑色の色付きガラス', value: 'lime_stained_glass'},
+        {text: '桃色の色付きガラス', value: 'pink_stained_glass'},
+        {text: '灰色の色付きガラス', value: 'gray_stained_glass'},
+        {text: '薄灰色の色付きガラス', value: 'light_gray_stained_glass'},
+        {text: '青緑色の色付きガラス', value: 'cyan_stained_glass'},
+        {text: '紫色の色付きガラス', value: 'purple_stained_glass'},
+        {text: '青色の色付きガラス', value: 'blue_stained_glass'},
+        {text: '茶色の色付きガラス', value: 'brown_stained_glass'},
+        {text: '緑色の色付きガラス', value: 'green_stained_glass'},
+        {text: '赤色の色付きガラス', value: 'red_stained_glass'},
+        {text: '黒色の色付きガラス', value: 'black_stained_glass'},
+        {text: '白色のベッド', value: 'white_bed'},
+        {text: '黄色のベッド', value: 'yellow_bed'},
+        {text: '青色のベッド', value: 'blue_bed'},
+        {text: '緑色のベッド', value: 'green_bed'},
+        {text: '赤色のベッド', value: 'red_bed'},
+        {text: '黒色のベッド', value: 'black_bed'},
+        {text: 'シュルカーボックス', value: 'shulker_box'},
+        {text: '白色のシュルカーボックス', value: 'white_shulker_box'},
+        {text: '青色のシュルカーボックス', value: 'blue_shulker_box'},
+        {text: '緑色のシュルカーボックス', value: 'green_shulker_box'},
+        {text: '赤色のシュルカーボックス', value: 'red_shulker_box'},
+        {text: '本棚', value: 'bookshelf'},
+        {text: '芽生えたアメジスト', value: 'budding_amethyst'},
+        {text: 'ドリップストーンブロック', value: 'dripstone_block'},
+        {text: '植木鉢', value: 'flower_pot'},
+        {text: '額縁', value: 'item_frame'},
+        {text: '苔ブロック', value: 'moss_block'},
+        {text: '絵画', value: 'painting'},
+        {text: '滑らかな玄武岩', value: 'smooth_basalt'},
+        {text: 'オークの看板', value: 'oak_sign'},
+        {text: 'トウヒの看板', value: 'spruce_sign'},
+        {text: 'シラカバの看板', value: 'birch_sign'},
+        {text: 'ジャングルの看板', value: 'jungle_sign'},
+        {text: 'アカシアの看板', value: 'acacia_sign'},
+        {text: 'ダークオークの看板', value: 'dark_oak_sign'},
+        {text: 'マングローブの看板', value: 'mangrove_sign'},
+        {text: 'サクラの看板', value: 'cherry_sign'},
+        {text: '竹の看板', value: 'bamboo_sign'},
+        {text: '真紅の看板', value: 'crimson_sign'},
+        {text: '歪んだ看板', value: 'warped_sign'}
+    ];
 const NATURE_BLOCKS = [{
   text: '土',
   value: 'dirt'
