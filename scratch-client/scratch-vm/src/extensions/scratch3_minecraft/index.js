@@ -1532,11 +1532,26 @@ const BUILDING_BLOCKS = [{
   text: '歪んだ板材',
   value: 'warped_planks'
 }, {
-  text: '樹皮を剥いだアカシアの原木',
-  value: 'stripped_acacia_log'
+  text: '樹皮を剥いだオークの原木',
+  value: 'stripped_oak_log'
+}, {
+  text: '樹皮を剥いだトウヒの原木',
+  value: 'stripped_spruce_log'
 }, {
   text: '樹皮を剥いだシラカバの原木',
   value: 'stripped_birch_log'
+}, {
+  text: '樹皮を剥いだジャングルの原木',
+  value: 'stripped_jungle_log'
+}, {
+  text: '樹皮を剥いだアカシアの原木',
+  value: 'stripped_acacia_log'
+}, {
+  text: '樹皮を剥いだダークオークの原木',
+  value: 'stripped_dark_oak_log'
+}, {
+  text: '樹皮を剥いだマングローブの原木',
+  value: 'stripped_mangrove_log'
 }, {
   text: '樹皮を剥いだサクラの原木',
   value: 'stripped_cherry_log'
@@ -1544,44 +1559,8 @@ const BUILDING_BLOCKS = [{
   text: '樹皮を剥いだ真紅の幹',
   value: 'stripped_crimson_stem'
 }, {
-  text: '樹皮を剥いだダークオークの原木',
-  value: 'stripped_dark_oak_log'
-}, {
-  text: '樹皮を剥いだジャングルの原木',
-  value: 'stripped_jungle_log'
-}, {
-  text: '樹皮を剥いだマングローブの原木',
-  value: 'stripped_mangrove_log'
-}, {
-  text: '樹皮を剥いだオークの原木',
-  value: 'stripped_oak_log'
-}, {
-  text: '樹皮を剥いだトウヒの原木',
-  value: 'stripped_spruce_log'
-}, {
   text: '樹皮を剥いだ歪んだ幹',
   value: 'stripped_warped_stem'
-}, {
-  text: 'アカシアの木',
-  value: 'acacia_wood'
-}, {
-  text: 'シラカバの木',
-  value: 'birch_wood'
-}, {
-  text: 'サクラの木',
-  value: 'cherry_wood'
-}, {
-  text: '真紅の菌糸',
-  value: 'crimson_hyphae'
-}, {
-  text: 'ダークオークの木',
-  value: 'dark_oak_wood'
-}, {
-  text: 'ジャングルの木',
-  value: 'jungle_wood'
-}, {
-  text: 'マングローブの木',
-  value: 'mangrove_wood'
 }, {
   text: 'オークの木',
   value: 'oak_wood'
@@ -1589,26 +1568,29 @@ const BUILDING_BLOCKS = [{
   text: 'トウヒの木',
   value: 'spruce_wood'
 }, {
-  text: '樹皮を剥いだアカシアの木',
-  value: 'stripped_acacia_wood'
+  text: 'シラカバの木',
+  value: 'birch_wood'
 }, {
-  text: '樹皮を剥いだシラカバの木',
-  value: 'stripped_birch_wood'
+  text: 'ジャングルの木',
+  value: 'jungle_wood'
 }, {
-  text: '樹皮を剥いだサクラの木',
-  value: 'stripped_cherry_wood'
+  text: 'アカシアの木',
+  value: 'acacia_wood'
 }, {
-  text: '樹皮を剥いだ真紅の菌糸',
-  value: 'stripped_crimson_hyphae'
+  text: 'ダークオークの木',
+  value: 'dark_oak_wood'
 }, {
-  text: '樹皮を剥いだダークオークの木',
-  value: 'stripped_dark_oak_wood'
+  text: 'マングローブの木',
+  value: 'mangrove_wood'
 }, {
-  text: '樹皮を剥いだジャングルの木',
-  value: 'stripped_jungle_wood'
+  text: 'サクラの木',
+  value: 'cherry_wood'
 }, {
-  text: '樹皮を剥いだマングローブの木',
-  value: 'stripped_mangrove_wood'
+  text: '真紅の菌糸',
+  value: 'crimson_hyphae'
+}, {
+  text: '歪んだ菌糸',
+  value: 'warped_hyphae'
 }, {
   text: '樹皮を剥いだオークの木',
   value: 'stripped_oak_wood'
@@ -1616,83 +1598,47 @@ const BUILDING_BLOCKS = [{
   text: '樹皮を剥いだトウヒの木',
   value: 'stripped_spruce_wood'
 }, {
+  text: '樹皮を剥いだシラカバの木',
+  value: 'stripped_birch_wood'
+}, {
+  text: '樹皮を剥いだジャングルの木',
+  value: 'stripped_jungle_wood'
+}, {
+  text: '樹皮を剥いだアカシアの木',
+  value: 'stripped_acacia_wood'
+}, {
+  text: '樹皮を剥いだダークオークの木',
+  value: 'stripped_dark_oak_wood'
+}, {
+  text: '樹皮を剥いだマングローブの木',
+  value: 'stripped_mangrove_wood'
+}, {
+  text: '樹皮を剥いだサクラの木',
+  value: 'stripped_cherry_wood'
+}, {
+  text: '樹皮を剥いだ真紅の菌糸',
+  value: 'stripped_crimson_hyphae'
+}, {
   text: '樹皮を剥いだ歪んだ菌糸',
   value: 'stripped_warped_hyphae'
-}, {
-  text: '歪んだ菌糸',
-  value: 'warped_hyphae'
 }, {
   text: '安山岩',
   value: 'andesite'
 }, {
-  text: '安山岩のハーフブロック',
-  value: 'andesite_slab'
-}, {
-  text: '安山岩の階段',
-  value: 'andesite_stairs'
-}, {
-  text: '安山岩の塀',
-  value: 'andesite_wall'
-}, {
   text: '磨かれた安山岩',
   value: 'polished_andesite'
-}, {
-  text: '磨かれた安山岩のハーフブロック',
-  value: 'polished_andesite_slab'
-}, {
-  text: '磨かれた安山岩の階段',
-  value: 'polished_andesite_stairs'
-}, {
-  text: '安山岩のスラブ（垂直）',
-  value: 'vertical_andesite_slab'
 }, {
   text: '閃緑岩',
   value: 'diorite'
 }, {
-  text: '閃緑岩のハーフブロック',
-  value: 'diorite_slab'
-}, {
-  text: '閃緑岩の階段',
-  value: 'diorite_stairs'
-}, {
-  text: '閃緑岩の塀',
-  value: 'diorite_wall'
-}, {
   text: '磨かれた閃緑岩',
   value: 'polished_diorite'
-}, {
-  text: '磨かれた閃緑岩のハーフブロック',
-  value: 'polished_diorite_slab'
-}, {
-  text: '磨かれた閃緑岩の階段',
-  value: 'polished_diorite_stairs'
-}, {
-  text: '閃緑岩のスラブ（垂直）',
-  value: 'vertical_diorite_slab'
 }, {
   text: '花崗岩',
   value: 'granite'
 }, {
-  text: '花崗岩のハーフブロック',
-  value: 'granite_slab'
-}, {
-  text: '花崗岩の階段',
-  value: 'granite_stairs'
-}, {
-  text: '花崗岩の塀',
-  value: 'granite_wall'
-}, {
   text: '磨かれた花崗岩',
   value: 'polished_granite'
-}, {
-  text: '磨かれた花崗岩のハーフブロック',
-  value: 'polished_granite_slab'
-}, {
-  text: '磨かれた花崗岩の階段',
-  value: 'polished_granite_stairs'
-}, {
-  text: '花崗岩のスラブ（垂直）',
-  value: 'vertical_granite_slab'
 }, {
   text: '方解石',
   value: 'calcite'
@@ -1706,15 +1652,6 @@ const BUILDING_BLOCKS = [{
   text: '丸石ディープスレート',
   value: 'cobbled_deepslate'
 }, {
-  text: '丸石状ディープスレートのハーフブロック',
-  value: 'cobbled_deepslate_slab'
-}, {
-  text: '丸石状ディープスレートの階段',
-  value: 'cobbled_deepslate_stairs'
-}, {
-  text: '丸石状ディープスレートの塀',
-  value: 'cobbled_deepslate_wall'
-}, {
   text: 'ひび割れたディープスレートレンガ',
   value: 'cracked_deepslate_bricks'
 }, {
@@ -1724,41 +1661,14 @@ const BUILDING_BLOCKS = [{
   text: 'ディープスレート',
   value: 'deepslate'
 }, {
-  text: 'ディープスレートレンガのハーフブロック',
-  value: 'deepslate_brick_slab'
-}, {
-  text: 'ディープスレートレンガの階段',
-  value: 'deepslate_brick_stairs'
-}, {
-  text: 'ディープスレートレンガの塀',
-  value: 'deepslate_brick_wall'
-}, {
   text: 'ディープスレートレンガ',
   value: 'deepslate_bricks'
-}, {
-  text: 'ディープスレートタイルのハーフブロック',
-  value: 'deepslate_tile_slab'
-}, {
-  text: 'ディープスレートタイルの階段',
-  value: 'deepslate_tile_stairs'
-}, {
-  text: 'ディープスレートタイルの塀',
-  value: 'deepslate_tile_wall'
 }, {
   text: 'ディープスレートタイル',
   value: 'deepslate_tiles'
 }, {
   text: '磨かれたディープスレート',
   value: 'polished_deepslate'
-}, {
-  text: '磨かれたディープスレートのハーフブロック',
-  value: 'polished_deepslate_slab'
-}, {
-  text: '磨かれたディープスレートの階段',
-  value: 'polished_deepslate_stairs'
-}, {
-  text: '磨かれたディープスレートの塀',
-  value: 'polished_deepslate_wall'
 }, {
   text: '玄武岩',
   value: 'basalt'
@@ -1769,74 +1679,29 @@ const BUILDING_BLOCKS = [{
   text: '黒石',
   value: 'blackstone'
 }, {
-  text: '黒石のハーフブロック',
-  value: 'blackstone_slab'
-}, {
-  text: '黒石の階段',
-  value: 'blackstone_stairs'
-}, {
-  text: '黒石の塀',
-  value: 'blackstone_wall'
-}, {
-  text: 'ひび割れた磨かれた黒石レンガ',
-  value: 'cracked_polished_blackstone_bricks'
-}, {
   text: '金入りの黒石',
   value: 'gilded_blackstone'
 }, {
   text: '磨かれた黒石',
   value: 'polished_blackstone'
 }, {
-  text: '磨かれた黒石レンガのハーフブロック',
-  value: 'polished_blackstone_brick_slab'
-}, {
-  text: '磨かれた黒石レンガの階段',
-  value: 'polished_blackstone_brick_stairs'
-}, {
-  text: '磨かれた黒石レンガの塀',
-  value: 'polished_blackstone_brick_wall'
-}, {
   text: '磨かれた黒石レンガ',
   value: 'polished_blackstone_bricks'
 }, {
-  text: '磨かれた黒石のハーフブロック',
-  value: 'polished_blackstone_slab'
-}, {
-  text: '磨かれた黒石の階段',
-  value: 'polished_blackstone_stairs'
-}, {
-  text: '磨かれた黒石の塀',
-  value: 'polished_blackstone_wall'
+  text: 'ひび割れた磨かれた黒石レンガ',
+  value: 'cracked_polished_blackstone_bricks'
 }, {
   text: 'レンガ',
   value: 'bricks'
 }, {
-  text: '模様入りのネザーレンガ',
-  value: 'chiseled_nether_bricks'
-}, {
-  text: '模様入りの石レンガ',
-  value: 'chiseled_stone_bricks'
-}, {
-  text: 'ひび割れたネザーレンガ',
-  value: 'cracked_nether_bricks'
-}, {
-  text: 'ひび割れた石レンガ',
-  value: 'cracked_stone_bricks'
-}, {
   text: 'エンドストーンレンガ',
   value: 'end_stone_bricks'
 }, {
-  text: '苔むした石レンガ',
-  value: 'mossy_stone_bricks'
-}, {
-  text: '泥レンガ',
-  value: 'mud_bricks'
-}, {
-  text: 'ネザーレンガのフェンス',
-  value: 'nether_brick_fence'
-}, {
   text: 'ネザーレンガ',
   value: 'nether_bricks'
+}, {
+  text: '赤いネザーレンガ',
+  value: 'red_nether_bricks'
 }, {
   text: 'プリズマリンレンガ',
   value: 'prismarine_bricks'
@@ -1844,14 +1709,59 @@ const BUILDING_BLOCKS = [{
   text: 'クォーツレンガ',
   value: 'quartz_bricks'
 }, {
-  text: '赤いネザーレンガ',
-  value: 'red_nether_bricks'
-}, {
   text: '石レンガ',
   value: 'stone_bricks'
 }, {
-  text: '黒色のコンクリート',
-  value: 'black_concrete'
+  text: '苔むした石レンガ',
+  value: 'mossy_stone_bricks'
+}, {
+  text: 'ひび割れた石レンガ',
+  value: 'cracked_stone_bricks'
+}, {
+  text: '模様入りの石レンガ',
+  value: 'chiseled_stone_bricks'
+}, {
+  text: '模様入りのネザーレンガ',
+  value: 'chiseled_nether_bricks'
+}, {
+  text: 'ひび割れたネザーレンガ',
+  value: 'cracked_nether_bricks'
+}, {
+  text: '泥レンガ',
+  value: 'mud_bricks'
+}, {
+  text: '白色のコンクリート',
+  value: 'white_concrete'
+}, {
+  text: '橙色のコンクリート',
+  value: 'orange_concrete'
+}, {
+  text: '赤紫色のコンクリート',
+  value: 'magenta_concrete'
+}, {
+  text: '空色のコンクリート',
+  value: 'light_blue_concrete'
+}, {
+  text: '黄色のコンクリート',
+  value: 'yellow_concrete'
+}, {
+  text: '黄緑色のコンクリート',
+  value: 'lime_concrete'
+}, {
+  text: '桃色のコンクリート',
+  value: 'pink_concrete'
+}, {
+  text: '灰色のコンクリート',
+  value: 'gray_concrete'
+}, {
+  text: '薄灰色のコンクリート',
+  value: 'light_gray_concrete'
+}, {
+  text: '青緑色のコンクリート',
+  value: 'cyan_concrete'
+}, {
+  text: '紫色のコンクリート',
+  value: 'purple_concrete'
 }, {
   text: '青色のコンクリート',
   value: 'blue_concrete'
@@ -1859,68 +1769,17 @@ const BUILDING_BLOCKS = [{
   text: '茶色のコンクリート',
   value: 'brown_concrete'
 }, {
-  text: '青緑色のコンクリート',
-  value: 'cyan_concrete'
-}, {
-  text: '灰色のコンクリート',
-  value: 'gray_concrete'
-}, {
   text: '緑色のコンクリート',
   value: 'green_concrete'
-}, {
-  text: '空色のコンクリート',
-  value: 'light_blue_concrete'
-}, {
-  text: '薄灰色のコンクリート',
-  value: 'light_gray_concrete'
-}, {
-  text: '黄緑色のコンクリート',
-  value: 'lime_concrete'
-}, {
-  text: '赤紫色のコンクリート',
-  value: 'magenta_concrete'
-}, {
-  text: '橙色のコンクリート',
-  value: 'orange_concrete'
-}, {
-  text: '桃色のコンクリート',
-  value: 'pink_concrete'
-}, {
-  text: '紫色のコンクリート',
-  value: 'purple_concrete'
 }, {
   text: '赤色のコンクリート',
   value: 'red_concrete'
 }, {
-  text: '白色のコンクリート',
-  value: 'white_concrete'
-}, {
-  text: '黄色のコンクリート',
-  value: 'yellow_concrete'
+  text: '黒色のコンクリート',
+  value: 'black_concrete'
 }, {
   text: 'ダークプリズマリン',
   value: 'dark_prismarine'
-}, {
-  text: 'ダークプリズマリンのハーフブロック',
-  value: 'dark_prismarine_slab'
-}, {
-  text: 'ダークプリズマリンの階段',
-  value: 'dark_prismarine_stairs'
-}, {
-  text: 'プリズマリンレンガのハーフブロック',
-  value: 'prismarine_brick_slab'
-}, {
-  text: 'プリズマリンレンガの階段',
-  value: 'prismarine_brick_stairs'
-}, {
-  text: 'プリズマリンのハーフブロック',
-  value: 'prismarine_slab'
-}, {
-  text: 'プリズマリンの階段',
-  value: 'prismarine_stairs'
-}, {
-  text: 'プリズマリンの塀',
-  value: 'prismarine_wall'
 }, {
   text: '模様入りのクォーツブロック',
   value: 'chiseled_quartz_block'
@@ -1928,20 +1787,8 @@ const BUILDING_BLOCKS = [{
   text: 'クォーツの柱',
   value: 'quartz_pillar'
 }, {
-  text: 'クォーツのハーフブロック',
-  value: 'quartz_slab'
-}, {
-  text: 'クォーツの階段',
-  value: 'quartz_stairs'
-}, {
   text: '滑らかなクォーツ',
   value: 'smooth_quartz'
-}, {
-  text: '滑らかなクォーツのハーフブロック',
-  value: 'smooth_quartz_slab'
-}, {
-  text: 'クォーツのスラブ（垂直）',
-  value: 'vertical_quartz_slab'
 }, {
   text: 'プルパーブロック',
   value: 'purpur_block'
@@ -1949,14 +1796,59 @@ const BUILDING_BLOCKS = [{
   text: 'プルパーの柱',
   value: 'purpur_pillar'
 }, {
-  text: 'プルプァのハーフブロック',
-  value: 'purpur_slab'
+  text: '竹モザイク',
+  value: 'bamboo_mosaic'
 }, {
-  text: 'プルパーの階段',
-  value: 'purpur_stairs'
+  text: '砂岩',
+  value: 'sandstone'
+}, {
+  text: '模様入りの砂岩',
+  value: 'chiseled_sandstone'
+}, {
+  text: 'カットされた砂岩',
+  value: 'cut_sandstone'
+}, {
+  text: '滑らかな砂岩',
+  value: 'smooth_sandstone'
+}, {
+  text: '赤い砂岩',
+  value: 'red_sandstone'
+}, {
+  text: '模様入りの赤い砂岩',
+  value: 'chiseled_red_sandstone'
+}, {
+  text: 'カットされた赤い砂岩',
+  value: 'cut_red_sandstone'
+}, {
+  text: '滑らかな赤い砂岩',
+  value: 'smooth_red_sandstone'
+}, {
+  text: '滑らかな石',
+  value: 'smooth_stone'
+}, {
+  text: 'オークの階段',
+  value: 'oak_stairs'
+}, {
+  text: 'トウヒの階段',
+  value: 'spruce_stairs'
+}, {
+  text: 'シラカバの階段',
+  value: 'birch_stairs'
+}, {
+  text: 'ジャングルの階段',
+  value: 'jungle_stairs'
 }, {
   text: 'アカシアの階段',
   value: 'acacia_stairs'
+}, {
+  text: 'ダークオークの階段',
+  value: 'dark_oak_stairs'
+}, {
+  text: 'マングローブの階段',
+  value: 'mangrove_stairs'
+}, {
+  text: 'サクラの階段',
+  value: 'cherry_stairs'
 }, {
   text: '竹モザイクの階段',
   value: 'bamboo_mosaic_stairs'
@@ -1964,41 +1856,26 @@ const BUILDING_BLOCKS = [{
   text: '竹の階段',
   value: 'bamboo_stairs'
 }, {
-  text: 'シラカバの階段',
-  value: 'birch_stairs'
+  text: '真紅の階段',
+  value: 'crimson_stairs'
 }, {
-  text: 'レンガの階段',
-  value: 'brick_stairs'
+  text: '歪んだ階段',
+  value: 'warped_stairs'
 }, {
-  text: 'サクラの階段',
-  value: 'cherry_stairs'
+  text: '黒石の階段',
+  value: 'blackstone_stairs'
 }, {
   text: '丸石の階段',
   value: 'cobblestone_stairs'
 }, {
-  text: '真紅の階段',
-  value: 'crimson_stairs'
-}, {
-  text: 'ダークオークの階段',
-  value: 'dark_oak_stairs'
-}, {
   text: 'エンドストーンレンガの階段',
   value: 'end_stone_brick_stairs'
 }, {
-  text: 'ジャングルの階段',
-  value: 'jungle_stairs'
+  text: '磨かれた黒石レンガの階段',
+  value: 'polished_blackstone_brick_stairs'
 }, {
-  text: 'マングローブの階段',
-  value: 'mangrove_stairs'
-}, {
-  text: 'ネザーレンガの階段',
-  value: 'nether_brick_stairs'
-}, {
-  text: 'オークの階段',
-  value: 'oak_stairs'
-}, {
-  text: '赤いネザーレンガの階段',
-  value: 'red_nether_brick_stairs'
+  text: '磨かれた黒石の階段',
+  value: 'polished_blackstone_stairs'
 }, {
   text: '赤い砂岩の階段',
   value: 'red_sandstone_stairs'
@@ -2012,20 +1889,89 @@ const BUILDING_BLOCKS = [{
   text: '滑らかな砂岩の階段',
   value: 'smooth_sandstone_stairs'
 }, {
-  text: 'トウヒの階段',
-  value: 'spruce_stairs'
-}, {
   text: '石レンガの階段',
   value: 'stone_brick_stairs'
 }, {
   text: '石の階段',
   value: 'stone_stairs'
 }, {
-  text: '歪んだ階段',
-  value: 'warped_stairs'
+  text: '安山岩の階段',
+  value: 'andesite_stairs'
+}, {
+  text: '磨かれた安山岩の階段',
+  value: 'polished_andesite_stairs'
+}, {
+  text: '閃緑岩の階段',
+  value: 'diorite_stairs'
+}, {
+  text: '磨かれた閃緑岩の階段',
+  value: 'polished_diorite_stairs'
+}, {
+  text: '花崗岩の階段',
+  value: 'granite_stairs'
+}, {
+  text: '磨かれた花崗岩の階段',
+  value: 'polished_granite_stairs'
+}, {
+  text: '丸石状ディープスレートの階段',
+  value: 'cobbled_deepslate_stairs'
+}, {
+  text: '磨かれたディープスレートの階段',
+  value: 'polished_deepslate_stairs'
+}, {
+  text: 'ディープスレートレンガの階段',
+  value: 'deepslate_brick_stairs'
+}, {
+  text: 'ディープスレートタイルの階段',
+  value: 'deepslate_tile_stairs'
+}, {
+  text: 'レンガの階段',
+  value: 'brick_stairs'
+}, {
+  text: 'ネザーレンガの階段',
+  value: 'nether_brick_stairs'
+}, {
+  text: 'プリズマリンレンガの階段',
+  value: 'prismarine_brick_stairs'
+}, {
+  text: '赤いネザーレンガの階段',
+  value: 'red_nether_brick_stairs'
+}, {
+  text: 'ダークプリズマリンの階段',
+  value: 'dark_prismarine_stairs'
+}, {
+  text: 'プリズマリンの階段',
+  value: 'prismarine_stairs'
+}, {
+  text: 'クォーツの階段',
+  value: 'quartz_stairs'
+}, {
+  text: 'プルパーの階段',
+  value: 'purpur_stairs'
+}, {
+  text: 'オークのハーフブロック',
+  value: 'oak_slab'
+}, {
+  text: 'トウヒのハーフブロック',
+  value: 'spruce_slab'
+}, {
+  text: 'シラカバのハーフブロック',
+  value: 'birch_slab'
+}, {
+  text: 'ジャングルのハーフブロック',
+  value: 'jungle_slab'
 }, {
   text: 'アカシアのハーフブロック',
   value: 'acacia_slab'
+}, {
+  text: 'ダークオークのハーフブロック',
+  value: 'dark_oak_slab'
+}, {
+  text: 'マングローブのハーフブロック',
+  value: 'mangrove_slab'
+}, {
+  text: 'サクラのハーフブロック',
+  value: 'cherry_slab'
 }, {
   text: '竹モザイクのハーフブロック',
   value: 'bamboo_mosaic_slab'
@@ -2033,20 +1979,17 @@ const BUILDING_BLOCKS = [{
   text: '竹のハーフブロック',
   value: 'bamboo_slab'
 }, {
-  text: 'シラカバのハーフブロック',
-  value: 'birch_slab'
+  text: '真紅のハーフブロック',
+  value: 'crimson_slab'
 }, {
-  text: 'レンガのハーフブロック',
-  value: 'brick_slab'
+  text: '歪んだハーフブロック',
+  value: 'warped_slab'
 }, {
-  text: 'サクラのハーフブロック',
-  value: 'cherry_slab'
+  text: '黒石のハーフブロック',
+  value: 'blackstone_slab'
 }, {
   text: '丸石のハーフブロック',
   value: 'cobblestone_slab'
-}, {
-  text: '真紅のハーフブロック',
-  value: 'crimson_slab'
 }, {
   text: '模様入り赤い砂岩のハーフブロック',
   value: 'cut_red_sandstone_slab'
@@ -2054,23 +1997,14 @@ const BUILDING_BLOCKS = [{
   text: '模様入り砂岩のハーフブロック',
   value: 'cut_sandstone_slab'
 }, {
-  text: 'ダークオークのハーフブロック',
-  value: 'dark_oak_slab'
-}, {
   text: 'エンドストーンレンガのハーフブロック',
   value: 'end_stone_brick_slab'
 }, {
-  text: 'ジャングルのハーフブロック',
-  value: 'jungle_slab'
+  text: '磨かれた黒石レンガのハーフブロック',
+  value: 'polished_blackstone_brick_slab'
 }, {
-  text: 'マングローブのハーフブロック',
-  value: 'mangrove_slab'
-}, {
-  text: 'ネザーレンガのハーフブロック',
-  value: 'nether_brick_slab'
-}, {
-  text: 'オークのハーフブロック',
-  value: 'oak_slab'
+  text: '磨かれた黒石のハーフブロック',
+  value: 'polished_blackstone_slab'
 }, {
   text: '赤い砂岩のハーフブロック',
   value: 'red_sandstone_slab'
@@ -2087,20 +2021,74 @@ const BUILDING_BLOCKS = [{
   text: '滑らかな石のハーフブロック',
   value: 'smooth_stone_slab'
 }, {
-  text: 'トウヒのハーフブロック',
-  value: 'spruce_slab'
-}, {
   text: '石レンガのハーフブロック',
   value: 'stone_brick_slab'
 }, {
   text: '石のハーフブロック',
   value: 'stone_slab'
 }, {
+  text: '安山岩のハーフブロック',
+  value: 'andesite_slab'
+}, {
+  text: '磨かれた安山岩のハーフブロック',
+  value: 'polished_andesite_slab'
+}, {
+  text: '閃緑岩のハーフブロック',
+  value: 'diorite_slab'
+}, {
+  text: '磨かれた閃緑岩のハーフブロック',
+  value: 'polished_diorite_slab'
+}, {
+  text: '花崗岩のハーフブロック',
+  value: 'granite_slab'
+}, {
+  text: '磨かれた花崗岩のハーフブロック',
+  value: 'polished_granite_slab'
+}, {
+  text: '丸石状ディープスレートのハーフブロック',
+  value: 'cobbled_deepslate_slab'
+}, {
+  text: '磨かれたディープスレートのハーフブロック',
+  value: 'polished_deepslate_slab'
+}, {
+  text: 'ディープスレートレンガのハーフブロック',
+  value: 'deepslate_brick_slab'
+}, {
+  text: 'ディープスレートタイルのハーフブロック',
+  value: 'deepslate_tile_slab'
+}, {
+  text: 'レンガのハーフブロック',
+  value: 'brick_slab'
+}, {
+  text: 'ネザーレンガのハーフブロック',
+  value: 'nether_brick_slab'
+}, {
+  text: 'プリズマリンレンガのハーフブロック',
+  value: 'prismarine_brick_slab'
+}, {
+  text: 'ダークプリズマリンのハーフブロック',
+  value: 'dark_prismarine_slab'
+}, {
+  text: 'プリズマリンのハーフブロック',
+  value: 'prismarine_slab'
+}, {
+  text: 'クォーツのハーフブロック',
+  value: 'quartz_slab'
+}, {
+  text: '滑らかなクォーツのハーフブロック',
+  value: 'smooth_quartz_slab'
+}, {
+  text: 'プルプァのハーフブロック',
+  value: 'purpur_slab'
+}, {
   text: 'アカシアのスラブ（垂直）',
   value: 'vertical_acacia_slab'
 }, {
   text: 'アメジストブロックのスラブ（垂直）',
   value: 'vertical_amethyst_block_slab'
+}, {
+  text: '安山岩のスラブ（垂直）',
+  value: 'vertical_andesite_slab'
 }, {
   text: 'シラカバのスラブ（垂直）',
   value: 'vertical_birch_slab'
@@ -2132,6 +2120,9 @@ const BUILDING_BLOCKS = [{
   text: 'ダイヤブロックのスラブ（垂直）',
   value: 'vertical_diamond_block_slab'
 }, {
+  text: '閃緑岩のスラブ（垂直）',
+  value: 'vertical_diorite_slab'
+}, {
   text: 'エメラルドブロックのスラブ（垂直）',
   value: 'vertical_emerald_block_slab'
 }, {
@@ -2140,6 +2131,9 @@ const BUILDING_BLOCKS = [{
 }, {
   text: '金ブロックのスラブ（垂直）',
   value: 'vertical_gold_block_slab'
+}, {
+  text: '花崗岩のスラブ（垂直）',
+  value: 'vertical_granite_slab'
 }, {
   text: '鉄ブロックのスラブ（垂直）',
   value: 'vertical_iron_block_slab'
@@ -2161,6 +2155,9 @@ const BUILDING_BLOCKS = [{
 }, {
   text: '酸化した切り込み入り銅のスラブ（垂直）',
   value: 'vertical_oxidized_cut_copper_slab'
+}, {
+  text: 'クォーツのスラブ（垂直）',
+  value: 'vertical_quartz_slab'
 }, {
   text: 'レッドストーンブロックのスラブ（垂直）',
   value: 'vertical_redstone_block_slab'
@@ -2186,20 +2183,47 @@ const BUILDING_BLOCKS = [{
   text: '錆びた切り込み入り銅のスラブ（垂直）',
   value: 'vertical_weathered_cut_copper_slab'
 }, {
-  text: '歪んだハーフブロック',
-  value: 'warped_slab'
+  text: '丸石の塀',
+  value: 'cobblestone_wall'
+}, {
+  text: '苔むした丸石の塀',
+  value: 'mossy_cobblestone_wall'
+}, {
+  text: '安山岩の塀',
+  value: 'andesite_wall'
+}, {
+  text: '閃緑岩の塀',
+  value: 'diorite_wall'
+}, {
+  text: '花崗岩の塀',
+  value: 'granite_wall'
+}, {
+  text: '丸石状ディープスレートの塀',
+  value: 'cobbled_deepslate_wall'
+}, {
+  text: '磨かれたディープスレートの塀',
+  value: 'polished_deepslate_wall'
+}, {
+  text: 'ディープスレートレンガの塀',
+  value: 'deepslate_brick_wall'
+}, {
+  text: 'ディープスレートタイルの塀',
+  value: 'deepslate_tile_wall'
+}, {
+  text: '黒石の塀',
+  value: 'blackstone_wall'
+}, {
+  text: '磨かれた黒石レンガの塀',
+  value: 'polished_blackstone_brick_wall'
+}, {
+  text: '磨かれた黒石の塀',
+  value: 'polished_blackstone_wall'
 }, {
   text: 'レンガの塀',
   value: 'brick_wall'
 }, {
-  text: '丸石の塀',
-  value: 'cobblestone_wall'
-}, {
   text: 'エンドストーンレンガの塀',
   value: 'end_stone_brick_wall'
-}, {
-  text: '苔むした丸石の塀',
-  value: 'mossy_cobblestone_wall'
 }, {
   text: '泥レンガの塀',
   value: 'mud_brick_wall'
@@ -2210,203 +2234,206 @@ const BUILDING_BLOCKS = [{
   text: '赤いネザーレンガの塀',
   value: 'red_nether_brick_wall'
 }, {
+  text: '石レンガの塀',
+  value: 'stone_brick_wall'
+}, {
   text: '赤い砂岩の塀',
   value: 'red_sandstone_wall'
 }, {
   text: '砂岩の塀',
   value: 'sandstone_wall'
 }, {
-  text: '石レンガの塀',
-  value: 'stone_brick_wall'
-}, {
-  text: 'アカシアのフェンス',
-  value: 'acacia_fence'
-}, {
-  text: 'アカシアのフェンスゲート',
-  value: 'acacia_fence_gate'
-}, {
-  text: '竹のフェンス',
-  value: 'bamboo_fence'
-}, {
-  text: '竹のフェンスゲート',
-  value: 'bamboo_fence_gate'
-}, {
-  text: 'シラカバのフェンス',
-  value: 'birch_fence'
-}, {
-  text: 'シラカバのフェンスゲート',
-  value: 'birch_fence_gate'
-}, {
-  text: 'サクラのフェンス',
-  value: 'cherry_fence'
-}, {
-  text: 'サクラのフェンスゲート',
-  value: 'cherry_fence_gate'
-}, {
-  text: '真紅のフェンス',
-  value: 'crimson_fence'
-}, {
-  text: '真紅のフェンスゲート',
-  value: 'crimson_fence_gate'
-}, {
-  text: 'ダークオークのフェンス',
-  value: 'dark_oak_fence'
-}, {
-  text: 'ダークオークのフェンスゲート',
-  value: 'dark_oak_fence_gate'
-}, {
-  text: 'ジャングルのフェンス',
-  value: 'jungle_fence'
-}, {
-  text: 'ジャングルのフェンスゲート',
-  value: 'jungle_fence_gate'
-}, {
-  text: 'マングローブのフェンス',
-  value: 'mangrove_fence'
-}, {
-  text: 'マングローブのフェンスゲート',
-  value: 'mangrove_fence_gate'
+  text: 'プリズマリンの塀',
+  value: 'prismarine_wall'
 }, {
   text: 'オークのフェンス',
   value: 'oak_fence'
 }, {
-  text: 'オークのフェンスゲート',
-  value: 'oak_fence_gate'
-}, {
   text: 'トウヒのフェンス',
   value: 'spruce_fence'
 }, {
-  text: 'トウヒのフェンスゲート',
-  value: 'spruce_fence_gate'
+  text: 'シラカバのフェンス',
+  value: 'birch_fence'
+}, {
+  text: 'ジャングルのフェンス',
+  value: 'jungle_fence'
+}, {
+  text: 'アカシアのフェンス',
+  value: 'acacia_fence'
+}, {
+  text: 'ダークオークのフェンス',
+  value: 'dark_oak_fence'
+}, {
+  text: 'マングローブのフェンス',
+  value: 'mangrove_fence'
+}, {
+  text: 'サクラのフェンス',
+  value: 'cherry_fence'
+}, {
+  text: '竹のフェンス',
+  value: 'bamboo_fence'
+}, {
+  text: '真紅のフェンス',
+  value: 'crimson_fence'
 }, {
   text: '歪んだフェンス',
   value: 'warped_fence'
 }, {
+  text: 'ネザーレンガのフェンス',
+  value: 'nether_brick_fence'
+}, {
+  text: 'オークのフェンスゲート',
+  value: 'oak_fence_gate'
+}, {
+  text: 'トウヒのフェンスゲート',
+  value: 'spruce_fence_gate'
+}, {
+  text: 'シラカバのフェンスゲート',
+  value: 'birch_fence_gate'
+}, {
+  text: 'ジャングルのフェンスゲート',
+  value: 'jungle_fence_gate'
+}, {
+  text: 'アカシアのフェンスゲート',
+  value: 'acacia_fence_gate'
+}, {
+  text: 'ダークオークのフェンスゲート',
+  value: 'dark_oak_fence_gate'
+}, {
+  text: 'マングローブのフェンスゲート',
+  value: 'mangrove_fence_gate'
+}, {
+  text: 'サクラのフェンスゲート',
+  value: 'cherry_fence_gate'
+}, {
+  text: '竹のフェンスゲート',
+  value: 'bamboo_fence_gate'
+}, {
+  text: '真紅のフェンスゲート',
+  value: 'crimson_fence_gate'
+}, {
   text: '歪んだフェンスゲート',
   value: 'warped_fence_gate'
-}, {
-  text: 'アカシアのボタン',
-  value: 'acacia_button'
-}, {
-  text: '竹のボタン',
-  value: 'bamboo_button'
-}, {
-  text: 'シラカバのボタン',
-  value: 'birch_button'
-}, {
-  text: 'サクラのボタン',
-  value: 'cherry_button'
-}, {
-  text: '真紅のボタン',
-  value: 'crimson_button'
-}, {
-  text: 'ダークオークのボタン',
-  value: 'dark_oak_button'
-}, {
-  text: 'ジャングルのボタン',
-  value: 'jungle_button'
-}, {
-  text: 'マングローブのボタン',
-  value: 'mangrove_button'
 }, {
   text: 'トウヒのボタン',
   value: 'spruce_button'
 }, {
+  text: 'シラカバのボタン',
+  value: 'birch_button'
+}, {
+  text: 'ジャングルのボタン',
+  value: 'jungle_button'
+}, {
+  text: 'アカシアのボタン',
+  value: 'acacia_button'
+}, {
+  text: 'ダークオークのボタン',
+  value: 'dark_oak_button'
+}, {
+  text: 'マングローブのボタン',
+  value: 'mangrove_button'
+}, {
+  text: 'サクラのボタン',
+  value: 'cherry_button'
+}, {
+  text: '竹のボタン',
+  value: 'bamboo_button'
+}, {
+  text: '真紅のボタン',
+  value: 'crimson_button'
+}, {
   text: '歪んだボタン',
   value: 'warped_button'
-}, {
-  text: 'アカシアの感圧板',
-  value: 'acacia_pressure_plate'
-}, {
-  text: '竹の感圧板',
-  value: 'bamboo_pressure_plate'
-}, {
-  text: 'シラカバの感圧板',
-  value: 'birch_pressure_plate'
-}, {
-  text: 'サクラの感圧板',
-  value: 'cherry_pressure_plate'
-}, {
-  text: '真紅の感圧板',
-  value: 'crimson_pressure_plate'
-}, {
-  text: 'ダークオークの感圧板',
-  value: 'dark_oak_pressure_plate'
-}, {
-  text: 'ジャングルの感圧板',
-  value: 'jungle_pressure_plate'
-}, {
-  text: 'マングローブの感圧板',
-  value: 'mangrove_pressure_plate'
 }, {
   text: 'トウヒの感圧板',
   value: 'spruce_pressure_plate'
 }, {
+  text: 'シラカバの感圧板',
+  value: 'birch_pressure_plate'
+}, {
+  text: 'ジャングルの感圧板',
+  value: 'jungle_pressure_plate'
+}, {
+  text: 'アカシアの感圧板',
+  value: 'acacia_pressure_plate'
+}, {
+  text: 'ダークオークの感圧板',
+  value: 'dark_oak_pressure_plate'
+}, {
+  text: 'マングローブの感圧板',
+  value: 'mangrove_pressure_plate'
+}, {
+  text: 'サクラの感圧板',
+  value: 'cherry_pressure_plate'
+}, {
+  text: '竹の感圧板',
+  value: 'bamboo_pressure_plate'
+}, {
+  text: '真紅の感圧板',
+  value: 'crimson_pressure_plate'
+}, {
   text: '歪んだ感圧板',
   value: 'warped_pressure_plate'
-}, {
-  text: 'アカシアのドア',
-  value: 'acacia_door'
-}, {
-  text: '竹のドア',
-  value: 'bamboo_door'
-}, {
-  text: 'シラカバのドア',
-  value: 'birch_door'
-}, {
-  text: 'サクラのドア',
-  value: 'cherry_door'
-}, {
-  text: '真紅のドア',
-  value: 'crimson_door'
-}, {
-  text: 'ダークオークのドア',
-  value: 'dark_oak_door'
-}, {
-  text: 'ジャングルのドア',
-  value: 'jungle_door'
-}, {
-  text: 'マングローブのドア',
-  value: 'mangrove_door'
 }, {
   text: 'トウヒのドア',
   value: 'spruce_door'
 }, {
+  text: 'シラカバのドア',
+  value: 'birch_door'
+}, {
+  text: 'ジャングルのドア',
+  value: 'jungle_door'
+}, {
+  text: 'アカシアのドア',
+  value: 'acacia_door'
+}, {
+  text: 'ダークオークのドア',
+  value: 'dark_oak_door'
+}, {
+  text: 'マングローブのドア',
+  value: 'mangrove_door'
+}, {
+  text: 'サクラのドア',
+  value: 'cherry_door'
+}, {
+  text: '竹のドア',
+  value: 'bamboo_door'
+}, {
+  text: '真紅のドア',
+  value: 'crimson_door'
+}, {
   text: '歪んだドア',
   value: 'warped_door'
-}, {
-  text: 'アカシアのトラップドア',
-  value: 'acacia_trapdoor'
-}, {
-  text: '竹のトラップドア',
-  value: 'bamboo_trapdoor'
-}, {
-  text: 'シラカバのトラップドア',
-  value: 'birch_trapdoor'
-}, {
-  text: 'サクラのトラップドア',
-  value: 'cherry_trapdoor'
-}, {
-  text: '真紅のトラップドア',
-  value: 'crimson_trapdoor'
-}, {
-  text: 'ダークオークのトラップドア',
-  value: 'dark_oak_trapdoor'
-}, {
-  text: 'ジャングルのトラップドア',
-  value: 'jungle_trapdoor'
-}, {
-  text: 'マングローブのトラップドア',
-  value: 'mangrove_trapdoor'
 }, {
   text: 'トウヒのトラップドア',
   value: 'spruce_trapdoor'
 }, {
+  text: 'シラカバのトラップドア',
+  value: 'birch_trapdoor'
+}, {
+  text: 'ジャングルのトラップドア',
+  value: 'jungle_trapdoor'
+}, {
+  text: 'アカシアのトラップドア',
+  value: 'acacia_trapdoor'
+}, {
+  text: 'ダークオークのトラップドア',
+  value: 'dark_oak_trapdoor'
+}, {
+  text: 'マングローブのトラップドア',
+  value: 'mangrove_trapdoor'
+}, {
+  text: 'サクラのトラップドア',
+  value: 'cherry_trapdoor'
+}, {
+  text: '竹のトラップドア',
+  value: 'bamboo_trapdoor'
+}, {
+  text: '真紅のトラップドア',
+  value: 'crimson_trapdoor'
+}, {
   text: '歪んだトラップドア',
   value: 'warped_trapdoor'
-}, {
-  text: '竹モザイク',
-  value: 'bamboo_mosaic'
 }, {
   text: '黒色のカーペット',
   value: 'black_carpet'
@@ -2455,18 +2482,6 @@ const BUILDING_BLOCKS = [{
 }, {
   text: '鎖',
   value: 'chain'
-}, {
-  text: '模様入りの赤い砂岩',
-  value: 'chiseled_red_sandstone'
-}, {
-  text: '模様入りの砂岩',
-  value: 'chiseled_sandstone'
-}, {
-  text: 'カットされた赤い砂岩',
-  value: 'cut_red_sandstone'
-}, {
-  text: 'カットされた砂岩',
-  value: 'cut_sandstone'
 }, {
   text: '青緑色のベッド',
   value: 'cyan_bed'
@@ -2654,26 +2669,11 @@ const BUILDING_BLOCKS = [{
   text: '赤色の彩釉テラコッタ',
   value: 'red_glazed_terracotta'
 }, {
-  text: '赤い砂岩',
-  value: 'red_sandstone'
-}, {
   text: '赤色の色付きガラス板',
   value: 'red_stained_glass_pane'
 }, {
   text: '根付いた土',
   value: 'rooted_dirt'
-}, {
-  text: '砂岩',
-  value: 'sandstone'
-}, {
-  text: '滑らかな赤い砂岩',
-  value: 'smooth_red_sandstone'
-}, {
-  text: '滑らかな砂岩',
-  value: 'smooth_sandstone'
-}, {
-  text: '滑らかな石',
-  value: 'smooth_stone'
 }, {
   text: '樹皮を剥いだ竹ブロック',
   value: 'stripped_bamboo_block'
@@ -2700,11 +2700,17 @@ const BUILDING_BLOCKS = [{
   value: 'yellow_stained_glass_pane'
 }];
 const LIGHTING_BLOCKS = [{
+  text: '松明',
+  value: 'torch'
+}, {
   text: 'ソウルトーチ',
   value: 'soul_torch'
 }, {
-  text: '松明',
-  value: 'torch'
+  text: 'ランタン',
+  value: 'lantern'
+}, {
+  text: 'ソウルランタン',
+  value: 'soul_lantern'
 }, {
   text: 'グロウストーン',
   value: 'glowstone'
@@ -2717,12 +2723,6 @@ const LIGHTING_BLOCKS = [{
 }, {
   text: 'ジャック・オ・ランタン',
   value: 'jack_o_lantern'
-}, {
-  text: 'ランタン',
-  value: 'lantern'
-}, {
-  text: 'ソウルランタン',
-  value: 'soul_lantern'
 }, {
   text: 'ろうそく',
   value: 'candle'
@@ -2778,14 +2778,14 @@ const LIGHTING_BLOCKS = [{
   text: '焚き火',
   value: 'campfire'
 }, {
+  text: 'ソウル焚き火',
+  value: 'soul_campfire'
+}, {
   text: 'レッドストーンランプ',
   value: 'redstone_lamp'
 }, {
   text: 'レッドストーントーチ',
   value: 'redstone_torch'
-}, {
-  text: 'ソウル焚き火',
-  value: 'soul_campfire'
 }, {
   text: 'ソウルファイア',
   value: 'soul_fire'
@@ -2839,6 +2839,9 @@ const DECORATION_BLOCKS = [{
   text: '黒色の羊毛',
   value: 'black_wool'
 }, {
+  text: '苔のカーペット',
+  value: 'moss_carpet'
+}, {
   text: '白色のカーペット',
   value: 'white_carpet'
 }, {
@@ -2862,9 +2865,6 @@ const DECORATION_BLOCKS = [{
 }, {
   text: '灰色のカーペット',
   value: 'gray_carpet'
-}, {
-  text: '苔のカーペット',
-  value: 'moss_carpet'
 }, {
   text: '白色のテラコッタ',
   value: 'white_terracotta'
@@ -3056,14 +3056,14 @@ const NATURE_BLOCKS = [{
   text: '泥',
   value: 'mud'
 }, {
-  text: '砂利',
-  value: 'gravel'
+  text: '砂',
+  value: 'sand'
 }, {
   text: '赤い砂',
   value: 'red_sand'
 }, {
-  text: '砂',
-  value: 'sand'
+  text: '砂利',
+  value: 'gravel'
 }, {
   text: 'ソウルサンド',
   value: 'soul_sand'
@@ -3071,11 +3071,26 @@ const NATURE_BLOCKS = [{
   text: 'ソウルソイル',
   value: 'soul_soil'
 }, {
-  text: 'アカシアの原木',
-  value: 'acacia_log'
+  text: 'オークの原木',
+  value: 'oak_log'
+}, {
+  text: 'トウヒの原木',
+  value: 'spruce_log'
 }, {
   text: 'シラカバの原木',
   value: 'birch_log'
+}, {
+  text: 'ジャングルの原木',
+  value: 'jungle_log'
+}, {
+  text: 'アカシアの原木',
+  value: 'acacia_log'
+}, {
+  text: 'ダークオークの原木',
+  value: 'dark_oak_log'
+}, {
+  text: 'マングローブの原木',
+  value: 'mangrove_log'
 }, {
   text: 'サクラの原木',
   value: 'cherry_log'
@@ -3083,56 +3098,41 @@ const NATURE_BLOCKS = [{
   text: '真紅の幹',
   value: 'crimson_stem'
 }, {
-  text: 'ダークオークの原木',
-  value: 'dark_oak_log'
-}, {
-  text: 'ジャングルの原木',
-  value: 'jungle_log'
-}, {
-  text: 'マングローブの原木',
-  value: 'mangrove_log'
-}, {
-  text: 'キノコの柄',
-  value: 'mushroom_stem'
-}, {
-  text: 'オークの原木',
-  value: 'oak_log'
-}, {
-  text: 'トウヒの原木',
-  value: 'spruce_log'
-}, {
   text: '歪んだ幹',
   value: 'warped_stem'
 }, {
-  text: 'アカシアの葉',
-  value: 'acacia_leaves'
-}, {
-  text: 'ツツジの葉',
-  value: 'azalea_leaves'
-}, {
-  text: 'シラカバの葉',
-  value: 'birch_leaves'
-}, {
-  text: 'サクラの葉',
-  value: 'cherry_leaves'
-}, {
-  text: 'ダークオークの葉',
-  value: 'dark_oak_leaves'
-}, {
-  text: '開花したツツジの葉',
-  value: 'flowering_azalea_leaves'
-}, {
-  text: 'ジャングルの葉',
-  value: 'jungle_leaves'
-}, {
-  text: 'マングローブの葉',
-  value: 'mangrove_leaves'
+  text: 'キノコの柄',
+  value: 'mushroom_stem'
 }, {
   text: 'オークの葉',
   value: 'oak_leaves'
 }, {
   text: 'トウヒの葉',
   value: 'spruce_leaves'
+}, {
+  text: 'シラカバの葉',
+  value: 'birch_leaves'
+}, {
+  text: 'ジャングルの葉',
+  value: 'jungle_leaves'
+}, {
+  text: 'アカシアの葉',
+  value: 'acacia_leaves'
+}, {
+  text: 'ダークオークの葉',
+  value: 'dark_oak_leaves'
+}, {
+  text: 'マングローブの葉',
+  value: 'mangrove_leaves'
+}, {
+  text: 'サクラの葉',
+  value: 'cherry_leaves'
+}, {
+  text: 'ツツジの葉',
+  value: 'azalea_leaves'
+}, {
+  text: '開花したツツジの葉',
+  value: 'flowering_azalea_leaves'
 }, {
   text: 'ポピー',
   value: 'poppy'
@@ -3155,6 +3155,18 @@ const NATURE_BLOCKS = [{
   text: 'スズラン',
   value: 'lily_of_the_valley'
 }, {
+  text: 'ライラック',
+  value: 'lilac'
+}, {
+  text: 'バラの低木',
+  value: 'rose_bush'
+}, {
+  text: 'ボタン',
+  value: 'peony'
+}, {
+  text: 'ヒマワリ',
+  value: 'sunflower'
+}, {
   text: '氷',
   value: 'ice'
 }, {
@@ -3170,14 +3182,47 @@ const NATURE_BLOCKS = [{
   text: '水',
   value: 'water'
 }, {
-  text: 'ツツジの葉',
-  value: 'azalea'
-}, {
   text: '竹',
   value: 'bamboo'
 }, {
   text: '竹ブロック',
   value: 'bamboo_block'
+}, {
+  text: 'サボテン',
+  value: 'cactus'
+}, {
+  text: 'サトウキビ',
+  value: 'sugar_cane'
+}, {
+  text: '昆布',
+  value: 'kelp'
+}, {
+  text: '海草',
+  value: 'seagrass'
+}, {
+  text: '草',
+  value: 'grass'
+}, {
+  text: 'シダ',
+  value: 'fern'
+}, {
+  text: '枯れ木',
+  value: 'dead_bush'
+}, {
+  text: 'つる',
+  value: 'vine'
+}, {
+  text: 'ねじれつる',
+  value: 'twisting_vines'
+}, {
+  text: 'しだれツタ',
+  value: 'weeping_vines'
+}, {
+  text: 'グロウベリー',
+  value: 'glow_berries'
+}, {
+  text: 'ツツジの葉',
+  value: 'azalea'
 }, {
   text: '脳サンゴブロック',
   value: 'brain_coral_block'
@@ -3188,17 +3233,8 @@ const NATURE_BLOCKS = [{
   text: '泡サンゴブロック',
   value: 'bubble_coral_block'
 }, {
-  text: 'サボテン',
-  value: 'cactus'
-}, {
   text: '粘土',
   value: 'clay'
-}, {
-  text: '枯れ木',
-  value: 'dead_bush'
-}, {
-  text: 'シダ',
-  value: 'fern'
 }, {
   text: '火サンゴブロック',
   value: 'fire_coral_block'
@@ -3206,32 +3242,17 @@ const NATURE_BLOCKS = [{
   text: '開花したツツジ',
   value: 'flowering_azalea'
 }, {
-  text: 'グロウベリー',
-  value: 'glow_berries'
-}, {
-  text: '草',
-  value: 'grass'
-}, {
   text: '干草の俵',
   value: 'hay_block'
 }, {
   text: '角サンゴブロック',
   value: 'horn_coral_block'
 }, {
-  text: '昆布',
-  value: 'kelp'
-}, {
-  text: 'ライラック',
-  value: 'lilac'
-}, {
   text: 'スイカ',
   value: 'melon'
 }, {
   text: 'ネザーウォート',
   value: 'nether_wart_block'
-}, {
-  text: 'ボタン',
-  value: 'peony'
 }, {
   text: 'プリズマリン',
   value: 'prismarine'
@@ -3242,32 +3263,11 @@ const NATURE_BLOCKS = [{
   text: 'キノコブロック(赤)',
   value: 'red_mushroom_block'
 }, {
-  text: 'バラの低木',
-  value: 'rose_bush'
-}, {
-  text: '海草',
-  value: 'seagrass'
-}, {
-  text: 'サトウキビ',
-  value: 'sugar_cane'
-}, {
-  text: 'ヒマワリ',
-  value: 'sunflower'
-}, {
   text: 'サンゴブロック',
   value: 'tube_coral_block'
 }, {
-  text: 'ねじれつる',
-  value: 'twisting_vines'
-}, {
-  text: 'つる',
-  value: 'vine'
-}, {
   text: '歪んだウォート',
   value: 'warped_wart_block'
-}, {
-  text: 'しだれツタ',
-  value: 'weeping_vines'
 }];
 const FUNCTIONAL_BLOCKS = [{
   text: '作業台',
@@ -3291,11 +3291,32 @@ const FUNCTIONAL_BLOCKS = [{
   text: '石切台',
   value: 'stonecutter'
 }, {
-  text: '樽',
-  value: 'barrel'
+  text: '鍛冶台',
+  value: 'smithing_table'
+}, {
+  text: '製図台',
+  value: 'cartography_table'
+}, {
+  text: '矢細工台',
+  value: 'fletching_table'
+}, {
+  text: '機織り機',
+  value: 'loom'
+}, {
+  text: '醸造台',
+  value: 'brewing_stand'
+}, {
+  text: 'エンチャントテーブル',
+  value: 'enchanting_table'
 }, {
   text: 'チェスト',
   value: 'chest'
+}, {
+  text: '樽',
+  value: 'barrel'
+}, {
+  text: 'ホッパー',
+  value: 'hopper'
 }, {
   text: '鉄のドア',
   value: 'iron_door'
@@ -3312,11 +3333,23 @@ const FUNCTIONAL_BLOCKS = [{
   text: 'レッドストーンコンパレーター',
   value: 'comparator'
 }, {
+  text: 'レッドストーンリピーター',
+  value: 'repeater'
+}, {
   text: 'オブザーバー',
   value: 'observer'
 }, {
-  text: 'レッドストーンリピーター',
-  value: 'repeater'
+  text: 'レバー',
+  value: 'lever'
+}, {
+  text: '的',
+  value: 'target'
+}, {
+  text: 'ディスペンサー',
+  value: 'dispenser'
+}, {
+  text: 'ドロッパー',
+  value: 'dropper'
 }, {
   text: 'ピストン',
   value: 'piston'
@@ -3324,29 +3357,35 @@ const FUNCTIONAL_BLOCKS = [{
   text: '粘着ピストン',
   value: 'sticky_piston'
 }, {
-  text: 'アクティベーターレール',
-  value: 'activator_rail'
-}, {
-  text: 'ディテクターレール',
-  value: 'detector_rail'
+  text: 'レール',
+  value: 'rail'
 }, {
   text: 'パワードレール',
   value: 'powered_rail'
 }, {
-  text: 'レール',
-  value: 'rail'
+  text: 'ディテクターレール',
+  value: 'detector_rail'
+}, {
+  text: 'アクティベーターレール',
+  value: 'activator_rail'
+}, {
+  text: 'オークのボタン',
+  value: 'oak_button'
+}, {
+  text: '石のボタン',
+  value: 'stone_button'
+}, {
+  text: 'オークの感圧板',
+  value: 'oak_pressure_plate'
+}, {
+  text: '石の感圧板',
+  value: 'stone_pressure_plate'
 }, {
   text: 'ビーコン',
   value: 'beacon'
 }, {
   text: 'ベル',
   value: 'bell'
-}, {
-  text: '醸造台',
-  value: 'brewing_stand'
-}, {
-  text: '製図台',
-  value: 'cartography_table'
 }, {
   text: '大釜',
   value: 'cauldron'
@@ -3357,18 +3396,6 @@ const FUNCTIONAL_BLOCKS = [{
   text: 'コンジット',
   value: 'conduit'
 }, {
-  text: 'ディスペンサー',
-  value: 'dispenser'
-}, {
-  text: 'ドロッパー',
-  value: 'dropper'
-}, {
-  text: 'エンチャントテーブル',
-  value: 'enchanting_table'
-}, {
-  text: '矢細工台',
-  value: 'fletching_table'
-}, {
   text: 'かまど付きトロッコ',
   value: 'furnace_minecart'
 }, {
@@ -3378,50 +3405,23 @@ const FUNCTIONAL_BLOCKS = [{
   text: 'ハニーブロック',
   value: 'honey_block'
 }, {
-  text: 'ホッパー',
-  value: 'hopper'
-}, {
   text: 'ジュークボックス',
   value: 'jukebox'
 }, {
   text: '書見台',
   value: 'lectern'
 }, {
-  text: 'レバー',
-  value: 'lever'
-}, {
   text: '重量用感圧板（軽）',
   value: 'light_weighted_pressure_plate'
 }, {
-  text: '機織り機',
-  value: 'loom'
-}, {
   text: '音符ブロック',
   value: 'note_block'
-}, {
-  text: 'オークのボタン',
-  value: 'oak_button'
-}, {
-  text: 'オークの感圧板',
-  value: 'oak_pressure_plate'
 }, {
   text: 'リスポーンアンカー',
   value: 'respawn_anchor'
 }, {
   text: 'スライムブロック',
   value: 'slime_block'
-}, {
-  text: '鍛冶台',
-  value: 'smithing_table'
-}, {
-  text: '石のボタン',
-  value: 'stone_button'
-}, {
-  text: '石の感圧板',
-  value: 'stone_pressure_plate'
-}, {
-  text: '的',
-  value: 'target'
 }, {
   text: 'TNT',
   value: 'tnt'
@@ -3508,20 +3508,20 @@ const ORE_BLOCKS = [{
   text: 'クォーツブロック',
   value: 'quartz_block'
 }, {
+  text: 'アメジストブロック',
+  value: 'amethyst_block'
+}, {
   text: 'ネザライトブロック',
   value: 'netherite_block'
 }, {
-  text: 'アメジストブロック',
-  value: 'amethyst_block'
+  text: '鉄の原石',
+  value: 'raw_iron_block'
 }, {
   text: '銅の原石',
   value: 'raw_copper_block'
 }, {
   text: '金の原石',
   value: 'raw_gold_block'
-}, {
-  text: '鉄の原石',
-  value: 'raw_iron_block'
 }, {
   text: '古代の残骸',
   value: 'ancient_debris'
@@ -3557,11 +3557,11 @@ const SPECIAL_BLOCKS = [{
   text: '岩盤',
   value: 'bedrock'
 }, {
-  text: '泣く黒曜石',
-  value: 'crying_obsidian'
-}, {
   text: '黒曜石',
   value: 'obsidian'
+}, {
+  text: '泣く黒曜石',
+  value: 'crying_obsidian'
 }, {
   text: 'スポンジ',
   value: 'sponge'
@@ -3572,14 +3572,14 @@ const SPECIAL_BLOCKS = [{
   text: '溶岩',
   value: 'lava'
 }, {
-  text: 'エンドゲートウェイ',
-  value: 'end_gateway'
-}, {
   text: 'エンドポータル',
   value: 'end_portal'
 }, {
   text: 'エンドポータルフレーム',
   value: 'end_portal_frame'
+}, {
+  text: 'エンドゲートウェイ',
+  value: 'end_gateway'
 }, {
   text: 'エンドロッド',
   value: 'end_rod'
@@ -3587,26 +3587,26 @@ const SPECIAL_BLOCKS = [{
   text: 'エンドストーン',
   value: 'end_stone'
 }, {
-  text: 'マグマブロック',
-  value: 'magma_block'
-}, {
   text: 'ネザーラック',
   value: 'netherrack'
+}, {
+  text: 'マグマブロック',
+  value: 'magma_block'
 }, {
   text: 'スカルクブロック',
   value: 'sculk'
 }, {
-  text: 'スカルクカタリスト',
-  value: 'sculk_catalyst'
+  text: 'スカルクヴェイン',
+  value: 'sculk_vein'
 }, {
   text: 'スカルクセンサー',
   value: 'sculk_sensor'
 }, {
+  text: 'スカルクカタリスト',
+  value: 'sculk_catalyst'
+}, {
   text: 'スカルクシュリーカー',
   value: 'sculk_shrieker'
-}, {
-  text: 'スカルクヴェイン',
-  value: 'sculk_vein'
 }, {
   text: 'ブルーアイス',
   value: 'blue_ice'
