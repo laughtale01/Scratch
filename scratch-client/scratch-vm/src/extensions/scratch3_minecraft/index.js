@@ -95,6 +95,30 @@ class Scratch3MinecraftBlocks {
                         }
                     }
                 },
+                {
+                    opcode: 'getPlayerFacing',
+                    blockType: 'reporter',
+                    text: 'プレイヤーの向き'
+                },
+                {
+                    opcode: 'getBlockType',
+                    blockType: 'reporter',
+                    text: 'ブロックタイプ x:[X] y:[Y] z:[Z]',
+                    arguments: {
+                        X: {
+                            type: 'number',
+                            defaultValue: 0
+                        },
+                        Y: {
+                            type: 'number',
+                            defaultValue: 64
+                        },
+                        Z: {
+                            type: 'number',
+                            defaultValue: 0
+                        }
+                    }
+                },
                 '---',
                 {
                     opcode: 'setBlock',
@@ -257,6 +281,23 @@ class Scratch3MinecraftBlocks {
                             type: 'string',
                             menu: 'timeValues',
                             defaultValue: 'day'
+                        }
+                    }
+                },
+                {
+                    opcode: 'setGameRule',
+                    blockType: 'command',
+                    text: 'ゲームルール [RULE] を [VALUE] にする',
+                    arguments: {
+                        RULE: {
+                            type: 'string',
+                            menu: 'gameRules',
+                            defaultValue: 'doDaylightCycle'
+                        },
+                        VALUE: {
+                            type: 'string',
+                            menu: 'onOff',
+                            defaultValue: 'true'
                         }
                     }
                 },
@@ -689,6 +730,21 @@ class Scratch3MinecraftBlocks {
                         {text: '夕方', value: 'sunset'},
                         {text: '夜', value: 'night'},
                         {text: '真夜中', value: 'midnight'}
+                    ]
+                },
+                gameRules: {
+                    acceptReporters: false,
+                    items: [
+                        {text: '時間固定', value: 'doDaylightCycle'},
+                        {text: '天気固定', value: 'doWeatherCycle'},
+                        {text: 'Mobスポーン', value: 'doMobSpawning'}
+                    ]
+                },
+                onOff: {
+                    acceptReporters: false,
+                    items: [
+                        {text: 'オン', value: 'true'},
+                        {text: 'オフ', value: 'false'}
                     ]
                 },
                 slabBlocks: {
@@ -1176,6 +1232,51 @@ class Scratch3MinecraftBlocks {
     }
 
     /**
+     * プレイヤーの向き取得
+     */
+    getPlayerFacing() {
+        return this.sendCommandWithResponse('getPlayerFacing', {})
+            .then(response => {
+                if (response && response.payload && response.payload.result) {
+                    const {result} = response.payload;
+                    // 向きを返す: "north", "south", "east", "west"
+                    return result.facing || 'north';
+                }
+                return 'north';
+            })
+            .catch(error => {
+                console.error('getPlayerFacing error:', error);
+                return 'north';
+            });
+    }
+
+    /**
+     * ブロックタイプ取得
+     */
+    getBlockType(args) {
+        // Y座標変換: ScratchのY座標をMinecraftのY座標に変換
+        const minecraftY = this._toMinecraftY(args.Y);
+
+        return this.sendCommandWithResponse('getBlockType', {
+            x: args.X,
+            y: minecraftY,
+            z: args.Z
+        })
+            .then(response => {
+                if (response && response.payload && response.payload.result) {
+                    const {result} = response.payload;
+                    // ブロックタイプを返す（例: "stone", "oak_planks", "air"）
+                    return result.blockType || 'air';
+                }
+                return 'air';
+            })
+            .catch(error => {
+                console.error('getBlockType error:', error);
+                return 'air';
+            });
+    }
+
+    /**
      * 天気変更
      */
     setWeather(args) {
@@ -1198,6 +1299,20 @@ class Scratch3MinecraftBlocks {
 
         return this.sendCommand('setTime', {
             time: timeMap[args.TIME] || 1000
+        });
+    }
+
+    /**
+     * ゲームルール設定
+     *
+     * 注意: MODの仕様により、時間固定と天気固定は値が反転されます
+     * - Scratchの「オン」= MODに「true」を送信 → MODが「false」に変換（固定ON）
+     * - Scratchの「オフ」= MODに「false」を送信 → MODが「true」に変換（固定OFF）
+     */
+    setGameRule(args) {
+        return this.sendCommand('setGameRule', {
+            rule: args.RULE,
+            value: args.VALUE
         });
     }
 

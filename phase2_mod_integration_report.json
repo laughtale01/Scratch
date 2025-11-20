@@ -1,0 +1,51 @@
+{
+  "summary": {
+    "total_blocks": 760,
+    "vanilla_blocks": 726,
+    "custom_mod_blocks": 34,
+    "missing_in_mod": 0,
+    "minecraft_version": "1.20.1"
+  },
+  "vanilla_blocks": {
+    "total": 726,
+    "stairs": 49,
+    "slabs": 57,
+    "doors": 12,
+    "trapdoors": 12,
+    "signs": 11,
+    "hanging_signs": 11,
+    "copper_oxidation": 24,
+    "waxed_blocks": 18
+  },
+  "custom_blocks": {
+    "vertical_slabs_in_scratch": 34,
+    "vertical_slabs_in_mod": 34,
+    "missing": []
+  },
+  "mod_commands": [
+    "setBlock",
+    "getBlock",
+    "fillBlocks",
+    "getPosition",
+    "getPlayerFacing",
+    "getBlockType",
+    "summonEntity",
+    "teleport",
+    "setWeather",
+    "setTime",
+    "setGameMode",
+    "clearArea",
+    "clearAllEntities",
+    "setGameRule"
+  ],
+  "potential_issues": {
+    "complex_nbt_blocks": [
+      "furnace",
+      "chest",
+      "barrel",
+      "hopper",
+      "dispenser",
+      "dropper"
+    ]
+  }
+}
