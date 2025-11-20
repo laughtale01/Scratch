@@ -2143,6 +2143,50 @@
     {
       "text": "滑らかな玄武岩",
       "value": "smooth_basalt"
+    },
+    {
+      "text": "オークの看板",
+      "value": "oak_sign"
+    },
+    {
+      "text": "トウヒの看板",
+      "value": "spruce_sign"
+    },
+    {
+      "text": "シラカバの看板",
+      "value": "birch_sign"
+    },
+    {
+      "text": "ジャングルの看板",
+      "value": "jungle_sign"
+    },
+    {
+      "text": "アカシアの看板",
+      "value": "acacia_sign"
+    },
+    {
+      "text": "ダークオークの看板",
+      "value": "dark_oak_sign"
+    },
+    {
+      "text": "マングローブの看板",
+      "value": "mangrove_sign"
+    },
+    {
+      "text": "サクラの看板",
+      "value": "cherry_sign"
+    },
+    {
+      "text": "竹の看板",
+      "value": "bamboo_sign"
+    },
+    {
+      "text": "真紅の看板",
+      "value": "crimson_sign"
+    },
+    {
+      "text": "歪んだ看板",
+      "value": "warped_sign"
     }
   ],
   "NATURE_BLOCKS": [
