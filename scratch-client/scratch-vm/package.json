@@ -1,0 +1,64 @@
+{
+  "name": "minecraftedu-scratch-vm",
+  "version": "0.1.0",
+  "description": "Virtual machine for MinecraftEdu Scratch integration - Control Minecraft from Scratch for educational programming",
+  "main": "./src/index.js",
+  "homepage": "https://laughtale01.github.io/Scratch/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laughtale01/Scratch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/laughtale01/Scratch/issues"
+  },
+  "scripts": {
+    "build": "webpack --mode=production",
+    "dev": "webpack --mode=development --watch",
+    "start": "webpack-dev-server --mode=development",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.js __tests__/**/*.js",
+    "lint:fix": "eslint src/**/*.js __tests__/**/*.js --fix"
+  },
+  "keywords": [
+    "scratch",
+    "minecraft",
+    "education",
+    "programming",
+    "stem",
+    "coding",
+    "learning",
+    "teaching",
+    "visual-programming",
+    "scratch3",
+    "minecraft-mod",
+    "forge",
+    "websocket",
+    "educational-software",
+    "block-programming",
+    "kids",
+    "children",
+    "japan",
+    "japanese"
+  ],
+  "author": "MinecraftEdu Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "scratch-vm": "^2.3.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "babel-loader": "^9.1.0",
+    "eslint": "^8.57.1",
+    "jest": "^29.5.0",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.0",
+    "webpack-dev-server": "^4.15.0"
+  }
+}

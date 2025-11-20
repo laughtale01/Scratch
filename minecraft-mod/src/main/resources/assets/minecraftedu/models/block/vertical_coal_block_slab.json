@@ -1,0 +1,70 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "texture": "minecraft:block/coal_block",
+    "particle": "minecraft:block/coal_block"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#texture",
+          "cullface": "north"
+        },
+        "south": {
+          "texture": "#texture"
+        },
+        "east": {
+          "texture": "#texture",
+          "cullface": "east",
+          "uv": [
+            0,
+            0,
+            8,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#texture",
+          "cullface": "west",
+          "uv": [
+            0,
+            0,
+            8,
+            16
+          ]
+        },
+        "up": {
+          "texture": "#texture",
+          "cullface": "up",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        },
+        "down": {
+          "texture": "#texture",
+          "cullface": "down",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        }
+      }
+    }
+  ]
+}

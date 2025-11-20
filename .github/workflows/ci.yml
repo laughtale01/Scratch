@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test on Node.js ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: scratch-client/scratch-vm/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd scratch-client/scratch-vm
+          npm ci
+
+      - name: Run tests
+        run: |
+          cd scratch-client/scratch-vm
+          npm test
+
+      - name: Run tests with coverage
+        run: |
+          cd scratch-client/scratch-vm
+          npm run test:coverage
+
+      - name: Upload coverage reports to Codecov
+        if: matrix.node-version == '18.x'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./scratch-client/scratch-vm/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Archive test coverage results
+        if: matrix.node-version == '18.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: scratch-client/scratch-vm/coverage/
+          retention-days: 30
+
+  lint:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: scratch-client/scratch-vm/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd scratch-client/scratch-vm
+          npm ci
+
+      - name: Check for console.log statements
+        run: |
+          echo "Checking for console.log statements..."
+          ! grep -r "console\\.log" scratch-client/scratch-vm/src/extensions/scratch3_minecraft/ || echo "Warning: console.log statements found (non-blocking)"
+
+      - name: Check file permissions
+        run: |
+          echo "Checking file permissions..."
+          find . -name "*.js" -type f -executable && echo "Warning: Executable JS files found" || echo "OK: No executable JS files"
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: scratch-client/scratch-vm/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd scratch-client/scratch-vm
+          npm ci
+
+      - name: Build project
+        run: |
+          cd scratch-client/scratch-vm
+          npm run build
+
+      - name: Check build output
+        run: |
+          cd scratch-client/scratch-vm
+          if [ -d "dist" ] || [ -d "build" ]; then
+            echo "Build successful"
+            ls -la dist/ || ls -la build/ || true
+          else
+            echo "Warning: Build directory not found (may be expected)"
+          fi

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Minecraft WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #log {
+            background: #f0f0f0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🎮 Minecraft WebSocket Test</h1>
+
+    <div>
+        <button onclick="connect()">1. 接続</button>
+        <button onclick="sendChat()">2. チャット送信</button>
+        <button onclick="placeBlock()">3. ブロック配置</button>
+        <button onclick="getBlock()">4. ブロック取得</button>
+        <button onclick="fillBlocks()">5. 範囲配置</button>
+        <button onclick="getPosition()">6. 位置取得</button>
+        <button onclick="setGameMode()">7. クリエイティブ</button>
+        <button onclick="disconnect()">8. 切断</button>
+    </div>
+
+    <h3>ログ：</h3>
+    <div id="log"></div>
+
+    <script>
+        let ws = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<span class="${type}">[${timestamp}] ${message}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('すでに接続済みです', 'info');
+                return;
+            }
+
+            log('接続中... ws://localhost:14711/minecraft', 'info');
+            ws = new WebSocket('ws://localhost:14711/minecraft');
+
+            ws.onopen = () => {
+                log('✅ 接続成功！', 'success');
+
+                // 接続メッセージ送信
+                const connectMsg = {
+                    version: "1.0",
+                    messageId: "test-" + Date.now(),
+                    timestamp: Date.now(),
+                    sessionId: "",
+                    type: "connect",
+                    payload: {
+                        clientId: "browser_test_" + Date.now(),
+                        authToken: "test-token",
+                        clientInfo: {
+                            userAgent: "Browser WebSocket Test",
+                            version: "1.0.0"
+                        }
+                    }
+                };
+                ws.send(JSON.stringify(connectMsg));
+                log('→ 接続メッセージ送信', 'info');
+            };
+
+            ws.onmessage = (event) => {
+                log('📨 受信: ' + event.data, 'success');
+                try {
+                    const data = JSON.parse(event.data);
+                    log('   タイプ: ' + data.type, 'info');
+                } catch (e) {}
+            };
+
+            ws.onerror = (error) => {
+                log('❌ エラー発生！Minecraftが起動していることを確認してください', 'error');
+                log('   エラー: ' + error, 'error');
+            };
+
+            ws.onclose = () => {
+                log('🔌 接続が切断されました', 'info');
+                ws = null;
+            };
+        }
+
+        function sendChat() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ まず接続してください', 'error');
+                return;
+            }
+
+            const chatMsg = {
+                version: "1.0",
+                messageId: "chat-" + Date.now(),
+                timestamp: Date.now(),
+                sessionId: "test-session",
+                type: "command",
+                payload: {
+                    action: "chat",
+                    params: {
+                        message: "Hello from Browser Test!"
+                    }
+                }
+            };
+
+            ws.send(JSON.stringify(chatMsg));
+            log('→ チャットメッセージ送信: "Hello from Browser Test!"', 'info');
+            log('   Minecraftのチャットを確認してください！', 'success');
+        }
+
+        function placeBlock() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ まず接続してください', 'error');
+                return;
+            }
+
+            const blockMsg = {
+                version: "1.0",
+                messageId: "block-" + Date.now(),
+                timestamp: Date.now(),
+                sessionId: "test-session",
+                type: "command",
+                payload: {
+                    action: "setBlock",
+                    params: {
+                        relativeX: 0,
+                        relativeY: 1,
+                        relativeZ: 2,
+                        blockType: "minecraft:diamond_block"
+                    }
+                }
+            };
+
+            ws.send(JSON.stringify(blockMsg));
+            log('→ ブロック配置コマンド送信（相対座標 ~0 ~1 ~2）', 'info');
+            log('   目の前にダイヤモンドブロックが出現するはずです！', 'success');
+        }
+
+        function getBlock() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ まず接続してください', 'error');
+                return;
+            }
+
+            const msg = {
+                version: "1.0",
+                messageId: "getblock-" + Date.now(),
+                timestamp: Date.now(),
+                sessionId: "test-session",
+                type: "command",
+                payload: {
+                    action: "getBlock",
+                    params: {
+                        x: 0,
+                        y: 64,
+                        z: 0
+                    }
+                }
+            };
+
+            ws.send(JSON.stringify(msg));
+            log('→ ブロック取得コマンド送信（0, 64, 0）', 'info');
+        }
+
+        function fillBlocks() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ まず接続してください', 'error');
+                return;
+            }
+
+            const msg = {
+                version: "1.0",
+                messageId: "fill-" + Date.now(),
+                timestamp: Date.now(),
+                sessionId: "test-session",
+                type: "command",
+                payload: {
+                    action: "fillBlocks",
+                    params: {
+                        from: { x: 0, y: 65, z: 0 },
+                        to: { x: 4, y: 67, z: 4 },
+                        blockType: "minecraft:gold_block"
+                    }
+                }
+            };
+
+            ws.send(JSON.stringify(msg));
+            log('→ 範囲ブロック配置コマンド送信（5x3x5の金ブロック）', 'info');
+        }
+
+        function getPosition() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ まず接続してください', 'error');
+                return;
+            }
+
+            const msg = {
+                version: "1.0",
+                messageId: "pos-" + Date.now(),
+                timestamp: Date.now(),
+                sessionId: "test-session",
+                type: "command",
+                payload: {
+                    action: "getPosition",
+                    params: {}
+                }
+            };
+
+            ws.send(JSON.stringify(msg));
+            log('→ プレイヤー位置取得コマンド送信', 'info');
+        }
+
+        function setGameMode() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ まず接続してください', 'error');
+                return;
+            }
+
+            const msg = {
+                version: "1.0",
+                messageId: "gamemode-" + Date.now(),
+                timestamp: Date.now(),
+                sessionId: "test-session",
+                type: "command",
+                payload: {
+                    action: "setGameMode",
+                    params: {
+                        mode: "creative"
+                    }
+                }
+            };
+
+            ws.send(JSON.stringify(msg));
+            log('→ ゲームモード変更コマンド送信（クリエイティブ）', 'info');
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                log('切断しました', 'info');
+            } else {
+                log('接続されていません', 'info');
+            }
+        }
+
+        // ページ読み込み時のメッセージ
+        log('=== Minecraft WebSocket テストツール（拡張版） ===', 'success');
+        log('1. Minecraftを起動してワールドに入ってください', 'info');
+        log('2. 「1. 接続」ボタンをクリック', 'info');
+        log('3. 各コマンドを試してください：', 'info');
+        log('   - チャット送信: チャットメッセージ表示', 'info');
+        log('   - ブロック配置: 目の前にダイヤモンドブロック', 'info');
+        log('   - ブロック取得: 座標(0,64,0)のブロック情報取得', 'info');
+        log('   - 範囲配置: 5x3x5の金ブロックを配置', 'info');
+        log('   - 位置取得: プレイヤーの現在位置を取得', 'info');
+        log('   - クリエイティブ: ゲームモードをクリエイティブに変更', 'info');
+        log('', 'info');
+    </script>
+</body>
+</html>

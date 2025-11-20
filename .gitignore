@@ -1,0 +1,79 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.npm
+.eslintcache
+
+# Java/Gradle
+.gradle/
+build/
+out/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+!release/minecraft-scratch-controller/*.jar
+*.war
+*.ear
+*.log
+.classpath
+.project
+.settings/
+bin/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Minecraft
+run/
+logs/
+crash-reports/
+.mixin.out/
+
+# Build outputs
+dist/
+lib/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+temp_*/
+*.orig
+
+# Secrets
+*.env
+*.pem
+*.key
+config/secrets.json
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Claude settings
+.claude/
+
+# Large release packages (use GitHub Releases for distribution)
+*.tar.gz
+*.tgz
+release/minecraft-scratch-controller/scratch-gui.tar.gz
