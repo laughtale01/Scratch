@@ -1,0 +1,40 @@
+{
+  "summary": {
+    "total_blocks": 760,
+    "unique_values": 760,
+    "unique_texts": 758,
+    "duplicate_values": 0,
+    "duplicate_texts": 2
+  },
+  "duplicate_values": {},
+  "duplicate_texts": {
+    "ツツジの葉": [
+      {
+        "category": "NATURE_BLOCKS",
+        "index_in_category": 31,
+        "text": "ツツジの葉",
+        "value": "azalea_leaves"
+      },
+      {
+        "category": "NATURE_BLOCKS",
+        "index_in_category": 62,
+        "text": "ツツジの葉",
+        "value": "azalea"
+      }
+    ],
+    "風化した銅": [
+      {
+        "category": "ORE_BLOCKS",
+        "index_in_category": 30,
+        "text": "風化した銅",
+        "value": "exposed_copper"
+      },
+      {
+        "category": "ORE_BLOCKS",
+        "index_in_category": 31,
+        "text": "風化した銅",
+        "value": "weathered_copper"
+      }
+    ]
+  }
+}

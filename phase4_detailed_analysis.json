@@ -1,0 +1,31 @@
+{
+  "total_bytes": 122701,
+  "total_lines": 3693,
+  "whitespace_chars": 36307,
+  "comment_bytes": 10209,
+  "category_bytes": 53791,
+  "estimated_savings": 3843,
+  "proposals": [
+    {
+      "name": "カテゴリ定義の形式最適化",
+      "description": "651個のブロック定義の空白・改行最適化",
+      "savings": 1953,
+      "priority": "中",
+      "risk": "低（可読性がやや低下）"
+    },
+    {
+      "name": "自明なコメントの削除",
+      "description": "63個の簡潔/自明なコメントを削除",
+      "savings": 1890,
+      "priority": "中",
+      "risk": "極小"
+    },
+    {
+      "name": "インデント最適化（gh-pages用）",
+      "description": "28040個のインデントスペースを削減（minify）",
+      "savings": 28040,
+      "priority": "低（gh-pagesのみ）",
+      "risk": "極小（mainブランチでは実施しない）"
+    }
+  ]
+}

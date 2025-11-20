@@ -1,0 +1,17 @@
+{
+  "file": "scratch-client/scratch-vm/src/extensions/scratch3_minecraft/index.js",
+  "total_lines": 3693,
+  "total_chars": 103823,
+  "total_bytes": 122701,
+  "code_lines": 3311,
+  "comment_lines": 246,
+  "blank_lines": 136,
+  "comment_chars": 6485,
+  "block_count": 25,
+  "reporter_blocks": 11,
+  "command_blocks": 13,
+  "menu_count": 10,
+  "method_count": 41,
+  "potential_savings_chars": 14507,
+  "potential_savings_percent": 13.97
+}

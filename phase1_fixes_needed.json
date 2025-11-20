@@ -1,0 +1,16 @@
+{
+  "duplicate_japanese_names": {
+    "azalea": {
+      "current_text": "ツツジの葉",
+      "correct_text": "ツツジ",
+      "reason": "azalea（植物）とazalea_leaves（葉）は別物",
+      "category": "NATURE_BLOCKS"
+    },
+    "weathered_copper": {
+      "current_text": "風化した銅",
+      "correct_text": "錆びた銅",
+      "reason": "exposed_copper（風化）とweathered_copper（錆び）は酸化段階が異なる",
+      "category": "ORE_BLOCKS"
+    }
+  }
+}

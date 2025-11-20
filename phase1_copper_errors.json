@@ -1,0 +1,65 @@
+[
+  {
+    "value": "vertical_cut_copper_slab",
+    "category": "BUILDING_BLOCKS",
+    "index": 228,
+    "current_text": "切り込み入り銅のスラブ（垂直）",
+    "correct_text": "切り込み入りの銅のスラブ（垂直）"
+  },
+  {
+    "value": "vertical_exposed_cut_copper_slab",
+    "category": "BUILDING_BLOCKS",
+    "index": 233,
+    "current_text": "風化した切り込み入り銅のスラブ（垂直）",
+    "correct_text": "風化した切り込み入りの銅のスラブ（垂直）"
+  },
+  {
+    "value": "vertical_oxidized_cut_copper_slab",
+    "category": "BUILDING_BLOCKS",
+    "index": 242,
+    "current_text": "酸化した切り込み入り銅のスラブ（垂直）",
+    "correct_text": "酸化した切り込み入りの銅のスラブ（垂直）"
+  },
+  {
+    "value": "vertical_weathered_cut_copper_slab",
+    "category": "BUILDING_BLOCKS",
+    "index": 251,
+    "current_text": "錆びた切り込み入り銅のスラブ（垂直）",
+    "correct_text": "錆びた切り込み入りの銅のスラブ（垂直）"
+  },
+  {
+    "value": "weathered_copper",
+    "category": "ORE_BLOCKS",
+    "index": 31,
+    "current_text": "風化した銅",
+    "correct_text": "錆びた銅"
+  },
+  {
+    "value": "oxidized_copper",
+    "category": "ORE_BLOCKS",
+    "index": 32,
+    "current_text": "錆びた銅",
+    "correct_text": "酸化した銅"
+  },
+  {
+    "value": "waxed_copper_block",
+    "category": "ORE_BLOCKS",
+    "index": 33,
+    "current_text": "ワックスを塗った銅",
+    "correct_text": "錆止めされた銅ブロック"
+  },
+  {
+    "value": "waxed_cut_copper",
+    "category": "ORE_BLOCKS",
+    "index": 34,
+    "current_text": "ワックスを塗った切り込み入りの銅",
+    "correct_text": "錆止めされた切り込み入りの銅"
+  },
+  {
+    "value": "raw_copper_block",
+    "category": "ORE_BLOCKS",
+    "index": 39,
+    "current_text": "銅の原石",
+    "correct_text": "銅の原石ブロック"
+  }
+]
