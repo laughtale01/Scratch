@@ -2077,16 +2077,16 @@ const BUILDING_BLOCKS = [{
   text: '酸化した切り込み入りの銅の階段',
   value: 'oxidized_cut_copper_stairs'
 }, {
-  text: '錆止めされた切り込み入りの銅の階段',
+  text: '切り込み入り銅の階段',
   value: 'waxed_cut_copper_stairs'
 }, {
-  text: '錆止めされた風化した切り込み入りの銅の階段',
+  text: '風化した切り込み入り銅の階段',
   value: 'waxed_exposed_cut_copper_stairs'
 }, {
-  text: '錆止めされた錆びた切り込み入りの銅の階段',
+  text: '風化途中の切り込み入り銅の階段',
   value: 'waxed_weathered_cut_copper_stairs'
 }, {
-  text: '錆止めされた酸化した切り込み入りの銅の階段',
+  text: '酸化した切り込み入り銅の階段',
   value: 'waxed_oxidized_cut_copper_stairs'
 }, {
   text: 'オークのハーフブロック',
@@ -2233,31 +2233,31 @@ const BUILDING_BLOCKS = [{
   text: '酸化した切り込み入りの銅のハーフブロック',
   value: 'oxidized_cut_copper_slab'
 }, {
-  text: '錆止めされた切り込み入りの銅のハーフブロック',
+  text: '切り込み入り銅のハーフブロック',
   value: 'waxed_cut_copper_slab'
 }, {
-  text: '錆止めされた風化した切り込み入りの銅のハーフブロック',
+  text: '風化した切り込み入り銅のハーフブロック',
   value: 'waxed_exposed_cut_copper_slab'
 }, {
-  text: '錆止めされた錆びた切り込み入りの銅のハーフブロック',
+  text: '風化途中の切り込み入り銅のハーフブロック',
   value: 'waxed_weathered_cut_copper_slab'
 }, {
-  text: '錆止めされた酸化した切り込み入りの銅のハーフブロック',
+  text: '酸化した切り込み入り銅のハーフブロック',
   value: 'waxed_oxidized_cut_copper_slab'
 }, {
-  text: '錆止めされた銅ブロックのスラブ（垂直）',
+  text: '銅ブロックのスラブ（垂直）',
   value: 'waxed_vertical_copper_block_slab'
 }, {
-  text: '錆止めされた切り込み入りの銅のスラブ（垂直）',
+  text: '切り込み入り銅のスラブ（垂直）',
   value: 'waxed_vertical_cut_copper_slab'
 }, {
-  text: '錆止めされた風化した切り込み入りの銅のスラブ（垂直）',
+  text: '風化した切り込み入り銅のスラブ（垂直）',
   value: 'waxed_vertical_exposed_cut_copper_slab'
 }, {
-  text: '錆止めされた酸化した切り込み入りの銅のスラブ（垂直）',
+  text: '酸化した切り込み入り銅のスラブ（垂直）',
   value: 'waxed_vertical_oxidized_cut_copper_slab'
 }, {
-  text: '錆止めされた錆びた切り込み入りの銅のスラブ（垂直）',
+  text: '風化途中の切り込み入り銅のスラブ（垂直）',
   value: 'waxed_vertical_weathered_cut_copper_slab'
 }, {
   text: 'アカシアのスラブ（垂直）',
@@ -3566,19 +3566,19 @@ const ORE_BLOCKS = [{
   text: '酸化した銅',
   value: 'oxidized_copper'
 }, {
-  text: '錆止めされた銅ブロック',
+  text: '銅ブロック',
   value: 'waxed_copper_block'
 }, {
-  text: '錆止めされた切り込み入りの銅',
+  text: '切り込み入り銅',
   value: 'waxed_cut_copper'
 }, {
-  text: '錆止めされた風化した銅',
+  text: '風化した銅',
   value: 'waxed_exposed_copper'
 }, {
-  text: '錆止めされた錆びた銅',
+  text: '風化途中の銅',
   value: 'waxed_weathered_copper'
 }, {
-  text: '錆止めされた酸化した銅',
+  text: '酸化した銅',
   value: 'waxed_oxidized_copper'
 }, {
   text: '鉄の原石ブロック',
