@@ -332,4 +332,49 @@ public class ModBlocks {
                 .requiresCorrectToolForDrops()
         )
     );
+
+    // ========================================
+    // 錆止めされた銅系垂直スラブ (Waxed Copper Vertical Slabs)
+    // ========================================
+
+    public static final RegistryObject<Block> WAXED_VERTICAL_COPPER_BLOCK_SLAB = BLOCKS.register(
+        "waxed_vertical_copper_block_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.COPPER_BLOCK)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WAXED_VERTICAL_CUT_COPPER_SLAB = BLOCKS.register(
+        "waxed_vertical_cut_copper_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WAXED_CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WAXED_VERTICAL_EXPOSED_CUT_COPPER_SLAB = BLOCKS.register(
+        "waxed_vertical_exposed_cut_copper_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WAXED_EXPOSED_CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WAXED_VERTICAL_OXIDIZED_CUT_COPPER_SLAB = BLOCKS.register(
+        "waxed_vertical_oxidized_cut_copper_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WAXED_OXIDIZED_CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    public static final RegistryObject<Block> WAXED_VERTICAL_WEATHERED_CUT_COPPER_SLAB = BLOCKS.register(
+        "waxed_vertical_weathered_cut_copper_slab",
+        () -> new VerticalSlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.WAXED_WEATHERED_CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
 }

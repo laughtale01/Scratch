@@ -315,4 +315,48 @@ public class ModItems {
             new Item.Properties()
         )
     );
+
+    // ========================================
+    // 錆止めされた銅系垂直スラブアイテム (Waxed Copper Vertical Slab Items)
+    // ========================================
+
+    public static final RegistryObject<Item> WAXED_VERTICAL_COPPER_BLOCK_SLAB = ITEMS.register(
+        "waxed_vertical_copper_block_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_VERTICAL_COPPER_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WAXED_VERTICAL_CUT_COPPER_SLAB = ITEMS.register(
+        "waxed_vertical_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_VERTICAL_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WAXED_VERTICAL_EXPOSED_CUT_COPPER_SLAB = ITEMS.register(
+        "waxed_vertical_exposed_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_VERTICAL_EXPOSED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WAXED_VERTICAL_OXIDIZED_CUT_COPPER_SLAB = ITEMS.register(
+        "waxed_vertical_oxidized_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_VERTICAL_OXIDIZED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> WAXED_VERTICAL_WEATHERED_CUT_COPPER_SLAB = ITEMS.register(
+        "waxed_vertical_weathered_cut_copper_slab",
+        () -> new BlockItem(
+            ModBlocks.WAXED_VERTICAL_WEATHERED_CUT_COPPER_SLAB.get(),
+            new Item.Properties()
+        )
+    );
 }
