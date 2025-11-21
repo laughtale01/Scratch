@@ -957,7 +957,8 @@ class Scratch3MinecraftBlocks {
      */
     _buildBlockTypeWithProperties(blockId, placement, facing) {
         // 垂直スラブかどうかを判定（MOD追加ブロック）
-        const isVerticalSlab = blockId.startsWith('vertical_') && blockId.includes('_slab');
+        // vertical_ で始まる、または waxed_vertical_ で始まるスラブ
+        const isVerticalSlab = (blockId.startsWith('vertical_') || blockId.startsWith('waxed_vertical_')) && blockId.includes('_slab');
 
         // 垂直スラブの場合は minecraftedu 名前空間を使用、それ以外は minecraft を使用
         const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';

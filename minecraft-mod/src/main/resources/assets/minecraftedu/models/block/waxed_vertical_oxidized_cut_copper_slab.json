@@ -1,8 +1,8 @@
 {
   "parent": "block/block",
   "textures": {
-    "texture": "minecraft:block/waxed_oxidized_cut_copper",
-    "particle": "minecraft:block/waxed_oxidized_cut_copper"
+    "texture": "minecraft:block/oxidized_cut_copper",
+    "particle": "minecraft:block/oxidized_cut_copper"
   },
   "elements": [
     {
