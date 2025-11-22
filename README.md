@@ -52,6 +52,36 @@
 
 ---
 
+## 動作環境
+
+### 対応ブラウザ
+
+**Chromiumエンジン搭載ブラウザまたはFirefoxが必要です:**
+
+✅ **対応ブラウザ:**
+- Google Chrome（推奨）
+- Microsoft Edge
+- Brave
+- Vivaldi
+- Opera
+- Mozilla Firefox
+
+❌ **非対応ブラウザ:**
+- Safari（Mac/iOS）- Mixed Contentポリシーによりローカルホストへの接続がブロックされます
+
+**理由:**
+Scratch GUIはGitHub Pages (HTTPS) で配信されており、ローカルのMinecraftサーバー (ws://localhost:14711) への非暗号化WebSocket接続を行います。SafariはHTTPSページからの非暗号化WebSocket接続を厳格にブロックするため、接続できません。Chrome/FirefoxはlocalhostをMixed Contentから除外しているため正常に動作します。
+
+### 推奨環境
+
+- **OS**: Windows 10/11, macOS 10.15以降, Ubuntu 20.04以降
+- **Java**: JDK 17以降
+- **Minecraft**: Java Edition 1.20.1
+- **Minecraft Forge**: 1.20.1対応版
+- **メモリ**: 最低4GB RAM（推奨8GB以上）
+
+---
+
 ## プロジェクト概要
 
 このプロジェクトは、[takecx](https://github.com/takecx)さんの優れた[Scratch-Minecraft連携プロジェクト](https://qiita.com/panda531/items/a6dfd87bd68ba2601793)を参考にしながら、完全に独自で構築した教育向けシステムです。
@@ -504,6 +534,10 @@ A: はい、`index.js` の制限値（2,000,000）を変更できます。ただ
 
 A: はい、開発者向け手順に従って `npm start` を実行すれば、ローカルサーバー（http://localhost:8601/）で動作します。
 
+### Q: SafariでMinecraftに接続できません。
+
+A: SafariはHTTPSページから非暗号化WebSocket (ws://) への接続をブロックします。**Chrome、Edge、Firefox等のChromiumベースのブラウザをご利用ください。** これはSafariのMixed Contentポリシーによるもので、回避できません。
+
 ---
 
 ## 変更履歴
@@ -565,10 +599,11 @@ A: はい、開発者向け手順に従って `npm start` を実行すれば、�
 
 ### 接続できない場合
 
-1. Minecraftでワールドを開いていることを確認
-2. コンソールに "WebSocket server started on port 14711" が表示されていることを確認
-3. ファイアウォールでポート14711が許可されていることを確認
-4. localhostではなくIPアドレス（127.0.0.1）で接続してみる
+1. **Safariを使用している場合**: Chrome、Edge、Firefox等のChromiumベースのブラウザに変更してください（SafariはMixed Contentポリシーにより接続できません）
+2. Minecraftでワールドを開いていることを確認
+3. コンソールに "WebSocket server started on port 14711" が表示されていることを確認
+4. ファイアウォールでポート14711が許可されていることを確認
+5. localhostではなくIPアドレス（127.0.0.1）で接続してみる
 
 ### ブロックが表示されない場合
 
