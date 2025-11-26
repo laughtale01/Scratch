@@ -50,6 +50,9 @@ public class SimpleWebSocketServer {
     }
 
     private void handleClient(Socket client) {
+        // クライアントごとにハンドラーを作成してセッション状態を維持
+        MinecraftWebSocketHandler handler = new MinecraftWebSocketHandler(minecraftServer);
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
              OutputStream out = client.getOutputStream()) {
 
@@ -130,7 +133,7 @@ public class SimpleWebSocketServer {
                 if (opcode == 0x1) { // Text frame
                     String message = new String(payload, StandardCharsets.UTF_8);
                     MinecraftEduMod.LOGGER.info("Received WebSocket message: " + message);
-                    handleWebSocketMessage(message, out);
+                    handleWebSocketMessage(handler, message, out);
                 } else if (opcode == 0x8) { // Close frame
                     MinecraftEduMod.LOGGER.info("Client requested close");
                     break;
@@ -152,10 +155,9 @@ public class SimpleWebSocketServer {
         }
     }
 
-    private void handleWebSocketMessage(String message, OutputStream out) {
+    private void handleWebSocketMessage(MinecraftWebSocketHandler handler, String message, OutputStream out) {
         try {
-            // Parse JSON and delegate to handler
-            MinecraftWebSocketHandler handler = new MinecraftWebSocketHandler(minecraftServer);
+            // Parse JSON and delegate to handler（セッション状態を維持するため既存のハンドラーを使用）
             String response = handler.handleMessage(message);
 
             if (response != null) {

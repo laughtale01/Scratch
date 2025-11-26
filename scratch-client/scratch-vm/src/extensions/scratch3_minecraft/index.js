@@ -301,6 +301,18 @@ class Scratch3MinecraftBlocks {
                         }
                     }
                 },
+                {
+                    opcode: 'setGameMode',
+                    blockType: 'command',
+                    text: 'ゲームモードを [MODE] にする',
+                    arguments: {
+                        MODE: {
+                            type: 'string',
+                            menu: 'gameModes',
+                            defaultValue: 'creative'
+                        }
+                    }
+                },
                 '---',
                 {
                     opcode: 'clearArea',
@@ -745,6 +757,15 @@ class Scratch3MinecraftBlocks {
                     items: [
                         {text: 'オン', value: 'true'},
                         {text: 'オフ', value: 'false'}
+                    ]
+                },
+                gameModes: {
+                    acceptReporters: false,
+                    items: [
+                        {text: 'サバイバル', value: 'survival'},
+                        {text: 'クリエイティブ', value: 'creative'},
+                        {text: 'アドベンチャー', value: 'adventure'},
+                        {text: 'スペクテイター', value: 'spectator'}
                     ]
                 },
                 slabBlocks: {
@@ -1314,6 +1335,18 @@ class Scratch3MinecraftBlocks {
         return this.sendCommand('setGameRule', {
             rule: args.RULE,
             value: args.VALUE
+        });
+    }
+
+    /**
+     * ゲームモード変更
+     * @param {object} args - ブロック引数
+     * @param {string} args.MODE - ゲームモード (survival, creative, adventure, spectator)
+     * @returns {Promise} コマンド実行結果
+     */
+    setGameMode(args) {
+        return this.sendCommand('setGameMode', {
+            mode: args.MODE
         });
     }
 
