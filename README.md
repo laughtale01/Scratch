@@ -1,262 +1,262 @@
-# Scratch 3.0 + Minecraft 拡張機能
+# Scratch 3.0 + Minecraft Extension
 
-Scratch 3.0 をベースにした、Minecraft Java Edition と連携できるビジュアルプログラミング環境です。
-子どもから大人まで、ブロックを組み合わせるだけで Minecraft の世界をプログラムで操作できます。
+A visual programming environment based on Scratch 3.0 that connects with Minecraft Java Edition.
+From children to adults, anyone can control the Minecraft world through programming by simply combining blocks.
 
-## デモ・アクセス
+## Demo / Access
 
 **https://laughtale01.github.io/Scratch**
 
-ブラウザからすぐにアクセスして利用できます。アカウント登録やインストールは不要です。
+Access directly from your browser. No account registration or installation required.
 
 ---
 
-## 特徴
+## Features
 
-### Scratch 3.0 完全互換
-- 公式 Scratch 3.0 と同等のプログラミング機能
-- 動き、見た目、音、イベント、制御、演算、変数など全カテゴリ対応
-- スプライト、コスチューム、背景の編集機能
-- プロジェクトの保存・読み込み（.sb3形式）
+### Full Scratch 3.0 Compatibility
+- Full programming functionality equivalent to official Scratch 3.0
+- All categories supported: Motion, Looks, Sound, Events, Control, Operators, Variables, and more
+- Sprite, costume, and backdrop editing capabilities
+- Project save/load functionality (.sb3 format)
 
-### Minecraft 拡張機能
-- Minecraft Java Edition をリアルタイムで制御
-- 700種類以上のブロックに対応
-- WebSocket による高速通信
-- 直感的なブロック型プログラミング
+### Minecraft Extension
+- Real-time control of Minecraft Java Edition
+- Support for 700+ block types
+- High-speed communication via WebSocket
+- Intuitive block-based programming
 
-### 使いやすさ
-- 日本語インターフェース完全対応
-- ブラウザで動作、インストール不要
-- レスポンシブデザイン対応
-
----
-
-## Minecraft 拡張機能について
-
-Scratch のブロックを使って、Minecraft の世界を自由に操作できます。
-プログラミングの基礎を学びながら、創造的な建築や自動化を実現できます。
-
-### 主な機能
-
-| 機能 | 説明 |
-|------|------|
-| ブロック配置 | 指定した座標にブロックを配置 |
-| ブロック破壊 | 指定した座標のブロックを破壊 |
-| プレイヤー移動 | プレイヤーの位置を変更 |
-| ブロック取得 | 指定座標のブロック情報を取得 |
-| 範囲操作 | 範囲を指定してブロックを一括配置 |
-
-### プログラミング例
-
-**例1: 石のタワーを建てる**
-```
-10回繰り返す
-  「石」ブロックを x:0 y:(カウンター) z:0 に配置
-```
-
-**例2: 虹色の橋を作る**
-```
-色リスト = [赤の羊毛, 橙の羊毛, 黄の羊毛, ...]
-リストの各色について
-  「色」ブロックを配置して x を +1
-```
-
-**例3: 自動整地**
-```
-x: -10 から 10 まで繰り返す
-  z: -10 から 10 まで繰り返す
-    座標(x, 64, z)のブロックを「草ブロック」に変更
-```
+### Ease of Use
+- Full Japanese interface support
+- Runs in browser, no installation needed
+- Responsive design supported
 
 ---
 
-## 対応ブロック一覧
+## About the Minecraft Extension
 
-700種類以上の Minecraft ブロックを7つのカテゴリに分類しています。
+Use Scratch blocks to freely manipulate the Minecraft world.
+Learn programming fundamentals while creating creative builds and automation.
 
-### 建築ブロック（BUILDING_BLOCKS）
-基本的な建築に使用するブロック
-- 石、丸石、石レンガ
-- 各種木材（オーク、シラカバ、ダークオーク、マングローブなど）
-- レンガ、ネザーレンガ
-- コンクリート、テラコッタ
-- クォーツブロック、プリズマリン
-- 銅ブロック（通常、風化、錆び）
+### Main Features
 
-### 照明ブロック（LIGHTING_BLOCKS）
-光源となるブロック
-- 松明、魂の松明
-- ランタン、魂のランタン
-- グロウストーン、シーランタン
-- エンドロッド、フロッグライト
-- 各種キャンドル
+| Feature | Description |
+|---------|-------------|
+| Place Block | Place a block at specified coordinates |
+| Break Block | Destroy a block at specified coordinates |
+| Move Player | Change player position |
+| Get Block | Retrieve block information at specified coordinates |
+| Range Operations | Place blocks in bulk within a specified range |
 
-### 装飾ブロック（DECORATION_BLOCKS）
-装飾や内装に使用するブロック
-- カーペット（全16色）
-- 旗、額縁
-- 植木鉢、花瓶
-- ガラス、色付きガラス
-- 階段、ハーフブロック
+### Programming Examples
 
-### 自然ブロック（NATURE_BLOCKS）
-自然環境を構成するブロック
-- 草ブロック、土、砂
-- 各種花（ポピー、タンポポ、ヒマワリなど）
-- 各種葉（オーク、シラカバ、桜など）
-- 苔、ツタ、グロウベリー
-- サンゴ、海草
+**Example 1: Build a Stone Tower**
+```
+repeat 10 times
+  place "Stone" block at x:0 y:(counter) z:0
+```
 
-### 機能ブロック（FUNCTIONAL_BLOCKS）
-ゲーム機能を持つブロック
-- チェスト、エンダーチェスト
-- 作業台、かまど、溶鉱炉
-- エンチャントテーブル、金床
-- ビーコン、コンジット
-- レッドストーン関連
+**Example 2: Create a Rainbow Bridge**
+```
+colorList = [Red Wool, Orange Wool, Yellow Wool, ...]
+for each color in list
+  place "color" block and x += 1
+```
 
-### 鉱石ブロック（ORE_BLOCKS）
-鉱石と金属ブロック
-- ダイヤモンド鉱石・ブロック
-- 金鉱石・ブロック
-- 鉄鉱石・ブロック
-- エメラルド鉱石・ブロック
-- ネザライト、古代の残骸
-
-### 特殊ブロック（SPECIAL_BLOCKS）
-特殊な機能を持つブロック
-- コマンドブロック
-- ストラクチャーブロック
-- バリアブロック
-- スポーンブロック
+**Example 3: Auto-Leveling**
+```
+repeat x: -10 to 10
+  repeat z: -10 to 10
+    change block at (x, 64, z) to "Grass Block"
+```
 
 ---
 
-## 使い方
+## Supported Blocks
 
-### 基本的な使い方
+Over 700 Minecraft blocks organized into 7 categories.
 
-1. **アクセス**: https://laughtale01.github.io/Scratch にアクセス
-2. **拡張機能追加**: 左下の「拡張機能を追加」ボタン（ブロックアイコン）をクリック
-3. **Minecraft選択**: 拡張機能一覧から「Minecraft」を選択
-4. **プログラミング開始**: 緑色の Minecraft ブロックが追加されます
+### Building Blocks (BUILDING_BLOCKS)
+Basic blocks for construction
+- Stone, Cobblestone, Stone Bricks
+- Various Wood Types (Oak, Birch, Dark Oak, Mangrove, etc.)
+- Bricks, Nether Bricks
+- Concrete, Terracotta
+- Quartz Block, Prismarine
+- Copper Blocks (Normal, Weathered, Oxidized)
 
-### Minecraft との接続（MOD使用時）
+### Lighting Blocks (LIGHTING_BLOCKS)
+Light source blocks
+- Torch, Soul Torch
+- Lantern, Soul Lantern
+- Glowstone, Sea Lantern
+- End Rod, Froglight
+- Various Candles
 
-1. Minecraft Java Edition に専用MODをインストール
-2. Minecraft を起動してワールドに入る
-3. Scratch 側で「接続」ブロックを実行
-4. 接続成功後、プログラムが Minecraft に反映されます
+### Decoration Blocks (DECORATION_BLOCKS)
+Blocks for decoration and interior design
+- Carpet (all 16 colors)
+- Banners, Item Frames
+- Flower Pots, Vases
+- Glass, Stained Glass
+- Stairs, Slabs
 
-### プロジェクトの保存
+### Nature Blocks (NATURE_BLOCKS)
+Blocks that make up natural environments
+- Grass Block, Dirt, Sand
+- Various Flowers (Poppy, Dandelion, Sunflower, etc.)
+- Various Leaves (Oak, Birch, Cherry, etc.)
+- Moss, Vines, Glow Berries
+- Coral, Seagrass
 
-- **ファイル → コンピューターに保存**: .sb3 ファイルとして保存
-- **ファイル → コンピューターから読み込む**: 保存したプロジェクトを開く
+### Functional Blocks (FUNCTIONAL_BLOCKS)
+Blocks with game functionality
+- Chest, Ender Chest
+- Crafting Table, Furnace, Blast Furnace
+- Enchanting Table, Anvil
+- Beacon, Conduit
+- Redstone Components
+
+### Ore Blocks (ORE_BLOCKS)
+Ores and metal blocks
+- Diamond Ore/Block
+- Gold Ore/Block
+- Iron Ore/Block
+- Emerald Ore/Block
+- Netherite, Ancient Debris
+
+### Special Blocks (SPECIAL_BLOCKS)
+Blocks with special functions
+- Command Block
+- Structure Block
+- Barrier Block
+- Spawner
 
 ---
 
-## 必要環境
+## How to Use
 
-### 推奨ブラウザ
+### Basic Usage
 
-| ブラウザ | 対応状況 |
-|---------|---------|
-| Google Chrome | ✅ 推奨 |
-| Microsoft Edge | ✅ 推奨 |
-| Brave | ✅ 対応 |
-| Opera | ✅ 対応 |
-| Firefox | ⚠️ 一部機能制限あり |
-| Safari | ❌ 非対応 |
+1. **Access**: Go to https://laughtale01.github.io/Scratch
+2. **Add Extension**: Click the "Add Extension" button (block icon) at bottom left
+3. **Select Minecraft**: Choose "Minecraft" from the extension list
+4. **Start Programming**: Green Minecraft blocks will be added
 
-> **重要**: Safari では正常に動作しません。Chrome または Edge の使用を強く推奨します。
+### Connecting to Minecraft (When Using MOD)
 
-### Minecraft 連携時の要件
+1. Install the dedicated MOD in Minecraft Java Edition
+2. Launch Minecraft and enter a world
+3. Execute the "Connect" block on the Scratch side
+4. After successful connection, programs will be reflected in Minecraft
 
-- Minecraft Java Edition（バージョン 1.20.x 推奨）
-- 専用連携MOD
-- 同一ネットワーク上での動作
+### Saving Projects
+
+- **File → Save to your computer**: Save as .sb3 file
+- **File → Load from your computer**: Open saved projects
 
 ---
 
-## 技術仕様
+## System Requirements
 
-### 通信プロトコル
-- WebSocket による双方向リアルタイム通信
-- JSON形式のメッセージング
-- 自動再接続機能
+### Recommended Browsers
 
-### 対応 Minecraft バージョン
+| Browser | Support Status |
+|---------|----------------|
+| Google Chrome | ✅ Recommended |
+| Microsoft Edge | ✅ Recommended |
+| Brave | ✅ Supported |
+| Opera | ✅ Supported |
+| Firefox | ⚠️ Limited functionality |
+| Safari | ❌ Not supported |
+
+> **Important**: Safari does not work properly. Chrome or Edge is strongly recommended.
+
+### Requirements for Minecraft Integration
+
+- Minecraft Java Edition (version 1.20.x recommended)
+- Dedicated integration MOD
+- Operation on the same network
+
+---
+
+## Technical Specifications
+
+### Communication Protocol
+- Bidirectional real-time communication via WebSocket
+- JSON format messaging
+- Auto-reconnection functionality
+
+### Supported Minecraft Versions
 - Minecraft Java Edition 1.20.x
-- Forge / Fabric MOD対応
+- Forge / Fabric MOD compatible
 
-### ベース技術
+### Base Technologies
 - Scratch 3.0 (scratch-gui, scratch-vm, scratch-blocks)
 - React.js
 - WebSocket API
 
 ---
 
-## トラブルシューティング
+## Troubleshooting
 
-### 音が出ない場合
-ブラウザの自動再生ポリシーにより、最初のクリック前は音声が再生されません。
-画面をクリックしてから音声ブロックを使用してください。
+### No Sound
+Due to browser autoplay policies, audio cannot play before the first click.
+Click anywhere on the screen before using sound blocks.
 
-### Minecraft に接続できない場合
-1. MODが正しくインストールされているか確認
-2. Minecraft がワールド内で起動しているか確認
-3. ファイアウォールの設定を確認
-4. ブラウザのコンソールでエラーを確認
+### Cannot Connect to Minecraft
+1. Verify the MOD is correctly installed
+2. Confirm Minecraft is running and in a world
+3. Check firewall settings
+4. Check browser console for errors
 
-### ブロックが表示されない場合
-1. ページをリロード（Ctrl+F5）
-2. ブラウザのキャッシュをクリア
-3. 別のブラウザで試す
-
----
-
-## 更新履歴
-
-### 2025年12月
-- 音声ライブラリの読み込み問題を修正
-- FetchWorkerTool の互換性問題を解決
-- AudioContext のブラウザポリシー対応
-- 開発・デバッグファイルの整理
-
-### 2025年11月
-- Minecraft 拡張機能アイコンの改善
-- 拡張機能の説明を日本語化
-- 銅ブロック（錆止め含む）のバリエーション追加
-- 700種類以上のブロック対応
+### Blocks Not Displaying
+1. Reload the page (Ctrl+F5)
+2. Clear browser cache
+3. Try a different browser
 
 ---
 
-## ライセンス
+## Update History
+
+### December 2025
+- Fixed sound library loading issues
+- Resolved FetchWorkerTool compatibility problems
+- Added AudioContext browser policy support
+- Cleaned up development and debug files
+
+### November 2025
+- Improved Minecraft extension icon
+- Localized extension description to Japanese
+- Added copper block variations (including waxed)
+- Support for 700+ block types
+
+---
+
+## License
 
 MIT License
 
-このプロジェクトはオープンソースです。自由に使用、改変、再配布できます。
+This project is open source. Feel free to use, modify, and redistribute.
 
 ---
 
-## クレジット・謝辞
+## Credits & Acknowledgments
 
-### ベースプロジェクト
+### Base Projects
 - [Scratch](https://scratch.mit.edu/) - MIT Media Lab
 - [scratch-gui](https://github.com/scratchfoundation/scratch-gui)
 - [scratch-vm](https://github.com/scratchfoundation/scratch-vm)
 
-### 開発
-- Minecraft 拡張機能開発: **Laughtale01**
+### Development
+- Minecraft Extension Development: **Laughtale01**
 
-### 特別な感謝
+### Special Thanks
 - Scratch Foundation
-- Minecraft コミュニティ
-- オープンソースコントリビューター
+- Minecraft Community
+- Open Source Contributors
 
 ---
 
-## お問い合わせ・フィードバック
+## Contact & Feedback
 
-バグ報告や機能要望は [GitHub Issues](https://github.com/laughtale01/Scratch/issues) までお願いします。
+For bug reports and feature requests, please visit [GitHub Issues](https://github.com/laughtale01/Scratch/issues).
