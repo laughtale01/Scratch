@@ -19,12 +19,84 @@
     <button id="runDiagnostic">Run Diagnostic</button>
     <div id="results"></div>
 
+    <script>
+        // HOOK: Intercept key functions BEFORE gui.js loads
+        window.__DIAGNOSTIC__ = {
+            logs: [],
+            vm: null,
+            storage: null,
+            storageInitCalled: false,
+            addOfficialScratchWebStoresCalled: false
+        };
+
+        // Log function that stores messages
+        window.__DIAGNOSTIC__.addLog = function(msg) {
+            var timestamp = new Date().toISOString();
+            window.__DIAGNOSTIC__.logs.push('[' + timestamp + '] ' + msg);
+            console.log('[DIAGNOSTIC] ' + msg);
+        };
+
+        window.__DIAGNOSTIC__.addLog('Diagnostic hooks initialized');
+
+        // Intercept Object.defineProperty to catch module exports
+        var originalDefineProperty = Object.defineProperty;
+        Object.defineProperty = function(obj, prop, descriptor) {
+            // Check if this looks like a storage module being defined
+            if (descriptor && descriptor.value) {
+                var val = descriptor.value;
+
+                // Check for Storage class with addOfficialScratchWebStores
+                if (typeof val === 'function' && val.prototype && val.prototype.addOfficialScratchWebStores) {
+                    window.__DIAGNOSTIC__.addLog('Found Storage class definition!');
+
+                    // Wrap addOfficialScratchWebStores
+                    var original = val.prototype.addOfficialScratchWebStores;
+                    val.prototype.addOfficialScratchWebStores = function() {
+                        window.__DIAGNOSTIC__.addLog('addOfficialScratchWebStores() CALLED!');
+                        window.__DIAGNOSTIC__.addOfficialScratchWebStoresCalled = true;
+                        window.__DIAGNOSTIC__.storage = this;
+                        try {
+                            var result = original.apply(this, arguments);
+                            window.__DIAGNOSTIC__.addLog('addOfficialScratchWebStores() completed successfully');
+                            window.__DIAGNOSTIC__.addLog('webHelper.stores.length = ' + this.webHelper.stores.length);
+                            return result;
+                        } catch (e) {
+                            window.__DIAGNOSTIC__.addLog('addOfficialScratchWebStores() ERROR: ' + e.message);
+                            throw e;
+                        }
+                    };
+                }
+
+                // Check for VM class with attachStorage
+                if (typeof val === 'function' && val.prototype && val.prototype.attachStorage && val.prototype.addSound) {
+                    window.__DIAGNOSTIC__.addLog('Found VM class definition!');
+
+                    // Wrap attachStorage
+                    var originalAttach = val.prototype.attachStorage;
+                    val.prototype.attachStorage = function(storage) {
+                        window.__DIAGNOSTIC__.addLog('VM.attachStorage() CALLED!');
+                        window.__DIAGNOSTIC__.vm = this;
+                        window.__DIAGNOSTIC__.storage = storage;
+                        return originalAttach.apply(this, arguments);
+                    };
+                }
+            }
+
+            return originalDefineProperty.call(this, obj, prop, descriptor);
+        };
+
+        // Also intercept addEventListener for DOMContentLoaded timing
+        window.__DIAGNOSTIC__.addLog('Waiting for gui.js to load...');
+    </script>
     <script defer src="gui.js"></script>
     <script>
         // Wait for gui.js to load and initialize
         window.addEventListener('load', function() {
+            window.__DIAGNOSTIC__.addLog('Window load event fired');
+
             // Give React time to mount
             setTimeout(function() {
+                window.__DIAGNOSTIC__.addLog('Setting up diagnostic button');
                 document.getElementById('runDiagnostic').onclick = runDiagnostic;
             }, 2000);
         });
@@ -161,7 +233,31 @@
                 });
 
                 // Now analyze what we found
-                log('=== Analysis ===');
+                // Method 5: Check our diagnostic hooks
+            log('=== Method 5: Diagnostic Hooks ===');
+            var diag = window.__DIAGNOSTIC__;
+            if (diag) {
+                log('Hook logs collected: ' + diag.logs.length);
+                diag.logs.forEach(function(l) {
+                    log('  ' + l);
+                });
+
+                log('addOfficialScratchWebStoresCalled: ' + diag.addOfficialScratchWebStoresCalled,
+                    diag.addOfficialScratchWebStoresCalled ? 'success' : 'error');
+
+                if (diag.vm) {
+                    log('Hooked VM found!', 'success');
+                    vm = diag.vm;
+                }
+                if (diag.storage) {
+                    log('Hooked Storage found!', 'success');
+                    storage = diag.storage;
+                }
+            } else {
+                log('Diagnostic hooks not found', 'warning');
+            }
+
+            log('=== Analysis ===');
 
                 if (vm) {
                     log('VM found!', 'success');
