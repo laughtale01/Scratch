@@ -1,0 +1,30 @@
+# Development/Debug files
+diagnostic.html
+sound-library-diagnostic.html
+sorted_categories.json
+update_clear_blocks.py
+COPPER_SLAB_DIAGNOSTIC_REPORT.md
+
+# Backup files
+*.backup_*
+*.orig
+*.minecraft_backup
+*.phase2b_backup
+player_0b24f38.js
+
+# Debug logs
+console*.txt
+
+# Temporary directories
+temp_*/
+
+# Development directories
+minecraft-mod/
+scratch-client/
+
+# Editor settings
+.claude/
+.vscode/
+
+# Unused images
+Minecraft*.png
