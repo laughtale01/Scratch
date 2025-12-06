@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scratch Storage Diagnostic</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Scratch Storage Diagnostic</h1>
+    <p>This page tests if the storage module is properly initialized.</p>
+    <button id="runDiagnostic">Run Diagnostic</button>
+    <div id="results"></div>
+
+    <script defer src="gui.js"></script>
+    <script>
+        // Wait for gui.js to load and initialize
+        window.addEventListener('load', function() {
+            // Give React time to mount
+            setTimeout(function() {
+                document.getElementById('runDiagnostic').onclick = runDiagnostic;
+            }, 2000);
+        });
+
+        function log(message, type) {
+            var results = document.getElementById('results');
+            var p = document.createElement('p');
+            p.className = type || '';
+            p.textContent = message;
+            results.appendChild(p);
+        }
+
+        function runDiagnostic() {
+            var results = document.getElementById('results');
+            results.innerHTML = '<h2>Diagnostic Results:</h2>';
+
+            log('Starting diagnostic at ' + new Date().toISOString());
+            log('Current URL: ' + window.location.href);
+            log('Protocol: ' + window.location.protocol);
+
+            // Try to access the storage module
+            try {
+                // The storage is typically exported as a webpack module
+                // We need to find it in the global scope or through the VM
+
+                // Method 1: Check if there's a global reference
+                if (typeof window.__SCRATCH_STORAGE__ !== 'undefined') {
+                    log('Found global storage reference', 'success');
+                }
+
+                // Method 2: Try to find the VM through Redux store
+                var appElement = document.querySelector('[class*="gui_body-wrapper"]');
+                if (!appElement) {
+                    appElement = document.querySelector('[class*="app"]');
+                }
+
+                if (appElement) {
+                    log('Found app element', 'success');
+
+                    // Try to get the React fiber
+                    var keys = Object.keys(appElement);
+                    var reactKey = keys.find(function(k) { return k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'); });
+
+                    if (reactKey) {
+                        log('Found React fiber key: ' + reactKey.substring(0, 30) + '...', 'success');
+
+                        // Try to traverse to find the store
+                        var fiber = appElement[reactKey];
+                        var found = false;
+                        var checked = 0;
+
+                        function checkFiber(f, depth) {
+                            if (!f || depth > 50 || checked > 1000) return null;
+                            checked++;
+
+                            // Check memoizedProps for store
+                            if (f.memoizedProps && f.memoizedProps.store) {
+                                return f.memoizedProps.store;
+                            }
+
+                            // Check stateNode
+                            if (f.stateNode && f.stateNode.store) {
+                                return f.stateNode.store;
+                            }
+
+                            // Check child
+                            var result = checkFiber(f.child, depth + 1);
+                            if (result) return result;
+
+                            // Check return
+                            return checkFiber(f.return, depth + 1);
+                        }
+
+                        var store = checkFiber(fiber, 0);
+
+                        if (store) {
+                            log('Found Redux store', 'success');
+
+                            var state = store.getState();
+                            if (state && state.scratchGui && state.scratchGui.vm) {
+                                var vm = state.scratchGui.vm;
+                                log('Found VM in Redux state', 'success');
+
+                                if (vm.runtime) {
+                                    log('VM has runtime', 'success');
+
+                                    if (vm.runtime.storage) {
+                                        log('Runtime has storage', 'success');
+
+                                        var storage = vm.runtime.storage;
+
+                                        // Check web helper
+                                        if (storage.webHelper) {
+                                            log('Storage has webHelper', 'success');
+
+                                            var stores = storage.webHelper.stores;
+                                            log('WebHelper stores count: ' + stores.length, stores.length > 0 ? 'success' : 'error');
+
+                                            if (stores.length > 0) {
+                                                stores.forEach(function(s, i) {
+                                                    log('  Store ' + i + ': types = [' + s.types.join(', ') + ']');
+                                                });
+
+                                                // Check for Sound type
+                                                var hasSoundStore = stores.some(function(s) {
+                                                    return s.types.indexOf('Sound') >= 0;
+                                                });
+
+                                                if (hasSoundStore) {
+                                                    log('Sound store is registered', 'success');
+
+                                                    // Try to load a test sound
+                                                    log('Attempting to load test sound (83a9787d4cb6f3b7632b4ddfebf74367)...');
+
+                                                    storage.load(storage.AssetType.Sound, '83a9787d4cb6f3b7632b4ddfebf74367', 'wav')
+                                                        .then(function(asset) {
+                                                            if (asset) {
+                                                                log('Sound loaded successfully! Data size: ' + asset.data.length + ' bytes', 'success');
+                                                            } else {
+                                                                log('Sound load returned null (not found)', 'warning');
+                                                            }
+                                                        })
+                                                        .catch(function(err) {
+                                                            log('Sound load error: ' + (err.message || JSON.stringify(err)), 'error');
+                                                        });
+                                                } else {
+                                                    log('Sound store NOT registered - this is the problem!', 'error');
+                                                    log('addOfficialScratchWebStores() may not have been called', 'error');
+                                                }
+                                            } else {
+                                                log('No stores registered in webHelper - addOfficialScratchWebStores() was NOT called!', 'error');
+                                            }
+                                        } else {
+                                            log('Storage has no webHelper', 'error');
+                                        }
+
+                                        // Check asset host
+                                        if (storage.assetHost) {
+                                            log('Asset host: ' + storage.assetHost, 'success');
+                                        } else {
+                                            log('Asset host not set', 'warning');
+                                        }
+
+                                    } else {
+                                        log('Runtime has NO storage - attachStorage() was not called', 'error');
+                                    }
+                                } else {
+                                    log('VM has no runtime', 'error');
+                                }
+                            } else {
+                                log('Could not find VM in Redux state', 'error');
+                            }
+                        } else {
+                            log('Could not find Redux store', 'warning');
+                        }
+                    } else {
+                        log('Could not find React fiber', 'warning');
+                    }
+                } else {
+                    log('Could not find app element', 'error');
+                }
+
+            } catch (e) {
+                log('Error during diagnostic: ' + e.message, 'error');
+                log('Stack: ' + e.stack, 'error');
+            }
+
+            log('Diagnostic complete');
+        }
+    </script>
+</body>
+</html>
