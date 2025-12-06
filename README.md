@@ -45,8 +45,10 @@ Scratch のブロックを使って、Minecraft の世界を操作できます�
 
 ## 必要環境
 
-- モダンブラウザ（Chrome, Firefox, Edge, Safari）
+- **Chromium系ブラウザ**（Chrome, Edge, Brave, Opera など）
 - Minecraft Java Edition（MOD連携時）
+
+> **注意**: Safari では正常に動作しません。Chrome または Edge の使用を推奨します。
 
 ## ライセンス
 
