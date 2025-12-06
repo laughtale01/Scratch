@@ -1,14 +1,86 @@
 <!DOCTYPE html>
 <html>
   <head>
-    
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="google" value="notranslate">
     <link rel="shortcut icon" href="static/favicon.ico">
     <title>Scratch 3.0 GUI</title>
+    <script>
+      // DEBUG: Track click events on sound library items
+      window.__DEBUG_CLICKS__ = [];
+
+      document.addEventListener('click', function(e) {
+        var target = e.target;
+        var classList = target.className || '';
+        var parentClass = target.parentElement ? (target.parentElement.className || '') : '';
+
+        // Check if this is a library item click
+        if (classList.indexOf('library-item') >= 0 ||
+            parentClass.indexOf('library-item') >= 0 ||
+            classList.indexOf('sprite-selector-item') >= 0) {
+
+          var info = {
+            time: new Date().toISOString(),
+            target: target.tagName,
+            class: classList.substring(0, 100),
+            parentClass: parentClass.substring(0, 100),
+            stopped: e.defaultPrevented,
+            bubbles: e.bubbles
+          };
+
+          window.__DEBUG_CLICKS__.push(info);
+          console.log('[DEBUG CLICK]', info);
+        }
+      }, true); // Use capture phase
+
+      // Hook to track if handleItemSelected is called
+      window.__SOUND_LIBRARY_CALLS__ = [];
+
+      // This will be called after gui.js loads to set up the hook
+      window.addEventListener('load', function() {
+        console.log('[DEBUG] Window loaded, setting up hooks...');
+
+        // Try to find and wrap handleItemSelected after React mounts
+        setTimeout(function() {
+          console.log('[DEBUG] Attempting to find SoundLibrary component...');
+
+          // Create a MutationObserver to watch for the sound library modal
+          var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) {
+                  // Check if this is the library modal
+                  var libraryItems = node.querySelectorAll ? node.querySelectorAll('[class*="library-item"]') : [];
+                  if (libraryItems.length > 0) {
+                    console.log('[DEBUG] Library modal detected with ' + libraryItems.length + ' items');
+
+                    // Add click listeners to all library items
+                    libraryItems.forEach(function(item, index) {
+                      item.addEventListener('click', function(e) {
+                        console.log('[DEBUG] Library item ' + index + ' clicked directly!');
+                        window.__SOUND_LIBRARY_CALLS__.push({
+                          time: new Date().toISOString(),
+                          type: 'direct_click',
+                          index: index
+                        });
+                      });
+                    });
+                  }
+                }
+              });
+            });
+          });
+
+          observer.observe(document.body, { childList: true, subtree: true });
+          console.log('[DEBUG] MutationObserver started');
+
+        }, 3000);
+      });
+    </script>
   <script defer src="gui.js"></script></head>
   <body>
-    
+
   </body>
 </html>
