@@ -1,0 +1,445 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Add translations for final remaining languages
+"""
+
+import re
+
+TRANSLATIONS = {
+    # Complete the partial translations
+    "ro": {
+        # Romanian - complete
+        "minecraft.placeBuilding": "Plasează bloc de construcție [BLOCK] la [X] [Y] [Z]",
+        "minecraft.placeLighting": "Plasează bloc de iluminare [BLOCK] la [X] [Y] [Z]",
+        "minecraft.placeDecoration": "Plasează bloc decorativ [BLOCK] la [X] [Y] [Z]",
+        "minecraft.placeNature": "Plasează bloc natural [BLOCK] la [X] [Y] [Z]",
+        "minecraft.placeFunctional": "Plasează bloc funcțional [BLOCK] la [X] [Y] [Z]",
+        "minecraft.placeOre": "Plasează bloc de minereu [BLOCK] la [X] [Y] [Z]",
+        "minecraft.placeSpecial": "Plasează bloc special [BLOCK] la [X] [Y] [Z]",
+        "minecraft.fill": "Umple de la [X1] [Y1] [Z1] la [X2] [Y2] [Z2] cu [BLOCK]",
+        "minecraft.clone": "Clonează de la [X1] [Y1] [Z1] la [X2] [Y2] [Z2] la [X3] [Y3] [Z3]",
+        "minecraft.destroyBlock": "Distruge bloc la [X] [Y] [Z]",
+        "minecraft.teleport": "Teleportează la [X] [Y] [Z]",
+        "minecraft.summon": "Invocă [ENTITY] la [X] [Y] [Z]",
+        "minecraft.entityPassive": "Entitate pasivă [ENTITY]",
+        "minecraft.entityNeutral": "Entitate neutră [ENTITY]",
+        "minecraft.entityHostile": "Entitate ostilă [ENTITY]",
+        "minecraft.entityBoss": "Șef [ENTITY]",
+        "minecraft.entityAquatic": "Entitate acvatică [ENTITY]",
+        "minecraft.entityVillager": "Sătean [ENTITY]",
+        "minecraft.entityOther": "Altă entitate [ENTITY]",
+        "minecraft.setWeather": "Setează vremea la [WEATHER]",
+        "minecraft.setTime": "Setează ora la [TIME]",
+        "minecraft.getPlayerFacing": "Direcția jucătorului",
+        "minecraft.getBlockType": "Tipul blocului la [X] [Y] [Z]",
+        "minecraft.blockBuilding": "Bloc de construcție [BLOCK]",
+        "minecraft.blockLighting": "Bloc de iluminare [BLOCK]",
+        "minecraft.blockDecoration": "Bloc decorativ [BLOCK]",
+        "minecraft.blockNature": "Bloc natural [BLOCK]",
+        "minecraft.blockFunctional": "Bloc funcțional [BLOCK]",
+        "minecraft.blockOre": "Bloc de minereu [BLOCK]",
+        "minecraft.blockSpecial": "Bloc special [BLOCK]",
+        "minecraft.chat": "Spune [MESSAGE]",
+        "minecraft.getPosition": "[COORD]",
+        "minecraft.setBlock": "Plasează bloc X:[X] Y:[Y] Z:[Z] bloc:[BLOCK] plasare:[PLACEMENT] direcție:[FACING]",
+        "minecraft.clearArea": "Curăță zona X:[X] Z:[Z]",
+        "minecraft.clearAllEntities": "Elimină toate entitățile X:[X] Z:[Z]",
+        "minecraft.setGameRule": "Setează regula [RULE] la [VALUE]",
+        "minecraft.setGameMode": "Setează modul de joc la [MODE]",
+        "minecraft.summonEntity": "Invocă entitate [ENTITY] la X:[X] Y:[Y] Z:[Z]",
+    },
+    "sk": {
+        # Slovak - complete
+        "minecraft.place": "Umiestniť blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeBuilding": "Umiestniť stavebný blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeLighting": "Umiestniť svetelný blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeDecoration": "Umiestniť dekoračný blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeNature": "Umiestniť prírodný blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeFunctional": "Umiestniť funkčný blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeOre": "Umiestniť rudný blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeSpecial": "Umiestniť špeciálny blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.fill": "Vyplniť od [X1] [Y1] [Z1] do [X2] [Y2] [Z2] blokom [BLOCK]",
+        "minecraft.clone": "Klonovať od [X1] [Y1] [Z1] do [X2] [Y2] [Z2] na [X3] [Y3] [Z3]",
+        "minecraft.destroyBlock": "Zničiť blok na [X] [Y] [Z]",
+        "minecraft.teleport": "Teleportovať na [X] [Y] [Z]",
+        "minecraft.summon": "Vyvolať [ENTITY] na [X] [Y] [Z]",
+        "minecraft.entityPassive": "Pasívna entita [ENTITY]",
+        "minecraft.entityNeutral": "Neutrálna entita [ENTITY]",
+        "minecraft.entityHostile": "Nepriateľská entita [ENTITY]",
+        "minecraft.entityBoss": "Boss [ENTITY]",
+        "minecraft.entityAquatic": "Vodná entita [ENTITY]",
+        "minecraft.entityVillager": "Dedinčan [ENTITY]",
+        "minecraft.entityOther": "Iná entita [ENTITY]",
+        "minecraft.setWeather": "Nastaviť počasie na [WEATHER]",
+        "minecraft.setTime": "Nastaviť čas na [TIME]",
+        "minecraft.getPlayerFacing": "Smer hráča",
+        "minecraft.getBlockType": "Typ bloku na [X] [Y] [Z]",
+        "minecraft.blockBuilding": "Stavebný blok [BLOCK]",
+        "minecraft.blockLighting": "Svetelný blok [BLOCK]",
+        "minecraft.blockDecoration": "Dekoračný blok [BLOCK]",
+        "minecraft.blockNature": "Prírodný blok [BLOCK]",
+        "minecraft.blockFunctional": "Funkčný blok [BLOCK]",
+        "minecraft.blockOre": "Rudný blok [BLOCK]",
+        "minecraft.blockSpecial": "Špeciálny blok [BLOCK]",
+        "minecraft.chat": "Povedať [MESSAGE]",
+        "minecraft.getPosition": "[COORD]",
+        "minecraft.setBlock": "Umiestniť blok X:[X] Y:[Y] Z:[Z] blok:[BLOCK] umiestnenie:[PLACEMENT] smer:[FACING]",
+        "minecraft.clearArea": "Vyčistiť oblasť X:[X] Z:[Z]",
+        "minecraft.clearAllEntities": "Odstrániť všetky entity X:[X] Z:[Z]",
+        "minecraft.setGameRule": "Nastaviť pravidlo [RULE] na [VALUE]",
+        "minecraft.setGameMode": "Nastaviť herný režim na [MODE]",
+        "minecraft.summonEntity": "Vyvolať entitu [ENTITY] na X:[X] Y:[Y] Z:[Z]",
+    },
+    "sl": {
+        # Slovenian - complete
+        "minecraft.connect": "Poveži se z Minecraft gostitelj [HOST] vrata [PORT]",
+        "minecraft.disconnect": "Prekini povezavo",
+        "minecraft.place": "Postavi blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeBuilding": "Postavi gradbeni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeLighting": "Postavi svetlobni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeDecoration": "Postavi okrasni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeNature": "Postavi naravni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeFunctional": "Postavi funkcionalni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeOre": "Postavi rudni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeSpecial": "Postavi posebni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.fill": "Napolni od [X1] [Y1] [Z1] do [X2] [Y2] [Z2] z [BLOCK]",
+        "minecraft.clone": "Kloniraj od [X1] [Y1] [Z1] do [X2] [Y2] [Z2] na [X3] [Y3] [Z3]",
+        "minecraft.destroyBlock": "Uniči blok na [X] [Y] [Z]",
+        "minecraft.teleport": "Teleportiraj na [X] [Y] [Z]",
+        "minecraft.summon": "Prikliči [ENTITY] na [X] [Y] [Z]",
+        "minecraft.entityPassive": "Pasivna entiteta [ENTITY]",
+        "minecraft.entityNeutral": "Nevtralna entiteta [ENTITY]",
+        "minecraft.entityHostile": "Sovražna entiteta [ENTITY]",
+        "minecraft.entityBoss": "Boss [ENTITY]",
+        "minecraft.entityAquatic": "Vodna entiteta [ENTITY]",
+        "minecraft.entityVillager": "Vaščan [ENTITY]",
+        "minecraft.entityOther": "Druga entiteta [ENTITY]",
+        "minecraft.setWeather": "Nastavi vreme na [WEATHER]",
+        "minecraft.setTime": "Nastavi čas na [TIME]",
+        "minecraft.getPlayerFacing": "Smer igralca",
+        "minecraft.getBlockType": "Tip bloka na [X] [Y] [Z]",
+        "minecraft.isConnected": "Povezan?",
+        "minecraft.blockBuilding": "Gradbeni blok [BLOCK]",
+        "minecraft.blockLighting": "Svetlobni blok [BLOCK]",
+        "minecraft.blockDecoration": "Okrasni blok [BLOCK]",
+        "minecraft.blockNature": "Naravni blok [BLOCK]",
+        "minecraft.blockFunctional": "Funkcionalni blok [BLOCK]",
+        "minecraft.blockOre": "Rudni blok [BLOCK]",
+        "minecraft.blockSpecial": "Posebni blok [BLOCK]",
+        "minecraft.chat": "Reci [MESSAGE]",
+        "minecraft.getPosition": "[COORD]",
+        "minecraft.setBlock": "Postavi blok X:[X] Y:[Y] Z:[Z] blok:[BLOCK] postavitev:[PLACEMENT] smer:[FACING]",
+        "minecraft.clearArea": "Počisti območje X:[X] Z:[Z]",
+        "minecraft.clearAllEntities": "Odstrani vse entitete X:[X] Z:[Z]",
+        "minecraft.setGameRule": "Nastavi pravilo [RULE] na [VALUE]",
+        "minecraft.setGameMode": "Nastavi igralni način na [MODE]",
+        "minecraft.summonEntity": "Prikliči entiteto [ENTITY] na X:[X] Y:[Y] Z:[Z]",
+    },
+    "sr": {
+        # Serbian - complete
+        "minecraft.connect": "Повежи се са Minecraft домаћин [HOST] порт [PORT]",
+        "minecraft.disconnect": "Прекини везу",
+        "minecraft.place": "Постави блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeBuilding": "Постави грађевински блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeLighting": "Постави светлосни блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeDecoration": "Постави декоративни блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeNature": "Постави природни блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeFunctional": "Постави функционални блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeOre": "Постави рудни блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeSpecial": "Постави посебан блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.fill": "Попуни од [X1] [Y1] [Z1] до [X2] [Y2] [Z2] са [BLOCK]",
+        "minecraft.clone": "Клонирај од [X1] [Y1] [Z1] до [X2] [Y2] [Z2] на [X3] [Y3] [Z3]",
+        "minecraft.destroyBlock": "Уништи блок на [X] [Y] [Z]",
+        "minecraft.teleport": "Телепортуј на [X] [Y] [Z]",
+        "minecraft.summon": "Призови [ENTITY] на [X] [Y] [Z]",
+        "minecraft.entityPassive": "Пасивни ентитет [ENTITY]",
+        "minecraft.entityNeutral": "Неутрални ентитет [ENTITY]",
+        "minecraft.entityHostile": "Непријатељски ентитет [ENTITY]",
+        "minecraft.entityBoss": "Шеф [ENTITY]",
+        "minecraft.entityAquatic": "Водени ентитет [ENTITY]",
+        "minecraft.entityVillager": "Сељак [ENTITY]",
+        "minecraft.entityOther": "Други ентитет [ENTITY]",
+        "minecraft.setWeather": "Постави време на [WEATHER]",
+        "minecraft.setTime": "Постави време на [TIME]",
+        "minecraft.getPlayerFacing": "Смер играча",
+        "minecraft.getBlockType": "Тип блока на [X] [Y] [Z]",
+        "minecraft.isConnected": "Повезан?",
+        "minecraft.blockBuilding": "Грађевински блок [BLOCK]",
+        "minecraft.blockLighting": "Светлосни блок [BLOCK]",
+        "minecraft.blockDecoration": "Декоративни блок [BLOCK]",
+        "minecraft.blockNature": "Природни блок [BLOCK]",
+        "minecraft.blockFunctional": "Функционални блок [BLOCK]",
+        "minecraft.blockOre": "Рудни блок [BLOCK]",
+        "minecraft.blockSpecial": "Посебан блок [BLOCK]",
+        "minecraft.chat": "Реци [MESSAGE]",
+        "minecraft.getPosition": "[COORD]",
+        "minecraft.setBlock": "Постави блок X:[X] Y:[Y] Z:[Z] блок:[BLOCK] постављање:[PLACEMENT] смер:[FACING]",
+        "minecraft.clearArea": "Очисти област X:[X] Z:[Z]",
+        "minecraft.clearAllEntities": "Уклони све ентитете X:[X] Z:[Z]",
+        "minecraft.setGameRule": "Постави правило [RULE] на [VALUE]",
+        "minecraft.setGameMode": "Постави режим игре на [MODE]",
+        "minecraft.summonEntity": "Призови ентитет [ENTITY] на X:[X] Y:[Y] Z:[Z]",
+    },
+    "hr": {
+        # Croatian - complete
+        "minecraft.connect": "Spoji se na Minecraft domaćin [HOST] port [PORT]",
+        "minecraft.disconnect": "Prekini vezu",
+        "minecraft.place": "Postavi blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeBuilding": "Postavi građevinski blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeLighting": "Postavi svjetlosni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeDecoration": "Postavi ukrasni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeNature": "Postavi prirodni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeFunctional": "Postavi funkcionalni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeOre": "Postavi rudni blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.placeSpecial": "Postavi poseban blok [BLOCK] na [X] [Y] [Z]",
+        "minecraft.fill": "Ispuni od [X1] [Y1] [Z1] do [X2] [Y2] [Z2] s [BLOCK]",
+        "minecraft.clone": "Kloniraj od [X1] [Y1] [Z1] do [X2] [Y2] [Z2] na [X3] [Y3] [Z3]",
+        "minecraft.destroyBlock": "Uništi blok na [X] [Y] [Z]",
+        "minecraft.teleport": "Teleportiraj na [X] [Y] [Z]",
+        "minecraft.summon": "Prizovi [ENTITY] na [X] [Y] [Z]",
+        "minecraft.entityPassive": "Pasivni entitet [ENTITY]",
+        "minecraft.entityNeutral": "Neutralni entitet [ENTITY]",
+        "minecraft.entityHostile": "Neprijateljski entitet [ENTITY]",
+        "minecraft.entityBoss": "Šef [ENTITY]",
+        "minecraft.entityAquatic": "Vodeni entitet [ENTITY]",
+        "minecraft.entityVillager": "Seljak [ENTITY]",
+        "minecraft.entityOther": "Drugi entitet [ENTITY]",
+        "minecraft.setWeather": "Postavi vrijeme na [WEATHER]",
+        "minecraft.setTime": "Postavi vrijeme na [TIME]",
+        "minecraft.getPlayerFacing": "Smjer igrača",
+        "minecraft.getBlockType": "Vrsta bloka na [X] [Y] [Z]",
+        "minecraft.isConnected": "Spojeno?",
+        "minecraft.blockBuilding": "Građevinski blok [BLOCK]",
+        "minecraft.blockLighting": "Svjetlosni blok [BLOCK]",
+        "minecraft.blockDecoration": "Ukrasni blok [BLOCK]",
+        "minecraft.blockNature": "Prirodni blok [BLOCK]",
+        "minecraft.blockFunctional": "Funkcionalni blok [BLOCK]",
+        "minecraft.blockOre": "Rudni blok [BLOCK]",
+        "minecraft.blockSpecial": "Poseban blok [BLOCK]",
+        "minecraft.chat": "Reci [MESSAGE]",
+        "minecraft.getPosition": "[COORD]",
+        "minecraft.setBlock": "Postavi blok X:[X] Y:[Y] Z:[Z] blok:[BLOCK] postavljanje:[PLACEMENT] smjer:[FACING]",
+        "minecraft.clearArea": "Očisti područje X:[X] Z:[Z]",
+        "minecraft.clearAllEntities": "Ukloni sve entitete X:[X] Z:[Z]",
+        "minecraft.setGameRule": "Postavi pravilo [RULE] na [VALUE]",
+        "minecraft.setGameMode": "Postavi način igre na [MODE]",
+        "minecraft.summonEntity": "Prizovi entitet [ENTITY] na X:[X] Y:[Y] Z:[Z]",
+    },
+    "bg": {
+        # Bulgarian - complete
+        "minecraft.connect": "Свържи се с Minecraft хост [HOST] порт [PORT]",
+        "minecraft.disconnect": "Прекъсни връзката",
+        "minecraft.place": "Постави блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeBuilding": "Постави строителен блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeLighting": "Постави осветителен блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeDecoration": "Постави декоративен блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeNature": "Постави природен блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeFunctional": "Постави функционален блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeOre": "Постави руден блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.placeSpecial": "Постави специален блок [BLOCK] на [X] [Y] [Z]",
+        "minecraft.fill": "Запълни от [X1] [Y1] [Z1] до [X2] [Y2] [Z2] с [BLOCK]",
+        "minecraft.clone": "Клонирай от [X1] [Y1] [Z1] до [X2] [Y2] [Z2] на [X3] [Y3] [Z3]",
+        "minecraft.destroyBlock": "Унищожи блок на [X] [Y] [Z]",
+        "minecraft.teleport": "Телепортирай до [X] [Y] [Z]",
+        "minecraft.summon": "Извикай [ENTITY] на [X] [Y] [Z]",
+        "minecraft.entityPassive": "Пасивно същество [ENTITY]",
+        "minecraft.entityNeutral": "Неутрално същество [ENTITY]",
+        "minecraft.entityHostile": "Враждебно същество [ENTITY]",
+        "minecraft.entityBoss": "Бос [ENTITY]",
+        "minecraft.entityAquatic": "Водно същество [ENTITY]",
+        "minecraft.entityVillager": "Селянин [ENTITY]",
+        "minecraft.entityOther": "Друго същество [ENTITY]",
+        "minecraft.setWeather": "Задай време [WEATHER]",
+        "minecraft.setTime": "Задай час [TIME]",
+        "minecraft.getPlayerFacing": "Посока на играча",
+        "minecraft.getBlockType": "Тип блок на [X] [Y] [Z]",
+        "minecraft.isConnected": "Свързан?",
+        "minecraft.blockBuilding": "Строителен блок [BLOCK]",
+        "minecraft.blockLighting": "Осветителен блок [BLOCK]",
+        "minecraft.blockDecoration": "Декоративен блок [BLOCK]",
+        "minecraft.blockNature": "Природен блок [BLOCK]",
+        "minecraft.blockFunctional": "Функционален блок [BLOCK]",
+        "minecraft.blockOre": "Руден блок [BLOCK]",
+        "minecraft.blockSpecial": "Специален блок [BLOCK]",
+        "minecraft.chat": "Кажи [MESSAGE]",
+        "minecraft.getPosition": "[COORD]",
+        "minecraft.setBlock": "Постави блок X:[X] Y:[Y] Z:[Z] блок:[BLOCK] поставяне:[PLACEMENT] посока:[FACING]",
+        "minecraft.clearArea": "Изчисти зона X:[X] Z:[Z]",
+        "minecraft.clearAllEntities": "Премахни всички същества X:[X] Z:[Z]",
+        "minecraft.setGameRule": "Задай правило [RULE] на [VALUE]",
+        "minecraft.setGameMode": "Задай режим на игра [MODE]",
+        "minecraft.summonEntity": "Извикай същество [ENTITY] на X:[X] Y:[Y] Z:[Z]",
+    },
+    "ca": {
+        # Catalan - complete
+        "minecraft.connect": "Connecta a Minecraft amfitrió [HOST] port [PORT]",
+        "minecraft.disconnect": "Desconnecta",
+        "minecraft.place": "Col·loca bloc [BLOCK] a [X] [Y] [Z]",
+        "minecraft.placeBuilding": "Col·loca bloc de construcció [BLOCK] a [X] [Y] [Z]",
+        "minecraft.placeLighting": "Col·loca bloc d'il·luminació [BLOCK] a [X] [Y] [Z]",
+        "minecraft.placeDecoration": "Col·loca bloc de decoració [BLOCK] a [X] [Y] [Z]",
+        "minecraft.placeNature": "Col·loca bloc natural [BLOCK] a [X] [Y] [Z]",
+        "minecraft.placeFunctional": "Col·loca bloc funcional [BLOCK] a [X] [Y] [Z]",
+        "minecraft.placeOre": "Col·loca bloc de mineral [BLOCK] a [X] [Y] [Z]",
+        "minecraft.placeSpecial": "Col·loca bloc especial [BLOCK] a [X] [Y] [Z]",
+        "minecraft.fill": "Omple de [X1] [Y1] [Z1] a [X2] [Y2] [Z2] amb [BLOCK]",
+        "minecraft.clone": "Clona de [X1] [Y1] [Z1] a [X2] [Y2] [Z2] a [X3] [Y3] [Z3]",
+        "minecraft.destroyBlock": "Destrueix bloc a [X] [Y] [Z]",
+        "minecraft.teleport": "Teletransporta a [X] [Y] [Z]",
+        "minecraft.summon": "Invoca [ENTITY] a [X] [Y] [Z]",
+        "minecraft.entityPassive": "Entitat passiva [ENTITY]",
+        "minecraft.entityNeutral": "Entitat neutral [ENTITY]",
+        "minecraft.entityHostile": "Entitat hostil [ENTITY]",
+        "minecraft.entityBoss": "Cap [ENTITY]",
+        "minecraft.entityAquatic": "Entitat aquàtica [ENTITY]",
+        "minecraft.entityVillager": "Vilatà [ENTITY]",
+        "minecraft.entityOther": "Altra entitat [ENTITY]",
+        "minecraft.setWeather": "Estableix clima a [WEATHER]",
+        "minecraft.setTime": "Estableix hora a [TIME]",
+        "minecraft.getPlayerFacing": "Direcció del jugador",
+        "minecraft.getBlockType": "Tipus de bloc a [X] [Y] [Z]",
+        "minecraft.isConnected": "Connectat?",
+        "minecraft.blockBuilding": "Bloc de construcció [BLOCK]",
+        "minecraft.blockLighting": "Bloc d'il·luminació [BLOCK]",
+        "minecraft.blockDecoration": "Bloc de decoració [BLOCK]",
+        "minecraft.blockNature": "Bloc natural [BLOCK]",
+        "minecraft.blockFunctional": "Bloc funcional [BLOCK]",
+        "minecraft.blockOre": "Bloc de mineral [BLOCK]",
+        "minecraft.blockSpecial": "Bloc especial [BLOCK]",
+        "minecraft.chat": "Dir [MESSAGE]",
+        "minecraft.getPosition": "[COORD]",
+        "minecraft.setBlock": "Col·loca bloc X:[X] Y:[Y] Z:[Z] bloc:[BLOCK] col·locació:[PLACEMENT] direcció:[FACING]",
+        "minecraft.clearArea": "Neteja àrea X:[X] Z:[Z]",
+        "minecraft.clearAllEntities": "Elimina totes les entitats X:[X] Z:[Z]",
+        "minecraft.setGameRule": "Estableix regla [RULE] a [VALUE]",
+        "minecraft.setGameMode": "Estableix mode de joc a [MODE]",
+        "minecraft.summonEntity": "Invoca entitat [ENTITY] a X:[X] Y:[Y] Z:[Z]",
+    },
+    # Complete remaining partial languages
+    "ga": {
+        # Irish - complete commands
+        "minecraft.connect": "Ceangail le Minecraft óstach [HOST] port [PORT]",
+        "minecraft.disconnect": "Dícheanagail",
+        "minecraft.place": "Cuir bloc [BLOCK] ag [X] [Y] [Z]",
+        "minecraft.placeBuilding": "Cuir bloc tógála [BLOCK] ag [X] [Y] [Z]",
+        "minecraft.placeLighting": "Cuir bloc soilsithe [BLOCK] ag [X] [Y] [Z]",
+        "minecraft.placeDecoration": "Cuir bloc maisiúcháin [BLOCK] ag [X] [Y] [Z]",
+        "minecraft.placeNature": "Cuir bloc nádúrtha [BLOCK] ag [X] [Y] [Z]",
+        "minecraft.placeFunctional": "Cuir bloc feidhmiúil [BLOCK] ag [X] [Y] [Z]",
+        "minecraft.placeOre": "Cuir bloc mianraí [BLOCK] ag [X] [Y] [Z]",
+        "minecraft.placeSpecial": "Cuir bloc speisialta [BLOCK] ag [X] [Y] [Z]",
+        "minecraft.fill": "Líon ó [X1] [Y1] [Z1] go [X2] [Y2] [Z2] le [BLOCK]",
+        "minecraft.clone": "Clónaigh ó [X1] [Y1] [Z1] go [X2] [Y2] [Z2] go [X3] [Y3] [Z3]",
+        "minecraft.destroyBlock": "Scrios bloc ag [X] [Y] [Z]",
+        "minecraft.teleport": "Teileapórtáil go [X] [Y] [Z]",
+        "minecraft.summon": "Glaoigh ar [ENTITY] ag [X] [Y] [Z]",
+        "minecraft.entityPassive": "Eintiteas éighníomhach [ENTITY]",
+        "minecraft.entityNeutral": "Eintiteas neodrach [ENTITY]",
+        "minecraft.entityHostile": "Eintiteas naimhdeach [ENTITY]",
+        "minecraft.entityBoss": "Bos [ENTITY]",
+        "minecraft.entityAquatic": "Eintiteas uisceach [ENTITY]",
+        "minecraft.entityVillager": "Sráideánach [ENTITY]",
+        "minecraft.entityOther": "Eintiteas eile [ENTITY]",
+        "minecraft.setWeather": "Socraigh aimsir go [WEATHER]",
+        "minecraft.setTime": "Socraigh am go [TIME]",
+        "minecraft.getPlayerFacing": "Treo an imreora",
+        "minecraft.getBlockType": "Cineál bloic ag [X] [Y] [Z]",
+        "minecraft.isConnected": "Ceangailte?",
+        "minecraft.blockBuilding": "Bloc tógála [BLOCK]",
+        "minecraft.blockLighting": "Bloc soilsithe [BLOCK]",
+        "minecraft.blockDecoration": "Bloc maisiúcháin [BLOCK]",
+        "minecraft.blockNature": "Bloc nádúrtha [BLOCK]",
+        "minecraft.blockFunctional": "Bloc feidhmiúil [BLOCK]",
+        "minecraft.blockOre": "Bloc mianraí [BLOCK]",
+        "minecraft.blockSpecial": "Bloc speisialta [BLOCK]",
+        "minecraft.chat": "Abair [MESSAGE]",
+        "minecraft.getPosition": "[COORD]",
+        "minecraft.setBlock": "Cuir bloc X:[X] Y:[Y] Z:[Z] bloc:[BLOCK] cur:[PLACEMENT] treo:[FACING]",
+        "minecraft.clearArea": "Glan limistéar X:[X] Z:[Z]",
+        "minecraft.clearAllEntities": "Bain gach eintiteas X:[X] Z:[Z]",
+        "minecraft.setGameRule": "Socraigh riail [RULE] go [VALUE]",
+        "minecraft.setGameMode": "Socraigh mód cluiche go [MODE]",
+        "minecraft.summonEntity": "Glaoigh ar eintiteas [ENTITY] ag X:[X] Y:[Y] Z:[Z]",
+    },
+    "gd": {
+        # Scottish Gaelic - complete commands
+        "minecraft.connect": "Ceangail ri Minecraft òstair [HOST] port [PORT]",
+        "minecraft.disconnect": "Dì-cheangail",
+        "minecraft.place": "Cuir bloc [BLOCK] aig [X] [Y] [Z]",
+        "minecraft.isConnected": "Ceangailte?",
+    },
+    "cy": {
+        # Welsh - complete commands
+        "minecraft.connect": "Cysylltu â Minecraft gwesteiwr [HOST] porth [PORT]",
+        "minecraft.disconnect": "Datgysylltu",
+        "minecraft.place": "Gosod bloc [BLOCK] yn [X] [Y] [Z]",
+        "minecraft.isConnected": "Wedi cysylltu?",
+    },
+    "eu": {
+        # Basque - complete commands
+        "minecraft.connect": "Konektatu Minecraft-era ostalari [HOST] ataka [PORT]",
+        "minecraft.disconnect": "Deskonektatu",
+        "minecraft.place": "Jarri blokea [BLOCK] [X] [Y] [Z]-n",
+        "minecraft.isConnected": "Konektatuta?",
+    },
+    "gl": {
+        # Galician - complete commands
+        "minecraft.connect": "Conectar a Minecraft anfitrión [HOST] porto [PORT]",
+        "minecraft.disconnect": "Desconectar",
+        "minecraft.place": "Colocar bloque [BLOCK] en [X] [Y] [Z]",
+        "minecraft.isConnected": "Conectado?",
+    },
+}
+
+
+def main():
+    print("=== Adding final translations ===")
+
+    with open('gui.js', 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    updated_count = 0
+
+    for lang, translations in TRANSLATIONS.items():
+        pattern = rf'  "{re.escape(lang)}": \{{'
+        match = re.search(pattern, content)
+
+        if not match:
+            print(f"  Warning: Could not find section for {lang}")
+            continue
+
+        section_start = match.start()
+
+        next_lang = re.search(r'\n  \},\n  "[a-z]', content[section_start + 10:])
+        if next_lang:
+            section_end = section_start + 10 + next_lang.start() + 4
+        else:
+            section_end = content.find('\n  }\n}', section_start) + 4
+
+        section = content[section_start:section_end]
+
+        replaced = 0
+        for key, value in translations.items():
+            escaped_key = re.escape(key)
+            escaped_value = value.replace('\\', '\\\\').replace('"', '\\"')
+
+            old_pattern = rf'"{escaped_key}": "[^"]*"'
+            new_value = f'"{key}": "{escaped_value}"'
+
+            if re.search(old_pattern, section):
+                section = re.sub(old_pattern, new_value, section)
+                replaced += 1
+
+        content = content[:section_start] + section + content[section_end:]
+        updated_count += 1
+        print(f"  Updated {lang} with {replaced}/{len(translations)} translations")
+
+    with open('gui.js', 'w', encoding='utf-8') as f:
+        f.write(content)
+
+    print(f"\n=== Done - updated {updated_count} languages ===")
+
+
+if __name__ == '__main__':
+    main()
