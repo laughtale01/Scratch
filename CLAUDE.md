@@ -132,6 +132,16 @@ cd minecraft-mod
 # 出力: build/libs/minecraftedu-mod-0.1.0.jar
 ```
 
+### インストール先
+```
+C:\Users\riyum\AppData\Roaming\.minecraft_1.20.1\mods\
+```
+
+### インストールコマンド
+```bash
+cp minecraft-mod/build/libs/minecraftedu-mod-0.1.0.jar "/c/Users/riyum/AppData/Roaming/.minecraft_1.20.1/mods/"
+```
+
 ### 必須ファイル（ビルドに必要）
 - `gradlew` / `gradlew.bat`
 - `gradle/wrapper/gradle-wrapper.jar`
