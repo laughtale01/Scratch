@@ -13,6 +13,10 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.network.protocol.game.ClientboundPlayerAbilitiesPacket;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -77,6 +81,15 @@ public class CommandExecutor {
 
                 case "setGameRule":
                     return executeSetGameRule(params);
+
+                case "setMoveSpeed":
+                    return executeSetMoveSpeed(params);
+
+                case "setNightVision":
+                    return executeSetNightVision(params);
+
+                case "setFlySpeed":
+                    return executeSetFlySpeed(params);
 
                 default:
                     MinecraftEduMod.LOGGER.warn("Unknown command: " + action);
@@ -725,6 +738,127 @@ public class CommandExecutor {
         lastResult.addProperty("entitiesRemoved", true);
         lastResult.addProperty("centerX", centerX);
         lastResult.addProperty("centerZ", centerZ);
+        return true;
+    }
+
+    /**
+     * プレイヤーの移動速度を設定
+     * @param params multiplier: 速度倍率（小数点1位まで有効、例: 0.5, 1.0, 2.5）
+     * @return 成功時true
+     */
+    private boolean executeSetMoveSpeed(JsonObject params) {
+        if (!params.has("multiplier")) {
+            MinecraftEduMod.LOGGER.warn("setMoveSpeed: multiplier parameter required");
+            return false;
+        }
+
+        // 小数点1位まで有効にするため、0.1刻みで丸める
+        double rawMultiplier = params.get("multiplier").getAsDouble();
+        double multiplier = Math.round(rawMultiplier * 10.0) / 10.0;
+
+        // 安全な範囲に制限（0.1〜10.0倍）
+        multiplier = Math.max(0.1, Math.min(10.0, multiplier));
+
+        // デフォルト移動速度は0.1、倍率を適用
+        final double baseSpeed = 0.1;
+        final double newSpeed = baseSpeed * multiplier;
+        final double finalMultiplier = multiplier;
+
+        ServerPlayer player = getFirstPlayer();
+        if (player == null) {
+            MinecraftEduMod.LOGGER.warn("setMoveSpeed: No player found");
+            return false;
+        }
+
+        server.execute(() -> {
+            // 全プレイヤーに適用
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                p.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(newSpeed);
+            }
+            MinecraftEduMod.LOGGER.info("SetMoveSpeed: " + finalMultiplier + "x (speed=" + newSpeed + ")");
+        });
+
+        lastResult.addProperty("multiplier", finalMultiplier);
+        lastResult.addProperty("speed", newSpeed);
+
+        return true;
+    }
+
+    /**
+     * 暗視エフェクトの設定
+     * @param params enabled: true=暗視ON、false=暗視OFF
+     * @return 成功時true
+     */
+    private boolean executeSetNightVision(JsonObject params) {
+        if (!params.has("enabled")) {
+            MinecraftEduMod.LOGGER.warn("setNightVision: enabled parameter required");
+            return false;
+        }
+
+        boolean enabled = params.get("enabled").getAsBoolean();
+
+        server.execute(() -> {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                if (enabled) {
+                    // 暗視エフェクトを付与（約27時間、パーティクル非表示）
+                    // duration: 999999 ticks (約13.9時間)、amplifier: 0、ambient: true、visible: false
+                    MobEffectInstance effect = new MobEffectInstance(
+                        MobEffects.NIGHT_VISION,
+                        999999,  // 持続時間（tick）
+                        0,       // 効果レベル（0=レベル1）
+                        true,    // アンビエント（パーティクル小さい）
+                        false    // パーティクル非表示
+                    );
+                    player.addEffect(effect);
+                    MinecraftEduMod.LOGGER.info("Night vision enabled for player: " + player.getName().getString());
+                } else {
+                    // 暗視エフェクトを解除
+                    player.removeEffect(MobEffects.NIGHT_VISION);
+                    MinecraftEduMod.LOGGER.info("Night vision disabled for player: " + player.getName().getString());
+                }
+            }
+        });
+
+        lastResult.addProperty("nightVision", enabled);
+
+        return true;
+    }
+
+    /**
+     * 飛行速度の設定（クリエイティブモード用）
+     * @param params multiplier: 速度倍率（例: 1.0=標準、2.0=2倍）
+     * @return 成功時true
+     */
+    private boolean executeSetFlySpeed(JsonObject params) {
+        if (!params.has("multiplier")) {
+            MinecraftEduMod.LOGGER.warn("setFlySpeed: multiplier parameter required");
+            return false;
+        }
+
+        double rawMultiplier = params.get("multiplier").getAsDouble();
+        // 小数点1位まで丸める
+        double multiplier = Math.round(rawMultiplier * 10.0) / 10.0;
+        // 0.1〜10.0の範囲に制限
+        multiplier = Math.max(0.1, Math.min(10.0, multiplier));
+
+        final float baseFlySpeed = 0.05f;  // デフォルトの飛行速度
+        final float newFlySpeed = (float)(baseFlySpeed * multiplier);
+        final double finalMultiplier = multiplier;
+
+        server.execute(() -> {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                player.getAbilities().setFlyingSpeed(newFlySpeed);
+                // ClientboundPlayerAbilitiesPacketを送信してクライアントに同期
+                // onUpdateAbilities()は飛行速度を同期しないため、直接パケットを送信
+                player.connection.send(new ClientboundPlayerAbilitiesPacket(player.getAbilities()));
+            }
+        });
+
+        MinecraftEduMod.LOGGER.info("SetFlySpeed: " + finalMultiplier + "x (speed=" + newFlySpeed + ")");
+
+        lastResult.addProperty("multiplier", finalMultiplier);
+        lastResult.addProperty("flySpeed", newFlySpeed);
+
         return true;
     }
 
