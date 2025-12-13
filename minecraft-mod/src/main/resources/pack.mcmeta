@@ -1,8 +1,0 @@
-{
-  "pack": {
-    "description": "MinecraftEdu Scratch Controller - Educational Minecraft MOD",
-    "pack_format": 15,
-    "forge:resource_pack_format": 15,
-    "forge:data_pack_format": 12
-  }
-}
