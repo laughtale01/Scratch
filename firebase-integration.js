@@ -463,6 +463,48 @@ class ScratchFirebase {
   }
 
   /**
+   * プロジェクトを提出
+   */
+  async submitProject(projectId) {
+    if (!this.currentUser) {
+      return { success: false, error: 'ログインが必要です' };
+    }
+
+    try {
+      await db.collection('projects').doc(projectId).update({
+        isSubmitted: true,
+        submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('プロジェクト提出エラー:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * プロジェクトの提出を取り消し
+   */
+  async unsubmitProject(projectId) {
+    if (!this.currentUser) {
+      return { success: false, error: 'ログインが必要です' };
+    }
+
+    try {
+      await db.collection('projects').doc(projectId).update({
+        isSubmitted: false,
+        submittedAt: null,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('提出取り消しエラー:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * エラーメッセージを日本語に変換
    */
   getErrorMessage(errorCode) {
@@ -1013,19 +1055,116 @@ class ScratchFirebaseUI {
       return;
     }
 
-    // シンプルな選択ダイアログ
-    const projectList = projects.map((p, i) => `${i + 1}. ${p.name}`).join('\n');
-    const selection = prompt(`読み込むプロジェクトの番号を入力:\n\n${projectList}`);
+    // モーダルダイアログを作成
+    const modal = document.createElement('div');
+    modal.id = 'firebase-load-modal';
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6); display: flex;
+      justify-content: center; align-items: center; z-index: 10000;
+    `;
 
-    if (!selection) return;
+    const formatDate = (timestamp) => {
+      if (!timestamp) return '-';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
 
-    const index = parseInt(selection) - 1;
-    if (isNaN(index) || index < 0 || index >= projects.length) {
-      alert('無効な番号です');
-      return;
+    const projectItems = projects.map(p => `
+      <div class="firebase-project-item" data-id="${p.id}" style="
+        padding: 12px; border: 1px solid #ddd; border-radius: 8px;
+        margin-bottom: 8px; display: flex; justify-content: space-between;
+        align-items: center; background: white;
+      ">
+        <div style="flex: 1;">
+          <div style="font-weight: bold; margin-bottom: 4px;">${this.escapeHtml(p.name)}</div>
+          <div style="font-size: 12px; color: #666;">
+            ${formatDate(p.updatedAt)}
+            ${p.isSubmitted ? '<span style="color: #4caf50; margin-left: 8px;">✓ 提出済み</span>' : ''}
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="window.scratchFirebaseUI.loadProjectToScratch('${p.id}'); document.getElementById('firebase-load-modal').remove();"
+            style="padding: 6px 12px; background: #4c97ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            読込
+          </button>
+          <button onclick="window.scratchFirebaseUI.toggleSubmit('${p.id}', ${!p.isSubmitted})"
+            style="padding: 6px 12px; background: ${p.isSubmitted ? '#ff9800' : '#4caf50'}; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            ${p.isSubmitted ? '取消' : '提出'}
+          </button>
+          <button onclick="window.scratchFirebaseUI.deleteProject('${p.id}')"
+            style="padding: 6px 12px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            削除
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    modal.innerHTML = `
+      <div style="background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 18px;">クラウドから読み込み</h3>
+          <button onclick="document.getElementById('firebase-load-modal').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+        </div>
+        <div style="padding: 16px 20px; overflow-y: auto; flex: 1;">
+          ${projectItems}
+        </div>
+      </div>
+    `;
+
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
+
+    document.body.appendChild(modal);
+  }
+
+  /**
+   * HTMLエスケープ
+   */
+  escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /**
+   * プロジェクト提出/取消
+   */
+  async toggleSubmit(projectId, submit) {
+    let result;
+    if (submit) {
+      if (!confirm('このプロジェクトを先生に提出しますか？')) return;
+      result = await window.scratchFirebase.submitProject(projectId);
+    } else {
+      if (!confirm('提出を取り消しますか？')) return;
+      result = await window.scratchFirebase.unsubmitProject(projectId);
     }
 
-    this.loadProjectToScratch(projects[index].id);
+    if (result.success) {
+      alert(submit ? 'プロジェクトを提出しました' : '提出を取り消しました');
+      // モーダルを閉じて再表示
+      document.getElementById('firebase-load-modal')?.remove();
+      this.showCloudLoad();
+    } else {
+      alert('エラー: ' + result.error);
+    }
+  }
+
+  /**
+   * プロジェクト削除
+   */
+  async deleteProject(projectId) {
+    if (!confirm('このプロジェクトを削除しますか？\nこの操作は取り消せません。')) return;
+
+    const result = await window.scratchFirebase.deleteProject(projectId);
+    if (result.success) {
+      alert('プロジェクトを削除しました');
+      // モーダルを閉じて再表示
+      document.getElementById('firebase-load-modal')?.remove();
+      this.showCloudLoad();
+    } else {
+      alert('削除に失敗しました: ' + result.error);
+    }
   }
 
   /**

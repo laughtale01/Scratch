@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" value="notranslate">
+  <link rel="shortcut icon" href="static/favicon.ico">
+  <title>ギャラリー - Scratch Education</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+
+    /* ヘッダー */
+    .header {
+      background: rgba(255,255,255,0.95);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #4c97ff 0%, #855cd6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .header-btn {
+      background: #4c97ff;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .header-btn:hover {
+      background: #3d89f0;
+    }
+
+    .header-btn.secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .header-btn.secondary:hover {
+      background: #d0d0d0;
+    }
+
+    /* フィルター */
+    .filter-bar {
+      background: rgba(255,255,255,0.9);
+      padding: 16px 24px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      min-width: 150px;
+    }
+
+    .filter-label {
+      font-weight: 500;
+      color: #666;
+    }
+
+    /* メインコンテナ */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* プロジェクトグリッド */
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .project-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+    }
+
+    .project-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .project-thumbnail {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 64px;
+      color: #bbb;
+      overflow: hidden;
+    }
+
+    .project-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .project-info {
+      padding: 16px;
+    }
+
+    .project-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .project-author {
+      font-size: 14px;
+      color: #4c97ff;
+      margin-bottom: 4px;
+    }
+
+    .project-meta {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .project-classroom {
+      display: inline-block;
+      background: #e3f2fd;
+      color: #1976d2;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      margin-top: 8px;
+    }
+
+    /* 空の状態 */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: white;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state-text {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    /* ローディング */
+    .loading {
+      text-align: center;
+      padding: 80px 20px;
+      color: white;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* プレビューモーダル */
+    .preview-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .preview-modal.show {
+      display: flex;
+    }
+
+    .preview-content {
+      background: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-title {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .preview-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .preview-body {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .preview-actions {
+      padding: 16px 20px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    /* 発表モード */
+    .presentation-mode .header,
+    .presentation-mode .filter-bar {
+      display: none;
+    }
+
+    .presentation-mode .container {
+      padding: 40px;
+    }
+
+    .presentation-mode .project-card {
+      cursor: default;
+    }
+
+    .presentation-mode .project-name {
+      font-size: 24px;
+    }
+
+    .presentation-mode .project-author {
+      font-size: 18px;
+    }
+
+    .exit-presentation {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filter-select {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-title">🎨 作品ギャラリー</div>
+    <div class="header-actions">
+      <button class="header-btn secondary" onclick="togglePresentationMode()">
+        発表モード
+      </button>
+      <a href="index.html" class="header-btn">Scratchに戻る</a>
+    </div>
+  </header>
+
+  <!-- フィルター -->
+  <div class="filter-bar">
+    <span class="filter-label">教室:</span>
+    <select class="filter-select" id="filterClassroom" onchange="filterProjects()">
+      <option value="">すべての教室</option>
+    </select>
+    <span class="filter-label">並び替え:</span>
+    <select class="filter-select" id="sortOrder" onchange="filterProjects()">
+      <option value="newest">新しい順</option>
+      <option value="oldest">古い順</option>
+      <option value="name">名前順</option>
+    </select>
+  </div>
+
+  <!-- メインコンテナ -->
+  <div class="container">
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div>読み込み中...</div>
+    </div>
+    <div class="project-grid" id="projectGrid" style="display: none;"></div>
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div class="empty-state-icon">📭</div>
+      <div class="empty-state-text">提出された作品はまだありません</div>
+    </div>
+  </div>
+
+  <!-- 発表モード終了ボタン -->
+  <button class="exit-presentation" id="exitPresentation" style="display: none;" onclick="togglePresentationMode()">
+    発表モード終了
+  </button>
+
+  <!-- プレビューモーダル -->
+  <div class="preview-modal" id="previewModal">
+    <div class="preview-content">
+      <div class="preview-header">
+        <span class="preview-title" id="previewTitle">プロジェクト名</span>
+        <button class="preview-close" onclick="closePreview()">&times;</button>
+      </div>
+      <div class="preview-body" id="previewBody"></div>
+      <div class="preview-actions">
+        <button class="header-btn secondary" onclick="closePreview()">閉じる</button>
+        <button class="header-btn" id="openInScratch">Scratchで開く</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyBEr2LmctKmBHa_y1Jrx6XQ_6M8vengYhs",
+      authDomain: "laughtale-scratch-bcc8a.firebaseapp.com",
+      projectId: "laughtale-scratch-bcc8a",
+      storageBucket: "laughtale-scratch-bcc8a.firebasestorage.app",
+      messagingSenderId: "869020754126",
+      appId: "1:869020754126:web:e80beaf67fda60987ff09f",
+      measurementId: "G-F8JCCJQ7YB"
+    };
+
+    // Firebase初期化
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // データ
+    let projects = [];
+    let users = {};
+    let classrooms = {};
+
+    // 初期化
+    async function init() {
+      try {
+        // 教室一覧を取得
+        const classroomSnapshot = await db.collection('classrooms').get();
+        classroomSnapshot.forEach(doc => {
+          classrooms[doc.id] = doc.data();
+        });
+
+        // ユーザー一覧を取得
+        const userSnapshot = await db.collection('users').get();
+        userSnapshot.forEach(doc => {
+          users[doc.id] = doc.data();
+        });
+
+        // 提出済みプロジェクトを取得
+        const projectSnapshot = await db.collection('projects')
+          .where('isSubmitted', '==', true)
+          .orderBy('submittedAt', 'desc')
+          .get();
+
+        projects = [];
+        projectSnapshot.forEach(doc => {
+          projects.push({ id: doc.id, ...doc.data() });
+        });
+
+        // フィルター更新
+        updateFilters();
+
+        // 表示
+        renderProjects();
+
+      } catch (error) {
+        console.error('初期化エラー:', error);
+        document.getElementById('loading').innerHTML = '<div style="color: #ff6b6b;">読み込みエラー: ' + error.message + '</div>';
+      }
+    }
+
+    // フィルター更新
+    function updateFilters() {
+      const select = document.getElementById('filterClassroom');
+      select.innerHTML = '<option value="">すべての教室</option>' +
+        Object.entries(classrooms).map(([id, c]) => `<option value="${id}">${escapeHtml(c.name)}</option>`).join('');
+    }
+
+    // プロジェクト表示
+    function renderProjects() {
+      const loading = document.getElementById('loading');
+      const grid = document.getElementById('projectGrid');
+      const empty = document.getElementById('emptyState');
+
+      loading.style.display = 'none';
+
+      // フィルタリング
+      let filtered = [...projects];
+
+      const classroomFilter = document.getElementById('filterClassroom').value;
+      if (classroomFilter) {
+        filtered = filtered.filter(p => p.classroomId === classroomFilter);
+      }
+
+      // ソート
+      const sortOrder = document.getElementById('sortOrder').value;
+      if (sortOrder === 'newest') {
+        filtered.sort((a, b) => (b.submittedAt?.toDate() || 0) - (a.submittedAt?.toDate() || 0));
+      } else if (sortOrder === 'oldest') {
+        filtered.sort((a, b) => (a.submittedAt?.toDate() || 0) - (b.submittedAt?.toDate() || 0));
+      } else if (sortOrder === 'name') {
+        filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      }
+
+      if (filtered.length === 0) {
+        grid.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+      }
+
+      grid.style.display = 'grid';
+      empty.style.display = 'none';
+
+      grid.innerHTML = filtered.map(p => {
+        const user = users[p.userId] || {};
+        const classroom = classrooms[p.classroomId] || {};
+        const submittedAt = p.submittedAt ? formatDate(p.submittedAt.toDate()) : '-';
+
+        return `
+          <div class="project-card" onclick="showPreview('${p.id}')">
+            <div class="project-thumbnail">
+              ${p.thumbnailUrl
+                ? `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" onerror="this.parentElement.innerHTML='📁'">`
+                : '📁'}
+            </div>
+            <div class="project-info">
+              <div class="project-name">${escapeHtml(p.name)}</div>
+              <div class="project-author">${escapeHtml(user.displayName || '不明')}</div>
+              <div class="project-meta">提出日: ${submittedAt}</div>
+              ${classroom.name ? `<span class="project-classroom">${escapeHtml(classroom.name)}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // フィルター
+    function filterProjects() {
+      renderProjects();
+    }
+
+    // プレビュー表示
+    function showPreview(projectId) {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) return;
+
+      const user = users[project.userId] || {};
+      const classroom = classrooms[project.classroomId] || {};
+
+      document.getElementById('previewTitle').textContent = project.name;
+      document.getElementById('previewBody').innerHTML = `
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+          <div style="flex: 0 0 200px;">
+            <div style="width: 200px; height: 150px; background: #f5f5f5; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 48px;">
+              ${project.thumbnailUrl
+                ? `<img src="${escapeHtml(project.thumbnailUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" onerror="this.parentElement.innerHTML='📁'">`
+                : '📁'}
+            </div>
+          </div>
+          <div style="flex: 1; min-width: 200px;">
+            <table style="font-size: 14px; width: 100%;">
+              <tr><td style="color: #666; padding: 4px 16px 4px 0;">作成者:</td><td><strong>${escapeHtml(user.displayName || '不明')}</strong></td></tr>
+              <tr><td style="color: #666; padding: 4px 16px 4px 0;">教室:</td><td>${escapeHtml(classroom.name || '-')}</td></tr>
+              <tr><td style="color: #666; padding: 4px 16px 4px 0;">提出日:</td><td>${project.submittedAt ? formatDate(project.submittedAt.toDate()) : '-'}</td></tr>
+              <tr><td style="color: #666; padding: 4px 16px 4px 0;">説明:</td><td>${escapeHtml(project.description || 'なし')}</td></tr>
+            </table>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('openInScratch').onclick = () => {
+        // プロジェクトIDをURLパラメータで渡してScratchを開く
+        window.open('index.html?loadProject=' + projectId, '_blank');
+      };
+
+      document.getElementById('previewModal').classList.add('show');
+    }
+
+    // プレビューを閉じる
+    function closePreview() {
+      document.getElementById('previewModal').classList.remove('show');
+    }
+
+    // 発表モード切替
+    function togglePresentationMode() {
+      document.body.classList.toggle('presentation-mode');
+      const exitBtn = document.getElementById('exitPresentation');
+      exitBtn.style.display = document.body.classList.contains('presentation-mode') ? 'block' : 'none';
+    }
+
+    // ユーティリティ
+    function formatDate(date) {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ESCキーでプレビューを閉じる
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closePreview();
+        if (document.body.classList.contains('presentation-mode')) {
+          togglePresentationMode();
+        }
+      }
+    });
+
+    // モーダル外クリックで閉じる
+    document.getElementById('previewModal').onclick = (e) => {
+      if (e.target.id === 'previewModal') closePreview();
+    };
+
+    // 初期化実行
+    init();
+  </script>
+</body>
+</html>
