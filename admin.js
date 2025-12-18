@@ -20,6 +20,16 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
+const functions = firebase.functions();
+
+// Cloud Functions のリージョン設定（asia-northeast1）
+const functionsAsia = firebase.app().functions('asia-northeast1');
+const cloudFunctions = {
+  createUser: functionsAsia.httpsCallable('createUser'),
+  resetPassword: functionsAsia.httpsCallable('resetPassword'),
+  deleteUser: functionsAsia.httpsCallable('deleteUser'),
+  createUsers: functionsAsia.httpsCallable('createUsers')
+};
 
 /**
  * 管理画面クラス
@@ -549,25 +559,32 @@ class AdminPanel {
     }
 
     try {
-      const email = `${userId}@laughtale.local`;
+      // Cloud Function を呼び出してユーザー作成
+      const result = await cloudFunctions.createUser({
+        userId,
+        displayName,
+        password,
+        role,
+        classroomId: role === 'admin' ? null : classroomId
+      });
 
-      // Firebase Admin SDKが必要なため、Cloud Functionsを呼び出す必要がある
-      // 現時点ではクライアントサイドでの作成を試みる（制限あり）
-
-      // 注意: Firebase Authenticationでは、サインイン中のユーザーを
-      // 維持したまま新規ユーザーを作成することはできない
-      // Cloud Functionsを使用する必要がある
-
-      alert('ユーザー作成にはCloud Functionsの設定が必要です。\n現在は手動でFirebase Consoleから作成してください。');
-
-      // 代わりにFirestoreにユーザー情報のみ作成（認証は別途）
-      // この機能は将来Cloud Functionsで実装
+      console.log('AdminPanel: ユーザー作成完了', result.data);
+      alert('ユーザーを作成しました: ' + userId);
 
       this.closeModal('createUserModal');
+      await this.loadUsers();
+      this.updateFilters();
+      this.updateStats();
 
     } catch (error) {
       console.error('AdminPanel: ユーザー作成エラー', error);
-      alert('ユーザーの作成に失敗しました: ' + error.message);
+
+      // Cloud Functions が未デプロイの場合
+      if (error.code === 'functions/not-found' || error.message.includes('not found')) {
+        alert('Cloud Functionsがデプロイされていません。\nFirebase Consoleから手動で作成するか、Cloud Functionsをデプロイしてください。');
+      } else {
+        alert('ユーザーの作成に失敗しました: ' + (error.message || error));
+      }
     }
   }
 
@@ -663,7 +680,7 @@ class AdminPanel {
    * パスワードリセット
    */
   static async resetPassword() {
-    const userId = document.getElementById('resetPasswordUid').value;
+    const targetUid = document.getElementById('resetPasswordUid').value;
     const newPassword = document.getElementById('newPassword').value;
 
     if (!newPassword || newPassword.length < 6) {
@@ -672,14 +689,26 @@ class AdminPanel {
     }
 
     try {
-      // Firebase Admin SDKが必要
-      alert('パスワードリセットにはCloud Functionsの設定が必要です。\n現在は手動でFirebase Consoleから変更してください。');
+      // Cloud Function を呼び出してパスワードリセット
+      const result = await cloudFunctions.resetPassword({
+        targetUid,
+        newPassword
+      });
+
+      console.log('AdminPanel: パスワードリセット完了', result.data);
+      alert('パスワードをリセットしました');
 
       this.closeModal('resetPasswordModal');
 
     } catch (error) {
       console.error('AdminPanel: パスワードリセットエラー', error);
-      alert('パスワードのリセットに失敗しました: ' + error.message);
+
+      // Cloud Functions が未デプロイの場合
+      if (error.code === 'functions/not-found' || error.message.includes('not found')) {
+        alert('Cloud Functionsがデプロイされていません。\nFirebase Consoleから手動で変更してください。');
+      } else {
+        alert('パスワードのリセットに失敗しました: ' + (error.message || error));
+      }
     }
   }
 
@@ -701,16 +730,35 @@ class AdminPanel {
   /**
    * ユーザー削除
    */
-  static async deleteUser(userId) {
+  static async deleteUser(targetUid) {
     try {
-      // Firebase Admin SDKが必要
-      alert('ユーザー削除にはCloud Functionsの設定が必要です。\n現在は手動でFirebase Consoleから削除してください。');
+      // Cloud Function を呼び出してユーザー削除
+      const result = await cloudFunctions.deleteUser({
+        targetUid
+      });
+
+      console.log('AdminPanel: ユーザー削除完了', result.data);
+
+      if (result.data.projectCount > 0) {
+        alert(`ユーザーを削除しました。\n（${result.data.projectCount}件のプロジェクトが残っています）`);
+      } else {
+        alert('ユーザーを削除しました');
+      }
 
       this.closeModal('confirmDeleteModal');
+      await this.loadUsers();
+      this.updateFilters();
+      this.updateStats();
 
     } catch (error) {
       console.error('AdminPanel: ユーザー削除エラー', error);
-      alert('ユーザーの削除に失敗しました: ' + error.message);
+
+      // Cloud Functions が未デプロイの場合
+      if (error.code === 'functions/not-found' || error.message.includes('not found')) {
+        alert('Cloud Functionsがデプロイされていません。\nFirebase Consoleから手動で削除してください。');
+      } else {
+        alert('ユーザーの削除に失敗しました: ' + (error.message || error));
+      }
     }
   }
 
