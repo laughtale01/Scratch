@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" value="notranslate">
+  <link rel="shortcut icon" href="static/favicon.ico">
+  <title>管理画面 - Scratch Education</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    /* ヘッダー */
+    .header {
+      background: linear-gradient(135deg, #4c97ff 0%, #855cd6 100%);
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-user-info {
+      text-align: right;
+    }
+
+    .header-user-name {
+      font-weight: bold;
+    }
+
+    .header-user-role {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .header-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .header-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    /* ローディング画面 */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .loading-screen.hidden {
+      display: none;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e0e0e0;
+      border-top-color: #4c97ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* アクセス拒否画面 */
+    .access-denied {
+      display: none;
+      text-align: center;
+      padding: 100px 20px;
+    }
+
+    .access-denied.show {
+      display: block;
+    }
+
+    .access-denied h1 {
+      color: #cf6679;
+      margin-bottom: 16px;
+    }
+
+    .access-denied a {
+      color: #4c97ff;
+    }
+
+    /* メインコンテナ */
+    .container {
+      display: none;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .container.show {
+      display: block;
+    }
+
+    /* タブナビゲーション */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .tab-btn {
+      padding: 12px 24px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: #f0f0f0;
+    }
+
+    .tab-btn.active {
+      background: #4c97ff;
+      color: white;
+    }
+
+    /* タブコンテンツ */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* カード */
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* テーブル */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    th {
+      background: #f9f9f9;
+      font-weight: 600;
+      font-size: 13px;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    tr:hover {
+      background: #f5f5f5;
+    }
+
+    /* ボタン */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #4c97ff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #3d89f0;
+    }
+
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .btn-danger {
+      background: #cf6679;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b55566;
+    }
+
+    .btn-success {
+      background: #4caf50;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #43a047;
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* バッジ */
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-admin {
+      background: #ffcdd2;
+      color: #c62828;
+    }
+
+    .badge-teacher {
+      background: #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .badge-student {
+      background: #bbdefb;
+      color: #1565c0;
+    }
+
+    .badge-submitted {
+      background: #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .badge-not-submitted {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    /* 統計カード */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #4c97ff;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* フォーム */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #4c97ff;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+    }
+
+    /* モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* フィルター */
+    .filter-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-bar .form-input,
+    .filter-bar .form-select {
+      width: auto;
+      min-width: 200px;
+    }
+
+    /* プロジェクトグリッド */
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .project-card {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .project-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .project-thumbnail {
+      width: 100%;
+      height: 180px;
+      background: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .project-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .project-info {
+      padding: 12px;
+    }
+
+    .project-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .project-meta {
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* アラート */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .alert-success {
+      background: #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .alert-error {
+      background: #ffcdd2;
+      color: #c62828;
+    }
+
+    .alert-info {
+      background: #bbdefb;
+      color: #1565c0;
+    }
+
+    /* 空の状態 */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .tabs {
+        flex-wrap: wrap;
+      }
+
+      .tab-btn {
+        flex: 1;
+        min-width: 100px;
+        text-align: center;
+      }
+
+      .filter-bar {
+        flex-direction: column;
+      }
+
+      .filter-bar .form-input,
+      .filter-bar .form-select {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ローディング画面 -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- アクセス拒否画面 -->
+  <div class="access-denied" id="accessDenied">
+    <h1>アクセスが拒否されました</h1>
+    <p>この画面にアクセスする権限がありません。</p>
+    <p>管理者または講師としてログインしてください。</p>
+    <p><a href="index.html">← Scratch に戻る</a></p>
+  </div>
+
+  <!-- ヘッダー -->
+  <header class="header" id="header" style="display: none;">
+    <div class="header-title">📚 管理画面</div>
+    <div class="header-user">
+      <div class="header-user-info">
+        <div class="header-user-name" id="headerUserName">-</div>
+        <div class="header-user-role" id="headerUserRole">-</div>
+      </div>
+      <button class="header-btn" onclick="location.href='index.html'">Scratchに戻る</button>
+      <button class="header-btn" onclick="AdminPanel.logout()">ログアウト</button>
+    </div>
+  </header>
+
+  <!-- メインコンテナ -->
+  <div class="container" id="mainContainer">
+    <!-- タブナビゲーション -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="dashboard">ダッシュボード</button>
+      <button class="tab-btn" data-tab="users">ユーザー管理</button>
+      <button class="tab-btn" data-tab="classrooms">教室管理</button>
+      <button class="tab-btn" data-tab="projects">プロジェクト管理</button>
+    </div>
+
+    <!-- ダッシュボード -->
+    <div class="tab-content active" id="tab-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statUsers">0</div>
+          <div class="stat-label">総ユーザー数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statClassrooms">0</div>
+          <div class="stat-label">教室数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statProjects">0</div>
+          <div class="stat-label">プロジェクト数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statSubmitted">0</div>
+          <div class="stat-label">提出済み</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">最近のアクティビティ</h2>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>日時</th>
+                  <th>ユーザー</th>
+                  <th>アクション</th>
+                  <th>詳細</th>
+                </tr>
+              </thead>
+              <tbody id="activityTable">
+                <tr>
+                  <td colspan="4" class="empty-state">最近のアクティビティはありません</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ユーザー管理 -->
+    <div class="tab-content" id="tab-users">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">ユーザー一覧</h2>
+          <button class="btn btn-primary" onclick="AdminPanel.showCreateUserModal()" id="btnCreateUser">
+            + 新規ユーザー
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select class="form-select" id="filterUserRole" onchange="AdminPanel.filterUsers()">
+              <option value="">すべてのロール</option>
+              <option value="admin">管理者</option>
+              <option value="teacher">講師</option>
+              <option value="student">生徒</option>
+            </select>
+            <select class="form-select" id="filterUserClassroom" onchange="AdminPanel.filterUsers()">
+              <option value="">すべての教室</option>
+            </select>
+            <input type="text" class="form-input" id="filterUserSearch" placeholder="名前で検索..." oninput="AdminPanel.filterUsers()">
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ユーザーID</th>
+                  <th>表示名</th>
+                  <th>ロール</th>
+                  <th>教室</th>
+                  <th>最終ログイン</th>
+                  <th>保存回数</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="usersTable">
+                <tr>
+                  <td colspan="7" class="empty-state">ユーザーがいません</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 教室管理 -->
+    <div class="tab-content" id="tab-classrooms">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">教室一覧</h2>
+          <button class="btn btn-primary" onclick="AdminPanel.showCreateClassroomModal()" id="btnCreateClassroom">
+            + 新規教室
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>教室名</th>
+                  <th>担当講師</th>
+                  <th>生徒数</th>
+                  <th>プロジェクト数</th>
+                  <th>作成日</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="classroomsTable">
+                <tr>
+                  <td colspan="6" class="empty-state">教室がありません</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- プロジェクト管理 -->
+    <div class="tab-content" id="tab-projects">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">プロジェクト一覧</h2>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <select class="form-select" id="filterProjectClassroom" onchange="AdminPanel.filterProjects()">
+              <option value="">すべての教室</option>
+            </select>
+            <select class="form-select" id="filterProjectUser" onchange="AdminPanel.filterProjects()">
+              <option value="">すべてのユーザー</option>
+            </select>
+            <select class="form-select" id="filterProjectStatus" onchange="AdminPanel.filterProjects()">
+              <option value="">すべての状態</option>
+              <option value="submitted">提出済み</option>
+              <option value="not-submitted">未提出</option>
+            </select>
+            <input type="text" class="form-input" id="filterProjectSearch" placeholder="プロジェクト名で検索..." oninput="AdminPanel.filterProjects()">
+          </div>
+          <div class="project-grid" id="projectsGrid">
+            <div class="empty-state">プロジェクトがありません</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ユーザー作成モーダル -->
+  <div class="modal-overlay" id="createUserModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">新規ユーザー作成</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('createUserModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">ユーザーID（ログイン用）</label>
+          <input type="text" class="form-input" id="newUserId" placeholder="例: tanaka123">
+        </div>
+        <div class="form-group">
+          <label class="form-label">表示名</label>
+          <input type="text" class="form-input" id="newUserDisplayName" placeholder="例: 田中太郎">
+        </div>
+        <div class="form-group">
+          <label class="form-label">初期パスワード</label>
+          <input type="text" class="form-input" id="newUserPassword" placeholder="6文字以上">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ロール</label>
+          <select class="form-select" id="newUserRole" onchange="AdminPanel.onNewUserRoleChange()">
+            <option value="student">生徒</option>
+            <option value="teacher">講師</option>
+            <option value="admin">管理者</option>
+          </select>
+        </div>
+        <div class="form-group" id="newUserClassroomGroup">
+          <label class="form-label">教室</label>
+          <select class="form-select" id="newUserClassroom">
+            <option value="">教室を選択...</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('createUserModal')">キャンセル</button>
+        <button class="btn btn-primary" onclick="AdminPanel.createUser()">作成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ユーザー編集モーダル -->
+  <div class="modal-overlay" id="editUserModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">ユーザー編集</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('editUserModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">ユーザーID</label>
+          <input type="text" class="form-input" id="editUserId" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">表示名</label>
+          <input type="text" class="form-input" id="editUserDisplayName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ロール</label>
+          <select class="form-select" id="editUserRole" onchange="AdminPanel.onEditUserRoleChange()">
+            <option value="student">生徒</option>
+            <option value="teacher">講師</option>
+            <option value="admin">管理者</option>
+          </select>
+        </div>
+        <div class="form-group" id="editUserClassroomGroup">
+          <label class="form-label">教室</label>
+          <select class="form-select" id="editUserClassroom">
+            <option value="">教室を選択...</option>
+          </select>
+        </div>
+        <input type="hidden" id="editUserUid">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editUserModal')">キャンセル</button>
+        <button class="btn btn-primary" onclick="AdminPanel.updateUser()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- パスワードリセットモーダル -->
+  <div class="modal-overlay" id="resetPasswordModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">パスワードリセット</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('resetPasswordModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 16px;">ユーザー「<span id="resetPasswordUserName"></span>」のパスワードをリセットします。</p>
+        <div class="form-group">
+          <label class="form-label">新しいパスワード</label>
+          <input type="text" class="form-input" id="newPassword" placeholder="6文字以上">
+        </div>
+        <input type="hidden" id="resetPasswordUid">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('resetPasswordModal')">キャンセル</button>
+        <button class="btn btn-primary" onclick="AdminPanel.resetPassword()">リセット</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 教室作成モーダル -->
+  <div class="modal-overlay" id="createClassroomModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">新規教室作成</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('createClassroomModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">教室名</label>
+          <input type="text" class="form-input" id="newClassroomName" placeholder="例: 教室A">
+        </div>
+        <div class="form-group">
+          <label class="form-label">担当講師</label>
+          <select class="form-select" id="newClassroomTeacher">
+            <option value="">講師を選択...</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('createClassroomModal')">キャンセル</button>
+        <button class="btn btn-primary" onclick="AdminPanel.createClassroom()">作成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 教室編集モーダル -->
+  <div class="modal-overlay" id="editClassroomModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">教室編集</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('editClassroomModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">教室名</label>
+          <input type="text" class="form-input" id="editClassroomName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">担当講師</label>
+          <select class="form-select" id="editClassroomTeacher">
+            <option value="">講師を選択...</option>
+          </select>
+        </div>
+        <input type="hidden" id="editClassroomId">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editClassroomModal')">キャンセル</button>
+        <button class="btn btn-primary" onclick="AdminPanel.updateClassroom()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- プロジェクト詳細モーダル -->
+  <div class="modal-overlay" id="projectDetailModal">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 class="modal-title">プロジェクト詳細</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('projectDetailModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="projectDetailContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('projectDetailModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 削除確認モーダル -->
+  <div class="modal-overlay" id="confirmDeleteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">削除確認</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('confirmDeleteModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmDeleteMessage">本当に削除しますか？</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('confirmDeleteModal')">キャンセル</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn">削除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
