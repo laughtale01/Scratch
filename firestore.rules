@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // ヘルパー関数
+    // ==========================================
+
+    // 認証済みユーザーか確認
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 現在のユーザーのデータを取得
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // 管理者か確認
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+
+    // 講師か確認
+    function isTeacher() {
+      return isAuthenticated() && getUserData().role == 'teacher';
+    }
+
+    // 管理者または講師か確認
+    function isAdminOrTeacher() {
+      return isAdmin() || isTeacher();
+    }
+
+    // 同じ教室か確認
+    function isSameClassroom(classroomId) {
+      return getUserData().classroomId == classroomId;
+    }
+
+    // ==========================================
+    // ユーザーコレクション
+    // ==========================================
+    match /users/{userId} {
+      // 読み取り:
+      // - 管理者: 全員OK
+      // - 講師: 自分の教室のユーザーのみ
+      // - 生徒: 自分自身のみ
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && (
+          resource.data.classroomId == getUserData().classroomId ||
+          userId == request.auth.uid
+        )) ||
+        userId == request.auth.uid
+      );
+
+      // 作成: Cloud Functions経由のみ（直接作成不可）
+      allow create: if false;
+
+      // 更新:
+      // - 管理者: 全員OK
+      // - 講師: 自教室の生徒の表示名のみ変更可能
+      // - 生徒: 自分の特定フィールドのみ
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() &&
+          resource.data.classroomId == getUserData().classroomId &&
+          resource.data.role == 'student' &&
+          // ロールと教室IDの変更は禁止
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.classroomId == resource.data.classroomId
+        ) ||
+        (userId == request.auth.uid &&
+          // 自分自身は特定フィールドのみ更新可能
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.classroomId == resource.data.classroomId
+        )
+      );
+
+      // 削除: Cloud Functions経由のみ
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // 教室コレクション
+    // ==========================================
+    match /classrooms/{classroomId} {
+      // 読み取り:
+      // - 管理者: 全て
+      // - 講師: 自分の教室のみ
+      // - 生徒: 自分の教室のみ
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isSameClassroom(classroomId)
+      );
+
+      // 作成・更新・削除: 管理者のみ
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ==========================================
+    // プロジェクトコレクション
+    // ==========================================
+    match /projects/{projectId} {
+      // 読み取り:
+      // - 管理者: 全て
+      // - 講師: 自教室のプロジェクト
+      // - 生徒: 自分のプロジェクト
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && resource.data.classroomId == getUserData().classroomId) ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // 作成: 認証済みユーザー（自分のプロジェクトのみ）
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // 更新:
+      // - 管理者: 全て
+      // - 講師: 自教室のプロジェクト
+      // - 生徒: 自分のプロジェクト
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && resource.data.classroomId == getUserData().classroomId) ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // 削除: 管理者または講師（自教室）
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && resource.data.classroomId == getUserData().classroomId)
+      );
+
+      // バージョンサブコレクション
+      match /versions/{versionId} {
+        allow read: if isAuthenticated() && (
+          isAdmin() ||
+          (isTeacher() && get(/databases/$(database)/documents/projects/$(projectId)).data.classroomId == getUserData().classroomId) ||
+          get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid
+        );
+
+        allow create: if isAuthenticated() &&
+          get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ==========================================
+    // アクティビティログ（将来用）
+    // ==========================================
+    match /activities/{activityId} {
+      allow read: if isAdminOrTeacher();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+  }
+}

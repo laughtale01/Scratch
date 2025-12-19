@@ -155,13 +155,30 @@ class AdminPanel {
    */
   static adjustUIForRole() {
     const isAdmin = this.currentUserData.role === 'admin';
+    const isTeacher = this.currentUserData.role === 'teacher';
 
-    // 管理者のみがユーザー作成・教室作成可能
-    if (!isAdmin) {
-      const createUserBtn = document.getElementById('btnCreateUser');
+    // 講師はユーザー作成可能（生徒のみ）、教室作成は不可
+    const createUserBtn = document.getElementById('btnCreateUser');
+    const createClassroomBtn = document.getElementById('btnCreateClassroom');
+
+    if (isAdmin) {
+      // 管理者は全て可能
+      if (createUserBtn) createUserBtn.style.display = '';
+      if (createClassroomBtn) createClassroomBtn.style.display = '';
+    } else if (isTeacher) {
+      // 講師は生徒作成のみ可能
+      if (createUserBtn) {
+        createUserBtn.style.display = '';
+        createUserBtn.textContent = '+ 新規生徒';
+      }
+      if (createClassroomBtn) createClassroomBtn.style.display = 'none';
+
+      // 教室管理タブを非表示（講師は自分の教室のみなので管理不要）
+      const classroomsTab = document.querySelector('[data-tab="classrooms"]');
+      if (classroomsTab) classroomsTab.style.display = 'none';
+    } else {
+      // その他は全て非表示
       if (createUserBtn) createUserBtn.style.display = 'none';
-
-      const createClassroomBtn = document.getElementById('btnCreateClassroom');
       if (createClassroomBtn) createClassroomBtn.style.display = 'none';
     }
   }
@@ -190,20 +207,46 @@ class AdminPanel {
    */
   static async loadUsers() {
     try {
+      const isAdmin = this.currentUserData.role === 'admin';
+      const isTeacher = this.currentUserData.role === 'teacher';
+      const myClassroomId = this.currentUserData.classroomId;
+
       let query = db.collection('users');
 
-      // 講師は自分の教室のユーザーのみ表示
-      // ただし、全ユーザーの閲覧は許可（仕様書より）
+      // 講師は自分の教室のユーザーのみ取得
+      if (isTeacher && myClassroomId) {
+        query = query.where('classroomId', '==', myClassroomId);
+      }
 
       const snapshot = await query.orderBy('displayName').get();
       this.users = [];
 
       snapshot.forEach(doc => {
-        this.users.push({
-          id: doc.id,
-          ...doc.data()
-        });
+        const userData = doc.data();
+        // 講師は自分自身も表示（classroomIdがnullの講師も含む）
+        if (isTeacher && doc.id === this.currentUser.uid) {
+          this.users.push({
+            id: doc.id,
+            ...userData
+          });
+        } else if (!isTeacher || userData.classroomId === myClassroomId) {
+          this.users.push({
+            id: doc.id,
+            ...userData
+          });
+        }
       });
+
+      // 講師の場合、自分自身を追加（既に含まれていない場合）
+      if (isTeacher) {
+        const selfExists = this.users.some(u => u.id === this.currentUser.uid);
+        if (!selfExists) {
+          this.users.unshift({
+            id: this.currentUser.uid,
+            ...this.currentUserData
+          });
+        }
+      }
 
       console.log('AdminPanel: ユーザー読み込み完了', this.users.length);
       this.renderUsersTable();
@@ -218,14 +261,27 @@ class AdminPanel {
    */
   static async loadClassrooms() {
     try {
+      const isTeacher = this.currentUserData.role === 'teacher';
+      const myClassroomId = this.currentUserData.classroomId;
+
       const snapshot = await db.collection('classrooms').orderBy('name').get();
       this.classrooms = [];
 
       snapshot.forEach(doc => {
-        this.classrooms.push({
-          id: doc.id,
-          ...doc.data()
-        });
+        // 講師は自分の教室のみ
+        if (isTeacher && myClassroomId) {
+          if (doc.id === myClassroomId) {
+            this.classrooms.push({
+              id: doc.id,
+              ...doc.data()
+            });
+          }
+        } else {
+          this.classrooms.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        }
       });
 
       console.log('AdminPanel: 教室読み込み完了', this.classrooms.length);
@@ -241,7 +297,17 @@ class AdminPanel {
    */
   static async loadProjects() {
     try {
-      const snapshot = await db.collection('projects').orderBy('updatedAt', 'desc').get();
+      const isTeacher = this.currentUserData.role === 'teacher';
+      const myClassroomId = this.currentUserData.classroomId;
+
+      let query = db.collection('projects');
+
+      // 講師は自分の教室のプロジェクトのみ
+      if (isTeacher && myClassroomId) {
+        query = query.where('classroomId', '==', myClassroomId);
+      }
+
+      const snapshot = await query.orderBy('updatedAt', 'desc').get();
       this.projects = [];
 
       snapshot.forEach(doc => {
@@ -324,9 +390,16 @@ class AdminPanel {
 
       // 編集・削除ボタンの表示制御
       const isAdmin = this.currentUserData.role === 'admin';
-      const canEdit = isAdmin || (this.currentUserData.role === 'teacher' && user.classroomId === this.currentUserData.classroomId);
-      const canDelete = isAdmin && user.id !== this.currentUser.uid;
-      const canResetPassword = isAdmin || (this.currentUserData.role === 'teacher' && user.classroomId === this.currentUserData.classroomId);
+      const isTeacher = this.currentUserData.role === 'teacher';
+      const isSameClassroom = user.classroomId === this.currentUserData.classroomId;
+      const isStudentInMyClassroom = isTeacher && isSameClassroom && user.role === 'student';
+
+      // 編集: 管理者は全員、講師は自教室の生徒のみ
+      const canEdit = isAdmin || isStudentInMyClassroom;
+      // 削除: 管理者は全員（自分以外）、講師は自教室の生徒のみ
+      const canDelete = (isAdmin && user.id !== this.currentUser.uid) || isStudentInMyClassroom;
+      // パスワードリセット: 管理者は全員、講師は自教室の生徒のみ
+      const canResetPassword = isAdmin || isStudentInMyClassroom;
 
       return `
         <tr>
@@ -508,12 +581,32 @@ class AdminPanel {
    * ユーザー作成モーダルを表示
    */
   static showCreateUserModal() {
+    const isTeacher = this.currentUserData.role === 'teacher';
+    const myClassroomId = this.currentUserData.classroomId;
+
     document.getElementById('newUserId').value = '';
     document.getElementById('newUserDisplayName').value = '';
     document.getElementById('newUserPassword').value = '';
-    document.getElementById('newUserRole').value = 'student';
-    document.getElementById('newUserClassroom').value = '';
-    document.getElementById('newUserClassroomGroup').style.display = 'block';
+
+    const roleSelect = document.getElementById('newUserRole');
+    const classroomSelect = document.getElementById('newUserClassroom');
+    const classroomGroup = document.getElementById('newUserClassroomGroup');
+
+    if (isTeacher) {
+      // 講師は生徒のみ作成可能
+      roleSelect.value = 'student';
+      roleSelect.disabled = true;
+
+      // 教室は自動的に自分の教室を選択
+      classroomSelect.value = myClassroomId;
+      classroomGroup.style.display = 'none'; // 教室選択を非表示
+    } else {
+      // 管理者は全て選択可能
+      roleSelect.value = 'student';
+      roleSelect.disabled = false;
+      classroomSelect.value = '';
+      classroomGroup.style.display = 'block';
+    }
 
     this.showModal('createUserModal');
   }
@@ -531,11 +624,16 @@ class AdminPanel {
    * ユーザー作成
    */
   static async createUser() {
+    const isTeacher = this.currentUserData.role === 'teacher';
+    const myClassroomId = this.currentUserData.classroomId;
+
     const userId = document.getElementById('newUserId').value.trim();
     const displayName = document.getElementById('newUserDisplayName').value.trim();
     const password = document.getElementById('newUserPassword').value;
-    const role = document.getElementById('newUserRole').value;
-    const classroomId = document.getElementById('newUserClassroom').value;
+
+    // 講師の場合は強制的に生徒・自教室
+    const role = isTeacher ? 'student' : document.getElementById('newUserRole').value;
+    const classroomId = isTeacher ? myClassroomId : document.getElementById('newUserClassroom').value;
 
     // バリデーション
     if (!userId) {
@@ -595,15 +693,26 @@ class AdminPanel {
     const user = this.users.find(u => u.id === userId);
     if (!user) return;
 
+    const isTeacher = this.currentUserData.role === 'teacher';
+
     document.getElementById('editUserUid').value = userId;
     document.getElementById('editUserId').value = user.email?.replace('@laughtale.local', '') || '';
     document.getElementById('editUserDisplayName').value = user.displayName || '';
     document.getElementById('editUserRole').value = user.role || 'student';
     document.getElementById('editUserClassroom').value = user.classroomId || '';
 
-    const role = user.role;
-    document.getElementById('editUserClassroomGroup').style.display =
-      role === 'admin' ? 'none' : 'block';
+    const roleSelect = document.getElementById('editUserRole');
+    const classroomGroup = document.getElementById('editUserClassroomGroup');
+
+    if (isTeacher) {
+      // 講師はロール・教室変更不可（表示名のみ変更可能）
+      roleSelect.disabled = true;
+      classroomGroup.style.display = 'none';
+    } else {
+      // 管理者は全て編集可能
+      roleSelect.disabled = false;
+      classroomGroup.style.display = user.role === 'admin' ? 'none' : 'block';
+    }
 
     this.showModal('editUserModal');
   }
@@ -621,15 +730,20 @@ class AdminPanel {
    * ユーザー更新
    */
   static async updateUser() {
+    const isTeacher = this.currentUserData.role === 'teacher';
+
     const userId = document.getElementById('editUserUid').value;
     const displayName = document.getElementById('editUserDisplayName').value.trim();
-    const role = document.getElementById('editUserRole').value;
-    const classroomId = document.getElementById('editUserClassroom').value;
 
     if (!displayName) {
       alert('表示名を入力してください');
       return;
     }
+
+    // 講師はロール・教室の変更不可
+    const user = this.users.find(u => u.id === userId);
+    const role = isTeacher ? user.role : document.getElementById('editUserRole').value;
+    const classroomId = isTeacher ? user.classroomId : document.getElementById('editUserClassroom').value;
 
     if (role !== 'admin' && !classroomId) {
       alert('教室を選択してください');

@@ -2269,6 +2269,24 @@
         document.getElementById('drawerAvatar').textContent = initial;
       };
 
+      // 講師用UI調整をオーバーライド
+      const originalAdjustUIForRole = AdminPanel.adjustUIForRole;
+      AdminPanel.adjustUIForRole = function() {
+        if (originalAdjustUIForRole) originalAdjustUIForRole.call(this);
+
+        const isTeacher = this.currentUserData.role === 'teacher';
+
+        if (isTeacher) {
+          // 講師は教室タブを非表示
+          const classroomsNavItem = document.querySelector('.nav-item[data-tab="classrooms"]');
+          if (classroomsNavItem) classroomsNavItem.style.display = 'none';
+
+          // ユーザー作成ボタンを「新規生徒」に変更
+          const createUserBtn = document.getElementById('btnCreateUser');
+          if (createUserBtn) createUserBtn.textContent = '+ 新規生徒';
+        }
+      };
+
       // ユーザーリスト表示をカード形式に
       const originalRenderUsers = AdminPanel.renderUsers;
       AdminPanel.renderUsers = function() {
@@ -2291,18 +2309,28 @@
         const roleLabels = { admin: '管理者', teacher: '講師', student: '生徒' };
         const badgeClasses = { admin: 'badge-admin', teacher: 'badge-teacher', student: 'badge-student' };
 
-        container.innerHTML = users.map(user => `
-          <div class="list-item" onclick="AdminPanel.showEditUserModal('${user.uid}')">
-            <div class="list-item-avatar">${(user.displayName || 'U').charAt(0).toUpperCase()}</div>
-            <div class="list-item-content">
-              <div class="list-item-title">${user.displayName || user.userId}</div>
-              <div class="list-item-subtitle">
-                <span class="badge ${badgeClasses[user.role] || ''}">${roleLabels[user.role] || user.role}</span>
+        const isAdmin = this.currentUserData.role === 'admin';
+        const isTeacher = this.currentUserData.role === 'teacher';
+        const myClassroomId = this.currentUserData.classroomId;
+
+        container.innerHTML = users.map(user => {
+          // 講師は自教室の生徒のみ編集可能
+          const canEdit = isAdmin || (isTeacher && user.classroomId === myClassroomId && user.role === 'student');
+          const userId = user.uid || user.id;
+
+          return `
+            <div class="list-item" ${canEdit ? `onclick="AdminPanel.showEditUserModal('${userId}')"` : ''} style="${canEdit ? '' : 'opacity: 0.7;'}">
+              <div class="list-item-avatar">${(user.displayName || 'U').charAt(0).toUpperCase()}</div>
+              <div class="list-item-content">
+                <div class="list-item-title">${user.displayName || user.userId}</div>
+                <div class="list-item-subtitle">
+                  <span class="badge ${badgeClasses[user.role] || ''}">${roleLabels[user.role] || user.role}</span>
+                </div>
               </div>
+              ${canEdit ? '<div class="list-item-action">›</div>' : ''}
             </div>
-            <div class="list-item-action">›</div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       };
 
       // 教室リスト表示をカード形式に
