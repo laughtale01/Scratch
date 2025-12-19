@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="google" value="notranslate">
+  <link rel="shortcut icon" href="static/favicon.ico">
+  <title>管理画面 - Scratch Education</title>
+  <!-- Google Fonts - Minecraft風フォント -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+  <style>
+    /* =====================================================
+       MINECRAFT MOBILE THEME
+       ===================================================== */
+    :root {
+      /* Minecraft カラーパレット */
+      --mc-void: #0c0c0f;
+      --mc-deepslate: #1a1a1f;
+      --mc-stone: #28282f;
+      --mc-cobblestone: #36363f;
+      --mc-gravel: #45454f;
+
+      --mc-oak-dark: #8b5a2b;
+      --mc-oak: #b8945f;
+      --mc-oak-light: #d4b896;
+      --mc-oak-plank: #bc9862;
+
+      --mc-dark-oak: #3d2813;
+      --mc-dark-oak-light: #533a1f;
+
+      --mc-grass: #5d8c3e;
+      --mc-grass-light: #7bc74d;
+      --mc-grass-bright: #8bd35c;
+
+      --mc-diamond: #4aedd9;
+      --mc-diamond-dark: #2cb5a8;
+      --mc-emerald: #17dd62;
+      --mc-emerald-dark: #0d9e45;
+      --mc-gold: #fcdb05;
+      --mc-gold-dark: #c6a503;
+      --mc-redstone: #ff1a1a;
+      --mc-redstone-dark: #aa0f01;
+      --mc-amethyst: #9b5bff;
+
+      --mc-ender: #14141e;
+      --mc-ender-eye: #8932b8;
+      --mc-ender-particle: #cc00fa;
+
+      --mc-text-white: #ffffff;
+      --mc-text-light: #e8e8e8;
+      --mc-text-gray: #aaaaaa;
+      --mc-text-dark: #555555;
+      --mc-text-shadow: #3f3f3f;
+
+      --mc-slot-bg: rgba(139, 139, 139, 0.25);
+      --mc-slot-border: #373737;
+      --mc-button-top: #a0a0a0;
+      --mc-button-bottom: #505050;
+
+      --pixel: 2px;
+      --pixel-2: 4px;
+      --pixel-3: 6px;
+
+      /* モバイル用 */
+      --header-height: 60px;
+      --bottom-nav-height: 70px;
+      --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* =====================================================
+       ベーススタイル
+       ===================================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      height: 100%;
+    }
+
+    body {
+      font-family: 'VT323', 'Noto Sans JP', monospace;
+      background: var(--mc-void);
+      color: var(--mc-text-white);
+      min-height: 100%;
+      line-height: 1.5;
+      overflow-x: hidden;
+      letter-spacing: 0.5px;
+      padding-bottom: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+    }
+
+    /* 背景テクスチャ */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent 0px,
+          transparent 4px,
+          rgba(0, 0, 0, 0.03) 4px,
+          rgba(0, 0, 0, 0.03) 8px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0px,
+          transparent 4px,
+          rgba(0, 0, 0, 0.03) 4px,
+          rgba(0, 0, 0, 0.03) 8px
+        ),
+        linear-gradient(180deg, var(--mc-deepslate) 0%, var(--mc-void) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* パーティクル */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image:
+        radial-gradient(circle at 20% 30%, var(--mc-ender-particle) 0px, transparent 1px),
+        radial-gradient(circle at 80% 20%, var(--mc-amethyst) 0px, transparent 1px),
+        radial-gradient(circle at 60% 80%, var(--mc-diamond) 0px, transparent 1px);
+      background-size: 200px 200px;
+      opacity: 0.25;
+      animation: particle-float 15s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes particle-float {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+      100% { transform: translateY(0); }
+    }
+
+    ::selection {
+      background: var(--mc-diamond);
+      color: var(--mc-void);
+    }
+
+    /* =====================================================
+       ローディング画面
+       ===================================================== */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--mc-ender);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      gap: 32px;
+    }
+
+    .loading-screen::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, rgba(137, 50, 184, 0.3) 0%, transparent 70%);
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0.5s;
+    }
+
+    .loading-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .loading-logo-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(180deg, var(--mc-grass-light) 0%, var(--mc-grass) 50%, var(--mc-oak-dark) 50%, var(--mc-oak-dark) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #ffffff40 #00000040 #00000040 #ffffff40;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      padding-bottom: 8px;
+      font-size: 40px;
+      box-shadow: 0 0 40px rgba(123, 199, 77, 0.5);
+      animation: block-bob 2s ease-in-out infinite;
+    }
+
+    @keyframes block-bob {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-8px) rotate(3deg); }
+    }
+
+    .loading-bar-container {
+      width: 200px;
+      height: 8px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel) solid var(--mc-slot-border);
+      overflow: hidden;
+    }
+
+    .loading-bar {
+      height: 100%;
+      background: linear-gradient(180deg, var(--mc-grass-bright) 0%, var(--mc-grass) 100%);
+      box-shadow: 0 0 8px var(--mc-grass-light);
+      animation: xp-fill 2s ease-in-out infinite;
+    }
+
+    @keyframes xp-fill {
+      0% { width: 0%; }
+      50% { width: 100%; }
+      100% { width: 0%; }
+    }
+
+    .loading-text {
+      font-family: 'Press Start 2P', cursive;
+      color: var(--mc-text-gray);
+      font-size: 8px;
+      letter-spacing: 1px;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .spinner { display: none; }
+
+    /* =====================================================
+       アクセス拒否画面
+       ===================================================== */
+    .access-denied {
+      display: none;
+      min-height: 100vh;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .access-denied.show {
+      display: flex;
+    }
+
+    .access-denied-card {
+      background: linear-gradient(180deg, var(--mc-cobblestone) 0%, var(--mc-stone) 100%);
+      border: var(--pixel-3) solid;
+      border-color: #666666 #333333 #333333 #666666;
+      padding: 32px 24px;
+      text-align: center;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .access-denied-icon {
+      width: 72px;
+      height: 72px;
+      background: repeating-linear-gradient(45deg, var(--mc-redstone) 0px, var(--mc-redstone) 8px, var(--mc-redstone-dark) 8px, var(--mc-redstone-dark) 16px);
+      border: var(--pixel-2) solid var(--mc-slot-border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 20px;
+      font-size: 36px;
+    }
+
+    .access-denied h1 {
+      font-family: 'Press Start 2P', cursive;
+      color: var(--mc-redstone);
+      font-size: 12px;
+      margin-bottom: 16px;
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      line-height: 1.6;
+    }
+
+    .access-denied p {
+      color: var(--mc-text-light);
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .access-denied a {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 14px 28px;
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
+      color: var(--mc-text-white);
+      text-decoration: none;
+      font-size: 16px;
+      text-shadow: var(--pixel) var(--pixel) 0 var(--mc-text-shadow);
+    }
+
+    .access-denied a:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
+    }
+
+    /* =====================================================
+       ヘッダー
+       ===================================================== */
+    .mobile-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-height);
+      background: linear-gradient(180deg, var(--mc-dark-oak-light) 0%, var(--mc-dark-oak) 100%);
+      border-bottom: var(--pixel-2) solid #1a0d05;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(180deg, var(--mc-grass-light) 0%, var(--mc-grass) 40%, var(--mc-oak-dark) 40%, var(--mc-oak-dark) 100%);
+      border: var(--pixel) solid;
+      border-color: #ffffff30 #00000030 #00000030 #ffffff30;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      padding-bottom: 2px;
+      font-size: 18px;
+    }
+
+    .header-title {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 10px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(180deg, #4a3728 0%, #2d221a 100%);
+      border: var(--pixel) solid var(--mc-slot-border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    .header-menu-btn {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--mc-text-white);
+    }
+
+    .header-menu-btn:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
+    }
+
+    /* =====================================================
+       メインコンテンツ
+       ===================================================== */
+    .main-content {
+      position: relative;
+      z-index: 1;
+      padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 16px);
+      padding-left: 12px;
+      padding-right: 12px;
+      padding-bottom: 24px;
+    }
+
+    .container {
+      display: none;
+    }
+
+    .container.show {
+      display: block;
+    }
+
+    /* 旧UI互換 */
+    .header { display: none !important; }
+    .tabs { display: none; }
+
+    /* タブコンテンツ */
+    .tab-content {
+      display: none;
+      animation: slide-up 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes slide-up {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+    }
+
+    /* =====================================================
+       ボトムナビゲーション - ホットバー風
+       ===================================================== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+      padding-bottom: var(--safe-area-bottom);
+      background: linear-gradient(180deg, var(--mc-dark-oak-light) 0%, var(--mc-dark-oak) 100%);
+      border-top: var(--pixel-2) solid #1a0d05;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px 4px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      font-family: inherit;
+    }
+
+    .nav-item-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item.active .nav-item-icon {
+      border-color: var(--mc-text-white);
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+      transform: scale(1.1) translateY(-4px);
+    }
+
+    .nav-item-label {
+      font-size: 10px;
+      color: var(--mc-text-gray);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    .nav-item.active .nav-item-label {
+      color: var(--mc-gold);
+    }
+
+    /* =====================================================
+       ページタイトル - 看板風
+       ===================================================== */
+    .page-header {
+      margin-bottom: 20px;
+      padding: 16px;
+      background: linear-gradient(180deg, var(--mc-oak-plank) 0%, var(--mc-oak) 100%);
+      border: var(--pixel-2) solid;
+      border-color: var(--mc-oak-light) var(--mc-oak-dark) var(--mc-oak-dark) var(--mc-oak-light);
+    }
+
+    .page-title {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+      color: var(--mc-dark-oak);
+      text-shadow: var(--pixel) var(--pixel) 0 rgba(255, 255, 255, 0.3);
+      margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--mc-dark-oak-light);
+    }
+
+    /* =====================================================
+       統計カードグリッド
+       ===================================================== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: linear-gradient(180deg, var(--mc-cobblestone) 0%, var(--mc-stone) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #666666 #333333 #333333 #666666;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 8px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 28px;
+    }
+
+    .stat-card:nth-child(1) .stat-icon { box-shadow: inset 0 0 15px rgba(74, 237, 217, 0.3); }
+    .stat-card:nth-child(2) .stat-icon { box-shadow: inset 0 0 15px rgba(139, 92, 246, 0.3); }
+    .stat-card:nth-child(3) .stat-icon { box-shadow: inset 0 0 15px rgba(23, 221, 98, 0.3); }
+    .stat-card:nth-child(4) .stat-icon { box-shadow: inset 0 0 15px rgba(252, 219, 5, 0.3); }
+
+    .stat-value {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 20px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--mc-text-gray);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    /* =====================================================
+       カード
+       ===================================================== */
+    .card {
+      background: linear-gradient(180deg, var(--mc-stone) 0%, var(--mc-deepslate) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #222222 #222222 #555555;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 14px 16px;
+      background: linear-gradient(180deg, var(--mc-oak-plank) 0%, var(--mc-oak) 100%);
+      border-bottom: var(--pixel-2) solid var(--mc-oak-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 16px;
+      color: var(--mc-dark-oak);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-shadow: var(--pixel) var(--pixel) 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .card-title-icon {
+      font-size: 20px;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    /* =====================================================
+       リストアイテム - インベントリスロット風
+       ===================================================== */
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+      margin-bottom: 8px;
+    }
+
+    .list-item:active {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--mc-text-white);
+    }
+
+    .list-item-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(180deg, #4a3728 0%, #2d221a 100%);
+      border: var(--pixel) solid var(--mc-slot-border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--mc-text-white);
+      flex-shrink: 0;
+    }
+
+    .list-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .list-item-title {
+      font-size: 16px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .list-item-subtitle {
+      font-size: 12px;
+      color: var(--mc-text-gray);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    .list-item-action {
+      font-size: 20px;
+      color: var(--mc-text-gray);
+    }
+
+    /* =====================================================
+       ボタン
+       ===================================================== */
+    .btn {
+      padding: 14px 20px;
+      border: var(--pixel-2) solid;
+      cursor: pointer;
+      font-size: 16px;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-shadow: var(--pixel) var(--pixel) 0 rgba(0, 0, 0, 0.5);
+      width: 100%;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, var(--mc-grass-bright) 0%, var(--mc-grass) 100%);
+      border-color: var(--mc-grass-light) var(--mc-grass) var(--mc-grass) var(--mc-grass-light);
+      color: var(--mc-text-white);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
+      color: var(--mc-text-white);
+    }
+
+    .btn-secondary:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
+    }
+
+    .btn-danger {
+      background: linear-gradient(180deg, var(--mc-redstone) 0%, var(--mc-redstone-dark) 100%);
+      border-color: #ff6666 #880000 #880000 #ff6666;
+      color: var(--mc-text-white);
+    }
+
+    .btn-sm {
+      padding: 10px 14px;
+      font-size: 14px;
+      width: auto;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-group .btn {
+      flex: 1;
+    }
+
+    /* =====================================================
+       バッジ
+       ===================================================== */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      border: var(--pixel) solid;
+    }
+
+    .badge-admin {
+      background: linear-gradient(180deg, var(--mc-gold) 0%, var(--mc-gold-dark) 100%);
+      border-color: #ffe566 #8a7000 #8a7000 #ffe566;
+      color: var(--mc-dark-oak);
+      text-shadow: none;
+    }
+
+    .badge-teacher {
+      background: linear-gradient(180deg, var(--mc-amethyst) 0%, var(--mc-ender-eye) 100%);
+      border-color: #cc99ff #5a2d7a #5a2d7a #cc99ff;
+      color: var(--mc-text-white);
+    }
+
+    .badge-student {
+      background: linear-gradient(180deg, var(--mc-diamond) 0%, var(--mc-diamond-dark) 100%);
+      border-color: #88ffee #1a8a7d #1a8a7d #88ffee;
+      color: var(--mc-void);
+      text-shadow: none;
+    }
+
+    .badge-submitted {
+      background: linear-gradient(180deg, var(--mc-emerald) 0%, var(--mc-emerald-dark) 100%);
+      border-color: #66ff99 #087832 #087832 #66ff99;
+      color: var(--mc-void);
+      text-shadow: none;
+    }
+
+    .badge-not-submitted {
+      background: linear-gradient(180deg, var(--mc-gravel) 0%, var(--mc-stone) 100%);
+      border-color: #888888 #333333 #333333 #888888;
+      color: var(--mc-text-gray);
+    }
+
+    /* =====================================================
+       フォーム
+       ===================================================== */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--mc-text-white);
+      background: var(--mc-void);
+      border: var(--pixel-2) solid;
+      border-color: #333333 #666666 #666666 #333333;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--mc-diamond);
+    }
+
+    .form-input::placeholder {
+      color: var(--mc-text-dark);
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--mc-text-white);
+      background: var(--mc-void);
+      border: var(--pixel-2) solid;
+      border-color: #333333 #666666 #666666 #333333;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23aaaaaa' stroke-linecap='square' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 20px;
+    }
+
+    .form-select:focus {
+      outline: none;
+      border-color: var(--mc-diamond);
+    }
+
+    /* フィルターバー */
+    .filter-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+    }
+
+    /* =====================================================
+       モーダル - フルスクリーン
+       ===================================================== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 200;
+      overflow-y: auto;
+      padding: 16px;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    }
+
+    .modal-overlay.show {
+      display: block;
+      animation: fade-in 0.2s ease;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+    }
+
+    .modal {
+      background: linear-gradient(180deg, var(--mc-cobblestone) 0%, var(--mc-stone) 100%);
+      border: var(--pixel-3) solid;
+      border-color: #666666 #333333 #333333 #666666;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      animation: slide-up 0.3s ease;
+    }
+
+    .modal-header {
+      padding: 16px;
+      background: linear-gradient(180deg, var(--mc-oak-plank) 0%, var(--mc-oak) 100%);
+      border-bottom: var(--pixel-2) solid var(--mc-oak-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      color: var(--mc-dark-oak);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-shadow: var(--pixel) var(--pixel) 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--mc-text-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
+    }
+
+    .modal-body {
+      padding: 16px;
+    }
+
+    .modal-footer {
+      padding: 16px;
+      background: linear-gradient(180deg, var(--mc-gravel) 0%, var(--mc-cobblestone) 100%);
+      border-top: var(--pixel-2) solid #555555;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* =====================================================
+       プロジェクトグリッド
+       ===================================================== */
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .project-card {
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+      overflow: hidden;
+    }
+
+    .project-card:active {
+      border-color: var(--mc-gold);
+    }
+
+    .project-thumbnail {
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(135deg, var(--mc-stone) 25%, var(--mc-cobblestone) 75%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      overflow: hidden;
+    }
+
+    .project-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .project-info {
+      padding: 10px;
+      background: linear-gradient(180deg, var(--mc-deepslate) 0%, var(--mc-void) 100%);
+    }
+
+    .project-name {
+      font-size: 14px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .project-meta {
+      font-size: 11px;
+      color: var(--mc-text-gray);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    /* =====================================================
+       空の状態
+       ===================================================== */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+
+    .empty-state-text {
+      font-size: 14px;
+      color: var(--mc-text-gray);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    /* =====================================================
+       アラート
+       ===================================================== */
+    .alert {
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      border: var(--pixel-2) solid;
+    }
+
+    .alert-success {
+      background: linear-gradient(180deg, rgba(23, 221, 98, 0.2) 0%, rgba(13, 158, 69, 0.2) 100%);
+      border-color: var(--mc-emerald-dark);
+      color: var(--mc-emerald);
+    }
+
+    .alert-error {
+      background: linear-gradient(180deg, rgba(255, 26, 26, 0.2) 0%, rgba(170, 15, 1, 0.2) 100%);
+      border-color: var(--mc-redstone-dark);
+      color: var(--mc-redstone);
+    }
+
+    .alert-info {
+      background: linear-gradient(180deg, rgba(74, 237, 217, 0.2) 0%, rgba(44, 181, 168, 0.2) 100%);
+      border-color: var(--mc-diamond-dark);
+      color: var(--mc-diamond);
+    }
+
+    /* =====================================================
+       ドロワーメニュー
+       ===================================================== */
+    .drawer-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 150;
+    }
+
+    .drawer-overlay.show {
+      display: block;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -280px;
+      width: 280px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--mc-dark-oak-light) 0%, var(--mc-dark-oak) 100%);
+      border-left: var(--pixel-2) solid #1a0d05;
+      z-index: 151;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      padding: 20px 16px;
+      border-bottom: var(--pixel-2) solid rgba(0, 0, 0, 0.3);
+    }
+
+    .drawer-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .drawer-avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(180deg, #4a3728 0%, #2d221a 100%);
+      border: var(--pixel) solid var(--mc-slot-border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--mc-text-white);
+    }
+
+    .drawer-user-info {
+      flex: 1;
+    }
+
+    .drawer-user-name {
+      font-size: 16px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    .drawer-user-role {
+      font-size: 13px;
+      color: var(--mc-gold);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    .drawer-menu {
+      flex: 1;
+      padding: 16px;
+    }
+
+    .drawer-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+      margin-bottom: 8px;
+      font-size: 16px;
+      color: var(--mc-text-light);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      cursor: pointer;
+      width: 100%;
+      font-family: inherit;
+    }
+
+    .drawer-menu-item:active {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--mc-text-white);
+    }
+
+    .drawer-menu-icon {
+      font-size: 20px;
+    }
+
+    .drawer-footer {
+      padding: 16px;
+      border-top: var(--pixel-2) solid rgba(0, 0, 0, 0.3);
+    }
+
+    /* =====================================================
+       テーブル（横スクロール）
+       ===================================================== */
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: rgba(0, 0, 0, 0.2);
+      border: var(--pixel-2) solid;
+      border-color: #333333 #666666 #666666 #333333;
+    }
+
+    table {
+      width: 100%;
+      min-width: 600px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background: linear-gradient(180deg, var(--mc-cobblestone) 0%, var(--mc-gravel) 100%);
+      font-size: 12px;
+      color: var(--mc-text-white);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: var(--pixel-2) solid var(--mc-slot-border);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    td {
+      font-size: 14px;
+      color: var(--mc-text-light);
+      background: var(--mc-slot-bg);
+      border-bottom: var(--pixel) solid rgba(0, 0, 0, 0.2);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    /* =====================================================
+       スクロールバー
+       ===================================================== */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--mc-void);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--mc-button-bottom);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <!-- ローディング画面 -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-content">
+      <div class="loading-logo-icon">⛏️</div>
+      <div class="loading-bar-container">
+        <div class="loading-bar"></div>
+      </div>
+      <div class="loading-text">Loading...</div>
+    </div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- アクセス拒否画面 -->
+  <div class="access-denied" id="accessDenied">
+    <div class="access-denied-card">
+      <div class="access-denied-icon">🚫</div>
+      <h1>アクセス拒否</h1>
+      <p>この画面にアクセスする権限がありません。</p>
+      <a href="index.html">← 戻る</a>
+    </div>
+  </div>
+
+  <!-- ドロワーオーバーレイ -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+  <!-- ドロワーメニュー -->
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div class="drawer-user">
+        <div class="drawer-avatar" id="drawerAvatar">U</div>
+        <div class="drawer-user-info">
+          <div class="drawer-user-name" id="drawerUserName">-</div>
+          <div class="drawer-user-role" id="drawerUserRole">-</div>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-menu">
+      <button class="drawer-menu-item" onclick="location.href='index.html'">
+        <span class="drawer-menu-icon">🎮</span>
+        Scratch に戻る
+      </button>
+      <button class="drawer-menu-item" onclick="location.href='admin.html'">
+        <span class="drawer-menu-icon">🖥️</span>
+        PC版を表示
+      </button>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-danger" onclick="AdminPanel.logout()">ログアウト</button>
+    </div>
+  </div>
+
+  <!-- メインアプリ -->
+  <div id="appLayout" style="display: none;">
+    <!-- ヘッダー -->
+    <div class="mobile-header">
+      <div class="header-logo">
+        <div class="header-logo-icon">⛏️</div>
+        <span class="header-title">管理画面</span>
+      </div>
+      <div class="header-user">
+        <div class="header-avatar" id="headerAvatar">U</div>
+        <button class="header-menu-btn" onclick="openDrawer()">☰</button>
+      </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="main-content">
+      <div class="container show" id="mainContainer">
+        <!-- 互換性のため非表示 -->
+        <div class="tabs" style="display:none;">
+          <button class="tab-btn active" data-tab="dashboard">ダッシュボード</button>
+          <button class="tab-btn" data-tab="users">ユーザー管理</button>
+          <button class="tab-btn" data-tab="classrooms">教室管理</button>
+          <button class="tab-btn" data-tab="projects">プロジェクト管理</button>
+        </div>
+        <header class="header" id="header" style="display:none;"></header>
+
+        <!-- ダッシュボード -->
+        <div class="tab-content active" id="tab-dashboard">
+          <div class="page-header">
+            <h1 class="page-title">⚔️ ダッシュボード</h1>
+            <p class="page-subtitle">統計情報</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">💎</div>
+              <div class="stat-value" id="statUsers">0</div>
+              <div class="stat-label">ユーザー</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🏠</div>
+              <div class="stat-value" id="statClassrooms">0</div>
+              <div class="stat-label">教室</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📦</div>
+              <div class="stat-value" id="statProjects">0</div>
+              <div class="stat-label">プロジェクト</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">⭐</div>
+              <div class="stat-value" id="statSubmitted">0</div>
+              <div class="stat-label">提出済み</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">
+                <span class="card-title-icon">📜</span>
+                最近のアクティビティ
+              </h2>
+            </div>
+            <div class="card-body">
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>日時</th>
+                      <th>ユーザー</th>
+                      <th>アクション</th>
+                      <th>詳細</th>
+                    </tr>
+                  </thead>
+                  <tbody id="activityTable">
+                    <tr>
+                      <td colspan="4">
+                        <div class="empty-state">
+                          <div class="empty-state-icon">📭</div>
+                          <div class="empty-state-text">アクティビティなし</div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ユーザー管理 -->
+        <div class="tab-content" id="tab-users">
+          <div class="page-header">
+            <h1 class="page-title">👥 ユーザー管理</h1>
+            <p class="page-subtitle">ユーザーの管理</p>
+          </div>
+
+          <button class="btn btn-primary" onclick="AdminPanel.showCreateUserModal()" id="btnCreateUser" style="margin-bottom: 16px;">
+            + 新規ユーザー
+          </button>
+
+          <div class="filter-bar">
+            <select class="form-select" id="filterUserRole" onchange="AdminPanel.filterUsers()">
+              <option value="">すべてのロール</option>
+              <option value="admin">管理者</option>
+              <option value="teacher">講師</option>
+              <option value="student">生徒</option>
+            </select>
+            <select class="form-select" id="filterUserClassroom" onchange="AdminPanel.filterUsers()">
+              <option value="">すべての教室</option>
+            </select>
+            <input type="text" class="form-input" id="filterUserSearch" placeholder="🔍 検索..." oninput="AdminPanel.filterUsers()">
+          </div>
+
+          <div id="usersListContainer">
+            <div class="empty-state">
+              <div class="empty-state-icon">👤</div>
+              <div class="empty-state-text">ユーザーがいません</div>
+            </div>
+          </div>
+
+          <!-- 非表示テーブル（互換性） -->
+          <div style="display:none;">
+            <table><tbody id="usersTable"></tbody></table>
+          </div>
+        </div>
+
+        <!-- 教室管理 -->
+        <div class="tab-content" id="tab-classrooms">
+          <div class="page-header">
+            <h1 class="page-title">🏠 教室管理</h1>
+            <p class="page-subtitle">教室の管理</p>
+          </div>
+
+          <button class="btn btn-primary" onclick="AdminPanel.showCreateClassroomModal()" id="btnCreateClassroom" style="margin-bottom: 16px;">
+            + 新規教室
+          </button>
+
+          <div id="classroomsListContainer">
+            <div class="empty-state">
+              <div class="empty-state-icon">🏠</div>
+              <div class="empty-state-text">教室がありません</div>
+            </div>
+          </div>
+
+          <!-- 非表示テーブル（互換性） -->
+          <div style="display:none;">
+            <table><tbody id="classroomsTable"></tbody></table>
+          </div>
+        </div>
+
+        <!-- プロジェクト管理 -->
+        <div class="tab-content" id="tab-projects">
+          <div class="page-header">
+            <h1 class="page-title">📦 プロジェクト管理</h1>
+            <p class="page-subtitle">プロジェクトの管理</p>
+          </div>
+
+          <div class="filter-bar">
+            <select class="form-select" id="filterProjectClassroom" onchange="AdminPanel.filterProjects()">
+              <option value="">すべての教室</option>
+            </select>
+            <select class="form-select" id="filterProjectStatus" onchange="AdminPanel.filterProjects()">
+              <option value="">すべての状態</option>
+              <option value="submitted">提出済み</option>
+              <option value="not-submitted">未提出</option>
+            </select>
+            <input type="text" class="form-input" id="filterProjectSearch" placeholder="🔍 検索..." oninput="AdminPanel.filterProjects()">
+          </div>
+
+          <div class="project-grid" id="projectsGrid">
+            <div class="empty-state" style="grid-column: 1 / -1;">
+              <div class="empty-state-icon">📦</div>
+              <div class="empty-state-text">プロジェクトなし</div>
+            </div>
+          </div>
+
+          <!-- 非表示（互換性） -->
+          <div style="display:none;">
+            <select id="filterProjectUser"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ボトムナビゲーション -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <div class="nav-item-icon">📊</div>
+        <span class="nav-item-label">ホーム</span>
+      </button>
+      <button class="nav-item" data-tab="users" onclick="switchTab('users')">
+        <div class="nav-item-icon">👥</div>
+        <span class="nav-item-label">ユーザー</span>
+      </button>
+      <button class="nav-item" data-tab="classrooms" onclick="switchTab('classrooms')">
+        <div class="nav-item-icon">🏠</div>
+        <span class="nav-item-label">教室</span>
+      </button>
+      <button class="nav-item" data-tab="projects" onclick="switchTab('projects')">
+        <div class="nav-item-icon">📦</div>
+        <span class="nav-item-label">作品</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- モーダル群 -->
+  <!-- ユーザー作成モーダル -->
+  <div class="modal-overlay" id="createUserModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">✨ 新規ユーザー</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('createUserModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">ユーザーID</label>
+          <input type="text" class="form-input" id="newUserId" placeholder="例: tanaka123">
+        </div>
+        <div class="form-group">
+          <label class="form-label">表示名</label>
+          <input type="text" class="form-input" id="newUserDisplayName" placeholder="例: 田中太郎">
+        </div>
+        <div class="form-group">
+          <label class="form-label">パスワード</label>
+          <input type="text" class="form-input" id="newUserPassword" placeholder="6文字以上">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ロール</label>
+          <select class="form-select" id="newUserRole" onchange="AdminPanel.onNewUserRoleChange()">
+            <option value="student">生徒</option>
+            <option value="teacher">講師</option>
+            <option value="admin">管理者</option>
+          </select>
+        </div>
+        <div class="form-group" id="newUserClassroomGroup">
+          <label class="form-label">教室</label>
+          <select class="form-select" id="newUserClassroom">
+            <option value="">選択...</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="AdminPanel.createUser()">作成</button>
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('createUserModal')">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ユーザー編集モーダル -->
+  <div class="modal-overlay" id="editUserModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">✏️ ユーザー編集</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('editUserModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">ユーザーID</label>
+          <input type="text" class="form-input" id="editUserId" readonly style="opacity: 0.6;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">表示名</label>
+          <input type="text" class="form-input" id="editUserDisplayName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ロール</label>
+          <select class="form-select" id="editUserRole" onchange="AdminPanel.onEditUserRoleChange()">
+            <option value="student">生徒</option>
+            <option value="teacher">講師</option>
+            <option value="admin">管理者</option>
+          </select>
+        </div>
+        <div class="form-group" id="editUserClassroomGroup">
+          <label class="form-label">教室</label>
+          <select class="form-select" id="editUserClassroom">
+            <option value="">選択...</option>
+          </select>
+        </div>
+        <input type="hidden" id="editUserUid">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="AdminPanel.updateUser()">保存</button>
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editUserModal')">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- パスワードリセットモーダル -->
+  <div class="modal-overlay" id="resetPasswordModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🔐 パスワードリセット</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('resetPasswordModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          「<strong><span id="resetPasswordUserName"></span></strong>」のパスワードをリセット
+        </div>
+        <div class="form-group">
+          <label class="form-label">新しいパスワード</label>
+          <input type="text" class="form-input" id="newPassword" placeholder="6文字以上">
+        </div>
+        <input type="hidden" id="resetPasswordUid">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="AdminPanel.resetPassword()">リセット</button>
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('resetPasswordModal')">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 教室作成モーダル -->
+  <div class="modal-overlay" id="createClassroomModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">✨ 新規教室</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('createClassroomModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">教室名</label>
+          <input type="text" class="form-input" id="newClassroomName" placeholder="例: 教室A">
+        </div>
+        <div class="form-group">
+          <label class="form-label">担当講師</label>
+          <select class="form-select" id="newClassroomTeacher">
+            <option value="">選択...</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="AdminPanel.createClassroom()">作成</button>
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('createClassroomModal')">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 教室編集モーダル -->
+  <div class="modal-overlay" id="editClassroomModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">✏️ 教室編集</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('editClassroomModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">教室名</label>
+          <input type="text" class="form-input" id="editClassroomName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">担当講師</label>
+          <select class="form-select" id="editClassroomTeacher">
+            <option value="">選択...</option>
+          </select>
+        </div>
+        <input type="hidden" id="editClassroomId">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="AdminPanel.updateClassroom()">保存</button>
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editClassroomModal')">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- プロジェクト詳細モーダル -->
+  <div class="modal-overlay" id="projectDetailModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">📋 詳細</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('projectDetailModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="projectDetailContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('projectDetailModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 削除確認モーダル -->
+  <div class="modal-overlay" id="confirmDeleteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">⚠️ 削除確認</h3>
+        <button class="modal-close" onclick="AdminPanel.closeModal('confirmDeleteModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-error">
+          <p id="confirmDeleteMessage">本当に削除しますか？</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="confirmDeleteBtn">削除</button>
+        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('confirmDeleteModal')">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+  <script>
+    // ドロワー操作
+    function openDrawer() {
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('drawerOverlay').classList.add('show');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('drawerOverlay').classList.remove('show');
+    }
+
+    // タブ切り替え
+    function switchTab(tabName) {
+      // ボトムナビ
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.tab === tabName);
+      });
+
+      // タブボタン（互換性）
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+      });
+
+      // コンテンツ
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `tab-${tabName}`);
+      });
+
+      // スクロールトップ
+      window.scrollTo(0, 0);
+    }
+
+    // AdminPanelオーバーライド
+    (function() {
+      AdminPanel.showMainContent = function() {
+        document.getElementById('appLayout').style.display = 'block';
+
+        if (AdminPanel.currentUserData) {
+          const name = AdminPanel.currentUserData.displayName || 'U';
+          const initial = name.charAt(0).toUpperCase();
+          document.getElementById('headerAvatar').textContent = initial;
+          document.getElementById('drawerAvatar').textContent = initial;
+        }
+      };
+
+      AdminPanel.updateHeader = function() {
+        const displayName = this.currentUserData.displayName || 'ユーザー';
+        const roleLabels = { admin: '管理者', teacher: '講師', student: '生徒' };
+        const role = roleLabels[this.currentUserData.role] || this.currentUserData.role;
+
+        document.getElementById('drawerUserName').textContent = displayName;
+        document.getElementById('drawerUserRole').textContent = role;
+
+        const initial = displayName.charAt(0).toUpperCase();
+        document.getElementById('headerAvatar').textContent = initial;
+        document.getElementById('drawerAvatar').textContent = initial;
+      };
+
+      // ユーザーリスト表示をカード形式に
+      const originalRenderUsers = AdminPanel.renderUsers;
+      AdminPanel.renderUsers = function() {
+        if (originalRenderUsers) originalRenderUsers.call(this);
+
+        const container = document.getElementById('usersListContainer');
+        if (!container) return;
+
+        const users = this.filteredUsers || this.users || [];
+        if (users.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">👤</div>
+              <div class="empty-state-text">ユーザーがいません</div>
+            </div>
+          `;
+          return;
+        }
+
+        const roleLabels = { admin: '管理者', teacher: '講師', student: '生徒' };
+        const badgeClasses = { admin: 'badge-admin', teacher: 'badge-teacher', student: 'badge-student' };
+
+        container.innerHTML = users.map(user => `
+          <div class="list-item" onclick="AdminPanel.showEditUserModal('${user.uid}')">
+            <div class="list-item-avatar">${(user.displayName || 'U').charAt(0).toUpperCase()}</div>
+            <div class="list-item-content">
+              <div class="list-item-title">${user.displayName || user.userId}</div>
+              <div class="list-item-subtitle">
+                <span class="badge ${badgeClasses[user.role] || ''}">${roleLabels[user.role] || user.role}</span>
+              </div>
+            </div>
+            <div class="list-item-action">›</div>
+          </div>
+        `).join('');
+      };
+
+      // 教室リスト表示をカード形式に
+      const originalRenderClassrooms = AdminPanel.renderClassrooms;
+      AdminPanel.renderClassrooms = function() {
+        if (originalRenderClassrooms) originalRenderClassrooms.call(this);
+
+        const container = document.getElementById('classroomsListContainer');
+        if (!container) return;
+
+        const classrooms = this.classrooms || [];
+        if (classrooms.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🏠</div>
+              <div class="empty-state-text">教室がありません</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = classrooms.map(classroom => {
+          const teacher = this.users?.find(u => u.uid === classroom.teacherId);
+          const studentCount = this.users?.filter(u => u.classroomId === classroom.id && u.role === 'student').length || 0;
+
+          return `
+            <div class="list-item" onclick="AdminPanel.showEditClassroomModal('${classroom.id}')">
+              <div class="list-item-avatar">🏠</div>
+              <div class="list-item-content">
+                <div class="list-item-title">${classroom.name}</div>
+                <div class="list-item-subtitle">
+                  ${teacher ? teacher.displayName : '講師未設定'} · ${studentCount}人
+                </div>
+              </div>
+              <div class="list-item-action">›</div>
+            </div>
+          `;
+        }).join('');
+      };
+    })();
+  </script>
+</body>
+</html>

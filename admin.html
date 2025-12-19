@@ -1749,10 +1749,13 @@
           <button class="sidebar-action-btn" onclick="location.href='index.html'">
             ← Scratch
           </button>
-          <button class="sidebar-action-btn" onclick="AdminPanel.logout()">
-            ログアウト
+          <button class="sidebar-action-btn" onclick="location.href='admin-mobile.html'">
+            📱 Mobile
           </button>
         </div>
+        <button class="sidebar-action-btn" onclick="AdminPanel.logout()" style="margin-top: 8px; width: 100%;">
+          ログアウト
+        </button>
       </div>
     </aside>
 
@@ -2193,6 +2196,17 @@
 
   <script src="admin.js"></script>
   <script>
+    // モバイルデバイス判定 & リダイレクト
+    (function() {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isSmallScreen = window.innerWidth <= 768;
+      const hasForcePC = new URLSearchParams(window.location.search).has('pc');
+
+      if ((isMobile || isSmallScreen) && !hasForcePC) {
+        window.location.href = 'admin-mobile.html';
+      }
+    })();
+
     // サイドバートグル
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
