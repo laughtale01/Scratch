@@ -1228,6 +1228,334 @@
       background: var(--mc-button-bottom);
       border-radius: 3px;
     }
+
+    /* =====================================================
+       ログイン画面
+       ===================================================== */
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--mc-void);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9000;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .login-screen.show {
+      display: flex;
+    }
+
+    /* 背景パターン - 深層岩風 */
+    .login-screen::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 32px,
+          rgba(255,255,255,0.02) 32px,
+          rgba(255,255,255,0.02) 34px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 32px,
+          rgba(255,255,255,0.02) 32px,
+          rgba(255,255,255,0.02) 34px
+        );
+      pointer-events: none;
+    }
+
+    /* エンダーパーティクル */
+    .login-screen::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(2px 2px at 10% 20%, var(--mc-ender-particle) 50%, transparent 50%),
+        radial-gradient(2px 2px at 90% 30%, var(--mc-amethyst) 50%, transparent 50%),
+        radial-gradient(2px 2px at 30% 80%, var(--mc-ender-particle) 50%, transparent 50%),
+        radial-gradient(2px 2px at 70% 60%, var(--mc-amethyst) 50%, transparent 50%),
+        radial-gradient(2px 2px at 50% 10%, var(--mc-ender-particle) 50%, transparent 50%);
+      animation: enderFloat 8s ease-in-out infinite;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    @keyframes enderFloat {
+      0%, 100% { transform: translateY(0); opacity: 0.6; }
+      50% { transform: translateY(-20px); opacity: 0.3; }
+    }
+
+    .login-card {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      background: linear-gradient(145deg, var(--mc-stone), var(--mc-deepslate));
+      border-radius: 4px;
+      padding: 32px 24px;
+      box-shadow:
+        inset 2px 2px 0 rgba(255,255,255,0.1),
+        inset -2px -2px 0 rgba(0,0,0,0.3),
+        0 8px 32px rgba(0,0,0,0.5);
+      border: 3px solid var(--mc-cobblestone);
+    }
+
+    /* 石レンガ風のテクスチャ */
+    .login-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 30%,
+          rgba(0,0,0,0.1) 30%,
+          rgba(0,0,0,0.1) 31%,
+          transparent 31%,
+          transparent 60%,
+          rgba(0,0,0,0.1) 60%,
+          rgba(0,0,0,0.1) 61%
+        ),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 45%,
+          rgba(0,0,0,0.05) 45%,
+          rgba(0,0,0,0.05) 55%,
+          transparent 55%
+        );
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 28px;
+      position: relative;
+    }
+
+    .login-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 16px;
+      background: linear-gradient(
+        180deg,
+        var(--mc-grass-light) 0%,
+        var(--mc-grass) 45%,
+        var(--mc-oak-dark) 45%,
+        var(--mc-oak-dark) 100%
+      );
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      box-shadow:
+        inset 3px 3px 0 rgba(255,255,255,0.2),
+        inset -3px -3px 0 rgba(0,0,0,0.3),
+        0 4px 12px rgba(0,0,0,0.4);
+      border: 3px solid var(--mc-dark-oak);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 草ブロック風のドット */
+    .login-icon::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 45%;
+      background-image:
+        radial-gradient(circle at 20% 70%, var(--mc-grass-bright) 2px, transparent 2px),
+        radial-gradient(circle at 50% 80%, var(--mc-grass-bright) 2px, transparent 2px),
+        radial-gradient(circle at 80% 60%, var(--mc-grass-bright) 2px, transparent 2px);
+      pointer-events: none;
+    }
+
+    .login-title {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 18px;
+      color: var(--mc-text-white);
+      text-shadow:
+        2px 2px 0 var(--mc-text-shadow),
+        3px 3px 0 rgba(0,0,0,0.3);
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .login-subtitle {
+      font-size: 16px;
+      color: var(--mc-text-gray);
+      font-family: 'VT323', monospace;
+    }
+
+    .login-form {
+      position: relative;
+    }
+
+    .login-input-group {
+      margin-bottom: 20px;
+    }
+
+    .login-label {
+      display: block;
+      font-size: 14px;
+      color: var(--mc-text-light);
+      margin-bottom: 8px;
+      font-family: 'VT323', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 18px;
+      font-family: 'VT323', monospace;
+      background: var(--mc-void);
+      border: 3px solid var(--mc-slot-border);
+      border-radius: 2px;
+      color: var(--mc-text-white);
+      box-shadow:
+        inset 2px 2px 4px rgba(0,0,0,0.5),
+        inset -1px -1px 2px rgba(255,255,255,0.05);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .login-input:focus {
+      outline: none;
+      border-color: var(--mc-emerald);
+      box-shadow:
+        inset 2px 2px 4px rgba(0,0,0,0.5),
+        0 0 0 2px rgba(23, 221, 98, 0.3);
+    }
+
+    .login-input::placeholder {
+      color: var(--mc-text-dark);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 16px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: linear-gradient(180deg, var(--mc-emerald) 0%, var(--mc-emerald-dark) 100%);
+      color: var(--mc-text-white);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      box-shadow:
+        inset 2px 2px 0 rgba(255,255,255,0.3),
+        inset -2px -2px 0 rgba(0,0,0,0.3),
+        0 4px 0 #0a6e30,
+        0 6px 8px rgba(0,0,0,0.3);
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+      transition: all 0.1s;
+      position: relative;
+      top: 0;
+    }
+
+    .login-btn:hover {
+      background: linear-gradient(180deg, #1de96c 0%, var(--mc-emerald) 100%);
+    }
+
+    .login-btn:active {
+      top: 4px;
+      box-shadow:
+        inset 2px 2px 0 rgba(255,255,255,0.3),
+        inset -2px -2px 0 rgba(0,0,0,0.3),
+        0 0 0 #0a6e30,
+        0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .login-btn:disabled {
+      background: linear-gradient(180deg, var(--mc-gravel) 0%, var(--mc-cobblestone) 100%);
+      cursor: not-allowed;
+      box-shadow:
+        inset 2px 2px 0 rgba(255,255,255,0.1),
+        inset -2px -2px 0 rgba(0,0,0,0.2),
+        0 4px 0 var(--mc-slot-border),
+        0 6px 8px rgba(0,0,0,0.3);
+    }
+
+    .login-error {
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(255, 26, 26, 0.15);
+      border: 2px solid var(--mc-redstone);
+      border-radius: 2px;
+      color: #ff6b6b;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+
+    .login-error.show {
+      display: block;
+      animation: shake 0.3s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .login-footer {
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    .login-footer-link {
+      color: var(--mc-diamond);
+      text-decoration: none;
+      font-size: 14px;
+      font-family: 'VT323', monospace;
+      transition: color 0.2s;
+    }
+
+    .login-footer-link:hover {
+      color: var(--mc-diamond-dark);
+    }
+
+    /* ログイン中のローディング */
+    .login-loading {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--mc-text-gray);
+      margin-top: 16px;
+    }
+
+    .login-loading.show {
+      display: flex;
+    }
+
+    .login-loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--mc-slot-border);
+      border-top-color: var(--mc-emerald);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -1250,6 +1578,58 @@
       <h1>アクセス拒否</h1>
       <p>この画面にアクセスする権限がありません。</p>
       <a href="index.html">← 戻る</a>
+    </div>
+  </div>
+
+  <!-- ログイン画面 -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-icon">⛏️</div>
+        <h1 class="login-title">ADMIN</h1>
+        <p class="login-subtitle">管理者・講師用ログイン</p>
+      </div>
+
+      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+        <div class="login-input-group">
+          <label class="login-label" for="loginEmail">メールアドレス</label>
+          <input
+            type="email"
+            id="loginEmail"
+            class="login-input"
+            placeholder="example@email.com"
+            required
+            autocomplete="email"
+          >
+        </div>
+
+        <div class="login-input-group">
+          <label class="login-label" for="loginPassword">パスワード</label>
+          <input
+            type="password"
+            id="loginPassword"
+            class="login-input"
+            placeholder="••••••••"
+            required
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="submit" class="login-btn" id="loginBtn">
+          ログイン
+        </button>
+
+        <div class="login-error" id="loginError"></div>
+
+        <div class="login-loading" id="loginLoading">
+          <div class="login-loading-spinner"></div>
+          <span>認証中...</span>
+        </div>
+      </form>
+
+      <div class="login-footer">
+        <a href="index.html" class="login-footer-link">← Scratchに戻る</a>
+      </div>
     </div>
   </div>
 
@@ -1684,7 +2064,125 @@
 
   <script src="admin.js"></script>
   <script>
+    // =====================================================
+    // ログイン処理
+    // =====================================================
+
+    /**
+     * ログイン画面を表示
+     */
+    function showLoginScreen() {
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('accessDenied').classList.remove('show');
+      document.getElementById('appLayout').style.display = 'none';
+      document.getElementById('loginScreen').classList.add('show');
+    }
+
+    /**
+     * ログイン画面を非表示
+     */
+    function hideLoginScreen() {
+      document.getElementById('loginScreen').classList.remove('show');
+    }
+
+    /**
+     * ログインエラーを表示
+     */
+    function showLoginError(message) {
+      const errorEl = document.getElementById('loginError');
+      errorEl.textContent = message;
+      errorEl.classList.add('show');
+    }
+
+    /**
+     * ログインエラーを非表示
+     */
+    function hideLoginError() {
+      const errorEl = document.getElementById('loginError');
+      errorEl.classList.remove('show');
+    }
+
+    /**
+     * ログインローディング状態を設定
+     */
+    function setLoginLoading(loading) {
+      const btn = document.getElementById('loginBtn');
+      const loadingEl = document.getElementById('loginLoading');
+      const form = document.getElementById('loginForm');
+
+      if (loading) {
+        btn.disabled = true;
+        btn.textContent = '認証中...';
+        loadingEl.classList.add('show');
+        form.querySelectorAll('input').forEach(input => input.disabled = true);
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'ログイン';
+        loadingEl.classList.remove('show');
+        form.querySelectorAll('input').forEach(input => input.disabled = false);
+      }
+    }
+
+    /**
+     * ログイン処理
+     */
+    async function handleLogin(event) {
+      event.preventDefault();
+      hideLoginError();
+
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        showLoginError('メールアドレスとパスワードを入力してください');
+        return;
+      }
+
+      setLoginLoading(true);
+
+      try {
+        // Firebase認証でログイン
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.log('ログイン成功:', userCredential.user.email);
+
+        // ログイン成功後、onAuthStateChangedが呼ばれて処理が進む
+        // ログイン画面は認証成功後にhideLoginScreen()で非表示になる
+
+      } catch (error) {
+        console.error('ログインエラー:', error);
+        setLoginLoading(false);
+
+        // エラーメッセージを日本語で表示
+        let errorMessage = 'ログインに失敗しました';
+        switch (error.code) {
+          case 'auth/user-not-found':
+            errorMessage = 'ユーザーが見つかりません';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = 'パスワードが正しくありません';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'メールアドレスの形式が正しくありません';
+            break;
+          case 'auth/user-disabled':
+            errorMessage = 'このアカウントは無効化されています';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'ログイン試行回数が多すぎます。しばらく待ってから再試行してください';
+            break;
+          case 'auth/invalid-credential':
+            errorMessage = 'メールアドレスまたはパスワードが正しくありません';
+            break;
+          default:
+            errorMessage = `ログインエラー: ${error.message}`;
+        }
+        showLoginError(errorMessage);
+      }
+    }
+
+    // =====================================================
     // ドロワー操作
+    // =====================================================
     function openDrawer() {
       document.getElementById('drawer').classList.add('open');
       document.getElementById('drawerOverlay').classList.add('show');
@@ -1718,8 +2216,34 @@
 
     // AdminPanelオーバーライド
     (function() {
+      // 未ログイン時はログイン画面を表示
+      AdminPanel.showAccessDenied = function() {
+        // まずローディング画面を消す
+        document.getElementById('loadingScreen').style.display = 'none';
+
+        // Firebaseの認証状態を確認
+        const user = auth.currentUser;
+        if (!user) {
+          // 未ログインの場合はログイン画面を表示
+          showLoginScreen();
+        } else {
+          // ログイン済みだが権限なしの場合はアクセス拒否を表示
+          document.getElementById('accessDenied').classList.add('show');
+          document.getElementById('loginScreen').classList.remove('show');
+        }
+      };
+
       AdminPanel.showMainContent = function() {
+        // ログイン画面とローディング画面を非表示
+        hideLoginScreen();
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('accessDenied').classList.remove('show');
+
+        // メインコンテンツを表示
         document.getElementById('appLayout').style.display = 'block';
+
+        // ログインローディング状態をリセット
+        setLoginLoading(false);
 
         if (AdminPanel.currentUserData) {
           const name = AdminPanel.currentUserData.displayName || 'U';
