@@ -1592,14 +1592,14 @@
 
       <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
         <div class="login-input-group">
-          <label class="login-label" for="loginEmail">メールアドレス</label>
+          <label class="login-label" for="loginUserId">ユーザーID</label>
           <input
-            type="email"
-            id="loginEmail"
+            type="text"
+            id="loginUserId"
             class="login-input"
-            placeholder="example@email.com"
+            placeholder="例: tanaka123"
             required
-            autocomplete="email"
+            autocomplete="username"
           >
         </div>
 
@@ -2130,13 +2130,16 @@
       event.preventDefault();
       hideLoginError();
 
-      const email = document.getElementById('loginEmail').value.trim();
+      const userId = document.getElementById('loginUserId').value.trim();
       const password = document.getElementById('loginPassword').value;
 
-      if (!email || !password) {
-        showLoginError('メールアドレスとパスワードを入力してください');
+      if (!userId || !password) {
+        showLoginError('ユーザーIDとパスワードを入力してください');
         return;
       }
+
+      // ユーザーIDからメールアドレスを生成
+      const email = userId + '@laughtale.local';
 
       setLoginLoading(true);
 
