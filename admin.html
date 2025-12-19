@@ -6,10 +6,10 @@
   <meta name="google" value="notranslate">
   <link rel="shortcut icon" href="static/favicon.ico">
   <title>管理画面 - Scratch Education</title>
-  <!-- Google Fonts -->
+  <!-- Google Fonts - Minecraft風フォント -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -18,85 +18,86 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
   <style>
     /* =====================================================
-       究極のデザインシステム - CSS Custom Properties
+       MINECRAFT THEME - 究極のデザインシステム
        ===================================================== */
     :root {
-      /* ダークテーマベースの洗練されたカラーパレット */
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #12121a;
-      --bg-tertiary: #1a1a24;
-      --bg-elevated: #22222e;
-      --bg-hover: #2a2a38;
+      /* ===== Minecraft カラーパレット ===== */
 
-      /* ガラスモーフィズム（より見やすく調整） */
-      --glass-bg: rgba(30, 30, 45, 0.95);
-      --glass-border: rgba(255, 255, 255, 0.12);
-      --glass-hover: rgba(40, 40, 60, 0.95);
+      /* ベース背景色 - 洞窟/深層岩風 */
+      --mc-void: #0c0c0f;
+      --mc-deepslate: #1a1a1f;
+      --mc-stone: #28282f;
+      --mc-cobblestone: #36363f;
+      --mc-gravel: #45454f;
 
-      /* アクセントカラー - 鮮やかなグラデーション */
-      --accent-primary: #6366f1;
-      --accent-secondary: #8b5cf6;
-      --accent-tertiary: #a855f7;
-      --accent-glow: rgba(99, 102, 241, 0.4);
+      /* オーク材の色 */
+      --mc-oak-dark: #8b5a2b;
+      --mc-oak: #b8945f;
+      --mc-oak-light: #d4b896;
+      --mc-oak-plank: #bc9862;
 
-      /* グラデーション */
-      --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-      --gradient-secondary: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-      --gradient-success: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-      --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-      --gradient-danger: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-      --gradient-mesh: radial-gradient(at 40% 20%, hsla(240, 80%, 60%, 0.15) 0px, transparent 50%),
-                       radial-gradient(at 80% 0%, hsla(280, 80%, 50%, 0.1) 0px, transparent 50%),
-                       radial-gradient(at 0% 50%, hsla(220, 80%, 50%, 0.1) 0px, transparent 50%);
+      /* ダークオーク */
+      --mc-dark-oak: #3d2813;
+      --mc-dark-oak-light: #533a1f;
 
-      /* テキストカラー（より見やすく） */
-      --text-primary: #ffffff;
-      --text-secondary: #c0c8d4;
-      --text-tertiary: #8892a0;
-      --text-muted: #6b7280;
+      /* 草ブロック */
+      --mc-grass: #5d8c3e;
+      --mc-grass-light: #7bc74d;
+      --mc-grass-bright: #8bd35c;
 
-      /* ステータスカラー */
-      --success: #10b981;
-      --success-bg: rgba(16, 185, 129, 0.1);
-      --warning: #f59e0b;
-      --warning-bg: rgba(245, 158, 11, 0.1);
-      --danger: #ef4444;
-      --danger-bg: rgba(239, 68, 68, 0.1);
-      --info: #3b82f6;
-      --info-bg: rgba(59, 130, 246, 0.1);
+      /* 鉱石・宝石 */
+      --mc-diamond: #4aedd9;
+      --mc-diamond-dark: #2cb5a8;
+      --mc-emerald: #17dd62;
+      --mc-emerald-dark: #0d9e45;
+      --mc-gold: #fcdb05;
+      --mc-gold-dark: #c6a503;
+      --mc-redstone: #ff1a1a;
+      --mc-redstone-dark: #aa0f01;
+      --mc-lapis: #345ec3;
+      --mc-lapis-dark: #1d47a0;
+      --mc-amethyst: #9b5bff;
+      --mc-copper: #bf6b3e;
 
-      /* シャドウ - 多層レイヤー */
-      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-      --shadow-glow: 0 0 40px var(--accent-glow);
-      --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+      /* エンダー/ネザー */
+      --mc-ender: #14141e;
+      --mc-ender-eye: #8932b8;
+      --mc-ender-particle: #cc00fa;
+      --mc-nether: #b84727;
+      --mc-netherite: #654740;
 
-      /* ボーダー（より見やすく） */
-      --border-subtle: rgba(255, 255, 255, 0.1);
-      --border-default: rgba(255, 255, 255, 0.15);
-      --border-strong: rgba(255, 255, 255, 0.25);
+      /* 空・水 */
+      --mc-sky: #78a7ff;
+      --mc-water: #3f76e4;
+      --mc-water-deep: #2351a9;
 
-      /* ボーダー半径 */
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      --radius-xl: 20px;
-      --radius-2xl: 28px;
-      --radius-full: 9999px;
+      /* テキスト */
+      --mc-text-white: #ffffff;
+      --mc-text-light: #e8e8e8;
+      --mc-text-gray: #aaaaaa;
+      --mc-text-dark: #555555;
+      --mc-text-shadow: #3f3f3f;
+
+      /* UI要素 */
+      --mc-slot-bg: rgba(139, 139, 139, 0.25);
+      --mc-slot-border: #373737;
+      --mc-slot-highlight: rgba(255, 255, 255, 0.15);
+      --mc-button-top: #a0a0a0;
+      --mc-button-bottom: #505050;
+      --mc-hotbar-select: #ffffff;
+
+      /* ピクセルサイズ */
+      --pixel: 2px;
+      --pixel-2: 4px;
+      --pixel-3: 6px;
+      --pixel-4: 8px;
+
+      /* サイドバー */
+      --sidebar-width: 280px;
 
       /* トランジション */
-      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-      --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
-      --transition-fast: 150ms var(--ease-out-expo);
-      --transition-normal: 250ms var(--ease-out-expo);
-      --transition-slow: 400ms var(--ease-out-expo);
-      --transition-bounce: 500ms var(--ease-out-back);
-
-      /* サイドバー幅 */
-      --sidebar-width: 280px;
-      --sidebar-collapsed: 80px;
+      --transition-fast: 100ms ease;
+      --transition-normal: 200ms ease;
     }
 
     /* =====================================================
@@ -110,21 +111,21 @@
 
     html {
       font-size: 16px;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-rendering: optimizeLegibility;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
     }
 
     body {
-      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
+      font-family: 'VT323', 'Noto Sans JP', monospace;
+      background: var(--mc-void);
+      color: var(--mc-text-white);
       min-height: 100vh;
-      line-height: 1.6;
+      line-height: 1.5;
       overflow-x: hidden;
+      letter-spacing: 0.5px;
     }
 
-    /* 背景メッシュグラデーション */
+    /* Minecraft風背景パターン - 深層岩テクスチャ */
     body::before {
       content: '';
       position: fixed;
@@ -132,19 +133,82 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--gradient-mesh);
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent 0px,
+          transparent 4px,
+          rgba(0, 0, 0, 0.03) 4px,
+          rgba(0, 0, 0, 0.03) 8px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0px,
+          transparent 4px,
+          rgba(0, 0, 0, 0.03) 4px,
+          rgba(0, 0, 0, 0.03) 8px
+        ),
+        linear-gradient(180deg, var(--mc-deepslate) 0%, var(--mc-void) 100%);
       pointer-events: none;
       z-index: 0;
     }
 
-    /* セレクション */
+    /* パーティクルエフェクト - エンダーパーティクル風 */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image:
+        radial-gradient(circle at 20% 30%, var(--mc-ender-particle) 0px, transparent 1px),
+        radial-gradient(circle at 80% 20%, var(--mc-amethyst) 0px, transparent 1px),
+        radial-gradient(circle at 60% 80%, var(--mc-diamond) 0px, transparent 1px),
+        radial-gradient(circle at 10% 90%, var(--mc-emerald) 0px, transparent 1px),
+        radial-gradient(circle at 90% 70%, var(--mc-ender-particle) 0px, transparent 1px);
+      background-size: 400px 400px;
+      opacity: 0.3;
+      animation: particle-float 20s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes particle-float {
+      0% { transform: translateY(0) translateX(0); }
+      25% { transform: translateY(-20px) translateX(10px); }
+      50% { transform: translateY(-10px) translateX(-10px); }
+      75% { transform: translateY(-30px) translateX(5px); }
+      100% { transform: translateY(0) translateX(0); }
+    }
+
+    /* セレクション - ダイヤモンド色 */
     ::selection {
-      background: var(--accent-primary);
-      color: white;
+      background: var(--mc-diamond);
+      color: var(--mc-void);
     }
 
     /* =====================================================
-       ローディング画面 - シネマティック
+       Minecraft ピクセルボーダーユーティリティ
+       ===================================================== */
+    .mc-border {
+      border: var(--pixel-2) solid;
+      border-color: #ffffff #555555 #555555 #ffffff;
+      box-shadow:
+        inset var(--pixel) var(--pixel) 0 rgba(255, 255, 255, 0.2),
+        inset calc(-1 * var(--pixel)) calc(-1 * var(--pixel)) 0 rgba(0, 0, 0, 0.3);
+    }
+
+    .mc-border-inset {
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff #ffffff #555555;
+      box-shadow:
+        inset var(--pixel) var(--pixel) 0 rgba(0, 0, 0, 0.3),
+        inset calc(-1 * var(--pixel)) calc(-1 * var(--pixel)) 0 rgba(255, 255, 255, 0.1);
+    }
+
+    /* =====================================================
+       ローディング画面 - エンダードラゴンテーマ
        ===================================================== */
     .loading-screen {
       position: fixed;
@@ -152,15 +216,16 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--bg-primary);
+      background: var(--mc-ender);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 9999;
-      gap: 32px;
+      gap: 40px;
     }
 
+    /* エンドポータルフレーム風背景 */
     .loading-screen::before {
       content: '';
       position: absolute;
@@ -168,14 +233,24 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--gradient-mesh);
-      opacity: 0.5;
+      background:
+        radial-gradient(ellipse at center, rgba(137, 50, 184, 0.3) 0%, transparent 70%),
+        repeating-conic-gradient(
+          from 0deg at 50% 50%,
+          var(--mc-ender) 0deg 10deg,
+          rgba(137, 50, 184, 0.1) 10deg 20deg
+        );
+      animation: portal-rotate 30s linear infinite;
+    }
+
+    @keyframes portal-rotate {
+      to { transform: rotate(360deg); }
     }
 
     .loading-screen.hidden {
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.6s var(--ease-out-expo), visibility 0.6s;
+      transition: opacity 0.5s ease, visibility 0.5s;
     }
 
     .loading-content {
@@ -190,89 +265,81 @@
     .loading-logo {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
     }
 
     .loading-logo-icon {
-      width: 64px;
-      height: 64px;
-      background: var(--gradient-primary);
-      border-radius: var(--radius-lg);
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(180deg, var(--mc-grass-light) 0%, var(--mc-grass) 50%, var(--mc-oak-dark) 50%, var(--mc-oak-dark) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #ffffff40 #00000040 #00000040 #ffffff40;
       display: flex;
       justify-content: center;
-      align-items: center;
-      font-size: 32px;
-      box-shadow: var(--shadow-glow);
-      animation: pulse-glow 2s ease-in-out infinite;
+      align-items: flex-end;
+      padding-bottom: 8px;
+      font-size: 36px;
+      box-shadow:
+        0 0 40px rgba(123, 199, 77, 0.5),
+        inset 0 -20px 20px rgba(0, 0, 0, 0.3);
+      animation: block-bob 2s ease-in-out infinite;
     }
 
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 30px var(--accent-glow); }
-      50% { box-shadow: 0 0 60px var(--accent-glow), 0 0 90px rgba(139, 92, 246, 0.2); }
+    @keyframes block-bob {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50% { transform: translateY(-10px) rotate(5deg); }
     }
 
     .loading-logo-text {
-      font-size: 28px;
-      font-weight: 700;
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.5px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 18px;
+      color: var(--mc-text-white);
+      text-shadow:
+        var(--pixel-2) var(--pixel-2) 0 var(--mc-text-shadow),
+        var(--pixel-2) var(--pixel-2) 0 #000;
+      letter-spacing: 2px;
     }
 
-    .loading-spinner {
+    /* 経験値バー風ローディング */
+    .loading-bar-container {
+      width: 300px;
+      height: 10px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel) solid var(--mc-slot-border);
       position: relative;
-      width: 48px;
-      height: 48px;
+      overflow: hidden;
     }
 
-    .loading-spinner::before,
-    .loading-spinner::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 50%;
+    .loading-bar {
+      height: 100%;
+      background: linear-gradient(180deg, var(--mc-grass-bright) 0%, var(--mc-grass) 50%, var(--mc-grass-light) 100%);
+      box-shadow: 0 0 10px var(--mc-grass-light);
+      animation: xp-fill 2s ease-in-out infinite;
     }
 
-    .loading-spinner::before {
-      border: 2px solid var(--border-subtle);
-    }
-
-    .loading-spinner::after {
-      border: 2px solid transparent;
-      border-top-color: var(--accent-primary);
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    @keyframes xp-fill {
+      0% { width: 0%; }
+      50% { width: 100%; }
+      100% { width: 0%; }
     }
 
     .loading-text {
-      color: var(--text-secondary);
-      font-size: 14px;
-      font-weight: 500;
+      font-family: 'Press Start 2P', cursive;
+      color: var(--mc-text-gray);
+      font-size: 10px;
       letter-spacing: 2px;
-      text-transform: uppercase;
-      animation: fade-pulse 2s ease-in-out infinite;
+      animation: blink 1s step-end infinite;
     }
 
-    @keyframes fade-pulse {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
 
-    /* 旧スピナーとの互換性 */
-    .spinner {
-      display: none;
-    }
+    .spinner { display: none; }
 
     /* =====================================================
-       アクセス拒否画面
+       アクセス拒否画面 - バリア風
        ===================================================== */
     .access-denied {
       display: none;
@@ -289,68 +356,83 @@
     }
 
     .access-denied-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--radius-2xl);
-      padding: 56px;
+      background: linear-gradient(180deg, var(--mc-cobblestone) 0%, var(--mc-stone) 100%);
+      border: var(--pixel-3) solid;
+      border-color: #666666 #333333 #333333 #666666;
+      padding: 48px;
       text-align: center;
-      max-width: 440px;
-      box-shadow: var(--shadow-xl);
+      max-width: 480px;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
 
     .access-denied-icon {
-      width: 88px;
-      height: 88px;
-      background: var(--danger-bg);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      border-radius: var(--radius-full);
+      width: 96px;
+      height: 96px;
+      background:
+        repeating-linear-gradient(
+          45deg,
+          var(--mc-redstone) 0px,
+          var(--mc-redstone) 10px,
+          var(--mc-redstone-dark) 10px,
+          var(--mc-redstone-dark) 20px
+        );
+      border: var(--pixel-2) solid var(--mc-slot-border);
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 0 auto 28px;
-      font-size: 40px;
+      margin: 0 auto 24px;
+      font-size: 48px;
+      animation: barrier-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes barrier-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
     }
 
     .access-denied h1 {
-      color: var(--text-primary);
-      font-size: 26px;
-      font-weight: 700;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
+      font-family: 'Press Start 2P', cursive;
+      color: var(--mc-redstone);
+      font-size: 16px;
+      margin-bottom: 20px;
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      line-height: 1.5;
     }
 
     .access-denied p {
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-      font-size: 15px;
-      line-height: 1.7;
+      color: var(--mc-text-light);
+      margin-bottom: 12px;
+      font-size: 18px;
+      line-height: 1.6;
     }
 
     .access-denied a {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--accent-primary);
+      display: inline-block;
+      margin-top: 24px;
+      padding: 16px 32px;
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
+      color: var(--mc-text-white);
       text-decoration: none;
-      font-weight: 600;
-      margin-top: 28px;
-      padding: 14px 28px;
-      border-radius: var(--radius-lg);
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-default);
-      transition: var(--transition-normal);
+      font-size: 18px;
+      text-shadow: var(--pixel) var(--pixel) 0 var(--mc-text-shadow);
+      transition: var(--transition-fast);
     }
 
     .access-denied a:hover {
-      background: var(--bg-elevated);
-      border-color: var(--accent-primary);
-      transform: translateY(-2px);
+      background: linear-gradient(180deg, #b0b0b0 0%, #606060 100%);
+      transform: scale(1.02);
+    }
+
+    .access-denied a:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
     }
 
     /* =====================================================
-       レイアウト - サイドバー＋メインコンテンツ
+       レイアウト
        ===================================================== */
     .app-layout {
       display: flex;
@@ -360,12 +442,20 @@
     }
 
     /* =====================================================
-       サイドバー
+       サイドバー - オークの木材風
        ===================================================== */
     .sidebar {
       width: var(--sidebar-width);
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border-subtle);
+      background:
+        repeating-linear-gradient(
+          90deg,
+          var(--mc-dark-oak) 0px,
+          var(--mc-dark-oak) 2px,
+          var(--mc-dark-oak-light) 2px,
+          var(--mc-dark-oak-light) 20px
+        );
+      border-right: var(--pixel-3) solid;
+      border-color: #2a1a0a;
       display: flex;
       flex-direction: column;
       position: fixed;
@@ -374,11 +464,33 @@
       bottom: 0;
       z-index: 100;
       transition: transform var(--transition-normal);
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 木目テクスチャオーバーレイ */
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        repeating-linear-gradient(
+          180deg,
+          transparent 0px,
+          transparent 60px,
+          rgba(0, 0, 0, 0.1) 60px,
+          rgba(0, 0, 0, 0.1) 62px
+        );
+      pointer-events: none;
     }
 
     .sidebar-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-subtle);
+      padding: 24px 20px;
+      border-bottom: var(--pixel-2) solid rgba(0, 0, 0, 0.3);
+      position: relative;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
     }
 
     .sidebar-logo {
@@ -388,136 +500,162 @@
     }
 
     .sidebar-logo-icon {
-      width: 44px;
-      height: 44px;
-      background: var(--gradient-primary);
-      border-radius: var(--radius-md);
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(180deg, var(--mc-grass-light) 0%, var(--mc-grass) 40%, var(--mc-oak-dark) 40%, var(--mc-oak-dark) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #ffffff30 #00000030 #00000030 #ffffff30;
       display: flex;
       justify-content: center;
-      align-items: center;
-      font-size: 22px;
-      box-shadow: var(--shadow-md), 0 0 20px var(--accent-glow);
+      align-items: flex-end;
+      padding-bottom: 4px;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
     .sidebar-logo-text {
       display: flex;
       flex-direction: column;
+      gap: 4px;
     }
 
     .sidebar-logo-title {
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.3px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 11px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
     .sidebar-logo-subtitle {
-      font-size: 11px;
-      color: var(--text-tertiary);
-      font-weight: 500;
-      text-transform: uppercase;
+      font-size: 14px;
+      color: var(--mc-gold);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
       letter-spacing: 1px;
     }
 
     .sidebar-nav {
       flex: 1;
-      padding: 20px 16px;
+      padding: 16px 12px;
       overflow-y: auto;
     }
 
     .sidebar-nav-section {
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .sidebar-nav-title {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--mc-text-gray);
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       padding: 0 12px;
       margin-bottom: 12px;
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
+    /* インベントリスロット風ナビゲーション */
     .sidebar-nav-item {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       padding: 14px 16px;
-      border-radius: var(--radius-md);
-      color: var(--text-secondary);
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+      color: var(--mc-text-light);
       cursor: pointer;
       transition: var(--transition-fast);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       position: relative;
-      border: none;
-      background: transparent;
-      width: 100%;
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 17px;
       text-align: left;
-    }
-
-    .sidebar-nav-item::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 3px;
-      height: 0;
-      background: var(--gradient-primary);
-      border-radius: 0 2px 2px 0;
-      transition: var(--transition-fast);
+      width: 100%;
+      font-family: inherit;
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
     .sidebar-nav-item:hover {
-      background: var(--glass-hover);
-      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--mc-hotbar-select) #555555 #555555 var(--mc-hotbar-select);
+      color: var(--mc-text-white);
     }
 
+    /* ホットバー選択風アクティブ状態 */
     .sidebar-nav-item.active {
-      background: var(--glass-bg);
-      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.2);
+      border-color: var(--mc-hotbar-select);
+      border-width: var(--pixel-2);
+      color: var(--mc-text-white);
+      box-shadow:
+        0 0 10px rgba(255, 255, 255, 0.3),
+        inset 0 0 20px rgba(255, 255, 255, 0.1);
     }
 
     .sidebar-nav-item.active::before {
-      height: 24px;
+      content: '>';
+      position: absolute;
+      left: 4px;
+      color: var(--mc-gold);
+      font-size: 14px;
+      animation: arrow-blink 0.5s step-end infinite;
+    }
+
+    @keyframes arrow-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
     }
 
     .sidebar-nav-icon {
-      font-size: 20px;
-      width: 24px;
+      font-size: 22px;
+      width: 28px;
       text-align: center;
     }
 
     .sidebar-footer {
-      padding: 20px;
-      border-top: 1px solid var(--border-subtle);
+      padding: 16px;
+      border-top: var(--pixel-2) solid rgba(0, 0, 0, 0.3);
+      background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.2) 100%);
     }
 
+    /* プレイヤー情報 - Steve風 */
     .sidebar-user {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-lg);
+      padding: 12px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
       margin-bottom: 12px;
     }
 
     .sidebar-user-avatar {
-      width: 42px;
-      height: 42px;
-      background: var(--gradient-primary);
-      border-radius: var(--radius-md);
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(180deg, #4a3728 0%, #2d221a 100%);
+      border: var(--pixel) solid var(--mc-slot-border);
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 18px;
-      font-weight: 600;
-      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      /* Steve風の顔 */
+      position: relative;
+    }
+
+    .sidebar-user-avatar::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 4px;
+      background: var(--mc-oak);
+      border-radius: 1px;
     }
 
     .sidebar-user-info {
@@ -526,34 +664,35 @@
     }
 
     .sidebar-user-name {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
-      color: var(--text-primary);
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .sidebar-user-role {
-      font-size: 12px;
-      color: var(--text-secondary);
+      font-size: 13px;
+      color: var(--mc-gold);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
+    /* ハート表示 */
     .sidebar-user-role::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      background: var(--success);
-      border-radius: 50%;
-      animation: pulse 2s ease-in-out infinite;
+      content: '❤';
+      color: var(--mc-redstone);
+      font-size: 10px;
+      animation: heart-beat 1s ease-in-out infinite;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+    @keyframes heart-beat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
     }
 
     .sidebar-actions {
@@ -563,25 +702,24 @@
 
     .sidebar-action-btn {
       flex: 1;
-      padding: 12px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      color: var(--text-secondary);
-      font-size: 13px;
-      font-weight: 500;
+      padding: 10px 8px;
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
+      color: var(--mc-text-white);
+      font-size: 14px;
       cursor: pointer;
       transition: var(--transition-fast);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
+      font-family: inherit;
+      text-shadow: var(--pixel) var(--pixel) 0 var(--mc-text-shadow);
     }
 
     .sidebar-action-btn:hover {
-      background: var(--bg-elevated);
-      color: var(--text-primary);
-      border-color: var(--border-strong);
+      background: linear-gradient(180deg, #b0b0b0 0%, #606060 100%);
+    }
+
+    .sidebar-action-btn:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
     }
 
     /* =====================================================
@@ -595,12 +733,8 @@
       flex-direction: column;
     }
 
-    /* ヘッダー（互換性のため非表示で維持） */
-    .header {
-      display: none !important;
-    }
+    .header { display: none !important; }
 
-    /* コンテナ */
     .container {
       display: none;
       flex: 1;
@@ -612,33 +746,53 @@
       display: block;
     }
 
-    /* ページヘッダー */
+    /* ページヘッダー - 看板風 */
     .page-header {
       margin-bottom: 32px;
+      padding: 20px 24px;
+      background: linear-gradient(180deg, var(--mc-oak-plank) 0%, var(--mc-oak) 100%);
+      border: var(--pixel-3) solid;
+      border-color: var(--mc-oak-light) var(--mc-oak-dark) var(--mc-oak-dark) var(--mc-oak-light);
+      position: relative;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     }
 
+    /* 看板の支柱 */
+    .page-header::before,
+    .page-header::after {
+      content: '';
+      position: absolute;
+      bottom: -24px;
+      width: 12px;
+      height: 24px;
+      background: var(--mc-oak-dark);
+      border: var(--pixel) solid;
+      border-color: var(--mc-oak) #3d2813 #3d2813 var(--mc-oak);
+    }
+
+    .page-header::before { left: 30px; }
+    .page-header::after { right: 30px; }
+
     .page-title {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.5px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 16px;
+      color: var(--mc-dark-oak);
+      text-shadow: var(--pixel) var(--pixel) 0 rgba(255, 255, 255, 0.3);
       margin-bottom: 8px;
+      letter-spacing: 1px;
     }
 
     .page-subtitle {
-      font-size: 15px;
-      color: var(--text-secondary);
+      font-size: 16px;
+      color: var(--mc-dark-oak-light);
     }
 
-    /* タブ（非表示 - サイドバーナビゲーションに置き換え） */
-    .tabs {
-      display: none;
-    }
+    /* タブ非表示 */
+    .tabs { display: none; }
 
-    /* タブコンテンツ */
     .tab-content {
       display: none;
-      animation: content-enter 0.4s var(--ease-out-expo);
+      animation: content-enter 0.3s ease;
     }
 
     .tab-content.active {
@@ -648,16 +802,12 @@
     @keyframes content-enter {
       from {
         opacity: 0;
-        transform: translateY(16px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
+        transform: translateY(10px);
       }
     }
 
     /* =====================================================
-       統計カード - グラスモーフィズム
+       統計カード - 実績風
        ===================================================== */
     .stats-grid {
       display: grid;
@@ -667,201 +817,165 @@
     }
 
     .stat-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-xl);
-      padding: 28px;
+      background: linear-gradient(180deg, var(--mc-cobblestone) 0%, var(--mc-stone) 100%);
+      border: var(--pixel-3) solid;
+      border-color: #666666 #333333 #333333 #666666;
+      padding: 24px;
       position: relative;
       overflow: hidden;
       transition: var(--transition-normal);
     }
 
+    /* 実績アイコンの輝き */
     .stat-card::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
-      opacity: 0;
-      transition: var(--transition-normal);
-    }
-
-    .stat-card:hover {
-      background: var(--bg-tertiary);
-      border-color: var(--border-strong);
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-lg);
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 60%
+      );
+      transform: translateX(-100%);
+      transition: transform 0.6s;
     }
 
     .stat-card:hover::before {
-      opacity: 1;
+      transform: translateX(100%);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
 
     .stat-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .stat-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: var(--radius-lg);
+      width: 56px;
+      height: 56px;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 26px;
+      font-size: 32px;
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+      background: var(--mc-slot-bg);
     }
 
-    .stat-card:nth-child(1) .stat-icon {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
-    }
-
-    .stat-card:nth-child(2) .stat-icon {
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
-      box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
-    }
-
-    .stat-card:nth-child(3) .stat-icon {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(52, 211, 153, 0.2) 100%);
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
-    }
-
-    .stat-card:nth-child(4) .stat-icon {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%);
-      box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
-    }
-
-    .stat-trend {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: var(--radius-full);
-    }
-
-    .stat-trend.up {
-      background: var(--success-bg);
-      color: var(--success);
-    }
-
-    .stat-trend.down {
-      background: var(--danger-bg);
-      color: var(--danger);
-    }
+    /* アイコンに鉱石の色を適用 */
+    .stat-card:nth-child(1) .stat-icon { box-shadow: inset 0 0 20px rgba(74, 237, 217, 0.3); }
+    .stat-card:nth-child(2) .stat-icon { box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.3); }
+    .stat-card:nth-child(3) .stat-icon { box-shadow: inset 0 0 20px rgba(23, 221, 98, 0.3); }
+    .stat-card:nth-child(4) .stat-icon { box-shadow: inset 0 0 20px rgba(252, 219, 5, 0.3); }
 
     .stat-value {
-      font-size: 40px;
-      font-weight: 800;
-      color: var(--text-primary);
+      font-family: 'Press Start 2P', cursive;
+      font-size: 28px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel-2) var(--pixel-2) 0 #000;
       line-height: 1;
-      margin-bottom: 6px;
-      letter-spacing: -1px;
+      margin-bottom: 8px;
     }
 
     .stat-label {
-      font-size: 14px;
-      color: var(--text-secondary);
-      font-weight: 500;
+      font-size: 16px;
+      color: var(--mc-text-gray);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
     /* =====================================================
-       カード
+       カード - チェスト風
        ===================================================== */
     .card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-xl);
+      background: linear-gradient(180deg, var(--mc-stone) 0%, var(--mc-deepslate) 100%);
+      border: var(--pixel-3) solid;
+      border-color: #555555 #222222 #222222 #555555;
       margin-bottom: 24px;
       overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
 
     .card-header {
-      padding: 24px 28px;
-      border-bottom: 1px solid var(--border-default);
+      padding: 20px 24px;
+      background: linear-gradient(180deg, var(--mc-oak-plank) 0%, var(--mc-oak) 100%);
+      border-bottom: var(--pixel-2) solid var(--mc-oak-dark);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: var(--bg-tertiary);
     }
 
     .card-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-primary);
+      font-size: 20px;
+      color: var(--mc-dark-oak);
       display: flex;
       align-items: center;
       gap: 12px;
-      letter-spacing: -0.3px;
+      text-shadow: var(--pixel) var(--pixel) 0 rgba(255, 255, 255, 0.3);
     }
 
     .card-title-icon {
-      width: 36px;
-      height: 36px;
-      background: var(--gradient-primary);
-      border-radius: var(--radius-md);
+      width: 40px;
+      height: 40px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 18px;
-      box-shadow: var(--shadow-sm), 0 0 15px var(--accent-glow);
+      font-size: 22px;
     }
 
     .card-body {
-      padding: 28px;
+      padding: 24px;
     }
 
     /* =====================================================
-       テーブル - モダンデザイン
+       テーブル - インベントリグリッド風
        ===================================================== */
     .table-wrapper {
       overflow-x: auto;
-      border-radius: var(--radius-lg);
+      background: rgba(0, 0, 0, 0.2);
+      border: var(--pixel-2) solid;
+      border-color: #333333 #666666 #666666 #333333;
     }
 
     table {
       width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
+      border-collapse: collapse;
     }
 
     th, td {
-      padding: 16px 20px;
+      padding: 14px 18px;
       text-align: left;
     }
 
     th {
-      background: var(--bg-elevated);
-      font-weight: 600;
-      font-size: 11px;
-      color: var(--text-secondary);
+      background: linear-gradient(180deg, var(--mc-cobblestone) 0%, var(--mc-gravel) 100%);
+      font-size: 14px;
+      color: var(--mc-text-white);
       text-transform: uppercase;
       letter-spacing: 1px;
-      border-bottom: 2px solid var(--border-default);
+      border-bottom: var(--pixel-2) solid var(--mc-slot-border);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
       white-space: nowrap;
-      position: sticky;
-      top: 0;
-    }
-
-    th:first-child {
-      border-top-left-radius: var(--radius-lg);
-    }
-
-    th:last-child {
-      border-top-right-radius: var(--radius-lg);
     }
 
     td {
-      border-bottom: 1px solid var(--border-subtle);
-      font-size: 14px;
-      color: var(--text-primary);
-      background: var(--bg-tertiary);
+      font-size: 16px;
+      color: var(--mc-text-light);
+      background: var(--mc-slot-bg);
+      border-bottom: var(--pixel) solid rgba(0, 0, 0, 0.2);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
     tbody tr {
@@ -869,108 +983,78 @@
     }
 
     tbody tr:hover td {
-      background: var(--bg-elevated);
-    }
-
-    tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    tbody tr:last-child td:first-child {
-      border-bottom-left-radius: var(--radius-lg);
-    }
-
-    tbody tr:last-child td:last-child {
-      border-bottom-right-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.1);
     }
 
     /* =====================================================
-       ボタン
+       ボタン - Minecraft UI風
        ===================================================== */
     .btn {
-      padding: 12px 20px;
-      border: none;
-      border-radius: var(--radius-md);
+      padding: 12px 24px;
+      border: var(--pixel-2) solid;
       cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      transition: var(--transition-normal);
+      font-size: 16px;
+      font-family: inherit;
+      transition: var(--transition-fast);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-      opacity: 0;
-      transition: var(--transition-fast);
-    }
-
-    .btn:hover::before {
-      opacity: 1;
+      text-shadow: var(--pixel) var(--pixel) 0 rgba(0, 0, 0, 0.5);
     }
 
     .btn:active {
-      transform: scale(0.97);
+      transform: scale(0.98);
     }
 
     .btn-primary {
-      background: var(--gradient-primary);
-      color: white;
-      box-shadow: 0 4px 15px var(--accent-glow);
+      background: linear-gradient(180deg, var(--mc-grass-bright) 0%, var(--mc-grass) 50%, var(--mc-grass) 100%);
+      border-color: var(--mc-grass-light) var(--mc-grass-dark) var(--mc-grass-dark) var(--mc-grass-light);
+      color: var(--mc-text-white);
+      box-shadow: 0 4px 12px rgba(93, 140, 62, 0.4);
     }
 
     .btn-primary:hover {
-      box-shadow: 0 6px 25px var(--accent-glow);
-      transform: translateY(-2px);
+      background: linear-gradient(180deg, #9be36c 0%, var(--mc-grass-light) 50%, var(--mc-grass-light) 100%);
+      box-shadow: 0 6px 20px rgba(93, 140, 62, 0.6);
     }
 
     .btn-secondary {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      border: 1px solid var(--border-default);
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
+      color: var(--mc-text-white);
     }
 
     .btn-secondary:hover {
-      background: var(--bg-elevated);
-      color: var(--text-primary);
-      border-color: var(--border-strong);
+      background: linear-gradient(180deg, #b0b0b0 0%, #606060 100%);
+    }
+
+    .btn-secondary:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
     }
 
     .btn-danger {
-      background: var(--gradient-danger);
-      color: white;
-      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+      background: linear-gradient(180deg, var(--mc-redstone) 0%, var(--mc-redstone-dark) 100%);
+      border-color: #ff6666 #880000 #880000 #ff6666;
+      color: var(--mc-text-white);
+      box-shadow: 0 4px 12px rgba(170, 15, 1, 0.4);
     }
 
     .btn-danger:hover {
-      box-shadow: 0 6px 25px rgba(239, 68, 68, 0.4);
-      transform: translateY(-2px);
+      background: linear-gradient(180deg, #ff4444 0%, var(--mc-redstone) 100%);
+      box-shadow: 0 0 20px rgba(255, 26, 26, 0.5);
     }
 
     .btn-success {
-      background: var(--gradient-success);
-      color: white;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    }
-
-    .btn-success:hover {
-      box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4);
-      transform: translateY(-2px);
+      background: linear-gradient(180deg, var(--mc-emerald) 0%, var(--mc-emerald-dark) 100%);
+      border-color: #44ff88 #087832 #087832 #44ff88;
+      color: var(--mc-text-white);
+      box-shadow: 0 4px 12px rgba(13, 158, 69, 0.4);
     }
 
     .btn-sm {
-      padding: 8px 14px;
-      font-size: 13px;
+      padding: 8px 16px;
+      font-size: 14px;
     }
 
     .btn-group {
@@ -979,130 +1063,137 @@
     }
 
     /* =====================================================
-       バッジ
+       バッジ - アイテムレア度風
        ===================================================== */
     .badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       padding: 6px 12px;
-      border-radius: var(--radius-full);
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
+      font-size: 14px;
+      font-weight: bold;
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      border: var(--pixel) solid;
     }
 
+    /* 管理者 = レジェンダリー (金) */
     .badge-admin {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(248, 113, 113, 0.25) 100%);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.4);
+      background: linear-gradient(180deg, var(--mc-gold) 0%, var(--mc-gold-dark) 100%);
+      border-color: #ffe566 #8a7000 #8a7000 #ffe566;
+      color: var(--mc-dark-oak);
+      text-shadow: 0 0 8px rgba(252, 219, 5, 0.5);
     }
 
+    /* 講師 = エピック (紫) */
     .badge-teacher {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(52, 211, 153, 0.25) 100%);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.4);
+      background: linear-gradient(180deg, var(--mc-amethyst) 0%, var(--mc-ender-eye) 100%);
+      border-color: #cc99ff #5a2d7a #5a2d7a #cc99ff;
+      color: var(--mc-text-white);
+      text-shadow: 0 0 8px rgba(139, 50, 184, 0.5);
     }
 
+    /* 生徒 = レア (水色) */
     .badge-student {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(96, 165, 250, 0.25) 100%);
-      color: #93c5fd;
-      border: 1px solid rgba(59, 130, 246, 0.4);
+      background: linear-gradient(180deg, var(--mc-diamond) 0%, var(--mc-diamond-dark) 100%);
+      border-color: #88ffee #1a8a7d #1a8a7d #88ffee;
+      color: var(--mc-void);
+      text-shadow: none;
     }
 
     .badge-submitted {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(52, 211, 153, 0.25) 100%);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.4);
+      background: linear-gradient(180deg, var(--mc-emerald) 0%, var(--mc-emerald-dark) 100%);
+      border-color: #66ff99 #087832 #087832 #66ff99;
+      color: var(--mc-void);
+      text-shadow: none;
     }
 
     .badge-not-submitted {
-      background: var(--bg-elevated);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-default);
+      background: linear-gradient(180deg, var(--mc-gravel) 0%, var(--mc-stone) 100%);
+      border-color: #888888 #333333 #333333 #888888;
+      color: var(--mc-text-gray);
     }
 
     /* =====================================================
-       フォーム
+       フォーム - コマンドブロック風
        ===================================================== */
     .form-group {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .form-label {
       display: block;
-      margin-bottom: 10px;
-      font-weight: 600;
-      font-size: 13px;
-      color: var(--text-primary);
-      letter-spacing: 0.3px;
+      margin-bottom: 8px;
+      font-size: 16px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
     .form-input {
       width: 100%;
-      padding: 14px 16px;
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      color: var(--text-primary);
-      background: var(--bg-elevated);
+      padding: 12px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--mc-text-white);
+      background: var(--mc-void);
+      border: var(--pixel-2) solid;
+      border-color: #333333 #666666 #666666 #333333;
       transition: var(--transition-fast);
     }
 
     .form-input:focus {
       outline: none;
-      border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
-      background: var(--bg-hover);
+      border-color: var(--mc-diamond);
+      box-shadow: 0 0 12px rgba(74, 237, 217, 0.3);
     }
 
     .form-input::placeholder {
-      color: var(--text-tertiary);
+      color: var(--mc-text-dark);
     }
 
     .form-select {
       width: 100%;
-      padding: 14px 16px;
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      color: var(--text-primary);
-      background: var(--bg-elevated) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23c0c8d4' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") right 14px center / 18px no-repeat;
-      appearance: none;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--mc-text-white);
+      background: var(--mc-void);
+      border: var(--pixel-2) solid;
+      border-color: #333333 #666666 #666666 #333333;
       cursor: pointer;
-      transition: var(--transition-fast);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23aaaaaa' stroke-linecap='square' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 20px;
     }
 
     .form-select:focus {
       outline: none;
-      border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
-      background-color: var(--bg-hover);
+      border-color: var(--mc-diamond);
+      box-shadow: 0 0 12px rgba(74, 237, 217, 0.3);
     }
 
-    /* =====================================================
-       フィルターバー
-       ===================================================== */
+    /* フィルターバー */
     .filter-bar {
       display: flex;
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
-      padding: 20px;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-lg);
+      padding: 16px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
     }
 
     .filter-bar .form-input,
     .filter-bar .form-select {
       width: auto;
       min-width: 200px;
-      background: var(--bg-hover);
+      background: var(--mc-deepslate);
     }
 
     /* =====================================================
-       モーダル
+       モーダル - エンチャントテーブル風
        ===================================================== */
     .modal-overlay {
       display: none;
@@ -1111,9 +1202,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.85);
       justify-content: center;
       align-items: center;
       z-index: 1000;
@@ -1127,35 +1216,34 @@
 
     @keyframes overlay-enter {
       from { opacity: 0; }
-      to { opacity: 1; }
     }
 
     .modal {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-2xl);
+      background:
+        linear-gradient(180deg, var(--mc-cobblestone) 0%, var(--mc-stone) 100%);
+      border: var(--pixel-3) solid;
+      border-color: #666666 #333333 #333333 #666666;
       width: 100%;
       max-width: 520px;
       max-height: 90vh;
       overflow: hidden;
-      box-shadow: var(--shadow-xl), 0 0 60px rgba(0, 0, 0, 0.5);
-      animation: modal-enter 0.3s var(--ease-out-back);
+      box-shadow:
+        0 0 60px rgba(0, 0, 0, 0.8),
+        0 0 30px rgba(137, 50, 184, 0.2);
+      animation: modal-enter 0.3s ease;
     }
 
     @keyframes modal-enter {
       from {
         opacity: 0;
-        transform: scale(0.9) translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
+        transform: scale(0.9);
       }
     }
 
     .modal-header {
-      padding: 24px 28px;
-      border-bottom: 1px solid var(--border-subtle);
+      padding: 20px 24px;
+      background: linear-gradient(180deg, var(--mc-oak-plank) 0%, var(--mc-oak) 100%);
+      border-bottom: var(--pixel-2) solid var(--mc-oak-dark);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -1163,79 +1251,86 @@
 
     .modal-title {
       font-size: 20px;
-      font-weight: 700;
-      color: var(--text-primary);
+      color: var(--mc-dark-oak);
       display: flex;
       align-items: center;
-      gap: 12px;
-      letter-spacing: -0.3px;
+      gap: 10px;
+      text-shadow: var(--pixel) var(--pixel) 0 rgba(255, 255, 255, 0.3);
     }
 
     .modal-close {
-      width: 40px;
-      height: 40px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
       font-size: 20px;
       cursor: pointer;
-      color: var(--text-secondary);
+      color: var(--mc-text-white);
       display: flex;
       align-items: center;
       justify-content: center;
       transition: var(--transition-fast);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
     .modal-close:hover {
-      background: var(--bg-elevated);
-      color: var(--text-primary);
-      border-color: var(--border-strong);
+      background: linear-gradient(180deg, #b0b0b0 0%, #606060 100%);
+    }
+
+    .modal-close:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
     }
 
     .modal-body {
-      padding: 28px;
+      padding: 24px;
       max-height: calc(90vh - 160px);
       overflow-y: auto;
     }
 
     .modal-footer {
-      padding: 20px 28px;
-      border-top: 1px solid var(--border-subtle);
+      padding: 16px 24px;
+      background: linear-gradient(180deg, var(--mc-gravel) 0%, var(--mc-cobblestone) 100%);
+      border-top: var(--pixel-2) solid #555555;
       display: flex;
       justify-content: flex-end;
       gap: 12px;
-      background: var(--bg-tertiary);
     }
 
     /* =====================================================
-       プロジェクトグリッド
+       プロジェクトグリッド - アイテムフレーム風
        ===================================================== */
     .project-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 20px;
     }
 
     .project-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-xl);
+      background: var(--mc-slot-bg);
+      border: var(--pixel-3) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
       overflow: hidden;
       transition: var(--transition-normal);
       cursor: pointer;
+      position: relative;
     }
 
     .project-card:hover {
-      background: var(--bg-tertiary);
-      transform: translateY(-6px) scale(1.01);
-      box-shadow: var(--shadow-xl);
-      border-color: var(--accent-primary);
+      transform: scale(1.02);
+      border-color: var(--mc-gold);
+      box-shadow: 0 0 20px rgba(252, 219, 5, 0.3);
     }
 
     .project-thumbnail {
       width: 100%;
-      height: 160px;
-      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-elevated) 100%);
+      height: 140px;
+      background:
+        linear-gradient(135deg, var(--mc-stone) 25%, transparent 25%),
+        linear-gradient(225deg, var(--mc-stone) 25%, transparent 25%),
+        linear-gradient(45deg, var(--mc-stone) 25%, transparent 25%),
+        linear-gradient(315deg, var(--mc-stone) 25%, var(--mc-cobblestone) 25%);
+      background-size: 20px 20px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -1243,41 +1338,21 @@
       position: relative;
     }
 
-    .project-thumbnail::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.5) 100%);
-      opacity: 0;
-      transition: var(--transition-fast);
-    }
-
-    .project-card:hover .project-thumbnail::after {
-      opacity: 1;
-    }
-
     .project-thumbnail img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: var(--transition-slow);
-    }
-
-    .project-card:hover .project-thumbnail img {
-      transform: scale(1.08);
     }
 
     .project-info {
-      padding: 20px;
+      padding: 16px;
+      background: linear-gradient(180deg, var(--mc-deepslate) 0%, var(--mc-void) 100%);
     }
 
     .project-name {
-      font-weight: 600;
-      font-size: 16px;
-      color: var(--text-primary);
+      font-size: 17px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
       margin-bottom: 8px;
       white-space: nowrap;
       overflow: hidden;
@@ -1285,69 +1360,68 @@
     }
 
     .project-meta {
-      font-size: 13px;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 14px;
+      color: var(--mc-text-gray);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
     .project-status {
-      margin-top: 14px;
+      margin-top: 12px;
     }
 
     /* =====================================================
-       空の状態
+       空の状態 - 空のチェスト
        ===================================================== */
     .empty-state {
       text-align: center;
-      padding: 80px 20px;
-      background: var(--bg-tertiary);
-      border-radius: var(--radius-lg);
+      padding: 60px 20px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel-2) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
     }
 
     .empty-state-icon {
       font-size: 64px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       opacity: 0.6;
     }
 
     .empty-state-text {
-      font-size: 16px;
-      color: var(--text-secondary);
-      font-weight: 500;
+      font-size: 18px;
+      color: var(--mc-text-gray);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
     /* =====================================================
-       アラート
+       アラート - 実績解除風
        ===================================================== */
     .alert {
       padding: 16px 20px;
-      border-radius: var(--radius-lg);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       display: flex;
       align-items: center;
       gap: 12px;
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 16px;
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+      border: var(--pixel-2) solid;
     }
 
     .alert-success {
-      background: rgba(16, 185, 129, 0.15);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.4);
+      background: linear-gradient(180deg, rgba(23, 221, 98, 0.2) 0%, rgba(13, 158, 69, 0.2) 100%);
+      border-color: var(--mc-emerald-dark);
+      color: var(--mc-emerald);
     }
 
     .alert-error {
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.4);
+      background: linear-gradient(180deg, rgba(255, 26, 26, 0.2) 0%, rgba(170, 15, 1, 0.2) 100%);
+      border-color: var(--mc-redstone-dark);
+      color: var(--mc-redstone);
     }
 
     .alert-info {
-      background: rgba(59, 130, 246, 0.15);
-      color: #93c5fd;
-      border: 1px solid rgba(59, 130, 246, 0.4);
+      background: linear-gradient(180deg, rgba(74, 237, 217, 0.2) 0%, rgba(44, 181, 168, 0.2) 100%);
+      border-color: var(--mc-diamond-dark);
+      color: var(--mc-diamond);
     }
 
     /* =====================================================
@@ -1373,11 +1447,15 @@
       }
 
       .container {
-        padding: 24px;
+        padding: 24px 16px;
       }
 
       .mobile-header {
         display: flex !important;
+      }
+
+      .container {
+        margin-top: 64px;
       }
     }
 
@@ -1392,12 +1470,12 @@
       }
 
       .stat-value {
-        font-size: 32px;
+        font-size: 24px;
       }
 
       .filter-bar {
         flex-direction: column;
-        padding: 16px;
+        padding: 12px;
       }
 
       .filter-bar .form-input,
@@ -1408,7 +1486,7 @@
 
       .card-header {
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         align-items: flex-start;
       }
 
@@ -1418,6 +1496,15 @@
 
       .btn-group {
         flex-wrap: wrap;
+      }
+
+      .page-header {
+        padding: 16px 20px;
+        margin-bottom: 48px;
+      }
+
+      .page-title {
+        font-size: 12px;
       }
 
       .modal {
@@ -1434,35 +1521,40 @@
       left: 0;
       right: 0;
       height: 64px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 0 20px;
+      background: linear-gradient(180deg, var(--mc-dark-oak-light) 0%, var(--mc-dark-oak) 100%);
+      border-bottom: var(--pixel-2) solid #1a0d05;
+      padding: 0 16px;
       align-items: center;
       justify-content: space-between;
       z-index: 99;
     }
 
     .mobile-menu-btn {
-      width: 44px;
-      height: 44px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border: var(--pixel-2) solid;
+      border-color: #c0c0c0 #404040 #404040 #c0c0c0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 24px;
       cursor: pointer;
-      color: var(--text-primary);
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
+    }
+
+    .mobile-menu-btn:active {
+      border-color: #404040 #c0c0c0 #c0c0c0 #404040;
     }
 
     .mobile-logo {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-primary);
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+      color: var(--mc-text-white);
+      text-shadow: var(--pixel) var(--pixel) 0 #000;
     }
 
-    /* サイドバーオーバーレイ */
     .sidebar-overlay {
       display: none;
       position: fixed;
@@ -1470,7 +1562,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.7);
       z-index: 99;
     }
 
@@ -1478,37 +1570,97 @@
       display: block;
     }
 
-    @media (max-width: 1024px) {
-      .container {
-        margin-top: 64px;
-      }
-    }
-
     /* =====================================================
-       スクロールバー
+       スクロールバー - Minecraft風
        ===================================================== */
     ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+      width: 12px;
+      height: 12px;
     }
 
     ::-webkit-scrollbar-track {
-      background: transparent;
+      background: var(--mc-void);
+      border: var(--pixel) solid var(--mc-slot-border);
     }
 
     ::-webkit-scrollbar-thumb {
-      background: var(--border-default);
-      border-radius: 4px;
+      background: linear-gradient(180deg, var(--mc-button-top) 0%, var(--mc-button-bottom) 100%);
+      border: var(--pixel) solid;
+      border-color: #888888 #404040 #404040 #888888;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: var(--border-strong);
+      background: linear-gradient(180deg, #b0b0b0 0%, #606060 100%);
     }
 
-    /* Firefox */
     * {
       scrollbar-width: thin;
-      scrollbar-color: var(--border-default) transparent;
+      scrollbar-color: var(--mc-button-bottom) var(--mc-void);
+    }
+
+    /* =====================================================
+       追加のMinecraft装飾
+       ===================================================== */
+
+    /* 経験値バー風の装飾ライン */
+    .xp-bar {
+      height: 8px;
+      background: var(--mc-slot-bg);
+      border: var(--pixel) solid var(--mc-slot-border);
+      margin: 12px 0;
+      overflow: hidden;
+    }
+
+    .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(180deg, var(--mc-grass-bright) 0%, var(--mc-grass) 50%, var(--mc-grass-light) 100%);
+      box-shadow: 0 0 8px var(--mc-grass-light);
+    }
+
+    /* ツールチップ */
+    [data-tooltip] {
+      position: relative;
+    }
+
+    [data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 12px;
+      background: var(--mc-void);
+      border: var(--pixel) solid var(--mc-amethyst);
+      color: var(--mc-text-white);
+      font-size: 14px;
+      white-space: nowrap;
+      z-index: 1000;
+      pointer-events: none;
+      animation: tooltip-appear 0.2s ease;
+    }
+
+    @keyframes tooltip-appear {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+      }
+    }
+
+    /* アイテムスロットホバーエフェクト */
+    .item-slot {
+      background: var(--mc-slot-bg);
+      border: var(--pixel) solid;
+      border-color: #555555 #ffffff40 #ffffff40 #555555;
+      padding: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-fast);
+    }
+
+    .item-slot:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--mc-hotbar-select);
     }
   </style>
 </head>
@@ -1517,11 +1669,13 @@
   <div class="loading-screen" id="loadingScreen">
     <div class="loading-content">
       <div class="loading-logo">
-        <div class="loading-logo-icon">📚</div>
-        <span class="loading-logo-text">Scratch Education</span>
+        <div class="loading-logo-icon">⛏️</div>
+        <span class="loading-logo-text">SCRATCH EDU</span>
       </div>
-      <div class="loading-spinner"></div>
-      <div class="loading-text">Loading</div>
+      <div class="loading-bar-container">
+        <div class="loading-bar"></div>
+      </div>
+      <div class="loading-text">Loading world...</div>
     </div>
     <div class="spinner"></div>
   </div>
@@ -1529,7 +1683,7 @@
   <!-- アクセス拒否画面 -->
   <div class="access-denied" id="accessDenied">
     <div class="access-denied-card">
-      <div class="access-denied-icon">🔒</div>
+      <div class="access-denied-icon">🚫</div>
       <h1>アクセスが拒否されました</h1>
       <p>この画面にアクセスする権限がありません。</p>
       <p>管理者または講師としてログインしてください。</p>
@@ -1539,24 +1693,24 @@
 
   <!-- アプリレイアウト -->
   <div class="app-layout" id="appLayout" style="display: none;">
-    <!-- サイドバーオーバーレイ（モバイル用） -->
+    <!-- サイドバーオーバーレイ -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <!-- モバイルヘッダー -->
     <div class="mobile-header">
       <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-      <span class="mobile-logo">管理画面</span>
-      <div style="width: 44px;"></div>
+      <span class="mobile-logo">ADMIN</span>
+      <div style="width: 48px;"></div>
     </div>
 
     <!-- サイドバー -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">
-          <div class="sidebar-logo-icon">📚</div>
+          <div class="sidebar-logo-icon">⛏️</div>
           <div class="sidebar-logo-text">
             <span class="sidebar-logo-title">管理画面</span>
-            <span class="sidebar-logo-subtitle">Education Platform</span>
+            <span class="sidebar-logo-subtitle">★ ADMIN PANEL ★</span>
           </div>
         </div>
       </div>
@@ -1573,11 +1727,11 @@
             ユーザー管理
           </button>
           <button class="sidebar-nav-item" data-tab="classrooms" onclick="switchTab('classrooms')">
-            <span class="sidebar-nav-icon">🏫</span>
+            <span class="sidebar-nav-icon">🏠</span>
             教室管理
           </button>
           <button class="sidebar-nav-item" data-tab="projects" onclick="switchTab('projects')">
-            <span class="sidebar-nav-icon">📁</span>
+            <span class="sidebar-nav-icon">📦</span>
             プロジェクト管理
           </button>
         </div>
@@ -1585,7 +1739,7 @@
 
       <div class="sidebar-footer">
         <div class="sidebar-user">
-          <div class="sidebar-user-avatar" id="userAvatar">U</div>
+          <div class="sidebar-user-avatar" id="userAvatar">S</div>
           <div class="sidebar-user-info">
             <div class="sidebar-user-name" id="headerUserName">-</div>
             <div class="sidebar-user-role" id="headerUserRole">-</div>
@@ -1604,9 +1758,8 @@
 
     <!-- メインコンテンツ -->
     <main class="main-content">
-      <!-- 旧ヘッダー（互換性のため非表示で維持） -->
       <header class="header" id="header" style="display: none;">
-        <div class="header-title">📚 管理画面</div>
+        <div class="header-title">管理画面</div>
         <div class="header-user">
           <div class="header-user-info">
             <div class="header-user-name">-</div>
@@ -1617,9 +1770,8 @@
         </div>
       </header>
 
-      <!-- メインコンテナ -->
       <div class="container" id="mainContainer">
-        <!-- タブナビゲーション（非表示、互換性のため維持） -->
+        <!-- タブナビゲーション -->
         <div class="tabs">
           <button class="tab-btn active" data-tab="dashboard">ダッシュボード</button>
           <button class="tab-btn" data-tab="users">ユーザー管理</button>
@@ -1630,35 +1782,35 @@
         <!-- ダッシュボード -->
         <div class="tab-content active" id="tab-dashboard">
           <div class="page-header">
-            <h1 class="page-title">ダッシュボード</h1>
-            <p class="page-subtitle">プラットフォームの概要と統計情報</p>
+            <h1 class="page-title">⚔️ ダッシュボード</h1>
+            <p class="page-subtitle">プラットフォームの統計情報を確認</p>
           </div>
 
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-header">
-                <div class="stat-icon">👥</div>
+                <div class="stat-icon">💎</div>
               </div>
               <div class="stat-value" id="statUsers">0</div>
               <div class="stat-label">総ユーザー数</div>
             </div>
             <div class="stat-card">
               <div class="stat-header">
-                <div class="stat-icon">🏫</div>
+                <div class="stat-icon">🏠</div>
               </div>
               <div class="stat-value" id="statClassrooms">0</div>
               <div class="stat-label">教室数</div>
             </div>
             <div class="stat-card">
               <div class="stat-header">
-                <div class="stat-icon">📁</div>
+                <div class="stat-icon">📦</div>
               </div>
               <div class="stat-value" id="statProjects">0</div>
               <div class="stat-label">プロジェクト数</div>
             </div>
             <div class="stat-card">
               <div class="stat-header">
-                <div class="stat-icon">✅</div>
+                <div class="stat-icon">⭐</div>
               </div>
               <div class="stat-value" id="statSubmitted">0</div>
               <div class="stat-label">提出済み</div>
@@ -1668,7 +1820,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">
-                <span class="card-title-icon">📋</span>
+                <span class="card-title-icon">📜</span>
                 最近のアクティビティ
               </h2>
             </div>
@@ -1702,14 +1854,14 @@
         <!-- ユーザー管理 -->
         <div class="tab-content" id="tab-users">
           <div class="page-header">
-            <h1 class="page-title">ユーザー管理</h1>
+            <h1 class="page-title">👥 ユーザー管理</h1>
             <p class="page-subtitle">ユーザーの作成・編集・削除</p>
           </div>
 
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">
-                <span class="card-title-icon">👥</span>
+                <span class="card-title-icon">👤</span>
                 ユーザー一覧
               </h2>
               <button class="btn btn-primary" onclick="AdminPanel.showCreateUserModal()" id="btnCreateUser">
@@ -1761,14 +1913,14 @@
         <!-- 教室管理 -->
         <div class="tab-content" id="tab-classrooms">
           <div class="page-header">
-            <h1 class="page-title">教室管理</h1>
+            <h1 class="page-title">🏠 教室管理</h1>
             <p class="page-subtitle">教室の作成と管理</p>
           </div>
 
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">
-                <span class="card-title-icon">🏫</span>
+                <span class="card-title-icon">🏠</span>
                 教室一覧
               </h2>
               <button class="btn btn-primary" onclick="AdminPanel.showCreateClassroomModal()" id="btnCreateClassroom">
@@ -1792,7 +1944,7 @@
                     <tr>
                       <td colspan="6">
                         <div class="empty-state">
-                          <div class="empty-state-icon">🏫</div>
+                          <div class="empty-state-icon">🏠</div>
                           <div class="empty-state-text">教室がありません</div>
                         </div>
                       </td>
@@ -1807,14 +1959,14 @@
         <!-- プロジェクト管理 -->
         <div class="tab-content" id="tab-projects">
           <div class="page-header">
-            <h1 class="page-title">プロジェクト管理</h1>
+            <h1 class="page-title">📦 プロジェクト管理</h1>
             <p class="page-subtitle">すべてのプロジェクトを管理</p>
           </div>
 
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">
-                <span class="card-title-icon">📁</span>
+                <span class="card-title-icon">📦</span>
                 プロジェクト一覧
               </h2>
             </div>
@@ -1835,7 +1987,7 @@
               </div>
               <div class="project-grid" id="projectsGrid">
                 <div class="empty-state" style="grid-column: 1 / -1;">
-                  <div class="empty-state-icon">📁</div>
+                  <div class="empty-state-icon">📦</div>
                   <div class="empty-state-text">プロジェクトがありません</div>
                 </div>
               </div>
@@ -1851,7 +2003,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✨ 新規ユーザー作成</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('createUserModal')">&times;</button>
+        <button class="modal-close" onclick="AdminPanel.closeModal('createUserModal')">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1893,7 +2045,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✏️ ユーザー編集</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('editUserModal')">&times;</button>
+        <button class="modal-close" onclick="AdminPanel.closeModal('editUserModal')">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1932,7 +2084,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">🔐 パスワードリセット</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('resetPasswordModal')">&times;</button>
+        <button class="modal-close" onclick="AdminPanel.closeModal('resetPasswordModal')">×</button>
       </div>
       <div class="modal-body">
         <div class="alert alert-info">
@@ -1956,7 +2108,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✨ 新規教室作成</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('createClassroomModal')">&times;</button>
+        <button class="modal-close" onclick="AdminPanel.closeModal('createClassroomModal')">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1982,7 +2134,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✏️ 教室編集</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('editClassroomModal')">&times;</button>
+        <button class="modal-close" onclick="AdminPanel.closeModal('editClassroomModal')">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -2009,7 +2161,7 @@
     <div class="modal" style="max-width: 720px;">
       <div class="modal-header">
         <h3 class="modal-title">📋 プロジェクト詳細</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('projectDetailModal')">&times;</button>
+        <button class="modal-close" onclick="AdminPanel.closeModal('projectDetailModal')">×</button>
       </div>
       <div class="modal-body">
         <div id="projectDetailContent"></div>
@@ -2025,7 +2177,7 @@
     <div class="modal" style="max-width: 440px;">
       <div class="modal-header">
         <h3 class="modal-title">⚠️ 削除確認</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('confirmDeleteModal')">&times;</button>
+        <button class="modal-close" onclick="AdminPanel.closeModal('confirmDeleteModal')">×</button>
       </div>
       <div class="modal-body">
         <div class="alert alert-error" style="margin-bottom: 0;">
@@ -2049,24 +2201,20 @@
       overlay.classList.toggle('show');
     }
 
-    // タブ切り替え（サイドバーから）
+    // タブ切り替え
     function switchTab(tabName) {
-      // サイドバーのアクティブ状態を更新
       document.querySelectorAll('.sidebar-nav-item').forEach(item => {
         item.classList.toggle('active', item.dataset.tab === tabName);
       });
 
-      // タブボタンの状態も更新（互換性のため）
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
       });
 
-      // タブコンテンツの表示切り替え
       document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.toggle('active', content.id === `tab-${tabName}`);
       });
 
-      // モバイルの場合はサイドバーを閉じる
       if (window.innerWidth <= 1024) {
         toggleSidebar();
       }
@@ -2074,21 +2222,16 @@
 
     // AdminPanelのshowMainContentをオーバーライド
     (function() {
-      const originalShowMainContent = AdminPanel.showMainContent;
       AdminPanel.showMainContent = function() {
-        // 新しいレイアウトを表示
         document.getElementById('appLayout').style.display = 'flex';
         document.getElementById('mainContainer').classList.add('show');
 
-        // ユーザーアバターを更新
         if (AdminPanel.currentUserData) {
           const name = AdminPanel.currentUserData.displayName || 'U';
           document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
         }
       };
 
-      // updateHeaderもオーバーライド（サイドバーのユーザー情報を更新）
-      const originalUpdateHeader = AdminPanel.updateHeader;
       AdminPanel.updateHeader = function() {
         const displayName = this.currentUserData.displayName || 'ユーザー';
         document.getElementById('headerUserName').textContent = displayName;
@@ -2099,8 +2242,6 @@
           student: '生徒'
         };
         document.getElementById('headerUserRole').textContent = roleLabels[this.currentUserData.role] || this.currentUserData.role;
-
-        // アバターも更新
         document.getElementById('userAvatar').textContent = displayName.charAt(0).toUpperCase();
       };
     })();
