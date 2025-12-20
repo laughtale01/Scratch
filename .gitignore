@@ -19,7 +19,7 @@ console*.txt
 temp_*/
 
 # Development directories
-minecraft-mod/
+# minecraft-mod/ は両ブランチで管理（ブランチ切替時の消失防止）
 scratch-client/
 
 # Editor settings
