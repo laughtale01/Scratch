@@ -18,6 +18,10 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.network.protocol.game.ClientboundPlayerAbilitiesPacket;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -27,9 +31,17 @@ public class CommandExecutor {
     private final MinecraftServer server;
     private JsonObject lastResult;
 
+    // 録画関連のフィールド
+    private Process ffmpegProcess;
+    private String currentRecordingPath;
+    private boolean isRecording;
+
     public CommandExecutor(MinecraftServer server) {
         this.server = server;
         this.lastResult = new JsonObject();
+        this.isRecording = false;
+        this.ffmpegProcess = null;
+        this.currentRecordingPath = null;
     }
 
     public boolean execute(String action, JsonObject params) {
@@ -90,6 +102,15 @@ public class CommandExecutor {
 
                 case "setFlySpeed":
                     return executeSetFlySpeed(params);
+
+                case "startRecording":
+                    return executeStartRecording(params);
+
+                case "stopRecording":
+                    return executeStopRecording(params);
+
+                case "getRecordingStatus":
+                    return executeGetRecordingStatus(params);
 
                 default:
                     MinecraftEduMod.LOGGER.warn("Unknown command: " + action);
@@ -867,5 +888,178 @@ public class CommandExecutor {
             return null;
         }
         return server.getPlayerList().getPlayers().get(0);
+    }
+
+    // ========================================
+    // 録画機能
+    // ========================================
+
+    /**
+     * 録画を開始する
+     * FFmpegを使用してMinecraftウィンドウを録画
+     * @param params パラメータ（オプション: filename）
+     * @return 成功時true
+     */
+    private boolean executeStartRecording(JsonObject params) {
+        // 既に録画中の場合はエラー
+        if (isRecording) {
+            MinecraftEduMod.LOGGER.warn("録画は既に開始されています");
+            lastResult.addProperty("error", "既に録画中です");
+            lastResult.addProperty("isRecording", true);
+            return false;
+        }
+
+        try {
+            // 録画保存先ディレクトリを作成
+            String userHome = System.getProperty("user.home");
+            File recordingsDir = new File(userHome, "MinecraftRecordings");
+            if (!recordingsDir.exists()) {
+                recordingsDir.mkdirs();
+            }
+
+            // ファイル名を生成（タイムスタンプ付き）
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            String timestamp = sdf.format(new Date());
+            String filename = "recording_" + timestamp + ".mp4";
+
+            // パラメータでファイル名が指定されている場合は上書き
+            if (params != null && params.has("filename")) {
+                String customName = params.get("filename").getAsString();
+                if (!customName.isEmpty()) {
+                    // 拡張子がなければ追加
+                    if (!customName.endsWith(".mp4")) {
+                        customName += ".mp4";
+                    }
+                    filename = customName;
+                }
+            }
+
+            currentRecordingPath = new File(recordingsDir, filename).getAbsolutePath();
+
+            // FFmpegコマンドを構築（Windows GDI Grab）
+            // Minecraftウィンドウをキャプチャ
+            String[] command = {
+                "ffmpeg",
+                "-y",                           // 上書き確認なし
+                "-f", "gdigrab",                // Windows画面キャプチャ
+                "-framerate", "30",             // 30fps
+                "-i", "title=Minecraft",        // Minecraftウィンドウ
+                "-c:v", "libx264",              // H.264コーデック
+                "-preset", "ultrafast",         // 高速エンコード
+                "-crf", "23",                   // 画質（23=バランス良い）
+                "-pix_fmt", "yuv420p",          // 互換性のあるピクセルフォーマット
+                currentRecordingPath
+            };
+
+            // FFmpegプロセスを起動
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectErrorStream(true);
+            ffmpegProcess = pb.start();
+
+            // プロセスが正常に起動したか確認（少し待つ）
+            Thread.sleep(500);
+            if (!ffmpegProcess.isAlive()) {
+                MinecraftEduMod.LOGGER.error("FFmpegプロセスの起動に失敗しました");
+                lastResult.addProperty("error", "FFmpegの起動に失敗しました。FFmpegがインストールされているか確認してください。");
+                return false;
+            }
+
+            isRecording = true;
+            MinecraftEduMod.LOGGER.info("録画開始: " + currentRecordingPath);
+
+            lastResult.addProperty("success", true);
+            lastResult.addProperty("isRecording", true);
+            lastResult.addProperty("filePath", currentRecordingPath);
+            lastResult.addProperty("message", "録画を開始しました");
+
+            return true;
+
+        } catch (IOException e) {
+            MinecraftEduMod.LOGGER.error("録画開始エラー: " + e.getMessage(), e);
+            lastResult.addProperty("error", "FFmpegの起動に失敗しました: " + e.getMessage());
+            return false;
+        } catch (InterruptedException e) {
+            MinecraftEduMod.LOGGER.error("録画開始中断: " + e.getMessage(), e);
+            lastResult.addProperty("error", "録画開始が中断されました");
+            return false;
+        }
+    }
+
+    /**
+     * 録画を停止する
+     * @param params パラメータ（未使用）
+     * @return 成功時true
+     */
+    private boolean executeStopRecording(JsonObject params) {
+        // 録画中でない場合はエラー
+        if (!isRecording || ffmpegProcess == null) {
+            MinecraftEduMod.LOGGER.warn("録画は開始されていません");
+            lastResult.addProperty("error", "録画は開始されていません");
+            lastResult.addProperty("isRecording", false);
+            return false;
+        }
+
+        try {
+            // FFmpegに終了シグナルを送る（'q'キーを送信）
+            // Windowsでは直接終了させる
+            ffmpegProcess.getOutputStream().write('q');
+            ffmpegProcess.getOutputStream().flush();
+
+            // プロセスの終了を待つ（最大5秒）
+            boolean exited = ffmpegProcess.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+
+            if (!exited) {
+                // タイムアウトした場合は強制終了
+                ffmpegProcess.destroyForcibly();
+                MinecraftEduMod.LOGGER.warn("FFmpegプロセスを強制終了しました");
+            }
+
+            isRecording = false;
+            String recordedPath = currentRecordingPath;
+            ffmpegProcess = null;
+            currentRecordingPath = null;
+
+            MinecraftEduMod.LOGGER.info("録画停止: " + recordedPath);
+
+            // ファイルが存在するか確認
+            File recordedFile = new File(recordedPath);
+            if (recordedFile.exists()) {
+                long fileSize = recordedFile.length();
+                lastResult.addProperty("success", true);
+                lastResult.addProperty("isRecording", false);
+                lastResult.addProperty("filePath", recordedPath);
+                lastResult.addProperty("fileSize", fileSize);
+                lastResult.addProperty("message", "録画を停止しました");
+            } else {
+                lastResult.addProperty("success", true);
+                lastResult.addProperty("isRecording", false);
+                lastResult.addProperty("filePath", recordedPath);
+                lastResult.addProperty("warning", "ファイルが見つかりません。録画時間が短すぎた可能性があります。");
+            }
+
+            return true;
+
+        } catch (IOException e) {
+            MinecraftEduMod.LOGGER.error("録画停止エラー: " + e.getMessage(), e);
+            lastResult.addProperty("error", "録画の停止に失敗しました: " + e.getMessage());
+            return false;
+        } catch (InterruptedException e) {
+            MinecraftEduMod.LOGGER.error("録画停止中断: " + e.getMessage(), e);
+            lastResult.addProperty("error", "録画停止が中断されました");
+            return false;
+        }
+    }
+
+    /**
+     * 録画状態を取得する
+     * @param params パラメータ（未使用）
+     * @return 常にtrue
+     */
+    private boolean executeGetRecordingStatus(JsonObject params) {
+        lastResult.addProperty("isRecording", isRecording);
+        if (isRecording && currentRecordingPath != null) {
+            lastResult.addProperty("filePath", currentRecordingPath);
+        }
+        return true;
     }
 }
