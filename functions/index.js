@@ -16,6 +16,7 @@ admin.initializeApp();
 
 const db = admin.firestore();
 const auth = admin.auth();
+const storage = admin.storage();
 
 /**
  * 呼び出し元のユーザー情報を取得
@@ -424,4 +425,190 @@ exports.createUsers = functions.region('asia-northeast1').https.onCall(async (da
     results,
     errors
   };
+});
+
+// ========================================
+// 動画アップロード機能
+// ========================================
+
+/**
+ * 動画アップロード用の署名付きURLを生成
+ *
+ * 認証済みユーザーのみ使用可能
+ * 動画はFirebase Storageのrecordings/{userId}/{timestamp}.mp4に保存される
+ *
+ * @param {Object} data
+ * @param {string} data.filename - ファイル名（オプション）
+ * @param {string} data.contentType - コンテンツタイプ（デフォルト: video/mp4）
+ */
+exports.getUploadUrl = functions.region('asia-northeast1').https.onCall(async (data, context) => {
+  // 認証確認
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
+  const userId = context.auth.uid;
+  const timestamp = Date.now();
+  const filename = data.filename || `recording_${timestamp}.mp4`;
+  const contentType = data.contentType || 'video/mp4';
+
+  // ファイルパスを生成
+  const filePath = `recordings/${userId}/${filename}`;
+
+  try {
+    const bucket = storage.bucket();
+    const file = bucket.file(filePath);
+
+    // 署名付きアップロードURLを生成（15分間有効）
+    const [uploadUrl] = await file.getSignedUrl({
+      version: 'v4',
+      action: 'write',
+      expires: Date.now() + 15 * 60 * 1000, // 15分
+      contentType: contentType
+    });
+
+    console.log(`Upload URL generated for user ${userId}: ${filePath}`);
+
+    return {
+      success: true,
+      uploadUrl: uploadUrl,
+      filePath: filePath,
+      filename: filename,
+      expiresIn: 900 // 15分（秒）
+    };
+
+  } catch (error) {
+    console.error('getUploadUrl error:', error);
+    throw new functions.https.HttpsError('internal', 'アップロードURL生成に失敗しました: ' + error.message);
+  }
+});
+
+/**
+ * 動画アップロード完了後にメタデータを保存
+ *
+ * @param {Object} data
+ * @param {string} data.filePath - アップロードしたファイルのパス
+ * @param {string} data.title - 動画タイトル（オプション）
+ * @param {string} data.description - 説明（オプション）
+ */
+exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(async (data, context) => {
+  // 認証確認
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
+  const { filePath, title, description } = data;
+
+  if (!filePath) {
+    throw new functions.https.HttpsError('invalid-argument', 'filePathが必要です');
+  }
+
+  const userId = context.auth.uid;
+
+  try {
+    // ユーザー情報を取得
+    const userData = await getUserData(userId);
+    const displayName = userData ? userData.displayName : '不明';
+    const classroomId = userData ? userData.classroomId : null;
+
+    // ファイルの公開URLを取得
+    const bucket = storage.bucket();
+    const file = bucket.file(filePath);
+
+    // ファイルが存在するか確認
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new functions.https.HttpsError('not-found', 'ファイルが見つかりません');
+    }
+
+    // ファイルを公開設定に変更
+    await file.makePublic();
+
+    // 公開URLを取得
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+
+    // Firestoreにメタデータを保存
+    const videoDoc = await db.collection('videos').add({
+      userId: userId,
+      userDisplayName: displayName,
+      classroomId: classroomId,
+      filePath: filePath,
+      publicUrl: publicUrl,
+      title: title || '無題の録画',
+      description: description || '',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      status: 'published',
+      viewCount: 0
+    });
+
+    console.log(`Video metadata saved: ${videoDoc.id} for user ${userId}`);
+
+    return {
+      success: true,
+      videoId: videoDoc.id,
+      publicUrl: publicUrl,
+      message: '動画を保存しました'
+    };
+
+  } catch (error) {
+    console.error('saveVideoMetadata error:', error);
+    throw new functions.https.HttpsError('internal', 'メタデータ保存に失敗しました: ' + error.message);
+  }
+});
+
+/**
+ * ギャラリー用の動画一覧取得（HTTP関数）
+ *
+ * 公開された動画の一覧を取得
+ * 認証不要（ギャラリーは公開）
+ */
+exports.getPublicVideos = functions.region('asia-northeast1').https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    try {
+      const limit = parseInt(req.query.limit) || 20;
+      const classroomId = req.query.classroomId || null;
+
+      let query = db.collection('videos')
+        .where('status', '==', 'published')
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
+
+      if (classroomId) {
+        query = db.collection('videos')
+          .where('status', '==', 'published')
+          .where('classroomId', '==', classroomId)
+          .orderBy('createdAt', 'desc')
+          .limit(limit);
+      }
+
+      const snapshot = await query.get();
+
+      const videos = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        videos.push({
+          id: doc.id,
+          title: data.title,
+          description: data.description,
+          publicUrl: data.publicUrl,
+          userDisplayName: data.userDisplayName,
+          createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : null,
+          viewCount: data.viewCount || 0
+        });
+      });
+
+      res.json({
+        success: true,
+        videos: videos,
+        count: videos.length
+      });
+
+    } catch (error) {
+      console.error('getPublicVideos error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
 });
