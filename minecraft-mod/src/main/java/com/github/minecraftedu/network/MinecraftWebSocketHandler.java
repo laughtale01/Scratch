@@ -15,10 +15,10 @@ public class MinecraftWebSocketHandler {
     private final CommandExecutor commandExecutor;
     private String sessionId;
 
-    public MinecraftWebSocketHandler(MinecraftServer minecraftServer) {
+    public MinecraftWebSocketHandler(MinecraftServer minecraftServer, CommandExecutor commandExecutor) {
         this.minecraftServer = minecraftServer;
         this.gson = new Gson();
-        this.commandExecutor = new CommandExecutor(minecraftServer);
+        this.commandExecutor = commandExecutor;  // 外部から受け取る（全クライアントで共有）
     }
 
     public String handleMessage(String request) {

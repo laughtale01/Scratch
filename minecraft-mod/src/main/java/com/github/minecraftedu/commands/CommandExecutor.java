@@ -36,12 +36,16 @@ public class CommandExecutor {
     private String currentRecordingPath;
     private boolean isRecording;
 
+    // エンティティ召喚制御フラグ
+    private boolean entitySpawningAllowed = true;
+
     public CommandExecutor(MinecraftServer server) {
         this.server = server;
         this.lastResult = new JsonObject();
         this.isRecording = false;
         this.ffmpegProcess = null;
         this.currentRecordingPath = null;
+        this.entitySpawningAllowed = true;  // デフォルトは許可
     }
 
     public boolean execute(String action, JsonObject params) {
@@ -111,6 +115,9 @@ public class CommandExecutor {
 
                 case "getRecordingStatus":
                     return executeGetRecordingStatus(params);
+
+                case "setEntitySpawning":
+                    return executeSetEntitySpawning(params);
 
                 default:
                     MinecraftEduMod.LOGGER.warn("Unknown command: " + action);
@@ -400,6 +407,13 @@ public class CommandExecutor {
     }
 
     private boolean executeSummonEntity(JsonObject params) {
+        // エンティティ召喚が禁止されている場合は拒否
+        if (!entitySpawningAllowed) {
+            MinecraftEduMod.LOGGER.info("Entity spawning is disabled - command rejected");
+            lastResult.addProperty("error", "Entity spawning is disabled");
+            return false;
+        }
+
         String entityType = params.get("entityType").getAsString();
         double x = params.get("x").getAsDouble();
         double y = params.get("y").getAsDouble();
@@ -1061,5 +1075,37 @@ public class CommandExecutor {
             lastResult.addProperty("filePath", currentRecordingPath);
         }
         return true;
+    }
+
+    /**
+     * エンティティ召喚の許可/禁止を設定（WebSocket経由）
+     * @param params enabled: true=許可, false=禁止
+     * @return 常にtrue
+     */
+    private boolean executeSetEntitySpawning(JsonObject params) {
+        boolean enabled = params.get("enabled").getAsBoolean();
+        this.entitySpawningAllowed = enabled;
+
+        MinecraftEduMod.LOGGER.info("Entity spawning " + (enabled ? "enabled" : "disabled") + " via WebSocket");
+        lastResult.addProperty("entitySpawningAllowed", enabled);
+
+        return true;
+    }
+
+    /**
+     * エンティティ召喚の許可/禁止を設定（スラッシュコマンド用）
+     * @param allowed true=許可, false=禁止
+     */
+    public void setEntitySpawningAllowed(boolean allowed) {
+        this.entitySpawningAllowed = allowed;
+        MinecraftEduMod.LOGGER.info("Entity spawning " + (allowed ? "enabled" : "disabled") + " via command");
+    }
+
+    /**
+     * エンティティ召喚が許可されているか取得
+     * @return true=許可, false=禁止
+     */
+    public boolean isEntitySpawningAllowed() {
+        return this.entitySpawningAllowed;
     }
 }

@@ -1,6 +1,7 @@
 package com.github.minecraftedu.network;
 
 import com.github.minecraftedu.MinecraftEduMod;
+import com.github.minecraftedu.commands.CommandExecutor;
 import net.minecraft.server.MinecraftServer;
 
 import java.io.*;
@@ -18,13 +19,15 @@ public class SimpleWebSocketServer {
     private static final String WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     private final int port;
     private final MinecraftServer minecraftServer;
+    private final CommandExecutor commandExecutor;
     private ServerSocket serverSocket;
     private ExecutorService executor;
     private volatile boolean running = false;
 
-    public SimpleWebSocketServer(int port, MinecraftServer minecraftServer) {
+    public SimpleWebSocketServer(int port, MinecraftServer minecraftServer, CommandExecutor commandExecutor) {
         this.port = port;
         this.minecraftServer = minecraftServer;
+        this.commandExecutor = commandExecutor;
         this.executor = Executors.newCachedThreadPool();
     }
 
@@ -51,7 +54,8 @@ public class SimpleWebSocketServer {
 
     private void handleClient(Socket client) {
         // クライアントごとにハンドラーを作成してセッション状態を維持
-        MinecraftWebSocketHandler handler = new MinecraftWebSocketHandler(minecraftServer);
+        // CommandExecutorは全クライアントで共有
+        MinecraftWebSocketHandler handler = new MinecraftWebSocketHandler(minecraftServer, commandExecutor);
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
              OutputStream out = client.getOutputStream()) {
@@ -105,23 +109,32 @@ public class SimpleWebSocketServer {
 
                 // Extended payload length
                 if (payloadLength == 126) {
-                    payloadLength = (in.read() << 8) | in.read();
+                    byte[] ext = new byte[2];
+                    if (!readFully(in, ext, 2)) break;
+                    payloadLength = ((ext[0] & 0xFF) << 8) | (ext[1] & 0xFF);
                 } else if (payloadLength == 127) {
-                    payloadLength = 0;
+                    byte[] ext = new byte[8];
+                    if (!readFully(in, ext, 8)) break;
+                    long longLength = 0;
                     for (int i = 0; i < 8; i++) {
-                        payloadLength = (payloadLength << 8) | in.read();
+                        longLength = (longLength << 8) | (ext[i] & 0xFF);
                     }
+                    if (longLength > Integer.MAX_VALUE) {
+                        MinecraftEduMod.LOGGER.warn("Payload too large: " + longLength);
+                        break;
+                    }
+                    payloadLength = (int) longLength;
                 }
 
                 // Masking key
                 byte[] maskingKey = new byte[4];
                 if (masked) {
-                    in.read(maskingKey);
+                    if (!readFully(in, maskingKey, 4)) break;
                 }
 
                 // Payload data
                 byte[] payload = new byte[payloadLength];
-                in.read(payload);
+                if (!readFully(in, payload, payloadLength)) break;
 
                 if (masked) {
                     for (int i = 0; i < payload.length; i++) {
@@ -153,6 +166,18 @@ public class SimpleWebSocketServer {
                 MinecraftEduMod.LOGGER.error("Error closing client", e);
             }
         }
+    }
+
+    private boolean readFully(InputStream in, byte[] buffer, int length) throws IOException {
+        int offset = 0;
+        while (offset < length) {
+            int read = in.read(buffer, offset, length - offset);
+            if (read == -1) {
+                return false;
+            }
+            offset += read;
+        }
+        return true;
     }
 
     private void handleWebSocketMessage(MinecraftWebSocketHandler handler, String message, OutputStream out) {
