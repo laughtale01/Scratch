@@ -59,16 +59,15 @@ main ブランチ:
 
 gh-pages ブランチ（GitHub Pages用）:
 ├── gui.js, index.html など（Web用ビルド済みファイル）
+├── minecraft-mod/    ← 両ブランチでGit管理（2025-12-21変更）
 ├── .gitignore で以下を除外:
-│   - minecraft-mod/   ← Git管理対象外！
-│   - scratch-client/  ← Git管理対象外！
-└── Webアプリのみ
+│   - scratch-client/  ← Git管理対象外
+└── Webアプリ + MOD
 ```
 
 ### 注意事項
-- **MOD開発は`main`ブランチで行うこと**
-- `gh-pages`ブランチでは`minecraft-mod/`がGit管理対象外
-- ブランチ切り替え時にGit管理外ファイルが消える可能性あり
+- minecraft-mod/ は両ブランチで管理（ブランチ切り替え時の消失防止）
+- scratch-client/ はmainブランチのみで管理
 
 ## ディレクトリ構造
 
@@ -103,6 +102,33 @@ git push origin gh-pages
 
 - GitHub Pagesで自動的に公開される
 - URL: https://laughtale01.github.io/Scratch
+
+## Firebase デプロイ設定
+
+このPCでは複数のFirebaseプロジェクトを管理。アカウント切り替え不要。
+
+### アカウント情報
+- **このプロジェクト**: laughtale-scratch-bcc8a
+- **Firebaseアカウント**: laughtale.education@gmail.com
+
+### デプロイコマンド
+```bash
+./deploy.sh functions   # Cloud Functions
+./deploy.sh firestore   # Firestore ルール
+./deploy.sh all         # 全て
+```
+
+### 重要事項
+- `deploy.sh` が自動的に正しいアカウントを使用
+- `firebase login:use` での切り替え不要
+- 他プロジェクト (michishirube) は別アカウント
+
+### 登録済みFirebaseアカウント
+```bash
+firebase login:list
+# - awesome.matsubara@gmail.com (michishirube用)
+# - laughtale.education@gmail.com (laughtale-scratch用)
+```
 
 ## テスト方法
 

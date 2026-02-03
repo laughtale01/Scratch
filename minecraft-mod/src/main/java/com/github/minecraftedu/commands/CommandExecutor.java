@@ -17,6 +17,10 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.network.protocol.game.ClientboundPlayerAbilitiesPacket;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.io.File;
 import java.io.IOException;
@@ -118,6 +122,9 @@ public class CommandExecutor {
 
                 case "setEntitySpawning":
                     return executeSetEntitySpawning(params);
+
+                case "setContainerItem":
+                    return executeSetContainerItem(params);
 
                 default:
                     MinecraftEduMod.LOGGER.warn("Unknown command: " + action);
@@ -393,10 +400,21 @@ public class CommandExecutor {
             blockType = blockType.substring(10);
         }
 
+        // 翻訳キーを取得 (例: block.minecraft.stone)
+        String translationKey = block.getDescriptionId();
+
+        // 翻訳コンポーネントを作成 (クライアントの言語設定に合わせて表示される)
+        // 余計な装飾なし、ブロック名のみを表示
+        net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.translatable(translationKey);
+
+        // 署名なしで送信
+        sendRawChatMessage(message);
+
         MinecraftEduMod.LOGGER.info("Block type retrieved: " + blockType + " at " + x + "," + y + "," + z);
 
         // 結果データを設定
         lastResult.addProperty("blockType", blockType);
+        // blockTypeJapanese は削除 (クライアント側で翻訳されるためサーバーでは取得しない)
         JsonObject position = new JsonObject();
         position.addProperty("x", x);
         position.addProperty("y", y);
@@ -479,6 +497,9 @@ public class CommandExecutor {
             }
         });
 
+        // チャット表示
+        sendChatMessage("天気: " + getWeatherNameJapanese(weather));
+
         MinecraftEduMod.LOGGER.info("Weather set to: " + weather);
         return true;
     }
@@ -490,6 +511,9 @@ public class CommandExecutor {
             ServerLevel world = server.overworld();
             world.setDayTime(time);
         });
+
+        // チャット表示
+        sendChatMessage("時刻: " + getTimeNameJapanese(time));
 
         MinecraftEduMod.LOGGER.info("Time set to: " + time);
         return true;
@@ -591,6 +615,10 @@ public class CommandExecutor {
                     return;
             }
         });
+
+        // チャット表示（ユーザー視点での表示）
+        String onOff = boolValue ? "ON" : "OFF";
+        sendChatMessage(getGameRuleNameJapanese(rule) + ": " + onOff);
 
         // 結果データを設定
         lastResult.addProperty("gameRule", rule);
@@ -813,6 +841,9 @@ public class CommandExecutor {
             MinecraftEduMod.LOGGER.info("SetMoveSpeed: " + finalMultiplier + "x (speed=" + newSpeed + ")");
         });
 
+        // チャット表示
+        sendChatMessage("移動速度: " + finalMultiplier + "倍");
+
         lastResult.addProperty("multiplier", finalMultiplier);
         lastResult.addProperty("speed", newSpeed);
 
@@ -854,6 +885,9 @@ public class CommandExecutor {
             }
         });
 
+        // チャット表示
+        sendChatMessage("暗視: " + (enabled ? "ON" : "OFF"));
+
         lastResult.addProperty("nightVision", enabled);
 
         return true;
@@ -889,6 +923,9 @@ public class CommandExecutor {
             }
         });
 
+        // チャット表示
+        sendChatMessage("飛行速度: " + finalMultiplier + "倍");
+
         MinecraftEduMod.LOGGER.info("SetFlySpeed: " + finalMultiplier + "x (speed=" + newFlySpeed + ")");
 
         lastResult.addProperty("multiplier", finalMultiplier);
@@ -902,6 +939,80 @@ public class CommandExecutor {
             return null;
         }
         return server.getPlayerList().getPlayers().get(0);
+    }
+
+    // ========================================
+    // チャット表示用ヘルパーメソッド
+    // ========================================
+
+    /**
+     * ゲーム内チャットにメッセージを送信 (署名なし・コンポーネント指定)
+     * ブロック名表示など、シンプルな表示が必要な場合に使用
+     * @param message 表示するコンポーネント（翻訳テキスト等）
+     */
+    private void sendRawChatMessage(net.minecraft.network.chat.Component message) {
+        server.execute(() -> {
+            server.getPlayerList().getPlayers().forEach(player -> {
+                player.sendSystemMessage(message);
+            });
+        });
+    }
+
+    /**
+     * ゲーム内チャットにメッセージを送信
+     * @param message 表示するメッセージ
+     */
+    private void sendChatMessage(String message) {
+        server.execute(() -> {
+            server.getPlayerList().getPlayers().forEach(player -> {
+                player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.literal("[MinecraftEdu] " + message)
+                );
+            });
+        });
+    }
+
+    /**
+     * 時刻を日本語名に変換
+     * @param time 時刻（tick）
+     * @return 日本語の時刻名
+     */
+    private String getTimeNameJapanese(long time) {
+        if (time == 0 || time == 24000) return "夜明け";
+        if (time == 1000) return "朝";
+        if (time == 6000) return "正午";
+        if (time == 12000) return "夕方";
+        if (time == 13000) return "夜";
+        if (time == 18000) return "真夜中";
+        return time + " tick";
+    }
+
+    /**
+     * 天気を日本語名に変換
+     * @param weather 天気（英語）
+     * @return 日本語の天気名
+     */
+    private String getWeatherNameJapanese(String weather) {
+        switch (weather) {
+            case "clear": return "晴れ";
+            case "rain": return "雨";
+            case "thunder": return "雷雨";
+            default: return weather;
+        }
+    }
+
+    /**
+     * ゲームルールを日本語名に変換
+     * @param rule ゲームルール名（英語）
+     * @return 日本語のルール名
+     */
+    private String getGameRuleNameJapanese(String rule) {
+        switch (rule) {
+            case "doDaylightCycle": return "時刻固定";
+            case "doWeatherCycle": return "天気固定";
+            case "doMobSpawning": return "モブスポーン";
+            default: return rule;
+        }
     }
 
     // ========================================
@@ -1086,6 +1197,9 @@ public class CommandExecutor {
         boolean enabled = params.get("enabled").getAsBoolean();
         this.entitySpawningAllowed = enabled;
 
+        // チャット表示
+        sendChatMessage("エンティティ召喚: " + (enabled ? "許可" : "禁止"));
+
         MinecraftEduMod.LOGGER.info("Entity spawning " + (enabled ? "enabled" : "disabled") + " via WebSocket");
         lastResult.addProperty("entitySpawningAllowed", enabled);
 
@@ -1107,5 +1221,63 @@ public class CommandExecutor {
      */
     public boolean isEntitySpawningAllowed() {
         return this.entitySpawningAllowed;
+    }
+
+    /**
+     * コンテナブロック（ディスペンサー、チェスト、ホッパー等）にアイテムを設定する
+     * @param params x, y, z: 座標、slot: スロット番号、itemType: アイテムID、count: 個数
+     * @return 成功時true
+     */
+    private boolean executeSetContainerItem(JsonObject params) {
+        int x = params.get("x").getAsInt();
+        int y = params.get("y").getAsInt();
+        int z = params.get("z").getAsInt();
+        int slot = params.get("slot").getAsInt();
+        String itemType = params.get("itemType").getAsString();
+        int count = params.get("count").getAsInt();
+
+        BlockPos pos = new BlockPos(x, y, z);
+
+        server.execute(() -> {
+            ServerLevel world = server.overworld();
+            BlockEntity blockEntity = world.getBlockEntity(pos);
+
+            if (blockEntity instanceof Container container) {
+                // スロット番号の検証
+                if (slot < 0 || slot >= container.getContainerSize()) {
+                    MinecraftEduMod.LOGGER.warn("Invalid slot number: " + slot + " (max: " + (container.getContainerSize() - 1) + ")");
+                    return;
+                }
+
+                // アイテム取得
+                ResourceLocation itemId = new ResourceLocation(itemType);
+                Item item = BuiltInRegistries.ITEM.get(itemId);
+
+                // 個数を1〜64に制限
+                int validCount = Math.min(64, Math.max(1, count));
+
+                // アイテムスタック作成
+                ItemStack itemStack = new ItemStack(item, validCount);
+
+                // スロットにセット
+                container.setItem(slot, itemStack);
+                blockEntity.setChanged();
+
+                MinecraftEduMod.LOGGER.info("Container item set at " + pos + " slot " + slot + ": " + itemType + " x" + validCount);
+            } else {
+                MinecraftEduMod.LOGGER.warn("No container block at position: " + pos);
+            }
+        });
+
+        // 結果データを設定
+        lastResult.addProperty("success", true);
+        lastResult.addProperty("x", x);
+        lastResult.addProperty("y", y);
+        lastResult.addProperty("z", z);
+        lastResult.addProperty("slot", slot);
+        lastResult.addProperty("itemType", itemType);
+        lastResult.addProperty("count", count);
+
+        return true;
     }
 }

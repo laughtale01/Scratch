@@ -1,0 +1,6 @@
+許可するには Minecraftチャットで:
+  /entityspawn allow
+  3. 状態確認:
+  /entityspawn status
+  4. 再度禁止:
+  /entityspawn deny

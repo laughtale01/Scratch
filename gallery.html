@@ -75,6 +75,11 @@
       background: #d0d0d0;
     }
 
+    .header-user {
+      font-size: 14px;
+      color: #555;
+    }
+
     /* フィルター */
     .filter-bar {
       background: rgba(255,255,255,0.9);
@@ -214,6 +219,82 @@
       to { transform: rotate(360deg); }
     }
 
+    /* ログインモーダル */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .login-overlay.show {
+      display: flex;
+    }
+
+    .login-modal {
+      background: #ffffff;
+      border-radius: 12px;
+      width: 92%;
+      max-width: 360px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .login-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .login-field {
+      margin-bottom: 12px;
+    }
+
+    .login-label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: #666;
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .login-error {
+      color: #e74c3c;
+      font-size: 13px;
+      min-height: 18px;
+      margin: 8px 0 4px;
+      text-align: center;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      background: #4c97ff;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .login-btn:disabled {
+      background: #bcd5ff;
+      cursor: not-allowed;
+    }
+
     /* プレビューモーダル */
     .preview-modal {
       display: none;
@@ -336,8 +417,12 @@
   <header class="header">
     <div class="header-title">🎨 作品ギャラリー</div>
     <div class="header-actions">
+      <span class="header-user" id="headerUser"></span>
       <button class="header-btn secondary" onclick="togglePresentationMode()">
         発表モード
+      </button>
+      <button class="header-btn secondary" id="logoutBtn" onclick="handleLogout()" style="display: none;">
+        サインアウト
       </button>
       <a href="index.html" class="header-btn">Scratchに戻る</a>
     </div>
@@ -390,6 +475,25 @@
     </div>
   </div>
 
+  <!-- ログインモーダル -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-modal">
+      <div class="login-title">サインイン</div>
+      <form id="loginForm">
+        <div class="login-field">
+          <label class="login-label" for="loginUserId">ユーザーID</label>
+          <input class="login-input" id="loginUserId" type="text" autocomplete="username" required>
+        </div>
+        <div class="login-field">
+          <label class="login-label" for="loginPassword">パスワード</label>
+          <input class="login-input" id="loginPassword" type="password" autocomplete="current-password" required>
+        </div>
+        <div class="login-error" id="loginError"></div>
+        <button class="login-btn" id="loginBtn" type="submit">サインイン</button>
+      </form>
+    </div>
+  </div>
+
   <script>
     // Firebase設定
     const firebaseConfig = {
@@ -404,6 +508,7 @@
 
     // Firebase初期化
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
     const storage = firebase.storage();
 
@@ -412,8 +517,11 @@
     let users = {};
     let classrooms = {};
 
-    // 初期化
-    async function init() {
+    const EMAIL_DOMAIN = '@laughtale.local';
+    let didLoad = false;
+
+    // 初期化（ログイン後）
+    async function loadData() {
       try {
         // 教室一覧を取得
         const classroomSnapshot = await db.collection('classrooms').get();
@@ -447,6 +555,86 @@
       } catch (error) {
         console.error('初期化エラー:', error);
         document.getElementById('loading').innerHTML = '<div style="color: #ff6b6b;">読み込みエラー: ' + error.message + '</div>';
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('loginOverlay').classList.add('show');
+    }
+
+    function hideLogin() {
+      document.getElementById('loginOverlay').classList.remove('show');
+      document.getElementById('loginError').textContent = '';
+      document.getElementById('loginForm').reset();
+    }
+
+    function setLoginLoading(loading) {
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = loading;
+      btn.textContent = loading ? 'サインイン中...' : 'サインイン';
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      const userId = document.getElementById('loginUserId').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const errorEl = document.getElementById('loginError');
+
+      if (!userId || !password) {
+        errorEl.textContent = 'ユーザーIDとパスワードを入力してください';
+        return;
+      }
+
+      setLoginLoading(true);
+      errorEl.textContent = '';
+
+      try {
+        const email = userId.toLowerCase() + EMAIL_DOMAIN;
+        await auth.signInWithEmailAndPassword(email, password);
+      } catch (error) {
+        let errorMessage = 'ログインに失敗しました';
+        switch (error.code) {
+          case 'auth/user-not-found':
+            errorMessage = 'ユーザーが見つかりません';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = 'パスワードが正しくありません';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'ユーザーIDが無効です';
+            break;
+          case 'auth/user-disabled':
+            errorMessage = 'このアカウントは無効化されています';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'ログイン試行回数が多すぎます。しばらく待ってから再試行してください';
+            break;
+          case 'auth/invalid-credential':
+            errorMessage = 'ユーザーIDまたはパスワードが間違っています';
+            break;
+          default:
+            errorMessage = `ログインエラー: ${error.message}`;
+        }
+        errorEl.textContent = errorMessage;
+      } finally {
+        setLoginLoading(false);
+      }
+    }
+
+    async function handleLogout() {
+      await auth.signOut();
+    }
+
+    function updateHeaderUser(user) {
+      const headerUser = document.getElementById('headerUser');
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (user) {
+        const display = user.email ? user.email.replace(EMAIL_DOMAIN, '') : 'ユーザー';
+        headerUser.textContent = `ログイン中: ${display}`;
+        logoutBtn.style.display = 'inline-flex';
+      } else {
+        headerUser.textContent = '';
+        logoutBtn.style.display = 'none';
       }
     }
 
@@ -597,8 +785,20 @@
       if (e.target.id === 'previewModal') closePreview();
     };
 
-    // 初期化実行
-    init();
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+
+    auth.onAuthStateChanged(async (user) => {
+      updateHeaderUser(user);
+      if (user) {
+        hideLogin();
+        if (!didLoad) {
+          didLoad = true;
+          await loadData();
+        }
+      } else {
+        showLogin();
+      }
+    });
   </script>
 </body>
 </html>
