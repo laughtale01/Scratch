@@ -2288,14 +2288,14 @@
       };
 
       // ユーザーリスト表示をカード形式に
-      const originalRenderUsers = AdminPanel.renderUsers;
-      AdminPanel.renderUsers = function() {
-        if (originalRenderUsers) originalRenderUsers.call(this);
+      const originalRenderUsersTable = AdminPanel.renderUsersTable;
+      AdminPanel.renderUsersTable = function(filteredUsers) {
+        if (originalRenderUsersTable) originalRenderUsersTable.call(this, filteredUsers);
 
         const container = document.getElementById('usersListContainer');
         if (!container) return;
 
-        const users = this.filteredUsers || this.users || [];
+        const users = filteredUsers || this.users || [];
         if (users.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
@@ -2334,9 +2334,9 @@
       };
 
       // 教室リスト表示をカード形式に
-      const originalRenderClassrooms = AdminPanel.renderClassrooms;
-      AdminPanel.renderClassrooms = function() {
-        if (originalRenderClassrooms) originalRenderClassrooms.call(this);
+      const originalRenderClassroomsTable = AdminPanel.renderClassroomsTable;
+      AdminPanel.renderClassroomsTable = function() {
+        if (originalRenderClassroomsTable) originalRenderClassroomsTable.call(this);
 
         const container = document.getElementById('classroomsListContainer');
         if (!container) return;
