@@ -1943,9 +1943,14 @@
         </div>
         <input type="hidden" id="editUserUid">
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer" style="flex-wrap: wrap; gap: 8px;">
         <button class="btn btn-primary" onclick="AdminPanel.updateUser()">保存</button>
         <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editUserModal')">キャンセル</button>
+        <button class="btn btn-secondary" id="editUserResetPwBtn" style="background: #e67e22; color: #fff; border: none; width: 100%; margin-top: 4px;" onclick="
+          var uid = document.getElementById('editUserUid').value;
+          AdminPanel.closeModal('editUserModal');
+          AdminPanel.showResetPasswordModal(uid);
+        ">🔐 パスワードリセット</button>
       </div>
     </div>
   </div>

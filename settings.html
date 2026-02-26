@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google" value="notranslate">
+  <link rel="shortcut icon" href="static/favicon.ico">
+  <title>アカウント設定 - Scratch Education</title>
+  <!-- Firebase SDK（storage/functionsは不要） -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <style>
+    /* リセット */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: #E5F0FF;
+      min-height: 100vh;
+      color: #575E75;
+    }
+
+    /* ヘッダー */
+    .settings-header {
+      background: #855CD6;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+    }
+
+    .settings-back {
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: bold;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+
+    .settings-back:hover {
+      opacity: 1;
+    }
+
+    .settings-header h1 {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    /* メインコンテナ */
+    .settings-container {
+      max-width: 480px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    /* カードセクション */
+    .settings-section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .settings-section-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #575E75;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #E5F0FF;
+    }
+
+    /* アカウント情報（読み取り専用） */
+    .settings-info-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .settings-info-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-info-label {
+      font-size: 13px;
+      color: #888;
+      width: 100px;
+      flex-shrink: 0;
+    }
+
+    .settings-info-value {
+      font-size: 14px;
+      color: #575E75;
+      font-weight: bold;
+    }
+
+    /* フォーム */
+    .settings-form-group {
+      margin-bottom: 14px;
+    }
+
+    .settings-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #555;
+      font-weight: bold;
+    }
+
+    .settings-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+      color: #333;
+    }
+
+    .settings-input:focus {
+      outline: none;
+      border-color: #4d97ff;
+      box-shadow: 0 0 0 2px rgba(77, 151, 255, 0.2);
+    }
+
+    .settings-current-value {
+      font-size: 14px;
+      color: #575E75;
+      background: #f7f7f7;
+      padding: 10px 12px;
+      border-radius: 4px;
+      border: 1px solid #eee;
+    }
+
+    /* ボタン */
+    .settings-btn {
+      background: #4d97ff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 4px;
+    }
+
+    .settings-btn:hover {
+      background: #3d87ef;
+    }
+
+    .settings-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    /* メッセージ */
+    .settings-success {
+      color: #0FBD8C;
+      background: #e8f8f3;
+      border: 1px solid #0FBD8C;
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    .settings-error {
+      color: #e74c3c;
+      background: #fdf0ee;
+      border: 1px solid #e74c3c;
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    /* ローディング画面 */
+    .loading-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-size: 16px;
+      color: #888;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #855CD6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      .settings-container {
+        max-width: 100%;
+        margin: 12px auto;
+        padding: 0 12px;
+      }
+
+      .settings-header {
+        padding: 12px 16px;
+      }
+
+      .settings-header h1 {
+        font-size: 16px;
+      }
+
+      .settings-section {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ローディング画面 -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <span>読み込み中...</span>
+  </div>
+
+  <!-- メインコンテンツ（認証後に表示） -->
+  <div id="mainContent" style="display: none;">
+    <!-- ヘッダー -->
+    <header class="settings-header">
+      <a href="index.html" class="settings-back">← Scratch に戻る</a>
+      <h1>アカウント設定</h1>
+    </header>
+
+    <div class="settings-container">
+      <!-- セクション1: アカウント情報（読み取り専用） -->
+      <div class="settings-section">
+        <h2 class="settings-section-title">アカウント情報</h2>
+        <div class="settings-info-row">
+          <span class="settings-info-label">ユーザーID</span>
+          <span class="settings-info-value" id="infoUserId">-</span>
+        </div>
+        <div class="settings-info-row">
+          <span class="settings-info-label">ロール</span>
+          <span class="settings-info-value" id="infoRole">-</span>
+        </div>
+        <div class="settings-info-row">
+          <span class="settings-info-label">教室</span>
+          <span class="settings-info-value" id="infoClassroom">-</span>
+        </div>
+      </div>
+
+      <!-- セクション2: 表示名の変更 -->
+      <div class="settings-section">
+        <h2 class="settings-section-title">表示名の変更</h2>
+        <div class="settings-form-group">
+          <label class="settings-label">現在の表示名</label>
+          <div class="settings-current-value" id="currentDisplayName">-</div>
+        </div>
+        <div class="settings-form-group">
+          <label class="settings-label" for="newDisplayName">新しい表示名</label>
+          <input type="text" class="settings-input" id="newDisplayName" placeholder="新しい表示名を入力" maxlength="20">
+        </div>
+        <button class="settings-btn" id="btnChangeDisplayName">変更する</button>
+        <div id="displayNameMessage"></div>
+      </div>
+
+      <!-- セクション3: パスワードの変更 -->
+      <div class="settings-section">
+        <h2 class="settings-section-title">パスワードの変更</h2>
+        <div class="settings-form-group">
+          <label class="settings-label" for="currentPassword">現在のパスワード</label>
+          <input type="password" class="settings-input" id="currentPassword" placeholder="現在のパスワードを入力">
+        </div>
+        <div class="settings-form-group">
+          <label class="settings-label" for="newPassword">新しいパスワード</label>
+          <input type="password" class="settings-input" id="newPassword" placeholder="6文字以上">
+        </div>
+        <div class="settings-form-group">
+          <label class="settings-label" for="confirmPassword">確認（もう一度）</label>
+          <input type="password" class="settings-input" id="confirmPassword" placeholder="新しいパスワードをもう一度入力">
+        </div>
+        <button class="settings-btn" id="btnChangePassword">変更する</button>
+        <div id="passwordMessage"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // Firebase 初期化
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBEr2LmctKmBHa_y1Jrx6XQ_6M8vengYhs",
+      authDomain: "laughtale-scratch-bcc8a.firebaseapp.com",
+      projectId: "laughtale-scratch-bcc8a",
+      storageBucket: "laughtale-scratch-bcc8a.firebasestorage.app",
+      messagingSenderId: "869020754126",
+      appId: "1:869020754126:web:e80beaf67fda60987ff09f",
+      measurementId: "G-F8JCCJQ7YB"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // ============================================================
+    // Firebase Auth エラーコード → 日本語メッセージ
+    // ============================================================
+    const errorMessages = {
+      'auth/wrong-password': '現在のパスワードが間違っています',
+      'auth/invalid-credential': '現在のパスワードが間違っています',
+      'auth/weak-password': 'パスワードは6文字以上で入力してください',
+      'auth/too-many-requests': 'しばらく待ってから再試行してください',
+      'auth/network-request-failed': 'ネットワークエラーが発生しました',
+      'auth/requires-recent-login': 'セッションの有効期限が切れました。ページをリロードして再度ログインしてください',
+      'auth/user-token-expired': 'セッションの有効期限が切れました。ページをリロードして再度ログインしてください'
+    };
+
+    // ロール表示名マッピング
+    const roleLabels = {
+      'admin': '管理者',
+      'teacher': '講師',
+      'student': '生徒'
+    };
+
+    // 現在のユーザーデータをキャッシュ
+    let currentUserData = null;
+
+    // ============================================================
+    // メッセージ表示（XSS安全: textContent使用）
+    // ============================================================
+    function showMessage(elementId, type, message) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.className = type === 'success' ? 'settings-success' : 'settings-error';
+    }
+
+    // メッセージクリア
+    function clearMessage(elementId) {
+      const el = document.getElementById(elementId);
+      el.textContent = '';
+      el.className = '';
+    }
+
+    // ============================================================
+    // 教室名の取得
+    // ============================================================
+    async function getClassroomName(classroomId) {
+      if (!classroomId) return '未所属';
+      try {
+        const doc = await db.collection('classrooms').doc(classroomId).get();
+        return doc.exists ? (doc.data().name || '名称未設定') : '不明な教室';
+      } catch (e) {
+        console.error('教室名の取得に失敗:', e);
+        return '取得エラー';
+      }
+    }
+
+    // ============================================================
+    // ユーザー情報の表示（XSS安全: textContent使用）
+    // ============================================================
+    async function displayUserInfo(user, userData) {
+      currentUserData = userData;
+
+      // ユーザーID（@laughtale.local を除去）
+      const userId = (userData.email || user.email || '').replace('@laughtale.local', '');
+      document.getElementById('infoUserId').textContent = userId;
+
+      // ロール
+      document.getElementById('infoRole').textContent = roleLabels[userData.role] || userData.role || '-';
+
+      // 教室名
+      const classroomName = await getClassroomName(userData.classroomId);
+      document.getElementById('infoClassroom').textContent = classroomName;
+
+      // 現在の表示名
+      document.getElementById('currentDisplayName').textContent = userData.displayName || '-';
+
+      // ローディング画面を非表示、メインコンテンツを表示
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('mainContent').style.display = '';
+    }
+
+    // ============================================================
+    // 表示名の変更
+    // ============================================================
+    async function handleChangeDisplayName() {
+      const btn = document.getElementById('btnChangeDisplayName');
+      const input = document.getElementById('newDisplayName');
+      clearMessage('displayNameMessage');
+
+      // 入力値の正規化（半角・全角スペースをtrim）
+      const trimmed = input.value.replace(/^[\s\u3000]+|[\s\u3000]+$/g, '');
+
+      // バリデーション
+      if (!trimmed) {
+        showMessage('displayNameMessage', 'error', '表示名を入力してください');
+        return;
+      }
+      if (trimmed.length > 20) {
+        showMessage('displayNameMessage', 'error', '表示名は20文字以内で入力してください');
+        return;
+      }
+      if (currentUserData && trimmed === currentUserData.displayName) {
+        showMessage('displayNameMessage', 'error', '現在と同じ表示名です');
+        return;
+      }
+
+      // ボタン二重押し防止
+      btn.disabled = true;
+      btn.textContent = '変更中...';
+
+      try {
+        const user = auth.currentUser;
+
+        // ★ 更新順序: Firestore → Auth（Firestoreが本データのため先に更新）
+        // 1. Firestore の users ドキュメントの displayName を更新
+        await db.collection('users').doc(user.uid).update({
+          displayName: trimmed
+        });
+
+        // 2. Firebase Auth の displayName を更新
+        await user.updateProfile({ displayName: trimmed });
+
+        // キャッシュ更新
+        currentUserData.displayName = trimmed;
+
+        // 画面上の「現在の表示名」を更新（textContent使用）
+        document.getElementById('currentDisplayName').textContent = trimmed;
+
+        // 入力欄クリア
+        input.value = '';
+
+        showMessage('displayNameMessage', 'success',
+          '表示名を変更しました。Scratchページに反映するにはページをリロードしてください。');
+      } catch (error) {
+        console.error('表示名の変更に失敗:', error);
+
+        // セッションタイムアウト対策
+        if (error.code === 'auth/requires-recent-login' || error.code === 'auth/user-token-expired') {
+          showMessage('displayNameMessage', 'error',
+            'セッションの有効期限が切れました。ページをリロードして再度お試しください。');
+          return;
+        }
+
+        const msg = errorMessages[error.code] || 'エラーが発生しました: ' + error.message;
+        showMessage('displayNameMessage', 'error', msg);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '変更する';
+      }
+    }
+
+    // ============================================================
+    // パスワードの変更
+    // ============================================================
+    async function handleChangePassword() {
+      const btn = document.getElementById('btnChangePassword');
+      const currentPasswordInput = document.getElementById('currentPassword');
+      const newPasswordInput = document.getElementById('newPassword');
+      const confirmPasswordInput = document.getElementById('confirmPassword');
+      clearMessage('passwordMessage');
+
+      const currentPassword = currentPasswordInput.value;
+      const newPassword = newPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+
+      // バリデーション
+      if (!currentPassword) {
+        showMessage('passwordMessage', 'error', '現在のパスワードを入力してください');
+        return;
+      }
+      if (newPassword.length < 6) {
+        showMessage('passwordMessage', 'error', 'パスワードは6文字以上で入力してください');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showMessage('passwordMessage', 'error', '新しいパスワードが一致しません');
+        return;
+      }
+
+      // ボタン二重押し防止
+      btn.disabled = true;
+      btn.textContent = '変更中...';
+
+      try {
+        const user = auth.currentUser;
+
+        // 1. 現在のパスワードで再認証（本人確認）
+        const credential = firebase.auth.EmailAuthProvider.credential(
+          user.email,
+          currentPassword
+        );
+        await user.reauthenticateWithCredential(credential);
+
+        // 2. 新しいパスワードに更新
+        await user.updatePassword(newPassword);
+
+        // フォームをクリア
+        currentPasswordInput.value = '';
+        newPasswordInput.value = '';
+        confirmPasswordInput.value = '';
+
+        showMessage('passwordMessage', 'success', 'パスワードを変更しました');
+      } catch (error) {
+        console.error('パスワードの変更に失敗:', error);
+        const msg = errorMessages[error.code] || 'エラーが発生しました: ' + error.message;
+        showMessage('passwordMessage', 'error', msg);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '変更する';
+      }
+    }
+
+    // ============================================================
+    // 認証状態の監視・初期化
+    // ============================================================
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          // Firestoreからユーザー情報を取得
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          if (userDoc.exists) {
+            await displayUserInfo(user, userDoc.data());
+          } else {
+            // ユーザードキュメントが存在しない場合
+            console.error('ユーザードキュメントが見つかりません');
+            window.location.href = 'index.html';
+          }
+        } catch (error) {
+          console.error('ユーザー情報の取得に失敗:', error);
+          window.location.href = 'index.html';
+        }
+      } else {
+        // 未ログイン → Scratchに戻す
+        window.location.href = 'index.html';
+      }
+    });
+
+    // ============================================================
+    // イベントリスナー
+    // ============================================================
+    document.getElementById('btnChangeDisplayName').addEventListener('click', handleChangeDisplayName);
+    document.getElementById('btnChangePassword').addEventListener('click', handleChangePassword);
+  </script>
+</body>
+</html>
