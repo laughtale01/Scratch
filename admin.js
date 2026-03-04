@@ -212,6 +212,8 @@ class AdminPanel {
         this.loadProjects()
       ]);
 
+      // 並列ロードの完了後に依存表示を再描画して整合性を確定
+      this.renderUsersTable();
       this.updateStats();
       this.updateFilters();
 
@@ -304,6 +306,7 @@ class AdminPanel {
 
       console.log('AdminPanel: 教室読み込み完了', this.classrooms.length);
       this.renderClassroomsTable();
+      this.renderUsersTable();
 
     } catch (error) {
       console.error('AdminPanel: 教室読み込みエラー', error);
@@ -477,8 +480,7 @@ class AdminPanel {
     const roleBadges = { admin: 'badge-admin', teacher: 'badge-teacher', student: 'badge-student' };
 
     tbody.innerHTML = users.map(user => {
-      const classroom = this.classrooms.find(c => c.id === user.classroomId);
-      const classroomName = classroom ? classroom.name : '-';
+      const classroomName = this.getClassroomDisplayName(user.classroomId);
       const lastLogin = user.lastLoginAt ? this.formatDate(user.lastLoginAt.toDate()) : '-';
 
       // 編集・削除ボタンの表示制御
@@ -533,10 +535,11 @@ class AdminPanel {
       const studentCount = this.users.filter(u => u.classroomId === classroom.id && u.role === 'student').length;
       const projectCount = this.projects.filter(p => p.classroomId === classroom.id).length;
       const createdAt = classroom.createdAt ? this.formatDate(classroom.createdAt.toDate()) : '-';
+      const classroomName = this.getClassroomDisplayName(classroom.id);
 
       return `
         <tr>
-          <td>${this.escapeHtml(classroom.name)}</td>
+          <td>${this.escapeHtml(classroomName)}</td>
           <td>${this.escapeHtml(teacherName)}</td>
           <td>${studentCount}</td>
           <td>${projectCount}</td>
@@ -1373,6 +1376,18 @@ class AdminPanel {
     if (!value) return '';
     if (!/^https?:\/\//i.test(value)) return '';
     return this.escapeHtml(value);
+  }
+
+  /**
+   * 教室IDから表示名を取得（旧スキーマ互換・空値フォールバック対応）
+   */
+  static getClassroomDisplayName(classroomId) {
+    if (!classroomId) return '-';
+    const classroom = this.classrooms.find(c => c.id === classroomId);
+    if (!classroom) return '-';
+    const rawName = classroom.name || classroom.displayName || classroom.classroomName || '';
+    const normalized = String(rawName).trim();
+    return normalized || '(名称未設定)';
   }
 
   /**
