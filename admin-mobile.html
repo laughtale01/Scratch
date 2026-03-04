@@ -1993,6 +1993,10 @@
             <option value="">選択...</option>
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">教室カラー</label>
+          <input type="color" class="form-input" id="newClassroomColor" value="#7bc74d">
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" id="btnCreateClassroomSubmit">作成</button>
@@ -2018,6 +2022,10 @@
           <select class="form-select" id="editClassroomTeacher">
             <option value="">選択...</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">教室カラー</label>
+          <input type="color" class="form-input" id="editClassroomColor" value="#7bc74d">
         </div>
         <input type="hidden" id="editClassroomId">
       </div>
@@ -2513,6 +2521,9 @@
         classrooms.forEach(classroom => {
           const teacher = this.users?.find(u => (u.id || u.uid) === classroom.teacherId);
           const studentCount = this.users?.filter(u => u.classroomId === classroom.id && u.role === 'student').length || 0;
+          const classroomColor = typeof this.getClassroomColor === 'function'
+            ? this.getClassroomColor(classroom)
+            : '#7bc74d';
 
           const item = document.createElement('div');
           item.className = 'list-item';
@@ -2529,6 +2540,7 @@
           const title = document.createElement('div');
           title.className = 'list-item-title';
           title.textContent = classroom.name || '教室';
+          title.style.color = classroomColor;
 
           const subtitle = document.createElement('div');
           subtitle.className = 'list-item-subtitle';

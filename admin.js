@@ -536,10 +536,11 @@ class AdminPanel {
       const projectCount = this.projects.filter(p => p.classroomId === classroom.id).length;
       const createdAt = classroom.createdAt ? this.formatDate(classroom.createdAt.toDate()) : '-';
       const classroomName = this.getClassroomDisplayName(classroom.id);
+      const classroomColor = this.getClassroomColor(classroom);
 
       return `
         <tr>
-          <td>${this.escapeHtml(classroomName)}</td>
+          <td><span style="color: ${this.escapeHtml(classroomColor)}; font-weight: 700;">${this.escapeHtml(classroomName)}</span></td>
           <td>${this.escapeHtml(teacherName)}</td>
           <td>${studentCount}</td>
           <td>${projectCount}</td>
@@ -980,6 +981,8 @@ class AdminPanel {
   static showCreateClassroomModal() {
     document.getElementById('newClassroomName').value = '';
     document.getElementById('newClassroomTeacher').value = '';
+    const colorInput = document.getElementById('newClassroomColor');
+    if (colorInput) colorInput.value = this.getDefaultClassroomColor();
 
     this.showModal('createClassroomModal');
   }
@@ -990,6 +993,8 @@ class AdminPanel {
   static async createClassroom() {
     const name = document.getElementById('newClassroomName').value.trim();
     const teacherId = document.getElementById('newClassroomTeacher').value;
+    const colorInput = document.getElementById('newClassroomColor');
+    const classroomColor = this.normalizeClassroomColor(colorInput ? colorInput.value : '');
 
     if (!name) {
       alert('教室名を入力してください');
@@ -999,6 +1004,7 @@ class AdminPanel {
     try {
       await db.collection('classrooms').add({
         name,
+        classroomColor,
         teacherId: teacherId || null,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -1025,6 +1031,8 @@ class AdminPanel {
     document.getElementById('editClassroomId').value = classroomId;
     document.getElementById('editClassroomName').value = classroom.name || '';
     document.getElementById('editClassroomTeacher').value = classroom.teacherId || '';
+    const colorInput = document.getElementById('editClassroomColor');
+    if (colorInput) colorInput.value = this.getClassroomColor(classroom);
 
     this.showModal('editClassroomModal');
   }
@@ -1036,6 +1044,8 @@ class AdminPanel {
     const classroomId = document.getElementById('editClassroomId').value;
     const name = document.getElementById('editClassroomName').value.trim();
     const teacherId = document.getElementById('editClassroomTeacher').value;
+    const colorInput = document.getElementById('editClassroomColor');
+    const classroomColor = this.normalizeClassroomColor(colorInput ? colorInput.value : '');
 
     if (!name) {
       alert('教室名を入力してください');
@@ -1045,6 +1055,7 @@ class AdminPanel {
     try {
       await db.collection('classrooms').doc(classroomId).update({
         name,
+        classroomColor,
         teacherId: teacherId || null,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -1388,6 +1399,32 @@ class AdminPanel {
     const rawName = classroom.name || classroom.displayName || classroom.classroomName || '';
     const normalized = String(rawName).trim();
     return normalized || '(名称未設定)';
+  }
+
+  /**
+   * 教室の表示色を取得
+   */
+  static getClassroomColor(classroomOrId) {
+    const classroom = typeof classroomOrId === 'string'
+      ? this.classrooms.find(c => c.id === classroomOrId)
+      : classroomOrId;
+    if (!classroom) return this.getDefaultClassroomColor();
+    return this.normalizeClassroomColor(classroom.classroomColor || classroom.color || '');
+  }
+
+  /**
+   * 教室色の既定値
+   */
+  static getDefaultClassroomColor() {
+    return '#7bc74d';
+  }
+
+  /**
+   * 教室色をHEX形式に正規化
+   */
+  static normalizeClassroomColor(rawColor) {
+    const value = String(rawColor || '').trim();
+    return /^#[0-9a-fA-F]{6}$/.test(value) ? value : this.getDefaultClassroomColor();
   }
 
   /**
