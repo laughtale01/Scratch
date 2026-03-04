@@ -28,6 +28,7 @@ const cloudFunctions = {
   createUser: functionsAsia.httpsCallable('createUser'),
   resetPassword: functionsAsia.httpsCallable('resetPassword'),
   deleteUser: functionsAsia.httpsCallable('deleteUser'),
+  updateUserId: functionsAsia.httpsCallable('updateUserId'),
   createUsers: functionsAsia.httpsCallable('createUsers'),
   auditUserDocumentCoverage: functionsAsia.httpsCallable('auditUserDocumentCoverage')
 };
@@ -791,9 +792,10 @@ class AdminPanel {
     if (!user) return;
 
     const isTeacher = this.currentUserData.role === 'teacher';
+    const editUserIdInput = document.getElementById('editUserId');
 
     document.getElementById('editUserUid').value = userId;
-    document.getElementById('editUserId').value = user.email?.replace('@laughtale.local', '') || '';
+    editUserIdInput.value = user.email?.replace('@laughtale.local', '') || '';
     document.getElementById('editUserDisplayName').value = user.displayName || '';
     document.getElementById('editUserRole').value = user.role || 'student';
     document.getElementById('editUserClassroom').value = user.classroomId || '';
@@ -804,10 +806,16 @@ class AdminPanel {
     if (isTeacher) {
       // 講師はロール・教室変更不可（表示名のみ変更可能）
       roleSelect.disabled = true;
+      editUserIdInput.readOnly = true;
+      editUserIdInput.style.opacity = '0.6';
+      editUserIdInput.style.cursor = 'not-allowed';
       classroomGroup.style.display = 'none';
     } else {
       // 管理者は全て編集可能
       roleSelect.disabled = false;
+      editUserIdInput.readOnly = false;
+      editUserIdInput.style.opacity = '1';
+      editUserIdInput.style.cursor = 'text';
       classroomGroup.style.display = user.role === 'admin' ? 'none' : 'block';
     }
 
@@ -829,18 +837,32 @@ class AdminPanel {
   static async updateUser() {
     const isTeacher = this.currentUserData.role === 'teacher';
 
-    const userId = document.getElementById('editUserUid').value;
+    const targetUid = document.getElementById('editUserUid').value;
     const displayName = document.getElementById('editUserDisplayName').value.trim();
+    const nextUserId = this.normalizeLoginUserId(document.getElementById('editUserId').value);
 
     if (!displayName) {
       alert('表示名を入力してください');
       return;
     }
+    if (!nextUserId) {
+      alert('ユーザーIDを入力してください');
+      return;
+    }
+    if (!/^[a-z0-9._-]{3,64}$/.test(nextUserId)) {
+      alert('ユーザーIDは英小文字・数字・._- の3〜64文字で入力してください');
+      return;
+    }
 
     // 講師はロール・教室の変更不可
-    const user = this.users.find(u => u.id === userId);
+    const user = this.users.find(u => u.id === targetUid);
+    if (!user) {
+      alert('対象ユーザーが見つかりません');
+      return;
+    }
     const role = isTeacher ? user.role : document.getElementById('editUserRole').value;
     const classroomId = isTeacher ? user.classroomId : document.getElementById('editUserClassroom').value;
+    const currentUserId = this.normalizeLoginUserId(user.email?.replace('@laughtale.local', '') || '');
 
     if (role !== 'admin' && !classroomId) {
       alert('教室を選択してください');
@@ -860,7 +882,15 @@ class AdminPanel {
         updateData.classroomId = classroomId;
       }
 
-      await db.collection('users').doc(userId).update(updateData);
+      // 管理者のみログインID変更を許可
+      if (!isTeacher && nextUserId !== currentUserId) {
+        await cloudFunctions.updateUserId({
+          targetUid,
+          newUserId: nextUserId
+        });
+      }
+
+      await db.collection('users').doc(targetUid).update(updateData);
 
       console.log('AdminPanel: ユーザー更新完了');
       this.closeModal('editUserModal');
@@ -869,7 +899,11 @@ class AdminPanel {
 
     } catch (error) {
       console.error('AdminPanel: ユーザー更新エラー', error);
-      alert('ユーザーの更新に失敗しました: ' + error.message);
+      if (error.code === 'already-exists' || error.code === 'functions/already-exists') {
+        alert('このユーザーIDは既に使用されています');
+      } else {
+        alert('ユーザーの更新に失敗しました: ' + error.message);
+      }
     }
   }
 
@@ -994,7 +1028,7 @@ class AdminPanel {
     const name = document.getElementById('newClassroomName').value.trim();
     const teacherId = document.getElementById('newClassroomTeacher').value;
     const colorInput = document.getElementById('newClassroomColor');
-    const classroomColor = this.normalizeClassroomColor(colorInput ? colorInput.value : '');
+    const classroomColor = this.normalizeClassroomColor(colorInput ? colorInput.value : this.getDefaultClassroomColor());
 
     if (!name) {
       alert('教室名を入力してください');
@@ -1005,6 +1039,7 @@ class AdminPanel {
       await db.collection('classrooms').add({
         name,
         classroomColor,
+        color: classroomColor,
         teacherId: teacherId || null,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -1044,8 +1079,10 @@ class AdminPanel {
     const classroomId = document.getElementById('editClassroomId').value;
     const name = document.getElementById('editClassroomName').value.trim();
     const teacherId = document.getElementById('editClassroomTeacher').value;
+    const currentClassroom = this.classrooms.find(c => c.id === classroomId);
+    const currentColor = this.getClassroomColor(currentClassroom);
     const colorInput = document.getElementById('editClassroomColor');
-    const classroomColor = this.normalizeClassroomColor(colorInput ? colorInput.value : '');
+    const classroomColor = this.normalizeClassroomColor(colorInput ? colorInput.value : currentColor);
 
     if (!name) {
       alert('教室名を入力してください');
@@ -1056,6 +1093,7 @@ class AdminPanel {
       await db.collection('classrooms').doc(classroomId).update({
         name,
         classroomColor,
+        color: classroomColor,
         teacherId: teacherId || null,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -1417,6 +1455,13 @@ class AdminPanel {
    */
   static getDefaultClassroomColor() {
     return '#7bc74d';
+  }
+
+  /**
+   * ログインユーザーIDを正規化
+   */
+  static normalizeLoginUserId(rawUserId) {
+    return String(rawUserId || '').trim().toLowerCase();
   }
 
   /**

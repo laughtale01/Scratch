@@ -17,6 +17,7 @@ admin.initializeApp();
 const db = admin.firestore();
 const auth = admin.auth();
 const storage = admin.storage();
+const LOGIN_EMAIL_DOMAIN = '@laughtale.local';
 
 /**
  * 呼び出し元のユーザー情報を取得
@@ -356,6 +357,113 @@ exports.deleteUser = functions.region('asia-northeast1').https.onCall(async (dat
     }
 
     throw new functions.https.HttpsError('internal', 'ユーザー削除に失敗しました: ' + error.message);
+  }
+});
+
+/**
+ * ユーザーID変更（ログインID変更）
+ *
+ * 管理者のみが実行可能
+ * Firebase Auth email と Firestore users/{uid}.email を同時更新する
+ *
+ * @param {Object} data
+ * @param {string} data.targetUid - 対象ユーザーUID
+ * @param {string} data.newUserId - 新しいユーザーID（メールの@前）
+ */
+exports.updateUserId = functions.region('asia-northeast1').https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
+  const callerIsAdmin = await isAdmin(context.auth.uid);
+  if (!callerIsAdmin) {
+    throw new functions.https.HttpsError('permission-denied', '管理者権限が必要です');
+  }
+
+  const targetUid = (data?.targetUid || '').trim();
+  const newUserId = (data?.newUserId || '').trim().toLowerCase();
+
+  if (!targetUid || !newUserId) {
+    throw new functions.https.HttpsError('invalid-argument', '必須パラメータが不足しています');
+  }
+
+  if (!/^[a-z0-9._-]{3,64}$/.test(newUserId)) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'ユーザーIDは英小文字・数字・._- の3〜64文字で入力してください'
+    );
+  }
+
+  const newEmail = `${newUserId}${LOGIN_EMAIL_DOMAIN}`;
+
+  let userRecord;
+  try {
+    userRecord = await auth.getUser(targetUid);
+  } catch (error) {
+    if (error.code === 'auth/user-not-found') {
+      throw new functions.https.HttpsError('not-found', '対象ユーザーが見つかりません');
+    }
+    throw new functions.https.HttpsError('internal', '対象ユーザー取得に失敗しました: ' + error.message);
+  }
+
+  const oldEmail = userRecord.email || null;
+  if (!oldEmail) {
+    throw new functions.https.HttpsError('failed-precondition', '対象ユーザーにメールアドレスが設定されていません');
+  }
+
+  if (oldEmail.toLowerCase() === newEmail.toLowerCase()) {
+    return {
+      success: true,
+      message: '変更はありません',
+      uid: targetUid,
+      email: oldEmail
+    };
+  }
+
+  try {
+    const existing = await auth.getUserByEmail(newEmail).catch((err) => {
+      if (err.code === 'auth/user-not-found') return null;
+      throw err;
+    });
+    if (existing && existing.uid !== targetUid) {
+      throw new functions.https.HttpsError('already-exists', 'このユーザーIDは既に使用されています');
+    }
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) throw error;
+    throw new functions.https.HttpsError('internal', '重複チェックに失敗しました: ' + error.message);
+  }
+
+  try {
+    await auth.updateUser(targetUid, { email: newEmail });
+
+    try {
+      await db.collection('users').doc(targetUid).update({
+        email: newEmail,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (firestoreError) {
+      // Firestore更新失敗時はAuthメールを元に戻す
+      try {
+        await auth.updateUser(targetUid, { email: oldEmail });
+      } catch (rollbackError) {
+        console.error('updateUserId rollback error:', rollbackError);
+      }
+      throw firestoreError;
+    }
+
+    return {
+      success: true,
+      message: 'ユーザーIDを変更しました',
+      uid: targetUid,
+      email: newEmail
+    };
+  } catch (error) {
+    console.error('updateUserId error:', error);
+    if (error instanceof functions.https.HttpsError) throw error;
+    if (error.code === 'auth/email-already-exists') {
+      throw new functions.https.HttpsError('already-exists', 'このユーザーIDは既に使用されています');
+    }
+    throw new functions.https.HttpsError('internal', 'ユーザーID変更に失敗しました: ' + error.message);
   }
 });
 
