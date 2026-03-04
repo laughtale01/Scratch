@@ -65,10 +65,19 @@ class ScratchFirebase {
   }
 
   /**
+   * ユーザーIDを正規化
+   */
+  normalizeUserId(userId) {
+    return (userId || '').trim().toLowerCase();
+  }
+
+  /**
    * ユーザーIDからメールアドレスを生成
    */
   userIdToEmail(userId) {
-    return userId.toLowerCase() + EMAIL_DOMAIN;
+    const normalizedUserId = this.normalizeUserId(userId);
+    if (!normalizedUserId) return '';
+    return normalizedUserId + EMAIL_DOMAIN;
   }
 
   /**
@@ -83,6 +92,10 @@ class ScratchFirebase {
    */
   async login(userId, password) {
     try {
+      const normalizedUserId = this.normalizeUserId(userId);
+      if (!normalizedUserId) {
+        return { success: false, error: 'ユーザーIDを入力してください' };
+      }
       const email = this.userIdToEmail(userId);
       const userCredential = await auth.signInWithEmailAndPassword(email, password);
       return { success: true, user: userCredential.user };
@@ -532,6 +545,11 @@ class ScratchFirebaseUI {
     this.modalContainer = null;
     this.loginButton = null;
     this.userDisplay = null;
+    this.initialized = false;
+    this.authListenerBound = false;
+    this.userMenuDocumentClickHandler = null;
+    this.autoLoadProjectId = this.getLoadProjectIdFromUrl();
+    this.autoLoadHandled = !this.autoLoadProjectId;
 
     // DOMが読み込まれたらUIを初期化
     if (document.readyState === 'loading') {
@@ -546,13 +564,54 @@ class ScratchFirebaseUI {
    * UIを初期化
    */
   init() {
+    if (this.initialized) return;
+    this.initialized = true;
+
     this.injectStyles();
     this.createModal();
     this.createMenuBarButton();
 
     // 認証状態の変更を監視
-    window.scratchFirebase.onAuthStateChanged((user, userData) => {
-      this.updateUI(user, userData);
+    if (!this.authListenerBound) {
+      this.authListenerBound = true;
+      window.scratchFirebase.onAuthStateChanged((user, userData) => {
+        this.updateUI(user, userData);
+        this.tryAutoLoadProject();
+      });
+    }
+
+    this.tryAutoLoadProject();
+  }
+
+  /**
+   * URLパラメータから自動読み込み対象プロジェクトIDを取得
+   */
+  getLoadProjectIdFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('loadProject');
+    } catch (error) {
+      console.warn('URLパラメータ解析エラー:', error);
+      return null;
+    }
+  }
+
+  /**
+   * URL指定されたプロジェクトを自動読み込み
+   */
+  tryAutoLoadProject() {
+    if (this.autoLoadHandled || !this.autoLoadProjectId) return;
+    if (!window.scratchFirebase.isLoggedIn()) return;
+    if (!window.vm) {
+      setTimeout(() => this.tryAutoLoadProject(), 500);
+      return;
+    }
+
+    this.autoLoadHandled = true;
+    this.loadProjectToScratch(this.autoLoadProjectId).finally(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('loadProject');
+      window.history.replaceState({}, '', url.toString());
     });
   }
 
@@ -560,7 +619,9 @@ class ScratchFirebaseUI {
    * CSSスタイルを注入
    */
   injectStyles() {
+    if (document.getElementById('firebase-ui-styles')) return;
     const style = document.createElement('style');
+    style.id = 'firebase-ui-styles';
     style.textContent = `
       /* ログインモーダル */
       .firebase-modal-overlay {
@@ -784,11 +845,18 @@ class ScratchFirebaseUI {
    * ログインモーダルを作成
    */
   createModal() {
+    const existingModal = document.getElementById('firebase-modal-overlay-root');
+    if (existingModal) {
+      this.modalContainer = existingModal;
+      return;
+    }
+
     this.modalContainer = document.createElement('div');
+    this.modalContainer.id = 'firebase-modal-overlay-root';
     this.modalContainer.className = 'firebase-modal-overlay';
     this.modalContainer.innerHTML = `
       <div class="firebase-modal" style="position: relative;">
-        <button class="firebase-modal-close" onclick="window.scratchFirebaseUI.hideModal()">&times;</button>
+        <button class="firebase-modal-close" id="firebase-modal-close-btn">&times;</button>
         <h2>サインイン</h2>
         <form id="firebase-login-form">
           <div class="firebase-input-group">
@@ -821,6 +889,11 @@ class ScratchFirebaseUI {
       e.preventDefault();
       await this.handleLogin();
     });
+
+    const closeBtn = document.getElementById('firebase-modal-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.hideModal());
+    }
   }
 
   /**
@@ -848,7 +921,7 @@ class ScratchFirebaseUI {
       this.loginButton = document.createElement('button');
       this.loginButton.className = 'firebase-menu-button firebase-login-btn';
       this.loginButton.innerHTML = 'サインイン';
-      this.loginButton.onclick = () => this.showModal();
+      this.loginButton.addEventListener('click', () => this.showModal());
 
       // ユーザー表示（ログイン後）
       this.userDisplay = document.createElement('div');
@@ -863,27 +936,27 @@ class ScratchFirebaseUI {
             <div class="firebase-user-name" id="firebase-display-name">-</div>
             <div class="firebase-user-role" id="firebase-user-role">-</div>
           </div>
-          <div class="firebase-cloud-menu-item" onclick="window.scratchFirebaseUI.showCloudSave()">
+          <div class="firebase-cloud-menu-item" data-action="cloud-save">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
             クラウドに保存
           </div>
-          <div class="firebase-cloud-menu-item" onclick="window.scratchFirebaseUI.showCloudLoad()">
+          <div class="firebase-cloud-menu-item" data-action="cloud-load">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
             クラウドから読み込み
           </div>
-          <div class="firebase-cloud-menu-item" onclick="window.scratchFirebaseUI.openGallery()">
+          <div class="firebase-cloud-menu-item" data-action="open-gallery">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
             ギャラリー
           </div>
-          <div class="firebase-cloud-menu-item" id="firebase-admin-link" style="display: none;" onclick="window.scratchFirebaseUI.openAdmin()">
+          <div class="firebase-cloud-menu-item" id="firebase-admin-link" style="display: none;" data-action="open-admin">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
             管理画面
           </div>
-          <div class="firebase-cloud-menu-item" id="firebase-settings-link" style="display: none;" onclick="window.scratchFirebaseUI.openSettings()">
+          <div class="firebase-cloud-menu-item" id="firebase-settings-link" style="display: none;" data-action="open-settings">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             アカウント設定
           </div>
-          <div class="firebase-user-menu-item logout" onclick="window.scratchFirebaseUI.handleLogout()">
+          <div class="firebase-user-menu-item logout" data-action="logout">
             サインアウト
           </div>
         </div>
@@ -900,13 +973,33 @@ class ScratchFirebaseUI {
       const userButton = document.getElementById('firebase-user-button');
       const userMenu = document.getElementById('firebase-user-menu');
       if (userButton && userMenu) {
-        userButton.onclick = (e) => {
+        userButton.addEventListener('click', (e) => {
           e.stopPropagation();
           userMenu.classList.toggle('visible');
-        };
-        document.addEventListener('click', () => {
-          userMenu.classList.remove('visible');
         });
+
+        userMenu.addEventListener('click', (e) => {
+          const target = e.target.closest('[data-action]');
+          if (!target) return;
+
+          const action = target.dataset.action;
+          if (action === 'cloud-save') this.showCloudSave();
+          if (action === 'cloud-load') this.showCloudLoad();
+          if (action === 'open-gallery') this.openGallery();
+          if (action === 'open-admin') this.openAdmin();
+          if (action === 'open-settings') this.openSettings();
+          if (action === 'logout') this.handleLogout();
+        });
+
+        if (!this.userMenuDocumentClickHandler) {
+          this.userMenuDocumentClickHandler = () => {
+            const currentMenu = document.getElementById('firebase-user-menu');
+            if (currentMenu) {
+              currentMenu.classList.remove('visible');
+            }
+          };
+          document.addEventListener('click', this.userMenuDocumentClickHandler);
+        }
       }
     };
 
@@ -1129,15 +1222,15 @@ class ScratchFirebaseUI {
           </div>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button onclick="window.scratchFirebaseUI.loadProjectToScratch('${p.id}'); document.getElementById('firebase-load-modal').remove();"
+          <button data-action="load" data-project-id="${p.id}"
             style="padding: 6px 12px; background: #4c97ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
             読込
           </button>
-          <button onclick="window.scratchFirebaseUI.toggleSubmit('${p.id}', ${!p.isSubmitted})"
+          <button data-action="toggle-submit" data-project-id="${p.id}" data-submit="${!p.isSubmitted}"
             style="padding: 6px 12px; background: ${p.isSubmitted ? '#ff9800' : '#4caf50'}; color: white; border: none; border-radius: 4px; cursor: pointer;">
             ${p.isSubmitted ? '取消' : '提出'}
           </button>
-          <button onclick="window.scratchFirebaseUI.deleteProject('${p.id}')"
+          <button data-action="delete" data-project-id="${p.id}"
             style="padding: 6px 12px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
             削除
           </button>
@@ -1149,7 +1242,7 @@ class ScratchFirebaseUI {
       <div style="background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
         <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
           <h3 style="margin: 0; font-size: 18px;">クラウドから読み込み</h3>
-          <button onclick="document.getElementById('firebase-load-modal').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+          <button id="firebase-load-modal-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
         </div>
         <div style="padding: 16px 20px; overflow-y: auto; flex: 1;">
           ${projectItems}
@@ -1157,9 +1250,39 @@ class ScratchFirebaseUI {
       </div>
     `;
 
-    modal.onclick = (e) => {
+    modal.addEventListener('click', async (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const action = target.dataset.action;
+      const projectId = target.dataset.projectId;
+      if (!action || !projectId) return;
+
+      if (action === 'load') {
+        await this.loadProjectToScratch(projectId);
+        modal.remove();
+        return;
+      }
+
+      if (action === 'toggle-submit') {
+        const submit = target.dataset.submit === 'true';
+        await this.toggleSubmit(projectId, submit);
+        return;
+      }
+
+      if (action === 'delete') {
+        await this.deleteProject(projectId);
+      }
+    });
+
+    const closeBtn = modal.querySelector('#firebase-load-modal-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => modal.remove());
+    }
+
+    modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.remove();
-    };
+    });
 
     document.body.appendChild(modal);
   }
@@ -1169,7 +1292,12 @@ class ScratchFirebaseUI {
    */
   escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   /**

@@ -1,0 +1,19 @@
+# Large generated bundles and source maps that can cause OOM in Gemini CLI
+*.map
+*.orig
+*.hex
+
+# Root-level large JS bundles in this repo
+/gui.js
+/player.js
+/blocksonly.js
+/compatibilitytesting.js
+
+# Build/dep folders
+/node_modules/
+/functions/node_modules/
+
+# Tooling metadata
+/.git/
+/.claude/
+/.vscode/

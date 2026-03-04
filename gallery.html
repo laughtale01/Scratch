@@ -418,10 +418,10 @@
     <div class="header-title">🎨 作品ギャラリー</div>
     <div class="header-actions">
       <span class="header-user" id="headerUser"></span>
-      <button class="header-btn secondary" onclick="togglePresentationMode()">
+      <button class="header-btn secondary" id="btnPresentationMode">
         発表モード
       </button>
-      <button class="header-btn secondary" id="logoutBtn" onclick="handleLogout()" style="display: none;">
+      <button class="header-btn secondary" id="logoutBtn" style="display: none;">
         サインアウト
       </button>
       <a href="index.html" class="header-btn">Scratchに戻る</a>
@@ -431,11 +431,11 @@
   <!-- フィルター -->
   <div class="filter-bar">
     <span class="filter-label">教室:</span>
-    <select class="filter-select" id="filterClassroom" onchange="filterProjects()">
+    <select class="filter-select" id="filterClassroom">
       <option value="">すべての教室</option>
     </select>
     <span class="filter-label">並び替え:</span>
-    <select class="filter-select" id="sortOrder" onchange="filterProjects()">
+    <select class="filter-select" id="sortOrder">
       <option value="newest">新しい順</option>
       <option value="oldest">古い順</option>
       <option value="name">名前順</option>
@@ -456,7 +456,7 @@
   </div>
 
   <!-- 発表モード終了ボタン -->
-  <button class="exit-presentation" id="exitPresentation" style="display: none;" onclick="togglePresentationMode()">
+  <button class="exit-presentation" id="exitPresentation" style="display: none;">
     発表モード終了
   </button>
 
@@ -465,12 +465,12 @@
     <div class="preview-content">
       <div class="preview-header">
         <span class="preview-title" id="previewTitle">プロジェクト名</span>
-        <button class="preview-close" onclick="closePreview()">&times;</button>
+        <button class="preview-close" id="btnPreviewCloseHeader">&times;</button>
       </div>
       <div class="preview-body" id="previewBody"></div>
       <div class="preview-actions">
-        <button class="header-btn secondary" onclick="closePreview()">閉じる</button>
-        <button class="header-btn" id="openInScratch">Scratchで開く</button>
+        <button class="header-btn secondary" id="btnPreviewCloseFooter">閉じる</button>
+        <button class="header-btn" id="openInScratch" disabled>Scratchで開く</button>
       </div>
     </div>
   </div>
@@ -518,43 +518,201 @@
     let classrooms = {};
 
     const EMAIL_DOMAIN = '@laughtale.local';
-    let didLoad = false;
+    let currentUid = null;
+    let loadRequestId = 0;
+    let selectedPreviewProjectId = null;
+    let galleryUiEventsBound = false;
+    let galleryAuthObserverBound = false;
 
-    // 初期化（ログイン後）
-    async function loadData() {
-      try {
-        // 教室一覧を取得
-        const classroomSnapshot = await db.collection('classrooms').get();
-        classroomSnapshot.forEach(doc => {
-          classrooms[doc.id] = doc.data();
+    function setOpenInScratchEnabled(enabled) {
+      const openBtn = document.getElementById('openInScratch');
+      if (!openBtn) return;
+      openBtn.disabled = !enabled;
+    }
+
+    function clearGalleryState() {
+      projects = [];
+      users = {};
+      classrooms = {};
+      selectedPreviewProjectId = null;
+      setOpenInScratchEnabled(false);
+      document.getElementById('projectGrid').innerHTML = '';
+      document.getElementById('projectGrid').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'none';
+      closePreview();
+    }
+
+    function showLoadingState() {
+      const loading = document.getElementById('loading');
+      loading.style.display = 'block';
+      loading.innerHTML = '<div class="loading-spinner"></div><p>読み込み中...</p>';
+    }
+
+    function getFriendlyLoadError(error) {
+      const code = error && typeof error.code === 'string' ? error.code : '';
+      if (code === 'permission-denied') {
+        return '閲覧権限がありません。管理者にアクセス権を確認してください。';
+      }
+      if (code === 'failed-precondition') {
+        return 'データ取得に必要な設定が不足しています。管理者に連絡してください。';
+      }
+      if (code === 'unavailable') {
+        return '接続が不安定です。ネットワークを確認して再試行してください。';
+      }
+      return error?.message || '不明なエラーが発生しました。';
+    }
+
+    function showLoadError(error) {
+      const loading = document.getElementById('loading');
+      loading.style.display = 'block';
+      loading.innerHTML = '';
+
+      const msg = document.createElement('div');
+      msg.style.color = '#ff6b6b';
+      msg.textContent = `読み込みエラー: ${getFriendlyLoadError(error)}`;
+
+      const retry = document.createElement('button');
+      retry.className = 'header-btn secondary';
+      retry.style.marginTop = '12px';
+      retry.textContent = '再試行';
+      retry.addEventListener('click', () => {
+        if (auth.currentUser) {
+          loadDataForUser(auth.currentUser);
+        }
+      });
+
+      loading.appendChild(msg);
+      loading.appendChild(retry);
+    }
+
+    function toMillis(value) {
+      if (!value) return 0;
+      if (typeof value.toDate === 'function') return value.toDate().getTime();
+      if (value instanceof Date) return value.getTime();
+      return 0;
+    }
+
+    async function loadUserData(uid) {
+      const userDoc = await db.collection('users').doc(uid).get();
+      if (!userDoc.exists) {
+        throw new Error('ユーザー情報が見つかりません。管理者に連絡してください。');
+      }
+      const data = { id: userDoc.id, ...userDoc.data() };
+      if (!['admin', 'teacher', 'student'].includes(data.role)) {
+        throw new Error('ユーザーロール設定が不正です。管理者に連絡してください。');
+      }
+      if (data.role === 'teacher' && !data.classroomId) {
+        throw new Error('講師アカウントに教室が設定されていません。管理者に連絡してください。');
+      }
+      return data;
+    }
+
+    async function loadClassroomsForRole(userData) {
+      const map = {};
+
+      if (userData.role === 'admin') {
+        const snapshot = await db.collection('classrooms').get();
+        snapshot.forEach(doc => {
+          map[doc.id] = doc.data();
         });
+        return map;
+      }
 
-        // ユーザー一覧を取得
-        const userSnapshot = await db.collection('users').get();
-        userSnapshot.forEach(doc => {
-          users[doc.id] = doc.data();
+      if (!userData.classroomId) return map;
+
+      const classroomDoc = await db.collection('classrooms').doc(userData.classroomId).get();
+      if (classroomDoc.exists) {
+        map[classroomDoc.id] = classroomDoc.data();
+      }
+      return map;
+    }
+
+    async function loadUsersForRole(userData, uid) {
+      const map = {};
+
+      if (userData.role === 'admin') {
+        const snapshot = await db.collection('users').get();
+        snapshot.forEach(doc => {
+          map[doc.id] = doc.data();
         });
+        return map;
+      }
 
-        // 提出済みプロジェクトを取得
-        const projectSnapshot = await db.collection('projects')
-          .where('isSubmitted', '==', true)
-          .orderBy('submittedAt', 'desc')
+      if (userData.role === 'teacher' && userData.classroomId) {
+        const snapshot = await db.collection('users')
+          .where('classroomId', '==', userData.classroomId)
           .get();
 
-        projects = [];
-        projectSnapshot.forEach(doc => {
-          projects.push({ id: doc.id, ...doc.data() });
+        snapshot.forEach(doc => {
+          map[doc.id] = doc.data();
         });
 
-        // フィルター更新
-        updateFilters();
+        if (!map[uid]) {
+          const selfDoc = await db.collection('users').doc(uid).get();
+          if (selfDoc.exists) map[uid] = selfDoc.data();
+        }
+        return map;
+      }
 
-        // 表示
+      map[uid] = userData;
+      return map;
+    }
+
+    async function loadProjectsForRole(userData, uid) {
+      let snapshot;
+
+      if (userData.role === 'admin') {
+        snapshot = await db.collection('projects')
+          .where('isSubmitted', '==', true)
+          .get();
+      } else if (userData.role === 'teacher' && userData.classroomId) {
+        snapshot = await db.collection('projects')
+          .where('isSubmitted', '==', true)
+          .where('classroomId', '==', userData.classroomId)
+          .get();
+      } else {
+        snapshot = await db.collection('projects')
+          .where('isSubmitted', '==', true)
+          .where('userId', '==', uid)
+          .get();
+      }
+
+      const list = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        list.push({ id: doc.id, ...data });
+      });
+
+      list.sort((a, b) => toMillis(b.submittedAt) - toMillis(a.submittedAt));
+      return list;
+    }
+
+    // 初期化（ログイン後）
+    async function loadDataForUser(user) {
+      const requestId = ++loadRequestId;
+      showLoadingState();
+
+      try {
+        const userData = await loadUserData(user.uid);
+        const [classroomMap, userMap, projectList] = await Promise.all([
+          loadClassroomsForRole(userData),
+          loadUsersForRole(userData, user.uid),
+          loadProjectsForRole(userData, user.uid)
+        ]);
+
+        if (requestId !== loadRequestId) return;
+
+        classrooms = classroomMap;
+        users = userMap;
+        projects = projectList;
+
+        updateFilters();
         renderProjects();
 
       } catch (error) {
+        if (requestId !== loadRequestId) return;
         console.error('初期化エラー:', error);
-        document.getElementById('loading').innerHTML = '<div style="color: #ff6b6b;">読み込みエラー: ' + error.message + '</div>';
+        showLoadError(error);
       }
     }
 
@@ -574,9 +732,19 @@
       btn.textContent = loading ? 'サインイン中...' : 'サインイン';
     }
 
+    function normalizeUserId(rawUserId) {
+      return (rawUserId || '').trim().toLowerCase();
+    }
+
+    function buildLoginEmail(rawUserId) {
+      const normalizedUserId = normalizeUserId(rawUserId);
+      if (!normalizedUserId) return '';
+      return normalizedUserId + EMAIL_DOMAIN;
+    }
+
     async function handleLogin(event) {
       event.preventDefault();
-      const userId = document.getElementById('loginUserId').value.trim();
+      const userId = normalizeUserId(document.getElementById('loginUserId').value);
       const password = document.getElementById('loginPassword').value;
       const errorEl = document.getElementById('loginError');
 
@@ -589,7 +757,7 @@
       errorEl.textContent = '';
 
       try {
-        const email = userId.toLowerCase() + EMAIL_DOMAIN;
+        const email = buildLoginEmail(userId);
         await auth.signInWithEmailAndPassword(email, password);
       } catch (error) {
         let errorMessage = 'ログインに失敗しました';
@@ -641,8 +809,19 @@
     // フィルター更新
     function updateFilters() {
       const select = document.getElementById('filterClassroom');
-      select.innerHTML = '<option value="">すべての教室</option>' +
-        Object.entries(classrooms).map(([id, c]) => `<option value="${id}">${escapeHtml(c.name)}</option>`).join('');
+      select.innerHTML = '';
+
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = 'すべての教室';
+      select.appendChild(defaultOpt);
+
+      Object.entries(classrooms).forEach(([id, c]) => {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = c?.name || '(名称未設定)';
+        select.appendChild(option);
+      });
     }
 
     // プロジェクト表示
@@ -664,9 +843,9 @@
       // ソート
       const sortOrder = document.getElementById('sortOrder').value;
       if (sortOrder === 'newest') {
-        filtered.sort((a, b) => (b.submittedAt?.toDate() || 0) - (a.submittedAt?.toDate() || 0));
+        filtered.sort((a, b) => toMillis(b.submittedAt) - toMillis(a.submittedAt));
       } else if (sortOrder === 'oldest') {
-        filtered.sort((a, b) => (a.submittedAt?.toDate() || 0) - (b.submittedAt?.toDate() || 0));
+        filtered.sort((a, b) => toMillis(a.submittedAt) - toMillis(b.submittedAt));
       } else if (sortOrder === 'name') {
         filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       }
@@ -686,10 +865,10 @@
         const submittedAt = p.submittedAt ? formatDate(p.submittedAt.toDate()) : '-';
 
         return `
-          <div class="project-card" onclick="showPreview('${p.id}')">
+          <div class="project-card" data-project-id="${escapeHtml(p.id)}">
             <div class="project-thumbnail">
               ${p.thumbnailUrl
-                ? `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" onerror="this.parentElement.innerHTML='📁'">`
+                ? `<img class="gallery-thumb-img" src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}">`
                 : '📁'}
             </div>
             <div class="project-info">
@@ -712,6 +891,8 @@
     function showPreview(projectId) {
       const project = projects.find(p => p.id === projectId);
       if (!project) return;
+      selectedPreviewProjectId = projectId;
+      setOpenInScratchEnabled(true);
 
       const user = users[project.userId] || {};
       const classroom = classrooms[project.classroomId] || {};
@@ -722,7 +903,7 @@
           <div style="flex: 0 0 200px;">
             <div style="width: 200px; height: 150px; background: #f5f5f5; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 48px;">
               ${project.thumbnailUrl
-                ? `<img src="${escapeHtml(project.thumbnailUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" onerror="this.parentElement.innerHTML='📁'">`
+                ? `<img class="gallery-thumb-img" src="${escapeHtml(project.thumbnailUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`
                 : '📁'}
             </div>
           </div>
@@ -737,16 +918,13 @@
         </div>
       `;
 
-      document.getElementById('openInScratch').onclick = () => {
-        // プロジェクトIDをURLパラメータで渡してScratchを開く
-        window.open('index.html?loadProject=' + projectId, '_blank');
-      };
-
       document.getElementById('previewModal').classList.add('show');
     }
 
     // プレビューを閉じる
     function closePreview() {
+      selectedPreviewProjectId = null;
+      setOpenInScratchEnabled(false);
       document.getElementById('previewModal').classList.remove('show');
     }
 
@@ -767,38 +945,97 @@
 
     function escapeHtml(str) {
       if (!str) return '';
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
-    // ESCキーでプレビューを閉じる
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closePreview();
-        if (document.body.classList.contains('presentation-mode')) {
-          togglePresentationMode();
+    function bindGalleryUiEvents() {
+      if (galleryUiEventsBound) return;
+      galleryUiEventsBound = true;
+
+      // ESCキーでプレビューを閉じる
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closePreview();
+          if (document.body.classList.contains('presentation-mode')) {
+            togglePresentationMode();
+          }
         }
-      }
-    });
+      });
 
-    // モーダル外クリックで閉じる
-    document.getElementById('previewModal').onclick = (e) => {
-      if (e.target.id === 'previewModal') closePreview();
-    };
+      // モーダル外クリックで閉じる
+      document.getElementById('previewModal').addEventListener('click', (e) => {
+        if (e.target.id === 'previewModal') closePreview();
+      });
 
-    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+      document.getElementById('openInScratch').addEventListener('click', () => {
+        if (!selectedPreviewProjectId) return;
+        // プロジェクトIDをURLパラメータで渡してScratchを開く
+        window.open('index.html?loadProject=' + encodeURIComponent(selectedPreviewProjectId), '_blank');
+      });
 
-    auth.onAuthStateChanged(async (user) => {
-      updateHeaderUser(user);
-      if (user) {
+      // プロジェクトカードクリックでプレビューを表示（イベント委譲）
+      document.getElementById('projectGrid').addEventListener('click', (e) => {
+        const card = e.target.closest('.project-card');
+        if (!card) return;
+        const projectId = card.dataset.projectId;
+        if (!projectId) return;
+        showPreview(projectId);
+      });
+
+      // 画像読み込み失敗時のフォールバック
+      document.addEventListener('error', (e) => {
+        const target = e.target;
+        if (!(target instanceof HTMLImageElement)) return;
+        if (!target.classList.contains('gallery-thumb-img')) return;
+        const parent = target.parentElement;
+        if (!parent) return;
+        parent.textContent = '📁';
+      }, true);
+
+      document.getElementById('btnPresentationMode').addEventListener('click', togglePresentationMode);
+      document.getElementById('exitPresentation').addEventListener('click', togglePresentationMode);
+      document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+      document.getElementById('btnPreviewCloseHeader').addEventListener('click', closePreview);
+      document.getElementById('btnPreviewCloseFooter').addEventListener('click', closePreview);
+      document.getElementById('filterClassroom').addEventListener('change', filterProjects);
+      document.getElementById('sortOrder').addEventListener('change', filterProjects);
+      document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    }
+
+    function bindGalleryAuthObserver() {
+      if (galleryAuthObserverBound) return;
+      galleryAuthObserverBound = true;
+
+      auth.onAuthStateChanged(async (user) => {
+        updateHeaderUser(user);
+
+        if (!user) {
+          currentUid = null;
+          loadRequestId++;
+          clearGalleryState();
+          showLogin();
+          showLoadingState();
+          return;
+        }
+
         hideLogin();
-        if (!didLoad) {
-          didLoad = true;
-          await loadData();
+
+        if (currentUid !== user.uid) {
+          clearGalleryState();
         }
-      } else {
-        showLogin();
-      }
-    });
+
+        currentUid = user.uid;
+        await loadDataForUser(user);
+      });
+    }
+
+    bindGalleryUiEvents();
+    bindGalleryAuthObserver();
   </script>
 </body>
 </html>

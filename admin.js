@@ -28,7 +28,8 @@ const cloudFunctions = {
   createUser: functionsAsia.httpsCallable('createUser'),
   resetPassword: functionsAsia.httpsCallable('resetPassword'),
   deleteUser: functionsAsia.httpsCallable('deleteUser'),
-  createUsers: functionsAsia.httpsCallable('createUsers')
+  createUsers: functionsAsia.httpsCallable('createUsers'),
+  auditUserDocumentCoverage: functionsAsia.httpsCallable('auditUserDocumentCoverage')
 };
 
 /**
@@ -43,6 +44,8 @@ class AdminPanel {
   static users = [];
   static classrooms = [];
   static projects = [];
+  static pendingDeleteAction = null;
+  static lastCoverageAudit = null;
 
   /**
    * 初期化
@@ -67,6 +70,16 @@ class AdminPanel {
         this.switchTab(e.target.dataset.tab);
       });
     });
+
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.addEventListener('click', async () => {
+        if (typeof this.pendingDeleteAction !== 'function') return;
+        const action = this.pendingDeleteAction;
+        this.pendingDeleteAction = null;
+        await action();
+      });
+    }
   }
 
   /**
@@ -180,6 +193,11 @@ class AdminPanel {
       // その他は全て非表示
       if (createUserBtn) createUserBtn.style.display = 'none';
       if (createClassroomBtn) createClassroomBtn.style.display = 'none';
+    }
+
+    const auditBtn = document.getElementById('btnRunUserCoverageAudit');
+    if (auditBtn) {
+      auditBtn.style.display = isAdmin ? '' : 'none';
     }
   }
 
@@ -336,36 +354,111 @@ class AdminPanel {
   }
 
   /**
+   * 欠損ユーザー監査結果を描画
+   */
+  static renderCoverageAuditResult(result, error = null) {
+    const output = document.getElementById('userCoverageAuditOutput');
+    if (!output) return;
+
+    if (error) {
+      output.textContent = `監査エラー: ${error.message || error}`;
+      output.style.color = '#ff6b6b';
+      return;
+    }
+
+    if (!result) {
+      output.textContent = '未実行';
+      output.style.color = '';
+      return;
+    }
+
+    output.style.color = '';
+    output.textContent = [
+      `監査時刻: ${result.auditedAt || '-'}`,
+      `対象Authユーザー数: ${result.totals?.authUsersAudited ?? '-'}`,
+      `users欠損件数: ${result.totals?.missingUserDocs ?? '-'}`,
+      `カバレッジ: ${result.totals?.coverageRate ?? '-'}%`,
+      `欠損サンプル件数: ${(result.sampleMissing || []).length}`
+    ].join('\n');
+  }
+
+  /**
+   * 欠損ユーザー監査を実行（管理者のみ）
+   */
+  static async runUserCoverageAudit() {
+    const btn = document.getElementById('btnRunUserCoverageAudit');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '監査中...';
+    }
+
+    try {
+      const res = await cloudFunctions.auditUserDocumentCoverage({
+        maxUsers: 2000,
+        onlyLocalDomain: true,
+        sampleSize: 50
+      });
+      this.lastCoverageAudit = res.data || null;
+      this.renderCoverageAuditResult(this.lastCoverageAudit);
+    } catch (error) {
+      console.error('AdminPanel: ユーザー文書監査エラー', error);
+      this.renderCoverageAuditResult(null, error);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '欠損ユーザー監査を実行';
+      }
+    }
+  }
+
+  /**
    * フィルターのドロップダウンを更新
    */
   static updateFilters() {
-    // 教室フィルター
-    const classroomOptions = '<option value="">すべての教室</option>' +
-      this.classrooms.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    const setOptions = (selectId, defaultLabel, items) => {
+      const select = document.getElementById(selectId);
+      if (!select) return;
 
-    document.getElementById('filterUserClassroom').innerHTML = classroomOptions;
-    document.getElementById('filterProjectClassroom').innerHTML = classroomOptions;
+      select.innerHTML = '';
 
-    // ユーザーフィルター（プロジェクト用）
-    const userOptions = '<option value="">すべてのユーザー</option>' +
-      this.users.map(u => `<option value="${u.id}">${u.displayName}</option>`).join('');
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = defaultLabel;
+      select.appendChild(defaultOption);
 
-    document.getElementById('filterProjectUser').innerHTML = userOptions;
+      items.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = item.label;
+        select.appendChild(option);
+      });
+    };
 
-    // 新規ユーザー用の教室選択
-    const classroomSelectOptions = '<option value="">教室を選択...</option>' +
-      this.classrooms.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    const classroomItems = this.classrooms.map(c => ({
+      value: c.id,
+      label: c.name || '(名称未設定)'
+    }));
 
-    document.getElementById('newUserClassroom').innerHTML = classroomSelectOptions;
-    document.getElementById('editUserClassroom').innerHTML = classroomSelectOptions;
+    setOptions('filterUserClassroom', 'すべての教室', classroomItems);
+    setOptions('filterProjectClassroom', 'すべての教室', classroomItems);
+    setOptions('newUserClassroom', '教室を選択...', classroomItems);
+    setOptions('editUserClassroom', '教室を選択...', classroomItems);
 
-    // 講師選択（教室用）
-    const teachers = this.users.filter(u => u.role === 'teacher' || u.role === 'admin');
-    const teacherOptions = '<option value="">講師を選択...</option>' +
-      teachers.map(t => `<option value="${t.id}">${t.displayName}</option>`).join('');
+    const userItems = this.users.map(u => ({
+      value: u.id,
+      label: u.displayName || '(名称未設定)'
+    }));
+    setOptions('filterProjectUser', 'すべてのユーザー', userItems);
 
-    document.getElementById('newClassroomTeacher').innerHTML = teacherOptions;
-    document.getElementById('editClassroomTeacher').innerHTML = teacherOptions;
+    const teacherItems = this.users
+      .filter(u => u.role === 'teacher' || u.role === 'admin')
+      .map(t => ({
+        value: t.id,
+        label: t.displayName || '(名称未設定)'
+      }));
+
+    setOptions('newClassroomTeacher', '講師を選択...', teacherItems);
+    setOptions('editClassroomTeacher', '講師を選択...', teacherItems);
   }
 
   /**
@@ -411,9 +504,9 @@ class AdminPanel {
           <td>${user.saveCount || 0}</td>
           <td>
             <div class="btn-group">
-              ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="AdminPanel.showEditUserModal('${user.id}')">編集</button>` : ''}
-              ${canResetPassword ? `<button class="btn btn-secondary btn-sm" onclick="AdminPanel.showResetPasswordModal('${user.id}')">PW</button>` : ''}
-              ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="AdminPanel.confirmDeleteUser('${user.id}')">削除</button>` : ''}
+              ${canEdit ? `<button class="btn btn-secondary btn-sm" data-admin-action="edit-user" data-user-id="${this.escapeHtml(user.id)}">編集</button>` : ''}
+              ${canResetPassword ? `<button class="btn btn-secondary btn-sm" data-admin-action="reset-user-password" data-user-id="${this.escapeHtml(user.id)}">PW</button>` : ''}
+              ${canDelete ? `<button class="btn btn-danger btn-sm" data-admin-action="delete-user" data-user-id="${this.escapeHtml(user.id)}">削除</button>` : ''}
             </div>
           </td>
         </tr>
@@ -450,8 +543,8 @@ class AdminPanel {
           <td>${createdAt}</td>
           <td>
             <div class="btn-group">
-              <button class="btn btn-secondary btn-sm" onclick="AdminPanel.showEditClassroomModal('${classroom.id}')">編集</button>
-              ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="AdminPanel.confirmDeleteClassroom('${classroom.id}')">削除</button>` : ''}
+              <button class="btn btn-secondary btn-sm" data-admin-action="edit-classroom" data-classroom-id="${this.escapeHtml(classroom.id)}">編集</button>
+              ${isAdmin ? `<button class="btn btn-danger btn-sm" data-admin-action="delete-classroom" data-classroom-id="${this.escapeHtml(classroom.id)}">削除</button>` : ''}
             </div>
           </td>
         </tr>
@@ -479,12 +572,12 @@ class AdminPanel {
         ? '<span class="badge badge-submitted">提出済み</span>'
         : '<span class="badge badge-not-submitted">未提出</span>';
 
-      const thumbnailUrl = project.thumbnailUrl || '';
+      const thumbnailUrl = this.safeUrl(project.thumbnailUrl || '');
 
       return `
-        <div class="project-card" onclick="AdminPanel.showProjectDetail('${project.id}')">
+        <div class="project-card" data-admin-action="open-project-detail" data-project-id="${this.escapeHtml(project.id)}">
           <div class="project-thumbnail">
-            <img src="${this.escapeHtml(thumbnailUrl)}" alt="${this.escapeHtml(project.name)}" onerror="this.parentElement.innerHTML='📁'">
+            <img class="admin-thumb-img" src="${thumbnailUrl}" alt="${this.escapeHtml(project.name)}">
           </div>
           <div class="project-info">
             <div class="project-name">${this.escapeHtml(project.name)}</div>
@@ -836,7 +929,7 @@ class AdminPanel {
     document.getElementById('confirmDeleteMessage').textContent =
       `ユーザー「${user.displayName}」を削除しますか？\nこの操作は取り消せません。`;
 
-    document.getElementById('confirmDeleteBtn').onclick = () => this.deleteUser(userId);
+    this.pendingDeleteAction = () => this.deleteUser(userId);
 
     this.showModal('confirmDeleteModal');
   }
@@ -972,16 +1065,30 @@ class AdminPanel {
     if (!classroom) return;
 
     const studentCount = this.users.filter(u => u.classroomId === classroomId && u.role === 'student').length;
+    const projectCount = this.projects.filter(p => p.classroomId === classroomId).length;
+    const teacherCount = this.users.filter(u =>
+      (u.role === 'teacher' || u.role === 'admin') && u.classroomId === classroomId
+    ).length;
 
     if (studentCount > 0) {
       alert(`この教室には${studentCount}名の生徒がいます。\n先に生徒を他の教室に移動してください。`);
       return;
     }
 
+    if (projectCount > 0) {
+      alert(`この教室には${projectCount}件のプロジェクトがあります。\n先にプロジェクトの移管または削除を行ってください。`);
+      return;
+    }
+
+    if (teacherCount > 0) {
+      alert(`この教室には${teacherCount}名の講師/管理者が紐づいています。\n先に所属教室の変更を行ってください。`);
+      return;
+    }
+
     document.getElementById('confirmDeleteMessage').textContent =
       `教室「${classroom.name}」を削除しますか？\nこの操作は取り消せません。`;
 
-    document.getElementById('confirmDeleteBtn').onclick = () => this.deleteClassroom(classroomId);
+    this.pendingDeleteAction = () => this.deleteClassroom(classroomId);
 
     this.showModal('confirmDeleteModal');
   }
@@ -1035,10 +1142,10 @@ class AdminPanel {
     content.innerHTML = `
       <div style="display: flex; gap: 20px; margin-bottom: 20px;">
         <div style="flex: 0 0 200px;">
-          <img src="${project.thumbnailUrl || ''}"
+          <img src="${this.safeUrl(project.thumbnailUrl || '')}"
+               class="admin-thumb-img"
                alt="${this.escapeHtml(project.name)}"
-               style="width: 100%; border-radius: 8px; border: 1px solid #ddd;"
-               onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'display:flex;justify-content:center;align-items:center;height:150px;background:#f0f0f0;border-radius:8px;font-size:48px;\\'>📁</div>'">
+               style="width: 100%; border-radius: 8px; border: 1px solid #ddd;">
         </div>
         <div style="flex: 1;">
           <h3 style="margin-bottom: 8px;">${this.escapeHtml(project.name)}</h3>
@@ -1054,10 +1161,10 @@ class AdminPanel {
       </div>
 
       <div style="margin-bottom: 16px;">
-        <a href="${project.storageUrl}" target="_blank" class="btn btn-primary" download>
+        <a href="${this.safeUrl(project.storageUrl)}" target="_blank" class="btn btn-primary" download>
           ダウンロード (.sb3)
         </a>
-        <button class="btn btn-danger" style="margin-left: 8px;" onclick="AdminPanel.confirmDeleteProject('${projectId}')">
+        <button class="btn btn-danger" style="margin-left: 8px;" data-admin-action="delete-project" data-project-id="${this.escapeHtml(projectId)}">
           削除
         </button>
       </div>
@@ -1080,8 +1187,8 @@ class AdminPanel {
                 <td>${v.createdAt ? this.formatDate(v.createdAt.toDate()) : '-'}</td>
                 <td>${v.size ? this.formatSize(v.size) : '-'}</td>
                 <td>
-                  <a href="${v.storageUrl}" target="_blank" class="btn btn-secondary btn-sm" download>DL</a>
-                  ${i > 0 ? `<button class="btn btn-secondary btn-sm" onclick="AdminPanel.rollbackProject('${projectId}', '${v.id}')">復元</button>` : ''}
+                  <a href="${this.safeUrl(v.storageUrl)}" target="_blank" class="btn btn-secondary btn-sm" download>DL</a>
+                  ${i > 0 ? `<button class="btn btn-secondary btn-sm" data-admin-action="rollback-project" data-project-id="${this.escapeHtml(projectId)}" data-version-id="${this.escapeHtml(v.id)}">復元</button>` : ''}
                 </td>
               </tr>
             `).join('')}
@@ -1137,7 +1244,7 @@ class AdminPanel {
     document.getElementById('confirmDeleteMessage').textContent =
       `プロジェクト「${project.name}」を削除しますか？\nこの操作は取り消せません。`;
 
-    document.getElementById('confirmDeleteBtn').onclick = () => this.deleteProject(projectId);
+    this.pendingDeleteAction = () => this.deleteProject(projectId);
 
     this.closeModal('projectDetailModal');
     this.showModal('confirmDeleteModal');
@@ -1215,6 +1322,9 @@ class AdminPanel {
    */
   static closeModal(modalId) {
     document.getElementById(modalId).classList.remove('show');
+    if (modalId === 'confirmDeleteModal') {
+      this.pendingDeleteAction = null;
+    }
   }
 
   /**
@@ -1256,6 +1366,16 @@ class AdminPanel {
   }
 
   /**
+   * URLを安全な外部URLのみに制限
+   */
+  static safeUrl(url) {
+    const value = (url || '').trim();
+    if (!value) return '';
+    if (!/^https?:\/\//i.test(value)) return '';
+    return this.escapeHtml(value);
+  }
+
+  /**
    * HTMLエスケープ
    */
   static escapeHtml(str) {
@@ -1274,6 +1394,35 @@ document.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal-overlay')) {
     e.target.classList.remove('show');
   }
+});
+
+document.addEventListener('error', (e) => {
+  const target = e.target;
+  if (!(target instanceof HTMLImageElement)) return;
+  if (!target.classList.contains('admin-thumb-img')) return;
+  const parent = target.parentElement;
+  if (!parent) return;
+  parent.textContent = '📁';
+}, true);
+
+document.addEventListener('click', (e) => {
+  const actionEl = e.target.closest('[data-admin-action]');
+  if (!actionEl) return;
+
+  const action = actionEl.dataset.adminAction;
+  const userId = actionEl.dataset.userId;
+  const classroomId = actionEl.dataset.classroomId;
+  const projectId = actionEl.dataset.projectId;
+  const versionId = actionEl.dataset.versionId;
+
+  if (action === 'edit-user' && userId) AdminPanel.showEditUserModal(userId);
+  if (action === 'reset-user-password' && userId) AdminPanel.showResetPasswordModal(userId);
+  if (action === 'delete-user' && userId) AdminPanel.confirmDeleteUser(userId);
+  if (action === 'edit-classroom' && classroomId) AdminPanel.showEditClassroomModal(classroomId);
+  if (action === 'delete-classroom' && classroomId) AdminPanel.confirmDeleteClassroom(classroomId);
+  if (action === 'open-project-detail' && projectId) AdminPanel.showProjectDetail(projectId);
+  if (action === 'delete-project' && projectId) AdminPanel.confirmDeleteProject(projectId);
+  if (action === 'rollback-project' && projectId && versionId) AdminPanel.rollbackProject(projectId, versionId);
 });
 
 // 初期化

@@ -1694,11 +1694,11 @@
   <!-- アプリレイアウト -->
   <div class="app-layout" id="appLayout" style="display: none;">
     <!-- サイドバーオーバーレイ -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- モバイルヘッダー -->
     <div class="mobile-header">
-      <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+      <button class="mobile-menu-btn" id="btnMobileMenu">☰</button>
       <span class="mobile-logo">ADMIN</span>
       <div style="width: 48px;"></div>
     </div>
@@ -1718,19 +1718,19 @@
       <nav class="sidebar-nav">
         <div class="sidebar-nav-section">
           <div class="sidebar-nav-title">メインメニュー</div>
-          <button class="sidebar-nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+          <button class="sidebar-nav-item active" data-tab="dashboard">
             <span class="sidebar-nav-icon">📊</span>
             ダッシュボード
           </button>
-          <button class="sidebar-nav-item" data-tab="users" onclick="switchTab('users')">
+          <button class="sidebar-nav-item" data-tab="users">
             <span class="sidebar-nav-icon">👥</span>
             ユーザー管理
           </button>
-          <button class="sidebar-nav-item" data-tab="classrooms" onclick="switchTab('classrooms')">
+          <button class="sidebar-nav-item" data-tab="classrooms">
             <span class="sidebar-nav-icon">🏠</span>
             教室管理
           </button>
-          <button class="sidebar-nav-item" data-tab="projects" onclick="switchTab('projects')">
+          <button class="sidebar-nav-item" data-tab="projects">
             <span class="sidebar-nav-icon">📦</span>
             プロジェクト管理
           </button>
@@ -1746,14 +1746,14 @@
           </div>
         </div>
         <div class="sidebar-actions">
-          <button class="sidebar-action-btn" onclick="location.href='index.html'">
+          <button class="sidebar-action-btn" id="btnSidebarBackToScratch">
             ← Scratch
           </button>
-          <button class="sidebar-action-btn" onclick="location.href='admin-mobile.html'">
+          <button class="sidebar-action-btn" id="btnSidebarOpenMobile">
             📱 Mobile
           </button>
         </div>
-        <button class="sidebar-action-btn" onclick="AdminPanel.logout()" style="margin-top: 8px; width: 100%;">
+        <button class="sidebar-action-btn" id="btnSidebarLogout" style="margin-top: 8px; width: 100%;">
           ログアウト
         </button>
       </div>
@@ -1768,8 +1768,8 @@
             <div class="header-user-name">-</div>
             <div class="header-user-role">-</div>
           </div>
-          <button class="header-btn" onclick="location.href='index.html'">Scratchに戻る</button>
-          <button class="header-btn" onclick="AdminPanel.logout()">ログアウト</button>
+          <button class="header-btn" id="btnHeaderBackToScratch">Scratchに戻る</button>
+          <button class="header-btn" id="btnHeaderLogout">ログアウト</button>
         </div>
       </header>
 
@@ -1823,6 +1823,19 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">
+                <span class="card-title-icon">🧪</span>
+                ユーザー整合監査
+              </h2>
+              <button class="btn btn-secondary" id="btnRunUserCoverageAudit">欠損ユーザー監査を実行</button>
+            </div>
+            <div class="card-body">
+              <pre id="userCoverageAuditOutput" style="margin: 0; white-space: pre-wrap; word-break: break-word;">未実行</pre>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">
                 <span class="card-title-icon">📜</span>
                 最近のアクティビティ
               </h2>
@@ -1867,22 +1880,22 @@
                 <span class="card-title-icon">👤</span>
                 ユーザー一覧
               </h2>
-              <button class="btn btn-primary" onclick="AdminPanel.showCreateUserModal()" id="btnCreateUser">
+              <button class="btn btn-primary" id="btnCreateUser">
                 + 新規ユーザー
               </button>
             </div>
             <div class="card-body">
               <div class="filter-bar">
-                <select class="form-select" id="filterUserRole" onchange="AdminPanel.filterUsers()">
+                <select class="form-select" id="filterUserRole">
                   <option value="">すべてのロール</option>
                   <option value="admin">管理者</option>
                   <option value="teacher">講師</option>
                   <option value="student">生徒</option>
                 </select>
-                <select class="form-select" id="filterUserClassroom" onchange="AdminPanel.filterUsers()">
+                <select class="form-select" id="filterUserClassroom">
                   <option value="">すべての教室</option>
                 </select>
-                <input type="text" class="form-input" id="filterUserSearch" placeholder="🔍 名前で検索..." oninput="AdminPanel.filterUsers()">
+                <input type="text" class="form-input" id="filterUserSearch" placeholder="🔍 名前で検索...">
               </div>
               <div class="table-wrapper">
                 <table>
@@ -1926,7 +1939,7 @@
                 <span class="card-title-icon">🏠</span>
                 教室一覧
               </h2>
-              <button class="btn btn-primary" onclick="AdminPanel.showCreateClassroomModal()" id="btnCreateClassroom">
+              <button class="btn btn-primary" id="btnCreateClassroom">
                 + 新規教室
               </button>
             </div>
@@ -1975,18 +1988,18 @@
             </div>
             <div class="card-body">
               <div class="filter-bar">
-                <select class="form-select" id="filterProjectClassroom" onchange="AdminPanel.filterProjects()">
+                <select class="form-select" id="filterProjectClassroom">
                   <option value="">すべての教室</option>
                 </select>
-                <select class="form-select" id="filterProjectUser" onchange="AdminPanel.filterProjects()">
+                <select class="form-select" id="filterProjectUser">
                   <option value="">すべてのユーザー</option>
                 </select>
-                <select class="form-select" id="filterProjectStatus" onchange="AdminPanel.filterProjects()">
+                <select class="form-select" id="filterProjectStatus">
                   <option value="">すべての状態</option>
                   <option value="submitted">提出済み</option>
                   <option value="not-submitted">未提出</option>
                 </select>
-                <input type="text" class="form-input" id="filterProjectSearch" placeholder="🔍 プロジェクト名で検索..." oninput="AdminPanel.filterProjects()">
+                <input type="text" class="form-input" id="filterProjectSearch" placeholder="🔍 プロジェクト名で検索...">
               </div>
               <div class="project-grid" id="projectsGrid">
                 <div class="empty-state" style="grid-column: 1 / -1;">
@@ -2006,7 +2019,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✨ 新規ユーザー作成</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('createUserModal')">×</button>
+        <button class="modal-close" data-close-modal="createUserModal">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -2023,7 +2036,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">ロール</label>
-          <select class="form-select" id="newUserRole" onchange="AdminPanel.onNewUserRoleChange()">
+          <select class="form-select" id="newUserRole">
             <option value="student">生徒</option>
             <option value="teacher">講師</option>
             <option value="admin">管理者</option>
@@ -2037,8 +2050,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('createUserModal')">キャンセル</button>
-        <button class="btn btn-primary" onclick="AdminPanel.createUser()">作成</button>
+        <button class="btn btn-secondary" data-close-modal="createUserModal">キャンセル</button>
+        <button class="btn btn-primary" id="btnCreateUserSubmit">作成</button>
       </div>
     </div>
   </div>
@@ -2048,7 +2061,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✏️ ユーザー編集</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('editUserModal')">×</button>
+        <button class="modal-close" data-close-modal="editUserModal">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -2061,7 +2074,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">ロール</label>
-          <select class="form-select" id="editUserRole" onchange="AdminPanel.onEditUserRoleChange()">
+          <select class="form-select" id="editUserRole">
             <option value="student">生徒</option>
             <option value="teacher">講師</option>
             <option value="admin">管理者</option>
@@ -2076,8 +2089,8 @@
         <input type="hidden" id="editUserUid">
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editUserModal')">キャンセル</button>
-        <button class="btn btn-primary" onclick="AdminPanel.updateUser()">保存</button>
+        <button class="btn btn-secondary" data-close-modal="editUserModal">キャンセル</button>
+        <button class="btn btn-primary" id="btnEditUserSubmit">保存</button>
       </div>
     </div>
   </div>
@@ -2087,7 +2100,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">🔐 パスワードリセット</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('resetPasswordModal')">×</button>
+        <button class="modal-close" data-close-modal="resetPasswordModal">×</button>
       </div>
       <div class="modal-body">
         <div class="alert alert-info">
@@ -2100,8 +2113,8 @@
         <input type="hidden" id="resetPasswordUid">
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('resetPasswordModal')">キャンセル</button>
-        <button class="btn btn-primary" onclick="AdminPanel.resetPassword()">リセット</button>
+        <button class="btn btn-secondary" data-close-modal="resetPasswordModal">キャンセル</button>
+        <button class="btn btn-primary" id="btnResetPasswordSubmit">リセット</button>
       </div>
     </div>
   </div>
@@ -2111,7 +2124,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✨ 新規教室作成</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('createClassroomModal')">×</button>
+        <button class="modal-close" data-close-modal="createClassroomModal">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -2126,8 +2139,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('createClassroomModal')">キャンセル</button>
-        <button class="btn btn-primary" onclick="AdminPanel.createClassroom()">作成</button>
+        <button class="btn btn-secondary" data-close-modal="createClassroomModal">キャンセル</button>
+        <button class="btn btn-primary" id="btnCreateClassroomSubmit">作成</button>
       </div>
     </div>
   </div>
@@ -2137,7 +2150,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✏️ 教室編集</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('editClassroomModal')">×</button>
+        <button class="modal-close" data-close-modal="editClassroomModal">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -2153,8 +2166,8 @@
         <input type="hidden" id="editClassroomId">
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editClassroomModal')">キャンセル</button>
-        <button class="btn btn-primary" onclick="AdminPanel.updateClassroom()">保存</button>
+        <button class="btn btn-secondary" data-close-modal="editClassroomModal">キャンセル</button>
+        <button class="btn btn-primary" id="btnEditClassroomSubmit">保存</button>
       </div>
     </div>
   </div>
@@ -2164,13 +2177,13 @@
     <div class="modal" style="max-width: 720px;">
       <div class="modal-header">
         <h3 class="modal-title">📋 プロジェクト詳細</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('projectDetailModal')">×</button>
+        <button class="modal-close" data-close-modal="projectDetailModal">×</button>
       </div>
       <div class="modal-body">
         <div id="projectDetailContent"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('projectDetailModal')">閉じる</button>
+        <button class="btn btn-secondary" data-close-modal="projectDetailModal">閉じる</button>
       </div>
     </div>
   </div>
@@ -2180,7 +2193,7 @@
     <div class="modal" style="max-width: 440px;">
       <div class="modal-header">
         <h3 class="modal-title">⚠️ 削除確認</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('confirmDeleteModal')">×</button>
+        <button class="modal-close" data-close-modal="confirmDeleteModal">×</button>
       </div>
       <div class="modal-body">
         <div class="alert alert-error" style="margin-bottom: 0;">
@@ -2188,7 +2201,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('confirmDeleteModal')">キャンセル</button>
+        <button class="btn btn-secondary" data-close-modal="confirmDeleteModal">キャンセル</button>
         <button class="btn btn-danger" id="confirmDeleteBtn">削除</button>
       </div>
     </div>
@@ -2234,6 +2247,55 @@
       }
     }
 
+    let desktopUiBound = false;
+    function bindDesktopUiEvents() {
+      if (desktopUiBound) return;
+      desktopUiBound = true;
+      document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);
+      document.getElementById('btnMobileMenu')?.addEventListener('click', toggleSidebar);
+
+      document.querySelectorAll('.sidebar-nav-item[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      document.getElementById('btnSidebarBackToScratch')?.addEventListener('click', () => {
+        location.href = 'index.html';
+      });
+      document.getElementById('btnSidebarOpenMobile')?.addEventListener('click', () => {
+        location.href = 'admin-mobile.html';
+      });
+      document.getElementById('btnSidebarLogout')?.addEventListener('click', () => AdminPanel.logout());
+      document.getElementById('btnHeaderBackToScratch')?.addEventListener('click', () => {
+        location.href = 'index.html';
+      });
+      document.getElementById('btnHeaderLogout')?.addEventListener('click', () => AdminPanel.logout());
+
+      document.getElementById('btnCreateUser')?.addEventListener('click', () => AdminPanel.showCreateUserModal());
+      document.getElementById('btnCreateClassroom')?.addEventListener('click', () => AdminPanel.showCreateClassroomModal());
+      document.getElementById('btnRunUserCoverageAudit')?.addEventListener('click', () => AdminPanel.runUserCoverageAudit());
+
+      document.getElementById('filterUserRole')?.addEventListener('change', () => AdminPanel.filterUsers());
+      document.getElementById('filterUserClassroom')?.addEventListener('change', () => AdminPanel.filterUsers());
+      document.getElementById('filterUserSearch')?.addEventListener('input', () => AdminPanel.filterUsers());
+      document.getElementById('filterProjectClassroom')?.addEventListener('change', () => AdminPanel.filterProjects());
+      document.getElementById('filterProjectUser')?.addEventListener('change', () => AdminPanel.filterProjects());
+      document.getElementById('filterProjectStatus')?.addEventListener('change', () => AdminPanel.filterProjects());
+      document.getElementById('filterProjectSearch')?.addEventListener('input', () => AdminPanel.filterProjects());
+
+      document.getElementById('newUserRole')?.addEventListener('change', () => AdminPanel.onNewUserRoleChange());
+      document.getElementById('editUserRole')?.addEventListener('change', () => AdminPanel.onEditUserRoleChange());
+
+      document.getElementById('btnCreateUserSubmit')?.addEventListener('click', () => AdminPanel.createUser());
+      document.getElementById('btnEditUserSubmit')?.addEventListener('click', () => AdminPanel.updateUser());
+      document.getElementById('btnResetPasswordSubmit')?.addEventListener('click', () => AdminPanel.resetPassword());
+      document.getElementById('btnCreateClassroomSubmit')?.addEventListener('click', () => AdminPanel.createClassroom());
+      document.getElementById('btnEditClassroomSubmit')?.addEventListener('click', () => AdminPanel.updateClassroom());
+
+      document.querySelectorAll('[data-close-modal]').forEach(btn => {
+        btn.addEventListener('click', () => AdminPanel.closeModal(btn.dataset.closeModal));
+      });
+    }
+
     // AdminPanelのshowMainContentをオーバーライド
     (function() {
       AdminPanel.showMainContent = function() {
@@ -2259,6 +2321,8 @@
         document.getElementById('userAvatar').textContent = displayName.charAt(0).toUpperCase();
       };
     })();
+
+    bindDesktopUiEvents();
   </script>
 </body>
 </html>

@@ -1,0 +1,61 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && getUserData().role == 'teacher';
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function canAccessProject(projectId) {
+      return isAdmin() || (
+        isTeacher() &&
+        get(/databases/(default)/documents/projects/$(projectId)).data.classroomId ==
+          getUserData().classroomId
+      );
+    }
+
+    function canAccessUserClassroom(uid) {
+      return isAdmin() || (
+        isTeacher() &&
+        get(/databases/(default)/documents/users/$(uid)).data.classroomId ==
+          getUserData().classroomId
+      );
+    }
+
+    // Scratchプロジェクト本体・履歴
+    match /projects/{ownerUid}/{projectId}/{allPaths=**} {
+      allow read, write: if isOwner(ownerUid) || canAccessProject(projectId);
+    }
+
+    // サムネイル
+    match /thumbnails/{ownerUid}/{fileName} {
+      // fileNameは "{projectId}.png" 形式
+      allow read, write: if isOwner(ownerUid) || canAccessUserClassroom(ownerUid);
+    }
+
+    // 録画アップロード
+    match /recordings/{ownerUid}/{fileName} {
+      allow read, write: if isOwner(ownerUid) || isAdmin();
+    }
+
+    // それ以外は拒否
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1590,7 +1590,7 @@
         <p class="login-subtitle">管理者・講師用ログイン</p>
       </div>
 
-      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+      <form class="login-form" id="loginForm">
         <div class="login-input-group">
           <label class="login-label" for="loginUserId">ユーザーID</label>
           <input
@@ -1634,7 +1634,7 @@
   </div>
 
   <!-- ドロワーオーバーレイ -->
-  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="drawer-overlay" id="drawerOverlay"></div>
 
   <!-- ドロワーメニュー -->
   <div class="drawer" id="drawer">
@@ -1648,17 +1648,17 @@
       </div>
     </div>
     <div class="drawer-menu">
-      <button class="drawer-menu-item" onclick="location.href='index.html'">
+      <button class="drawer-menu-item" id="btnBackToScratch">
         <span class="drawer-menu-icon">🎮</span>
         Scratch に戻る
       </button>
-      <button class="drawer-menu-item" onclick="location.href='admin.html'">
+      <button class="drawer-menu-item" id="btnOpenAdminDesktop">
         <span class="drawer-menu-icon">🖥️</span>
         PC版を表示
       </button>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-danger" onclick="AdminPanel.logout()">ログアウト</button>
+      <button class="btn btn-danger" id="btnDrawerLogout">ログアウト</button>
     </div>
   </div>
 
@@ -1672,7 +1672,7 @@
       </div>
       <div class="header-user">
         <div class="header-avatar" id="headerAvatar">U</div>
-        <button class="header-menu-btn" onclick="openDrawer()">☰</button>
+        <button class="header-menu-btn" id="btnOpenDrawer">☰</button>
       </div>
     </div>
 
@@ -1759,21 +1759,21 @@
             <p class="page-subtitle">ユーザーの管理</p>
           </div>
 
-          <button class="btn btn-primary" onclick="AdminPanel.showCreateUserModal()" id="btnCreateUser" style="margin-bottom: 16px;">
+          <button class="btn btn-primary" id="btnCreateUser" style="margin-bottom: 16px;">
             + 新規ユーザー
           </button>
 
           <div class="filter-bar">
-            <select class="form-select" id="filterUserRole" onchange="AdminPanel.filterUsers()">
+            <select class="form-select" id="filterUserRole">
               <option value="">すべてのロール</option>
               <option value="admin">管理者</option>
               <option value="teacher">講師</option>
               <option value="student">生徒</option>
             </select>
-            <select class="form-select" id="filterUserClassroom" onchange="AdminPanel.filterUsers()">
+            <select class="form-select" id="filterUserClassroom">
               <option value="">すべての教室</option>
             </select>
-            <input type="text" class="form-input" id="filterUserSearch" placeholder="🔍 検索..." oninput="AdminPanel.filterUsers()">
+            <input type="text" class="form-input" id="filterUserSearch" placeholder="🔍 検索...">
           </div>
 
           <div id="usersListContainer">
@@ -1796,7 +1796,7 @@
             <p class="page-subtitle">教室の管理</p>
           </div>
 
-          <button class="btn btn-primary" onclick="AdminPanel.showCreateClassroomModal()" id="btnCreateClassroom" style="margin-bottom: 16px;">
+          <button class="btn btn-primary" id="btnCreateClassroom" style="margin-bottom: 16px;">
             + 新規教室
           </button>
 
@@ -1821,15 +1821,15 @@
           </div>
 
           <div class="filter-bar">
-            <select class="form-select" id="filterProjectClassroom" onchange="AdminPanel.filterProjects()">
+            <select class="form-select" id="filterProjectClassroom">
               <option value="">すべての教室</option>
             </select>
-            <select class="form-select" id="filterProjectStatus" onchange="AdminPanel.filterProjects()">
+            <select class="form-select" id="filterProjectStatus">
               <option value="">すべての状態</option>
               <option value="submitted">提出済み</option>
               <option value="not-submitted">未提出</option>
             </select>
-            <input type="text" class="form-input" id="filterProjectSearch" placeholder="🔍 検索..." oninput="AdminPanel.filterProjects()">
+            <input type="text" class="form-input" id="filterProjectSearch" placeholder="🔍 検索...">
           </div>
 
           <div class="project-grid" id="projectsGrid">
@@ -1849,19 +1849,19 @@
 
     <!-- ボトムナビゲーション -->
     <nav class="bottom-nav">
-      <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <button class="nav-item active" data-tab="dashboard">
         <div class="nav-item-icon">📊</div>
         <span class="nav-item-label">ホーム</span>
       </button>
-      <button class="nav-item" data-tab="users" onclick="switchTab('users')">
+      <button class="nav-item" data-tab="users">
         <div class="nav-item-icon">👥</div>
         <span class="nav-item-label">ユーザー</span>
       </button>
-      <button class="nav-item" data-tab="classrooms" onclick="switchTab('classrooms')">
+      <button class="nav-item" data-tab="classrooms">
         <div class="nav-item-icon">🏠</div>
         <span class="nav-item-label">教室</span>
       </button>
-      <button class="nav-item" data-tab="projects" onclick="switchTab('projects')">
+      <button class="nav-item" data-tab="projects">
         <div class="nav-item-icon">📦</div>
         <span class="nav-item-label">作品</span>
       </button>
@@ -1874,7 +1874,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✨ 新規ユーザー</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('createUserModal')">×</button>
+        <button class="modal-close" id="btnCloseCreateUserModal">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1891,7 +1891,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">ロール</label>
-          <select class="form-select" id="newUserRole" onchange="AdminPanel.onNewUserRoleChange()">
+          <select class="form-select" id="newUserRole">
             <option value="student">生徒</option>
             <option value="teacher">講師</option>
             <option value="admin">管理者</option>
@@ -1905,8 +1905,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="AdminPanel.createUser()">作成</button>
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('createUserModal')">キャンセル</button>
+        <button class="btn btn-primary" id="btnCreateUserSubmit">作成</button>
+        <button class="btn btn-secondary" id="btnCancelCreateUserModal">キャンセル</button>
       </div>
     </div>
   </div>
@@ -1916,7 +1916,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✏️ ユーザー編集</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('editUserModal')">×</button>
+        <button class="modal-close" id="btnCloseEditUserModal">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1929,7 +1929,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">ロール</label>
-          <select class="form-select" id="editUserRole" onchange="AdminPanel.onEditUserRoleChange()">
+          <select class="form-select" id="editUserRole">
             <option value="student">生徒</option>
             <option value="teacher">講師</option>
             <option value="admin">管理者</option>
@@ -1944,13 +1944,9 @@
         <input type="hidden" id="editUserUid">
       </div>
       <div class="modal-footer" style="flex-wrap: wrap; gap: 8px;">
-        <button class="btn btn-primary" onclick="AdminPanel.updateUser()">保存</button>
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editUserModal')">キャンセル</button>
-        <button class="btn btn-secondary" id="editUserResetPwBtn" style="background: #e67e22; color: #fff; border: none; width: 100%; margin-top: 4px;" onclick="
-          var uid = document.getElementById('editUserUid').value;
-          AdminPanel.closeModal('editUserModal');
-          AdminPanel.showResetPasswordModal(uid);
-        ">🔐 パスワードリセット</button>
+        <button class="btn btn-primary" id="btnEditUserSubmit">保存</button>
+        <button class="btn btn-secondary" id="btnCancelEditUserModal">キャンセル</button>
+        <button class="btn btn-secondary" id="editUserResetPwBtn" style="background: #e67e22; color: #fff; border: none; width: 100%; margin-top: 4px;">🔐 パスワードリセット</button>
       </div>
     </div>
   </div>
@@ -1960,7 +1956,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">🔐 パスワードリセット</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('resetPasswordModal')">×</button>
+        <button class="modal-close" id="btnCloseResetPasswordModal">×</button>
       </div>
       <div class="modal-body">
         <div class="alert alert-info">
@@ -1973,8 +1969,8 @@
         <input type="hidden" id="resetPasswordUid">
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="AdminPanel.resetPassword()">リセット</button>
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('resetPasswordModal')">キャンセル</button>
+        <button class="btn btn-primary" id="btnResetPasswordSubmit">リセット</button>
+        <button class="btn btn-secondary" id="btnCancelResetPasswordModal">キャンセル</button>
       </div>
     </div>
   </div>
@@ -1984,7 +1980,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✨ 新規教室</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('createClassroomModal')">×</button>
+        <button class="modal-close" id="btnCloseCreateClassroomModal">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1999,8 +1995,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="AdminPanel.createClassroom()">作成</button>
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('createClassroomModal')">キャンセル</button>
+        <button class="btn btn-primary" id="btnCreateClassroomSubmit">作成</button>
+        <button class="btn btn-secondary" id="btnCancelCreateClassroomModal">キャンセル</button>
       </div>
     </div>
   </div>
@@ -2010,7 +2006,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">✏️ 教室編集</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('editClassroomModal')">×</button>
+        <button class="modal-close" id="btnCloseEditClassroomModal">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -2026,8 +2022,8 @@
         <input type="hidden" id="editClassroomId">
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="AdminPanel.updateClassroom()">保存</button>
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('editClassroomModal')">キャンセル</button>
+        <button class="btn btn-primary" id="btnEditClassroomSubmit">保存</button>
+        <button class="btn btn-secondary" id="btnCancelEditClassroomModal">キャンセル</button>
       </div>
     </div>
   </div>
@@ -2037,13 +2033,13 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">📋 詳細</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('projectDetailModal')">×</button>
+        <button class="modal-close" id="btnCloseProjectDetailModalHeader">×</button>
       </div>
       <div class="modal-body">
         <div id="projectDetailContent"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('projectDetailModal')">閉じる</button>
+        <button class="btn btn-secondary" id="btnCloseProjectDetailModalFooter">閉じる</button>
       </div>
     </div>
   </div>
@@ -2053,7 +2049,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title">⚠️ 削除確認</h3>
-        <button class="modal-close" onclick="AdminPanel.closeModal('confirmDeleteModal')">×</button>
+        <button class="modal-close" id="btnCloseConfirmDeleteModalHeader">×</button>
       </div>
       <div class="modal-body">
         <div class="alert alert-error">
@@ -2062,7 +2058,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-danger" id="confirmDeleteBtn">削除</button>
-        <button class="btn btn-secondary" onclick="AdminPanel.closeModal('confirmDeleteModal')">キャンセル</button>
+        <button class="btn btn-secondary" id="btnCloseConfirmDeleteModalFooter">キャンセル</button>
       </div>
     </div>
   </div>
@@ -2072,6 +2068,7 @@
     // =====================================================
     // ログイン処理
     // =====================================================
+    const LOGIN_EMAIL_DOMAIN = '@laughtale.local';
 
     /**
      * ログイン画面を表示
@@ -2128,6 +2125,16 @@
       }
     }
 
+    function normalizeUserId(rawUserId) {
+      return (rawUserId || '').trim().toLowerCase();
+    }
+
+    function buildLoginEmail(rawUserId) {
+      const normalizedUserId = normalizeUserId(rawUserId);
+      if (!normalizedUserId) return '';
+      return normalizedUserId + LOGIN_EMAIL_DOMAIN;
+    }
+
     /**
      * ログイン処理
      */
@@ -2135,7 +2142,7 @@
       event.preventDefault();
       hideLoginError();
 
-      const userId = document.getElementById('loginUserId').value.trim();
+      const userId = normalizeUserId(document.getElementById('loginUserId').value);
       const password = document.getElementById('loginPassword').value;
 
       if (!userId || !password) {
@@ -2144,7 +2151,7 @@
       }
 
       // ユーザーIDからメールアドレスを生成
-      const email = userId + '@laughtale.local';
+      const email = buildLoginEmail(userId);
 
       setLoginLoading(true);
 
@@ -2220,6 +2227,70 @@
 
       // スクロールトップ
       window.scrollTo(0, 0);
+    }
+
+    let mobileUiBound = false;
+    function bindMobileUiEvents() {
+      if (mobileUiBound) return;
+      mobileUiBound = true;
+      document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+      document.getElementById('drawerOverlay')?.addEventListener('click', closeDrawer);
+      document.getElementById('btnOpenDrawer')?.addEventListener('click', openDrawer);
+      document.getElementById('btnBackToScratch')?.addEventListener('click', () => {
+        location.href = 'index.html';
+      });
+      document.getElementById('btnOpenAdminDesktop')?.addEventListener('click', () => {
+        location.href = 'admin.html';
+      });
+      document.getElementById('btnDrawerLogout')?.addEventListener('click', () => AdminPanel.logout());
+      document.getElementById('btnCreateUser')?.addEventListener('click', () => AdminPanel.showCreateUserModal());
+      document.getElementById('btnCreateClassroom')?.addEventListener('click', () => AdminPanel.showCreateClassroomModal());
+
+      document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      document.getElementById('filterUserRole')?.addEventListener('change', () => AdminPanel.filterUsers());
+      document.getElementById('filterUserClassroom')?.addEventListener('change', () => AdminPanel.filterUsers());
+      document.getElementById('filterUserSearch')?.addEventListener('input', () => AdminPanel.filterUsers());
+
+      document.getElementById('filterProjectClassroom')?.addEventListener('change', () => AdminPanel.filterProjects());
+      document.getElementById('filterProjectStatus')?.addEventListener('change', () => AdminPanel.filterProjects());
+      document.getElementById('filterProjectSearch')?.addEventListener('input', () => AdminPanel.filterProjects());
+
+      document.getElementById('newUserRole')?.addEventListener('change', () => AdminPanel.onNewUserRoleChange());
+      document.getElementById('editUserRole')?.addEventListener('change', () => AdminPanel.onEditUserRoleChange());
+
+      document.getElementById('btnCloseCreateUserModal')?.addEventListener('click', () => AdminPanel.closeModal('createUserModal'));
+      document.getElementById('btnCancelCreateUserModal')?.addEventListener('click', () => AdminPanel.closeModal('createUserModal'));
+      document.getElementById('btnCreateUserSubmit')?.addEventListener('click', () => AdminPanel.createUser());
+
+      document.getElementById('btnCloseEditUserModal')?.addEventListener('click', () => AdminPanel.closeModal('editUserModal'));
+      document.getElementById('btnCancelEditUserModal')?.addEventListener('click', () => AdminPanel.closeModal('editUserModal'));
+      document.getElementById('btnEditUserSubmit')?.addEventListener('click', () => AdminPanel.updateUser());
+      document.getElementById('editUserResetPwBtn')?.addEventListener('click', () => {
+        const uid = document.getElementById('editUserUid').value;
+        AdminPanel.closeModal('editUserModal');
+        AdminPanel.showResetPasswordModal(uid);
+      });
+
+      document.getElementById('btnCloseResetPasswordModal')?.addEventListener('click', () => AdminPanel.closeModal('resetPasswordModal'));
+      document.getElementById('btnCancelResetPasswordModal')?.addEventListener('click', () => AdminPanel.closeModal('resetPasswordModal'));
+      document.getElementById('btnResetPasswordSubmit')?.addEventListener('click', () => AdminPanel.resetPassword());
+
+      document.getElementById('btnCloseCreateClassroomModal')?.addEventListener('click', () => AdminPanel.closeModal('createClassroomModal'));
+      document.getElementById('btnCancelCreateClassroomModal')?.addEventListener('click', () => AdminPanel.closeModal('createClassroomModal'));
+      document.getElementById('btnCreateClassroomSubmit')?.addEventListener('click', () => AdminPanel.createClassroom());
+
+      document.getElementById('btnCloseEditClassroomModal')?.addEventListener('click', () => AdminPanel.closeModal('editClassroomModal'));
+      document.getElementById('btnCancelEditClassroomModal')?.addEventListener('click', () => AdminPanel.closeModal('editClassroomModal'));
+      document.getElementById('btnEditClassroomSubmit')?.addEventListener('click', () => AdminPanel.updateClassroom());
+
+      document.getElementById('btnCloseProjectDetailModalHeader')?.addEventListener('click', () => AdminPanel.closeModal('projectDetailModal'));
+      document.getElementById('btnCloseProjectDetailModalFooter')?.addEventListener('click', () => AdminPanel.closeModal('projectDetailModal'));
+
+      document.getElementById('btnCloseConfirmDeleteModalHeader')?.addEventListener('click', () => AdminPanel.closeModal('confirmDeleteModal'));
+      document.getElementById('btnCloseConfirmDeleteModalFooter')?.addEventListener('click', () => AdminPanel.closeModal('confirmDeleteModal'));
     }
 
     // AdminPanelオーバーライド
@@ -2301,13 +2372,27 @@
         if (!container) return;
 
         const users = filteredUsers || this.users || [];
+        container.innerHTML = '';
+
+        const renderEmptyState = (icon, text) => {
+          const state = document.createElement('div');
+          state.className = 'empty-state';
+
+          const iconEl = document.createElement('div');
+          iconEl.className = 'empty-state-icon';
+          iconEl.textContent = icon;
+
+          const textEl = document.createElement('div');
+          textEl.className = 'empty-state-text';
+          textEl.textContent = text;
+
+          state.appendChild(iconEl);
+          state.appendChild(textEl);
+          container.appendChild(state);
+        };
+
         if (users.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">👤</div>
-              <div class="empty-state-text">ユーザーがいません</div>
-            </div>
-          `;
+          renderEmptyState('👤', 'ユーザーがいません');
           return;
         }
 
@@ -2318,24 +2403,53 @@
         const isTeacher = this.currentUserData.role === 'teacher';
         const myClassroomId = this.currentUserData.classroomId;
 
-        container.innerHTML = users.map(user => {
+        users.forEach(user => {
           // 講師は自教室の生徒のみ編集可能
           const canEdit = isAdmin || (isTeacher && user.classroomId === myClassroomId && user.role === 'student');
-          const userId = user.uid || user.id;
+          const userId = user.uid || user.id || '';
 
-          return `
-            <div class="list-item" ${canEdit ? `onclick="AdminPanel.showEditUserModal('${userId}')"` : ''} style="${canEdit ? '' : 'opacity: 0.7;'}">
-              <div class="list-item-avatar">${(user.displayName || 'U').charAt(0).toUpperCase()}</div>
-              <div class="list-item-content">
-                <div class="list-item-title">${user.displayName || user.userId}</div>
-                <div class="list-item-subtitle">
-                  <span class="badge ${badgeClasses[user.role] || ''}">${roleLabels[user.role] || user.role}</span>
-                </div>
-              </div>
-              ${canEdit ? '<div class="list-item-action">›</div>' : ''}
-            </div>
-          `;
-        }).join('');
+          const item = document.createElement('div');
+          item.className = 'list-item';
+          if (!canEdit) item.style.opacity = '0.7';
+          if (canEdit) {
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', () => AdminPanel.showEditUserModal(userId));
+          }
+
+          const avatar = document.createElement('div');
+          avatar.className = 'list-item-avatar';
+          avatar.textContent = (user.displayName || 'U').charAt(0).toUpperCase();
+
+          const content = document.createElement('div');
+          content.className = 'list-item-content';
+
+          const title = document.createElement('div');
+          title.className = 'list-item-title';
+          title.textContent = user.displayName || user.userId || 'ユーザー';
+
+          const subtitle = document.createElement('div');
+          subtitle.className = 'list-item-subtitle';
+
+          const badge = document.createElement('span');
+          badge.className = `badge ${badgeClasses[user.role] || ''}`;
+          badge.textContent = roleLabels[user.role] || user.role || '-';
+
+          subtitle.appendChild(badge);
+          content.appendChild(title);
+          content.appendChild(subtitle);
+
+          item.appendChild(avatar);
+          item.appendChild(content);
+
+          if (canEdit) {
+            const action = document.createElement('div');
+            action.className = 'list-item-action';
+            action.textContent = '›';
+            item.appendChild(action);
+          }
+
+          container.appendChild(item);
+        });
       };
 
       // 教室リスト表示をカード形式に
@@ -2347,35 +2461,62 @@
         if (!container) return;
 
         const classrooms = this.classrooms || [];
+        container.innerHTML = '';
+
         if (classrooms.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">🏠</div>
-              <div class="empty-state-text">教室がありません</div>
-            </div>
-          `;
+          const state = document.createElement('div');
+          state.className = 'empty-state';
+          const iconEl = document.createElement('div');
+          iconEl.className = 'empty-state-icon';
+          iconEl.textContent = '🏠';
+          const textEl = document.createElement('div');
+          textEl.className = 'empty-state-text';
+          textEl.textContent = '教室がありません';
+          state.appendChild(iconEl);
+          state.appendChild(textEl);
+          container.appendChild(state);
           return;
         }
 
-        container.innerHTML = classrooms.map(classroom => {
-          const teacher = this.users?.find(u => u.uid === classroom.teacherId);
+        classrooms.forEach(classroom => {
+          const teacher = this.users?.find(u => (u.id || u.uid) === classroom.teacherId);
           const studentCount = this.users?.filter(u => u.classroomId === classroom.id && u.role === 'student').length || 0;
 
-          return `
-            <div class="list-item" onclick="AdminPanel.showEditClassroomModal('${classroom.id}')">
-              <div class="list-item-avatar">🏠</div>
-              <div class="list-item-content">
-                <div class="list-item-title">${classroom.name}</div>
-                <div class="list-item-subtitle">
-                  ${teacher ? teacher.displayName : '講師未設定'} · ${studentCount}人
-                </div>
-              </div>
-              <div class="list-item-action">›</div>
-            </div>
-          `;
-        }).join('');
+          const item = document.createElement('div');
+          item.className = 'list-item';
+          item.style.cursor = 'pointer';
+          item.addEventListener('click', () => AdminPanel.showEditClassroomModal(classroom.id));
+
+          const avatar = document.createElement('div');
+          avatar.className = 'list-item-avatar';
+          avatar.textContent = '🏠';
+
+          const content = document.createElement('div');
+          content.className = 'list-item-content';
+
+          const title = document.createElement('div');
+          title.className = 'list-item-title';
+          title.textContent = classroom.name || '教室';
+
+          const subtitle = document.createElement('div');
+          subtitle.className = 'list-item-subtitle';
+          subtitle.textContent = `${teacher ? (teacher.displayName || '講師未設定') : '講師未設定'} · ${studentCount}人`;
+
+          const action = document.createElement('div');
+          action.className = 'list-item-action';
+          action.textContent = '›';
+
+          content.appendChild(title);
+          content.appendChild(subtitle);
+          item.appendChild(avatar);
+          item.appendChild(content);
+          item.appendChild(action);
+          container.appendChild(item);
+        });
       };
     })();
+
+    bindMobileUiEvents();
   </script>
 </body>
 </html>

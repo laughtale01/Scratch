@@ -36,6 +36,27 @@ service cloud.firestore {
       return getUserData().classroomId == classroomId;
     }
 
+    // プロジェクト更新の許可フィールド（非admin向け）
+    function canUpdateProjectFields() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+        'name',
+        'description',
+        'thumbnailUrl',
+        'storageUrl',
+        'size',
+        'isSubmitted',
+        'submittedAt',
+        'updatedAt'
+      ]);
+    }
+
+    // プロジェクトの不変項目を保護
+    function hasProjectImmutableFields() {
+      return request.resource.data.userId == resource.data.userId &&
+        request.resource.data.classroomId == resource.data.classroomId &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
     // ==========================================
     // ユーザーコレクション
     // ==========================================
@@ -117,12 +138,17 @@ service cloud.firestore {
 
       // 更新:
       // - 管理者: 全て
-      // - 講師: 自教室のプロジェクト
-      // - 生徒: 自分のプロジェクト
+      // - 講師/生徒: 許可フィールドのみ + 不変項目保護
       allow update: if isAuthenticated() && (
         isAdmin() ||
-        (isTeacher() && resource.data.classroomId == getUserData().classroomId) ||
-        resource.data.userId == request.auth.uid
+        (
+          (
+            (isTeacher() && resource.data.classroomId == getUserData().classroomId) ||
+            resource.data.userId == request.auth.uid
+          ) &&
+          canUpdateProjectFields() &&
+          hasProjectImmutableFields()
+        )
       );
 
       // 削除: 管理者または講師（自教室）

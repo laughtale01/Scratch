@@ -101,8 +101,10 @@ exports.createUser = functions.region('asia-northeast1').https.onCall(async (dat
 
   // パラメータ検証
   const { userId, displayName, password, role, classroomId } = data;
+  const normalizedUserId = (userId || '').trim().toLowerCase();
+  const trimmedDisplayName = (displayName || '').trim();
 
-  if (!userId || !displayName || !password || !role) {
+  if (!normalizedUserId || !trimmedDisplayName || !password || !role) {
     throw new functions.https.HttpsError('invalid-argument', '必須パラメータが不足しています');
   }
 
@@ -130,27 +132,37 @@ exports.createUser = functions.region('asia-northeast1').https.onCall(async (dat
     }
   }
 
-  const email = `${userId}@laughtale.local`;
+  const email = `${normalizedUserId}@laughtale.local`;
 
   try {
     // Firebase Authでユーザー作成
     const userRecord = await auth.createUser({
       email: email,
       password: password,
-      displayName: displayName,
+      displayName: trimmedDisplayName,
       emailVerified: true // メール確認をスキップ
     });
 
-    // Firestoreにユーザー情報を保存
-    await db.collection('users').doc(userRecord.uid).set({
-      email: email,
-      displayName: displayName,
-      role: role,
-      classroomId: role === 'admin' ? null : classroomId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      lastLoginAt: null,
-      saveCount: 0
-    });
+    try {
+      // Firestoreにユーザー情報を保存
+      await db.collection('users').doc(userRecord.uid).set({
+        email: email,
+        displayName: trimmedDisplayName,
+        role: role,
+        classroomId: role === 'admin' ? null : classroomId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastLoginAt: null,
+        saveCount: 0
+      });
+    } catch (firestoreError) {
+      // Auth作成後にFirestore保存が失敗した場合は補償削除
+      try {
+        await auth.deleteUser(userRecord.uid);
+      } catch (rollbackError) {
+        console.error('createUser rollback error:', rollbackError);
+      }
+      throw firestoreError;
+    }
 
     console.log(`User created: ${email} (${userRecord.uid})`);
 
@@ -384,13 +396,30 @@ exports.createUsers = functions.region('asia-northeast1').https.onCall(async (da
   for (const user of users) {
     try {
       const { userId, displayName, password, role, classroomId } = user;
+      const normalizedUserId = (userId || '').trim().toLowerCase();
+      const trimmedDisplayName = (displayName || '').trim();
 
-      if (!userId || !displayName || !password || !role) {
-        errors.push({ userId, error: '必須パラメータが不足しています' });
+      if (!normalizedUserId || !trimmedDisplayName || !password || !role) {
+        errors.push({ userId, code: 'invalid-argument', error: '必須パラメータが不足しています' });
         continue;
       }
 
-      const email = `${userId}@laughtale.local`;
+      if (password.length < 6) {
+        errors.push({ userId, code: 'invalid-argument', error: 'パスワードは6文字以上必要です' });
+        continue;
+      }
+
+      if (!['admin', 'teacher', 'student'].includes(role)) {
+        errors.push({ userId, code: 'invalid-argument', error: '無効なロールです' });
+        continue;
+      }
+
+      if (role !== 'admin' && !classroomId) {
+        errors.push({ userId, code: 'invalid-argument', error: '教室IDが必要です' });
+        continue;
+      }
+
+      const email = `${normalizedUserId}@laughtale.local`;
 
       // Firebase Authでユーザー作成
       const userRecord = await auth.createUser({
@@ -400,21 +429,31 @@ exports.createUsers = functions.region('asia-northeast1').https.onCall(async (da
         emailVerified: true
       });
 
-      // Firestoreにユーザー情報を保存
-      await db.collection('users').doc(userRecord.uid).set({
-        email: email,
-        displayName: displayName,
-        role: role,
-        classroomId: role === 'admin' ? null : classroomId,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastLoginAt: null,
-        saveCount: 0
-      });
+      try {
+        // Firestoreにユーザー情報を保存
+        await db.collection('users').doc(userRecord.uid).set({
+          email: email,
+          displayName: trimmedDisplayName,
+          role: role,
+          classroomId: role === 'admin' ? null : classroomId,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastLoginAt: null,
+          saveCount: 0
+        });
+      } catch (firestoreError) {
+        // Auth作成後にFirestore保存が失敗した場合は補償削除
+        try {
+          await auth.deleteUser(userRecord.uid);
+        } catch (rollbackError) {
+          console.error('createUsers rollback error:', rollbackError);
+        }
+        throw firestoreError;
+      }
 
-      results.push({ userId, uid: userRecord.uid, success: true });
+      results.push({ userId: normalizedUserId, uid: userRecord.uid, success: true });
 
     } catch (error) {
-      errors.push({ userId: user.userId, error: error.message });
+      errors.push({ userId: user.userId, code: error.code || 'internal', error: error.message });
     }
   }
 
@@ -425,6 +464,97 @@ exports.createUsers = functions.region('asia-northeast1').https.onCall(async (da
     results,
     errors
   };
+});
+
+/**
+ * AuthユーザーとFirestore users文書の整合性を監査
+ *
+ * 管理者のみ実行可能
+ *
+ * @param {Object} data
+ * @param {number} data.maxUsers - 監査対象の最大Authユーザー数（1-5000, default: 2000）
+ * @param {boolean} data.onlyLocalDomain - @laughtale.local のみ対象（default: true）
+ * @param {number} data.sampleSize - 欠損サンプル返却件数（1-200, default: 50）
+ */
+exports.auditUserDocumentCoverage = functions.region('asia-northeast1').https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
+  const callerIsAdmin = await isAdmin(context.auth.uid);
+  if (!callerIsAdmin) {
+    throw new functions.https.HttpsError('permission-denied', '管理者権限が必要です');
+  }
+
+  const requestedMaxUsers = parseInt(data?.maxUsers, 10);
+  const maxUsers = Number.isFinite(requestedMaxUsers)
+    ? Math.min(Math.max(requestedMaxUsers, 1), 5000)
+    : 2000;
+  const onlyLocalDomain = data?.onlyLocalDomain !== false;
+  const requestedSampleSize = parseInt(data?.sampleSize, 10);
+  const sampleSize = Number.isFinite(requestedSampleSize)
+    ? Math.min(Math.max(requestedSampleSize, 1), 200)
+    : 50;
+
+  try {
+    const targetAuthUsers = [];
+    let nextPageToken = undefined;
+
+    // maxUsersに達するまでAuthユーザーを取得
+    do {
+      const listResult = await auth.listUsers(1000, nextPageToken);
+      nextPageToken = listResult.pageToken;
+
+      for (const user of listResult.users) {
+        if (onlyLocalDomain && !(user.email || '').endsWith('@laughtale.local')) {
+          continue;
+        }
+        targetAuthUsers.push({
+          uid: user.uid,
+          email: user.email || null,
+          displayName: user.displayName || null
+        });
+        if (targetAuthUsers.length >= maxUsers) {
+          nextPageToken = undefined;
+          break;
+        }
+      }
+    } while (nextPageToken);
+
+    // Firestore users文書の存在確認（大きすぎる読み込みを避けて分割）
+    const missing = [];
+    for (let i = 0; i < targetAuthUsers.length; i += 300) {
+      const chunk = targetAuthUsers.slice(i, i + 300);
+      const refs = chunk.map((u) => db.collection('users').doc(u.uid));
+      const docs = await db.getAll(...refs);
+      docs.forEach((docSnap, idx) => {
+        if (!docSnap.exists) {
+          missing.push(chunk[idx]);
+        }
+      });
+    }
+
+    return {
+      success: true,
+      auditedAt: new Date().toISOString(),
+      options: {
+        maxUsers,
+        onlyLocalDomain,
+        sampleSize
+      },
+      totals: {
+        authUsersAudited: targetAuthUsers.length,
+        missingUserDocs: missing.length,
+        coverageRate: targetAuthUsers.length > 0
+          ? Number((((targetAuthUsers.length - missing.length) / targetAuthUsers.length) * 100).toFixed(2))
+          : 100
+      },
+      sampleMissing: missing.slice(0, sampleSize)
+    };
+  } catch (error) {
+    console.error('auditUserDocumentCoverage error:', error);
+    throw new functions.https.HttpsError('internal', '監査に失敗しました: ' + error.message);
+  }
 });
 
 // ========================================
@@ -504,6 +634,11 @@ exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(asy
   }
 
   const userId = context.auth.uid;
+  const expectedPrefix = `recordings/${userId}/`;
+
+  if (!filePath.startsWith(expectedPrefix)) {
+    throw new functions.https.HttpsError('permission-denied', '自分のアップロードファイルのみ公開できます');
+  }
 
   try {
     // ユーザー情報を取得
@@ -552,6 +687,9 @@ exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(asy
 
   } catch (error) {
     console.error('saveVideoMetadata error:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
     throw new functions.https.HttpsError('internal', 'メタデータ保存に失敗しました: ' + error.message);
   }
 });
@@ -565,7 +703,10 @@ exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(asy
 exports.getPublicVideos = functions.region('asia-northeast1').https.onRequest(async (req, res) => {
   cors(req, res, async () => {
     try {
-      const limit = parseInt(req.query.limit) || 20;
+      const requestedLimit = parseInt(req.query.limit, 10);
+      const limit = Number.isFinite(requestedLimit)
+        ? Math.min(Math.max(requestedLimit, 1), 50)
+        : 20;
       const classroomId = req.query.classroomId || null;
 
       let query = db.collection('videos')
