@@ -1790,28 +1790,28 @@
           </div>
 
           <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" data-dashboard-tab="users">
               <div class="stat-header">
                 <div class="stat-icon">💎</div>
               </div>
               <div class="stat-value" id="statUsers">0</div>
               <div class="stat-label">総ユーザー数</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" data-dashboard-tab="classrooms">
               <div class="stat-header">
                 <div class="stat-icon">🏠</div>
               </div>
               <div class="stat-value" id="statClassrooms">0</div>
               <div class="stat-label">教室数</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" data-dashboard-tab="projects">
               <div class="stat-header">
                 <div class="stat-icon">📦</div>
               </div>
               <div class="stat-value" id="statProjects">0</div>
               <div class="stat-label">プロジェクト数</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" data-dashboard-tab="projects" data-project-status="submitted">
               <div class="stat-header">
                 <div class="stat-icon">⭐</div>
               </div>
@@ -2256,6 +2256,34 @@
 
       document.querySelectorAll('.sidebar-nav-item[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      document.querySelectorAll('.stat-card[data-dashboard-tab]').forEach(card => {
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.style.cursor = 'pointer';
+
+        const navigate = () => {
+          const tab = card.dataset.dashboardTab;
+          const status = card.dataset.projectStatus || '';
+          if (!tab) return;
+
+          switchTab(tab);
+
+          if (tab === 'projects') {
+            const statusSelect = document.getElementById('filterProjectStatus');
+            if (statusSelect) statusSelect.value = status;
+            AdminPanel.filterProjects();
+          }
+        };
+
+        card.addEventListener('click', navigate);
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            navigate();
+          }
+        });
       });
 
       document.getElementById('btnSidebarBackToScratch')?.addEventListener('click', () => {

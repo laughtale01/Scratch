@@ -1696,22 +1696,22 @@
           </div>
 
           <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" data-dashboard-tab="users">
               <div class="stat-icon">💎</div>
               <div class="stat-value" id="statUsers">0</div>
               <div class="stat-label">ユーザー</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" data-dashboard-tab="classrooms">
               <div class="stat-icon">🏠</div>
               <div class="stat-value" id="statClassrooms">0</div>
               <div class="stat-label">教室</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" data-dashboard-tab="projects">
               <div class="stat-icon">📦</div>
               <div class="stat-value" id="statProjects">0</div>
               <div class="stat-label">プロジェクト</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" data-dashboard-tab="projects" data-project-status="submitted">
               <div class="stat-icon">⭐</div>
               <div class="stat-value" id="statSubmitted">0</div>
               <div class="stat-label">提出済み</div>
@@ -2248,6 +2248,34 @@
 
       document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      document.querySelectorAll('.stat-card[data-dashboard-tab]').forEach(card => {
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.style.cursor = 'pointer';
+
+        const navigate = () => {
+          const tab = card.dataset.dashboardTab;
+          const status = card.dataset.projectStatus || '';
+          if (!tab) return;
+
+          switchTab(tab);
+
+          if (tab === 'projects') {
+            const statusSelect = document.getElementById('filterProjectStatus');
+            if (statusSelect) statusSelect.value = status;
+            AdminPanel.filterProjects();
+          }
+        };
+
+        card.addEventListener('click', navigate);
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            navigate();
+          }
+        });
       });
 
       document.getElementById('filterUserRole')?.addEventListener('change', () => AdminPanel.filterUsers());
