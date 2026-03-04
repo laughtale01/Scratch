@@ -2457,12 +2457,16 @@
 
           const subtitle = document.createElement('div');
           subtitle.className = 'list-item-subtitle';
+          const classroomName = typeof this.getClassroomDisplayName === 'function'
+            ? this.getClassroomDisplayName(user.classroomId)
+            : '-';
 
           const badge = document.createElement('span');
           badge.className = `badge ${badgeClasses[user.role] || ''}`;
           badge.textContent = roleLabels[user.role] || user.role || '-';
 
           subtitle.appendChild(badge);
+          subtitle.appendChild(document.createTextNode(` ${classroomName}`));
           content.appendChild(title);
           content.appendChild(subtitle);
 
