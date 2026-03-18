@@ -72,6 +72,9 @@ public class CommandExecutor {
                 case "getPosition":
                     return executeGetPosition(params);
 
+                case "getTargetBlock":
+                    return executeGetTargetBlock(params);
+
                 case "getPlayerFacing":
                     return executeGetPlayerFacing(params);
 
@@ -335,6 +338,50 @@ public class CommandExecutor {
         lastResult.addProperty("z", z);
         lastResult.addProperty("yaw", yaw);
         lastResult.addProperty("pitch", pitch);
+
+        return true;
+    }
+
+    /**
+     * プレイヤーが見ているブロック（クロスヘアの先）の座標を取得
+     */
+    private boolean executeGetTargetBlock(JsonObject params) {
+        ServerPlayer player = getFirstPlayer();
+        if (player == null) {
+            MinecraftEduMod.LOGGER.warn("No player found for getTargetBlock");
+            return false;
+        }
+
+        // レイキャスト距離（デフォルト256ブロック）
+        double reach = params.has("reach") ? params.get("reach").getAsDouble() : 256.0;
+
+        // プレイヤーの視線方向にレイキャストしてブロックを検出
+        net.minecraft.world.phys.HitResult hitResult = player.pick(reach, 0.0F, false);
+
+        if (hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            net.minecraft.world.phys.BlockHitResult blockHit = (net.minecraft.world.phys.BlockHitResult) hitResult;
+            BlockPos pos = blockHit.getBlockPos();
+
+            // ブロックの種類も取得
+            ServerLevel level = player.serverLevel();
+            BlockState blockState = level.getBlockState(pos);
+            String blockName = BuiltInRegistries.BLOCK.getKey(blockState.getBlock()).toString();
+
+            lastResult.addProperty("x", pos.getX());
+            lastResult.addProperty("y", pos.getY());
+            lastResult.addProperty("z", pos.getZ());
+            lastResult.addProperty("blockType", blockName);
+            lastResult.addProperty("hit", true);
+
+            MinecraftEduMod.LOGGER.info("Target block: " + blockName + " at " + pos.getX() + "," + pos.getY() + "," + pos.getZ());
+        } else {
+            // ブロックに当たらなかった場合
+            lastResult.addProperty("x", 0);
+            lastResult.addProperty("y", 0);
+            lastResult.addProperty("z", 0);
+            lastResult.addProperty("blockType", "air");
+            lastResult.addProperty("hit", false);
+        }
 
         return true;
     }
