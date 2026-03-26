@@ -1045,6 +1045,17 @@
       box-shadow: 0 0 20px rgba(255, 26, 26, 0.5);
     }
 
+    .btn-info {
+      background: linear-gradient(180deg, var(--mc-diamond) 0%, var(--mc-diamond-dark) 100%);
+      border-color: #7ff5e5 #1a8a7f #1a8a7f #7ff5e5;
+      color: var(--mc-text-white);
+      box-shadow: 0 4px 12px rgba(74, 237, 217, 0.3);
+    }
+    .btn-info:hover {
+      background: linear-gradient(180deg, #6ef0df 0%, var(--mc-diamond) 100%);
+      box-shadow: 0 0 20px rgba(74, 237, 217, 0.5);
+    }
+
     .btn-success {
       background: linear-gradient(180deg, var(--mc-emerald) 0%, var(--mc-emerald-dark) 100%);
       border-color: #44ff88 #087832 #087832 #44ff88;
@@ -2091,6 +2102,38 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" data-close-modal="editUserModal">キャンセル</button>
         <button class="btn btn-primary" id="btnEditUserSubmit">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- パスワード確認モーダル -->
+  <div class="modal-overlay" id="showPasswordModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🔑 パスワード確認</h3>
+        <button class="modal-close" data-close-modal="showPasswordModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          ユーザー「<strong><span id="showPasswordUserName"></span></strong>」のパスワード
+        </div>
+        <div class="form-group">
+          <label class="form-label">現在のパスワード</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="text" class="form-input" id="showPasswordValue" readonly
+                   style="font-size: 1.2em; letter-spacing: 2px; font-weight: bold;">
+            <button class="btn btn-secondary btn-sm" id="btnCopyPassword"
+                    onclick="var btn=this; navigator.clipboard.writeText(document.getElementById('showPasswordValue').value).then(function(){ btn.textContent='✓'; }).catch(function(){ btn.textContent='✗'; }); setTimeout(function(){ btn.textContent='コピー'; }, 1500);">
+              コピー
+            </button>
+          </div>
+        </div>
+        <div class="alert" style="background: linear-gradient(180deg, rgba(252, 219, 5, 0.15) 0%, rgba(198, 165, 3, 0.15) 100%); border-color: var(--mc-gold-dark); color: var(--mc-gold); margin-top: 12px;">
+          ⚠️ パスワード作成後またはリセット後に設定されたパスワードが表示されます。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="showPasswordModal">閉じる</button>
       </div>
     </div>
   </div>

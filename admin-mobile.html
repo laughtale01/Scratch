@@ -730,6 +730,15 @@
       color: var(--mc-text-white);
     }
 
+    .btn-info {
+      background: linear-gradient(180deg, var(--mc-diamond) 0%, var(--mc-diamond-dark) 100%);
+      border-color: #7ff5e5 #1a8a7f #1a8a7f #7ff5e5;
+      color: var(--mc-text-white);
+    }
+    .btn-info:hover {
+      background: linear-gradient(180deg, #6ef0df 0%, var(--mc-diamond) 100%);
+    }
+
     .btn-sm {
       padding: 10px 14px;
       font-size: 14px;
@@ -1946,7 +1955,40 @@
       <div class="modal-footer" style="flex-wrap: wrap; gap: 8px;">
         <button class="btn btn-primary" id="btnEditUserSubmit">保存</button>
         <button class="btn btn-secondary" id="btnCancelEditUserModal">キャンセル</button>
+        <button class="btn btn-info" id="editUserShowPwBtn" style="width: 100%; margin-top: 4px;">🔑 パスワード確認</button>
         <button class="btn btn-secondary" id="editUserResetPwBtn" style="background: #e67e22; color: #fff; border: none; width: 100%; margin-top: 4px;">🔐 パスワードリセット</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- パスワード確認モーダル -->
+  <div class="modal-overlay" id="showPasswordModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🔑 パスワード確認</h3>
+        <button class="modal-close" id="btnCloseShowPasswordModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          「<strong><span id="showPasswordUserName"></span></strong>」のパスワード
+        </div>
+        <div class="form-group">
+          <label class="form-label">現在のパスワード</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="text" class="form-input" id="showPasswordValue" readonly
+                   style="font-size: 1.2em; letter-spacing: 2px; font-weight: bold;">
+            <button class="btn btn-secondary btn-sm" id="btnCopyPassword"
+                    onclick="var btn=this; navigator.clipboard.writeText(document.getElementById('showPasswordValue').value).then(function(){ btn.textContent='✓'; }).catch(function(){ btn.textContent='✗'; }); setTimeout(function(){ btn.textContent='コピー'; }, 1500);">
+              コピー
+            </button>
+          </div>
+        </div>
+        <div class="alert" style="background: linear-gradient(180deg, rgba(252, 219, 5, 0.15) 0%, rgba(198, 165, 3, 0.15) 100%); border-color: var(--mc-gold-dark); color: var(--mc-gold); margin-top: 12px;">
+          ⚠️ パスワード作成後またはリセット後のパスワードが表示されます。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelShowPasswordModal">閉じる</button>
       </div>
     </div>
   </div>
@@ -2304,11 +2346,19 @@
       document.getElementById('btnCloseEditUserModal')?.addEventListener('click', () => AdminPanel.closeModal('editUserModal'));
       document.getElementById('btnCancelEditUserModal')?.addEventListener('click', () => AdminPanel.closeModal('editUserModal'));
       document.getElementById('btnEditUserSubmit')?.addEventListener('click', () => AdminPanel.updateUser());
+      document.getElementById('editUserShowPwBtn')?.addEventListener('click', () => {
+        const uid = document.getElementById('editUserUid').value;
+        AdminPanel.closeModal('editUserModal');
+        AdminPanel.showPasswordModal(uid);
+      });
       document.getElementById('editUserResetPwBtn')?.addEventListener('click', () => {
         const uid = document.getElementById('editUserUid').value;
         AdminPanel.closeModal('editUserModal');
         AdminPanel.showResetPasswordModal(uid);
       });
+
+      document.getElementById('btnCloseShowPasswordModal')?.addEventListener('click', () => AdminPanel.closeModal('showPasswordModal'));
+      document.getElementById('btnCancelShowPasswordModal')?.addEventListener('click', () => AdminPanel.closeModal('showPasswordModal'));
 
       document.getElementById('btnCloseResetPasswordModal')?.addEventListener('click', () => AdminPanel.closeModal('resetPasswordModal'));
       document.getElementById('btnCancelResetPasswordModal')?.addEventListener('click', () => AdminPanel.closeModal('resetPasswordModal'));

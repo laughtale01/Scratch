@@ -508,7 +508,8 @@ class AdminPanel {
           <td>
             <div class="btn-group">
               ${canEdit ? `<button class="btn btn-secondary btn-sm" data-admin-action="edit-user" data-user-id="${this.escapeHtml(user.id)}">編集</button>` : ''}
-              ${canResetPassword ? `<button class="btn btn-secondary btn-sm" data-admin-action="reset-user-password" data-user-id="${this.escapeHtml(user.id)}">PW</button>` : ''}
+              ${canResetPassword ? `<button class="btn btn-info btn-sm" data-admin-action="show-password" data-user-id="${this.escapeHtml(user.id)}">PW確認</button>` : ''}
+              ${canResetPassword ? `<button class="btn btn-secondary btn-sm" data-admin-action="reset-user-password" data-user-id="${this.escapeHtml(user.id)}">PW変更</button>` : ''}
               ${canDelete ? `<button class="btn btn-danger btn-sm" data-admin-action="delete-user" data-user-id="${this.escapeHtml(user.id)}">削除</button>` : ''}
             </div>
           </td>
@@ -908,6 +909,22 @@ class AdminPanel {
   }
 
   /**
+   * パスワード確認モーダルを表示
+   */
+  static showPasswordModal(userId) {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) return;
+
+    const userName = user.displayName || user.email;
+    const password = user.currentPassword || '（未設定）';
+
+    document.getElementById('showPasswordUserName').textContent = userName;
+    document.getElementById('showPasswordValue').value = password;
+
+    this.showModal('showPasswordModal');
+  }
+
+  /**
    * パスワードリセットモーダルを表示
    */
   static showResetPasswordModal(userId) {
@@ -942,6 +959,12 @@ class AdminPanel {
 
       console.log('AdminPanel: パスワードリセット完了', result.data);
       alert('パスワードをリセットしました');
+
+      // ローカルキャッシュのパスワードも更新（PW確認ボタンで即座に反映させるため）
+      const targetUser = this.users.find(u => u.id === targetUid);
+      if (targetUser) {
+        targetUser.currentPassword = newPassword;
+      }
 
       this.closeModal('resetPasswordModal');
 
@@ -1513,6 +1536,7 @@ document.addEventListener('click', (e) => {
   const versionId = actionEl.dataset.versionId;
 
   if (action === 'edit-user' && userId) AdminPanel.showEditUserModal(userId);
+  if (action === 'show-password' && userId) AdminPanel.showPasswordModal(userId);
   if (action === 'reset-user-password' && userId) AdminPanel.showResetPasswordModal(userId);
   if (action === 'delete-user' && userId) AdminPanel.confirmDeleteUser(userId);
   if (action === 'edit-classroom' && classroomId) AdminPanel.showEditClassroomModal(classroomId);

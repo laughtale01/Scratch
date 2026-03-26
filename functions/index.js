@@ -151,6 +151,7 @@ exports.createUser = functions.region('asia-northeast1').https.onCall(async (dat
         displayName: trimmedDisplayName,
         role: role,
         classroomId: role === 'admin' ? null : classroomId,
+        currentPassword: password,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         lastLoginAt: null,
         saveCount: 0
@@ -241,6 +242,15 @@ exports.resetPassword = functions.region('asia-northeast1').https.onCall(async (
     await auth.updateUser(targetUid, {
       password: newPassword
     });
+
+    // Firestoreにも新しいパスワードを保存（失敗しても処理は続行）
+    try {
+      await db.collection('users').doc(targetUid).update({
+        currentPassword: newPassword
+      });
+    } catch (firestoreError) {
+      console.error('resetPassword: Firestoreパスワード保存エラー（Auth側は更新済み）', firestoreError);
+    }
 
     console.log(`Password reset for user: ${targetUid}`);
 
@@ -544,6 +554,7 @@ exports.createUsers = functions.region('asia-northeast1').https.onCall(async (da
           displayName: trimmedDisplayName,
           role: role,
           classroomId: role === 'admin' ? null : classroomId,
+          currentPassword: password,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           lastLoginAt: null,
           saveCount: 0
