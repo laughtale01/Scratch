@@ -102,8 +102,9 @@ public class MinecraftWebSocketHandler {
         MinecraftEduMod.LOGGER.info("Executing command: " + action);
 
         try {
-            // コマンド実行
-            boolean success = commandExecutor.execute(action, params);
+            // コマンド実行（結果はJsonObjectで直接返される）
+            JsonObject result = commandExecutor.execute(action, params);
+            boolean success = (result != null);
 
             // レスポンス
             JsonObject response = new JsonObject();
@@ -123,8 +124,6 @@ public class MinecraftWebSocketHandler {
             responsePayload.addProperty("action", action);
 
             if (success) {
-                // コマンド実行結果を取得
-                JsonObject result = commandExecutor.getLastResult();
                 if (result.size() == 0) {
                     // 結果データがない場合はデフォルトメッセージ
                     result.addProperty("message", "Command executed successfully");
@@ -152,8 +151,9 @@ public class MinecraftWebSocketHandler {
         MinecraftEduMod.LOGGER.info("Executing query: " + action);
 
         try {
-            // クエリ実行（コマンドExecutorを使用）
-            boolean success = commandExecutor.execute(action, params);
+            // クエリ実行（結果はJsonObjectで直接返される）
+            JsonObject result = commandExecutor.execute(action, params);
+            boolean success = (result != null);
 
             // レスポンス
             JsonObject response = new JsonObject();
@@ -173,8 +173,6 @@ public class MinecraftWebSocketHandler {
             responsePayload.addProperty("action", action);
 
             if (success) {
-                // クエリ実行結果を取得
-                JsonObject result = commandExecutor.getLastResult();
                 if (result.size() == 0) {
                     // 結果データがない場合はデフォルトメッセージ
                     result.addProperty("message", "Query executed successfully");
