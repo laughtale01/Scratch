@@ -790,11 +790,11 @@ public class CommandExecutor {
             BlockState grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
             BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
 
-            // 中心座標から±50の範囲
-            int minX = centerX - 50;
-            int maxX = centerX + 50;
-            int minZ = centerZ - 50;
-            int maxZ = centerZ + 50;
+            // 中心座標から±200の範囲
+            int minX = centerX - 200;
+            int maxX = centerX + 200;
+            int minZ = centerZ - 200;
+            int maxZ = centerZ + 200;
 
             int blocksCleared = 0;
             for (int x = minX; x <= maxX; x++) {
@@ -822,7 +822,7 @@ public class CommandExecutor {
             MinecraftEduMod.LOGGER.info("周囲クリア完了: 中心(" + centerX + ", " + centerZ + ") から " + blocksCleared + "ブロック（スーパーフラット初期状態）");
         });
 
-        lastResult.addProperty("blocksCleared", 1683165);  // 101 * 165 * 101
+        lastResult.addProperty("blocksCleared", 26573265);  // 401 * 165 * 401
         lastResult.addProperty("centerX", centerX);
         lastResult.addProperty("centerZ", centerZ);
         return true;
@@ -830,7 +830,7 @@ public class CommandExecutor {
 
     /**
      * 全エンティティをクリア
-     * X:-50～50、Y:-64～100、Z:-50～50の範囲のエンティティを削除（プレイヤーを除く）
+     * X:-200～200、Y:-64～100、Z:-200～200の範囲のエンティティを削除（プレイヤーを除く）
      */
     private boolean executeClearAllEntities(JsonObject params) {
         // 中心座標を取得（デフォルト: 0, 0）
@@ -840,10 +840,10 @@ public class CommandExecutor {
         server.execute(() -> {
             ServerLevel world = server.overworld();
 
-            // 中心座標から±50の範囲
+            // 中心座標から±200の範囲
             net.minecraft.world.phys.AABB bounds = new net.minecraft.world.phys.AABB(
-                centerX - 50, -64, centerZ - 50,
-                centerX + 50, 100, centerZ + 50
+                centerX - 200, -64, centerZ - 200,
+                centerX + 200, 100, centerZ + 200
             );
 
             int entitiesRemoved = 0;
