@@ -25,8 +25,10 @@ public class MinecraftEduMod {
     public static final String MOD_ID = "minecraftedu";
     public static final Logger LOGGER = LogManager.getLogger();
 
-    private SimpleWebSocketServer webSocketServer;
-    private CommandExecutor commandExecutor;
+    // volatile: ServerStarting/Stopping イベントスレッドと
+    //            /entityspawn コマンドディスパッチスレッドの両方からアクセスされる
+    private volatile SimpleWebSocketServer webSocketServer;
+    private volatile CommandExecutor commandExecutor;
 
     public MinecraftEduMod() {
         // Get the MOD event bus for registration
@@ -72,14 +74,31 @@ public class MinecraftEduMod {
     public void onServerStopping(ServerStoppingEvent event) {
         LOGGER.info("MinecraftEdu server stopping...");
 
-        if (webSocketServer != null) {
+        // 最初に CommandExecutor を停止状態にし、新規コマンドを全てブロック
+        // ローカル変数にスナップショットしてからnullチェック → スレッドセーフ
+        final CommandExecutor ce = this.commandExecutor;
+        if (ce != null) {
             try {
-                webSocketServer.stop();
+                ce.shutdown();
+            } catch (Exception e) {
+                LOGGER.error("Error shutting down CommandExecutor", e);
+            }
+        }
+
+        // 続いて WebSocket サーバを停止（クライアント切断・スレッド回収）
+        final SimpleWebSocketServer ws = this.webSocketServer;
+        if (ws != null) {
+            try {
+                ws.stop();
                 LOGGER.info("WebSocket server stopped");
             } catch (Exception e) {
                 LOGGER.error("Error stopping WebSocket server", e);
             }
         }
+
+        // 次回 ServerStartingEvent で確実に新規生成されるよう参照をクリア
+        this.webSocketServer = null;
+        this.commandExecutor = null;
     }
 
     /**
@@ -95,8 +114,10 @@ public class MinecraftEduMod {
                 .requires(source -> source.hasPermission(0))  // 全員使用可能
                 .then(Commands.literal("allow")
                     .executes(context -> {
-                        if (commandExecutor != null) {
-                            commandExecutor.setEntitySpawningAllowed(true);
+                        // ローカルスナップショット → 別スレッドからの null 化に対して安全
+                        final CommandExecutor ce = this.commandExecutor;
+                        if (ce != null) {
+                            ce.setEntitySpawningAllowed(true);
                             context.getSource().sendSuccess(
                                 () -> Component.literal("エンティティ召喚を許可しました / Entity spawning enabled"),
                                 true
@@ -106,8 +127,9 @@ public class MinecraftEduMod {
                     }))
                 .then(Commands.literal("deny")
                     .executes(context -> {
-                        if (commandExecutor != null) {
-                            commandExecutor.setEntitySpawningAllowed(false);
+                        final CommandExecutor ce = this.commandExecutor;
+                        if (ce != null) {
+                            ce.setEntitySpawningAllowed(false);
                             context.getSource().sendSuccess(
                                 () -> Component.literal("エンティティ召喚を禁止しました / Entity spawning disabled"),
                                 true
@@ -117,8 +139,9 @@ public class MinecraftEduMod {
                     }))
                 .then(Commands.literal("status")
                     .executes(context -> {
-                        if (commandExecutor != null) {
-                            boolean allowed = commandExecutor.isEntitySpawningAllowed();
+                        final CommandExecutor ce = this.commandExecutor;
+                        if (ce != null) {
+                            boolean allowed = ce.isEntitySpawningAllowed();
                             String status = allowed ? "許可 / ALLOWED" : "禁止 / DENIED";
                             context.getSource().sendSuccess(
                                 () -> Component.literal("エンティティ召喚: " + status),
