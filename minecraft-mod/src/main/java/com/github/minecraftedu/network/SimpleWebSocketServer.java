@@ -5,13 +5,18 @@ import com.github.minecraftedu.commands.CommandExecutor;
 import net.minecraft.server.MinecraftServer;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +29,10 @@ public class SimpleWebSocketServer {
     private ExecutorService executor;
     private volatile boolean running = false;
 
+    // アクティブ接続追跡（停止時に明示的にcloseするため）
+    private final Set<Socket> activeClients =
+        Collections.synchronizedSet(new HashSet<>());
+
     public SimpleWebSocketServer(int port, MinecraftServer minecraftServer, CommandExecutor commandExecutor) {
         this.port = port;
         this.minecraftServer = minecraftServer;
@@ -32,7 +41,9 @@ public class SimpleWebSocketServer {
     }
 
     public void start() throws IOException {
-        serverSocket = new ServerSocket(port);
+        serverSocket = new ServerSocket();
+        serverSocket.setReuseAddress(true);  // TIME_WAIT 状態のソケット回収を許可
+        serverSocket.bind(new InetSocketAddress(port));
         running = true;
         MinecraftEduMod.LOGGER.info("WebSocket server started on port " + port);
 
@@ -53,6 +64,8 @@ public class SimpleWebSocketServer {
     }
 
     private void handleClient(Socket client) {
+        // 停止時の明示的なソケットclose対象として追跡
+        activeClients.add(client);
         // クライアントごとにハンドラーを作成してセッション状態を維持
         // CommandExecutorは全クライアントで共有
         MinecraftWebSocketHandler handler = new MinecraftWebSocketHandler(minecraftServer, commandExecutor);
@@ -157,8 +170,14 @@ public class SimpleWebSocketServer {
             }
 
         } catch (Exception e) {
-            MinecraftEduMod.LOGGER.error("Error handling client", e);
+            // 停止中の SocketException 等は想定内なので debug レベルに落とす
+            if (running) {
+                MinecraftEduMod.LOGGER.error("Error handling client", e);
+            } else {
+                MinecraftEduMod.LOGGER.debug("Client connection closed during shutdown: " + e.getMessage());
+            }
         } finally {
+            activeClients.remove(client);
             try {
                 client.close();
                 MinecraftEduMod.LOGGER.info("Client disconnected");
@@ -217,8 +236,12 @@ public class SimpleWebSocketServer {
         // Payload
         frame.write(payload);
 
-        out.write(frame.toByteArray());
-        out.flush();
+        byte[] bytes = frame.toByteArray();
+        // sendCloseToAllClients との競合を防ぐため OutputStream で同期
+        synchronized (out) {
+            out.write(bytes);
+            out.flush();
+        }
     }
 
     private void sendPong(OutputStream out, byte[] payload) throws IOException {
@@ -226,8 +249,42 @@ public class SimpleWebSocketServer {
         frame.write(0x8A); // FIN + opcode 0xA (pong)
         frame.write(payload.length);
         frame.write(payload);
-        out.write(frame.toByteArray());
-        out.flush();
+        byte[] bytes = frame.toByteArray();
+        // sendCloseToAllClients / sendTextFrame と同じロックで直列化
+        synchronized (out) {
+            out.write(bytes);
+            out.flush();
+        }
+    }
+
+    /**
+     * 全クライアントへ正常クローズ通知（Close フレーム）を送信
+     * RFC 6455: opcode 0x8 + status code 1001 (Going Away)
+     */
+    private void sendCloseToAllClients() {
+        byte[] closeFrame = new byte[] {
+            (byte) 0x88,              // FIN + Close opcode
+            (byte) 0x02,              // payload length 2
+            (byte) 0x03, (byte) 0xE9  // status code 1001 (Going Away)
+        };
+        // activeClients のスナップショットを取り、その上でループ
+        Socket[] snapshot;
+        synchronized (activeClients) {
+            snapshot = activeClients.toArray(new Socket[0]);
+        }
+        for (Socket s : snapshot) {
+            try {
+                if (!s.isClosed()) {
+                    OutputStream os = s.getOutputStream();
+                    synchronized (os) {  // sendTextFrame と同じロックで直列化
+                        os.write(closeFrame);
+                        os.flush();
+                    }
+                }
+            } catch (IOException ignored) {
+                // 既に切れている可能性 → 無視
+            }
+        }
     }
 
     private String generateAcceptKey(String webSocketKey) {
@@ -243,14 +300,47 @@ public class SimpleWebSocketServer {
     }
 
     public void stop() {
+        // 二重呼び出しガード（idempotent）
+        if (!running) {
+            MinecraftEduMod.LOGGER.debug("WebSocket server stop() called while not running");
+            return;
+        }
         running = false;
         try {
+            // (1) 全クライアントへ Close フレーム送信（Scratch 側 onclose を 1001 で発火させる）
+            try { sendCloseToAllClients(); } catch (Exception ignored) {}
+
+            // (2) 各クライアントソケットを明示的に閉じる
+            //     （ハンドラスレッドの InputStream.read() ブロックを解除するため）
+            Socket[] snapshot;
+            synchronized (activeClients) {
+                snapshot = activeClients.toArray(new Socket[0]);
+            }
+            for (Socket s : snapshot) {
+                try { s.close(); } catch (IOException ignored) {}
+            }
+
+            // (3) ServerSocket を閉じる（accept ループの終了）
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
+
+            // (4) executor を shutdown → 待機 → 必要なら shutdownNow
             if (executor != null) {
-                executor.shutdownNow();
+                executor.shutdown();
+                try {
+                    if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                        executor.shutdownNow();
+                        if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                            MinecraftEduMod.LOGGER.warn("Some handler threads did not terminate cleanly");
+                        }
+                    }
+                } catch (InterruptedException ie) {
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
             }
+
             MinecraftEduMod.LOGGER.info("WebSocket server stopped");
         } catch (IOException e) {
             MinecraftEduMod.LOGGER.error("Error stopping server", e);
