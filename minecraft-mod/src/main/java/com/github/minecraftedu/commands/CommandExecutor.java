@@ -49,6 +49,10 @@ public class CommandExecutor {
     // clearArea重複実行防止フラグ
     private volatile boolean clearAreaInProgress = false;
 
+    // サーバ停止フラグ。trueの間は全コマンドを拒否する
+    // volatile 必須: ハンドラスレッドとメインスレッドの両方からアクセスされる
+    private volatile boolean serverStopping = false;
+
     public CommandExecutor(MinecraftServer server) {
         this.server = server;
         this.isRecording = false;
@@ -62,6 +66,11 @@ public class CommandExecutor {
      * @return 成功時は結果オブジェクト、失敗時はnull
      */
     public JsonObject execute(String action, JsonObject params) {
+        // サーバ停止中は何も実行しない（ハンドラスレッド入口チェック）
+        if (serverStopping || !server.isRunning()) {
+            MinecraftEduMod.LOGGER.warn("Command rejected (server stopping): " + action);
+            return null;
+        }
         try {
             switch (action) {
                 case "chat":
@@ -149,7 +158,7 @@ public class CommandExecutor {
     private JsonObject executeChat(JsonObject params) {
         String message = params.get("message").getAsString();
 
-        server.execute(() -> {
+        safeExecute(() -> {
             server.getPlayerList().getPlayers().forEach(player -> {
                 player.sendSystemMessage(net.minecraft.network.chat.Component.literal(message));
             });
@@ -198,8 +207,9 @@ public class CommandExecutor {
         BlockPos pos = new BlockPos(x, y, z);
 
         // ブロック配置
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             world.setBlock(pos, blockState, 3);
         });
 
@@ -288,8 +298,9 @@ public class CommandExecutor {
         }
 
         // ブロック配置
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             int placedCount = 0;
 
             for (int x = minX; x <= maxX; x++) {
@@ -368,7 +379,7 @@ public class CommandExecutor {
 
         // メインスレッドでレイキャストを実行（pick()はワールドデータにアクセスするため）
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        server.execute(() -> {
+        safeExecute(() -> {
             try {
                 net.minecraft.world.phys.HitResult hitResult = player.pick(reach, 0.0F, false);
 
@@ -520,8 +531,9 @@ public class CommandExecutor {
             return null;
         }
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             net.minecraft.world.entity.Entity entity = type.create(world);
 
             if (entity != null) {
@@ -545,7 +557,7 @@ public class CommandExecutor {
             return null;
         }
 
-        server.execute(() -> {
+        safeExecute(() -> {
             player.teleportTo(x, y, z);
         });
 
@@ -556,8 +568,9 @@ public class CommandExecutor {
     private JsonObject executeSetWeather(JsonObject params) {
         String weather = params.get("weather").getAsString();
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
 
             switch (weather) {
                 case "clear":
@@ -582,8 +595,9 @@ public class CommandExecutor {
     private JsonObject executeSetTime(JsonObject params) {
         long time = params.get("time").getAsLong();
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             world.setDayTime(time);
         });
 
@@ -622,7 +636,7 @@ public class CommandExecutor {
                 return null;
         }
 
-        server.execute(() -> {
+        safeExecute(() -> {
             player.setGameMode(gameType);
         });
 
@@ -659,8 +673,9 @@ public class CommandExecutor {
         String value = params.get("value").getAsString();
         boolean boolValue = value.equalsIgnoreCase("true");
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             net.minecraft.world.level.GameRules gameRules = world.getGameRules();
 
             switch (rule) {
@@ -814,6 +829,7 @@ public class CommandExecutor {
 
                 tasks.add(() -> {
                     ServerLevel world = server.overworld();
+                    if (world == null) return;  // ワールド未ロード時の null guard
                     BlockState bedrock = net.minecraft.world.level.block.Blocks.BEDROCK.defaultBlockState();
                     BlockState dirt = net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState();
                     BlockState grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
@@ -859,13 +875,19 @@ public class CommandExecutor {
      * タスクリストをサーバーの時間予算に応じて分割実行するスケジューラ
      */
     private void scheduleChunkedTasks(List<Runnable> tasks, int index, int centerX, int centerZ) {
+        // サーバ停止中は中断
+        if (serverStopping || !server.isRunning()) {
+            clearAreaInProgress = false;
+            MinecraftEduMod.LOGGER.info("clearArea aborted: server stopping (index=" + index + "/" + tasks.size() + ")");
+            return;
+        }
         if (index >= tasks.size()) {
             clearAreaInProgress = false;
             sendChatMessage("§a周囲クリア完了: 中心(" + centerX + ", " + centerZ + ")");
             MinecraftEduMod.LOGGER.info("チャンク分割タスク完了: " + tasks.size() + "チャンク処理済み");
             return;
         }
-        server.execute(() -> {
+        safeExecute(() -> {
             // 25%ごとに進捗をチャットに表示
             int quarter = tasks.size() / 4;
             if (quarter > 0 && index > 0 && index % quarter == 0) {
@@ -890,8 +912,9 @@ public class CommandExecutor {
         int centerX = params.has("centerX") ? params.get("centerX").getAsInt() : 0;
         int centerZ = params.has("centerZ") ? params.get("centerZ").getAsInt() : 0;
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
 
             // 中心座標から±200の範囲
             net.minecraft.world.phys.AABB bounds = new net.minecraft.world.phys.AABB(
@@ -952,7 +975,7 @@ public class CommandExecutor {
             return null;
         }
 
-        server.execute(() -> {
+        safeExecute(() -> {
             // 全プレイヤーに適用
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                 p.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(newSpeed);
@@ -982,7 +1005,7 @@ public class CommandExecutor {
 
         boolean enabled = params.get("enabled").getAsBoolean();
 
-        server.execute(() -> {
+        safeExecute(() -> {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 if (enabled) {
                     MobEffectInstance effect = new MobEffectInstance(
@@ -1030,7 +1053,7 @@ public class CommandExecutor {
         final float newFlySpeed = (float)(baseFlySpeed * multiplier);
         final double finalMultiplier = multiplier;
 
-        server.execute(() -> {
+        safeExecute(() -> {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 player.getAbilities().setFlyingSpeed(newFlySpeed);
                 player.connection.send(new ClientboundPlayerAbilitiesPacket(player.getAbilities()));
@@ -1050,10 +1073,73 @@ public class CommandExecutor {
     }
 
     private ServerPlayer getFirstPlayer() {
-        if (server.getPlayerList().getPlayers().isEmpty()) {
+        // サーバ停止中やワールド未ロード時の null 安全性を強化
+        if (server == null || !server.isRunning()) return null;
+        try {
+            var playerList = server.getPlayerList();
+            if (playerList == null) return null;
+            var players = playerList.getPlayers();
+            if (players == null || players.isEmpty()) return null;
+            return players.get(0);
+        } catch (Exception e) {
+            MinecraftEduMod.LOGGER.warn("getFirstPlayer failed: " + e.getMessage());
             return null;
         }
-        return server.getPlayerList().getPlayers().get(0);
+    }
+
+    /**
+     * サーバ停止時の後処理
+     * このフラグが立った後、execute() は全てnullを返し、
+     * safeExecute() でキューイングされたタスクも no-op になる。
+     * 進行中のclearAreaも次タスク投入を停止する。
+     */
+    public void shutdown() {
+        this.serverStopping = true;
+        this.clearAreaInProgress = false;
+
+        // 録画中であれば強制停止（ゾンビプロセス防止）
+        if (isRecording && ffmpegProcess != null) {
+            try {
+                ffmpegProcess.destroyForcibly();
+            } catch (Exception ignored) {}
+            isRecording = false;
+            ffmpegProcess = null;
+            currentRecordingPath = null;
+        }
+        MinecraftEduMod.LOGGER.info("CommandExecutor: shutdown signaled");
+    }
+
+    /**
+     * サーバ停止中かどうかを返す（MinecraftWebSocketHandler から参照される）
+     */
+    public boolean isServerStopping() {
+        return this.serverStopping;
+    }
+
+    /**
+     * server.execute() の安全ラッパー
+     *
+     * 1. 入口でserverStopping をチェック → trueなら何もしない
+     * 2. server.isRunning() でForge公式APIも併せてチェック
+     * 3. ラムダ内部でも再度 serverStopping / isRunning() をチェック
+     *    （キューに積まれてから実行までの間に停止状態に遷移する可能性があるため）
+     * 4. ラムダ内例外を捕捉してログ出力（メインスレッドに例外を漏らさない）
+     */
+    private void safeExecute(Runnable task) {
+        if (serverStopping || !server.isRunning()) {
+            return;
+        }
+        server.execute(() -> {
+            // メインスレッド時点での再チェック
+            if (serverStopping || !server.isRunning()) {
+                return;
+            }
+            try {
+                task.run();
+            } catch (Exception e) {
+                MinecraftEduMod.LOGGER.error("safeExecute task error", e);
+            }
+        });
     }
 
     // ========================================
@@ -1064,7 +1150,7 @@ public class CommandExecutor {
      * ゲーム内チャットにメッセージを送信 (署名なし・コンポーネント指定)
      */
     private void sendRawChatMessage(net.minecraft.network.chat.Component message) {
-        server.execute(() -> {
+        safeExecute(() -> {
             server.getPlayerList().getPlayers().forEach(player -> {
                 player.sendSystemMessage(message);
             });
@@ -1075,7 +1161,7 @@ public class CommandExecutor {
      * ゲーム内チャットにメッセージを送信
      */
     private void sendChatMessage(String message) {
-        server.execute(() -> {
+        safeExecute(() -> {
             server.getPlayerList().getPlayers().forEach(player -> {
                 player.sendSystemMessage(
                     net.minecraft.network.chat.Component.literal("[MinecraftEdu] " + message)
@@ -1290,8 +1376,9 @@ public class CommandExecutor {
 
         BlockPos pos = new BlockPos(x, y, z);
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             BlockEntity blockEntity = world.getBlockEntity(pos);
 
             if (blockEntity instanceof Container container) {
