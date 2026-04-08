@@ -34,7 +34,17 @@ public class MinecraftWebSocketHandler {
     }
 
     private String processMessage(JsonObject message) {
-        String type = message.get("type").getAsString();
+        String type = message.has("type") ? message.get("type").getAsString() : "unknown";
+
+        // Defense in depth: サーバ停止中は heartbeat 以外を全て拒否
+        // CommandExecutor.execute() の入口チェックでも防がれるが、
+        // connect / heartbeat は CommandExecutor を経由しないため、ここでもガードする
+        if (commandExecutor != null && commandExecutor.isServerStopping()) {
+            if (!"heartbeat".equals(type)) {
+                return createError("SERVER_STOPPING",
+                    "Server is stopping, please reconnect after world reload");
+            }
+        }
 
         switch (type) {
             case "connect":
