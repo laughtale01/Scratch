@@ -77,3 +77,6 @@ site/
 *.tar.gz
 *.tgz
 release/minecraft-scratch-controller/scratch-gui.tar.gz
+
+# 環境固有の設定（アカウント情報を含むため公開しない）
+.env

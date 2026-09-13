@@ -17,37 +17,67 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.network.protocol.game.ClientboundPlayerAbilitiesPacket;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class CommandExecutor {
 
     private final MinecraftServer server;
-    private JsonObject lastResult;
 
     // 録画関連のフィールド
-    private Process ffmpegProcess;
-    private String currentRecordingPath;
-    private boolean isRecording;
+    // volatile 必須: ハンドラスレッドとメインスレッドの両方からアクセスされる
+    private volatile Process ffmpegProcess;
+    private volatile String currentRecordingPath;
+    private volatile boolean isRecording;
+
+    // 録画の開始・停止・後始末を直列化するロック
+    // volatile だけでは「録画中か確かめてから開始する」の間に割り込まれるのを防げない
+    private final Object recordingLock = new Object();
+
+    // エンティティ召喚制御フラグ
+    private boolean entitySpawningAllowed = true;
+
+    // clearArea重複実行防止フラグ
+    private volatile boolean clearAreaInProgress = false;
+
+    // サーバ停止フラグ。trueの間は全コマンドを拒否する
+    // volatile 必須: ハンドラスレッドとメインスレッドの両方からアクセスされる
+    private volatile boolean serverStopping = false;
 
     public CommandExecutor(MinecraftServer server) {
         this.server = server;
-        this.lastResult = new JsonObject();
         this.isRecording = false;
         this.ffmpegProcess = null;
         this.currentRecordingPath = null;
+        this.entitySpawningAllowed = true;
     }
 
-    public boolean execute(String action, JsonObject params) {
+    /**
+     * コマンドを実行し、結果をJsonObjectで返す
+     * @return 成功時は結果オブジェクト。失敗時は null、または
+     *         success:false と errorCode を持つ結果（失敗理由を Scratch 側へ伝える場合）
+     */
+    public JsonObject execute(String action, JsonObject params) {
+        // サーバ停止中は何も実行しない（ハンドラスレッド入口チェック）
+        if (serverStopping || !server.isRunning()) {
+            MinecraftEduMod.LOGGER.warn("Command rejected (server stopping): " + action);
+            return null;
+        }
         try {
-            lastResult = new JsonObject();
-
             switch (action) {
                 case "chat":
                     return executeChat(params);
@@ -63,6 +93,9 @@ public class CommandExecutor {
 
                 case "getPosition":
                     return executeGetPosition(params);
+
+                case "getTargetBlock":
+                    return executeGetTargetBlock(params);
 
                 case "getPlayerFacing":
                     return executeGetPlayerFacing(params);
@@ -112,34 +145,36 @@ public class CommandExecutor {
                 case "getRecordingStatus":
                     return executeGetRecordingStatus(params);
 
+                case "setEntitySpawning":
+                    return executeSetEntitySpawning(params);
+
+                case "setContainerItem":
+                    return executeSetContainerItem(params);
+
                 default:
                     MinecraftEduMod.LOGGER.warn("Unknown command: " + action);
-                    return false;
+                    return null;
             }
         } catch (Exception e) {
             MinecraftEduMod.LOGGER.error("Error executing command: " + action, e);
-            return false;
+            return null;
         }
     }
 
-    public JsonObject getLastResult() {
-        return lastResult;
-    }
-
-    private boolean executeChat(JsonObject params) {
+    private JsonObject executeChat(JsonObject params) {
         String message = params.get("message").getAsString();
 
-        server.execute(() -> {
+        safeExecute(() -> {
             server.getPlayerList().getPlayers().forEach(player -> {
                 player.sendSystemMessage(net.minecraft.network.chat.Component.literal(message));
             });
         });
 
         MinecraftEduMod.LOGGER.info("Chat message sent: " + message);
-        return true;
+        return new JsonObject();
     }
 
-    private boolean executeSetBlock(JsonObject params) {
+    private JsonObject executeSetBlock(JsonObject params) {
         String blockType = params.get("blockType").getAsString();
 
         // 座標取得（絶対または相対）
@@ -155,7 +190,7 @@ public class CommandExecutor {
             // 相対座標
             if (player == null) {
                 MinecraftEduMod.LOGGER.warn("No player found for relative coordinates");
-                return false;
+                return null;
             }
 
             int relX = params.get("relativeX").getAsInt();
@@ -172,31 +207,33 @@ public class CommandExecutor {
 
         if (blockState == null) {
             MinecraftEduMod.LOGGER.warn("Failed to parse block state: " + blockType);
-            return false;
+            return null;
         }
 
         BlockPos pos = new BlockPos(x, y, z);
 
         // ブロック配置
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             world.setBlock(pos, blockState, 3);
         });
 
         MinecraftEduMod.LOGGER.info("Block placed: " + blockType + " at " + x + "," + y + "," + z);
 
         // 結果データを設定
-        lastResult.addProperty("blockPlaced", true);
+        JsonObject result = new JsonObject();
+        result.addProperty("blockPlaced", true);
         JsonObject position = new JsonObject();
         position.addProperty("x", x);
         position.addProperty("y", y);
         position.addProperty("z", z);
-        lastResult.add("position", position);
+        result.add("position", position);
 
-        return true;
+        return result;
     }
 
-    private boolean executeGetBlock(JsonObject params) {
+    private JsonObject executeGetBlock(JsonObject params) {
         int x = params.get("x").getAsInt();
         int y = params.get("y").getAsInt();
         int z = params.get("z").getAsInt();
@@ -211,24 +248,25 @@ public class CommandExecutor {
 
         if (blockId == null) {
             MinecraftEduMod.LOGGER.warn("Failed to get block ID at " + x + "," + y + "," + z);
-            return false;
+            return null;
         }
 
         MinecraftEduMod.LOGGER.info("Block retrieved: " + blockId + " at " + x + "," + y + "," + z);
 
         // 結果データを設定
-        lastResult.addProperty("blockType", blockId.toString());
+        JsonObject result = new JsonObject();
+        result.addProperty("blockType", blockId.toString());
         JsonObject position = new JsonObject();
         position.addProperty("x", x);
         position.addProperty("y", y);
         position.addProperty("z", z);
-        lastResult.add("position", position);
-        lastResult.add("blockState", new JsonObject());
+        result.add("position", position);
+        result.add("blockState", new JsonObject());
 
-        return true;
+        return result;
     }
 
-    private boolean executeFillBlocks(JsonObject params) {
+    private JsonObject executeFillBlocks(JsonObject params) {
         // fromとtoの座標を取得
         JsonObject from = params.getAsJsonObject("from");
         JsonObject to = params.getAsJsonObject("to");
@@ -254,7 +292,7 @@ public class CommandExecutor {
         int volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         if (volume > 2000000) {
             MinecraftEduMod.LOGGER.warn("Fill volume too large: " + volume + " blocks (max: 2000000)");
-            return false;
+            return null;
         }
 
         // ブロック状態を解析（プロパティを含む）
@@ -262,12 +300,13 @@ public class CommandExecutor {
 
         if (blockState == null) {
             MinecraftEduMod.LOGGER.warn("Failed to parse block state: " + blockType);
-            return false;
+            return null;
         }
 
         // ブロック配置
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             int placedCount = 0;
 
             for (int x = minX; x <= maxX; x++) {
@@ -284,8 +323,9 @@ public class CommandExecutor {
         });
 
         // 結果データを設定
-        lastResult.addProperty("blocksFilled", volume);
-        lastResult.addProperty("blockType", blockType);
+        JsonObject result = new JsonObject();
+        result.addProperty("blocksFilled", volume);
+        result.addProperty("blockType", blockType);
         JsonObject fromPos = new JsonObject();
         fromPos.addProperty("x", minX);
         fromPos.addProperty("y", minY);
@@ -294,17 +334,17 @@ public class CommandExecutor {
         toPos.addProperty("x", maxX);
         toPos.addProperty("y", maxY);
         toPos.addProperty("z", maxZ);
-        lastResult.add("from", fromPos);
-        lastResult.add("to", toPos);
+        result.add("from", fromPos);
+        result.add("to", toPos);
 
-        return true;
+        return result;
     }
 
-    private boolean executeGetPosition(JsonObject params) {
+    private JsonObject executeGetPosition(JsonObject params) {
         ServerPlayer player = getFirstPlayer();
         if (player == null) {
             MinecraftEduMod.LOGGER.warn("No player found for getPosition");
-            return false;
+            return null;
         }
 
         double x = player.getX();
@@ -316,20 +356,86 @@ public class CommandExecutor {
         MinecraftEduMod.LOGGER.info("Player position: " + x + "," + y + "," + z);
 
         // 結果データを設定
-        lastResult.addProperty("x", x);
-        lastResult.addProperty("y", y);
-        lastResult.addProperty("z", z);
-        lastResult.addProperty("yaw", yaw);
-        lastResult.addProperty("pitch", pitch);
+        JsonObject result = new JsonObject();
+        result.addProperty("x", x);
+        result.addProperty("y", y);
+        result.addProperty("z", z);
+        result.addProperty("yaw", yaw);
+        result.addProperty("pitch", pitch);
 
-        return true;
+        return result;
     }
 
-    private boolean executeGetPlayerFacing(JsonObject params) {
+    /**
+     * プレイヤーが見ているブロック（クロスヘアの先）の座標を取得
+     * メインスレッドでレイキャストを実行（ワールドデータへのアクセスが必要なため）
+     */
+    private JsonObject executeGetTargetBlock(JsonObject params) {
+        ServerPlayer player = getFirstPlayer();
+        if (player == null) {
+            MinecraftEduMod.LOGGER.warn("No player found for getTargetBlock");
+            return null;
+        }
+
+        // レイキャスト距離（デフォルト256ブロック）
+        double reach = params.has("reach") ? params.get("reach").getAsDouble() : 256.0;
+
+        // ローカルresultをラムダと共有（future.get()のhappens-before保証により安全）
+        JsonObject result = new JsonObject();
+
+        // メインスレッドでレイキャストを実行（pick()はワールドデータにアクセスするため）
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        safeExecute(() -> {
+            try {
+                net.minecraft.world.phys.HitResult hitResult = player.pick(reach, 0.0F, false);
+
+                if (hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+                    net.minecraft.world.phys.BlockHitResult blockHit = (net.minecraft.world.phys.BlockHitResult) hitResult;
+                    BlockPos pos = blockHit.getBlockPos();
+
+                    // ブロックの種類も取得
+                    ServerLevel level = player.serverLevel();
+                    BlockState blockState = level.getBlockState(pos);
+                    String blockName = BuiltInRegistries.BLOCK.getKey(blockState.getBlock()).toString();
+
+                    result.addProperty("x", pos.getX());
+                    result.addProperty("y", pos.getY());
+                    result.addProperty("z", pos.getZ());
+                    result.addProperty("blockType", blockName);
+                    result.addProperty("hit", true);
+
+                    MinecraftEduMod.LOGGER.info("Target block: " + blockName + " at " + pos.getX() + "," + pos.getY() + "," + pos.getZ());
+                } else {
+                    // ブロックに当たらなかった場合
+                    result.addProperty("x", 0);
+                    result.addProperty("y", 0);
+                    result.addProperty("z", 0);
+                    result.addProperty("blockType", "air");
+                    result.addProperty("hit", false);
+
+                    MinecraftEduMod.LOGGER.info("No block in sight (miss)");
+                }
+                future.complete(true);
+            } catch (Exception e) {
+                MinecraftEduMod.LOGGER.error("Error in getTargetBlock raycast", e);
+                future.complete(false);
+            }
+        });
+
+        try {
+            boolean success = future.get(5, TimeUnit.SECONDS);
+            return success ? result : null;
+        } catch (Exception e) {
+            MinecraftEduMod.LOGGER.error("getTargetBlock timed out or interrupted", e);
+            return null;
+        }
+    }
+
+    private JsonObject executeGetPlayerFacing(JsonObject params) {
         ServerPlayer player = getFirstPlayer();
         if (player == null) {
             MinecraftEduMod.LOGGER.warn("No player found for getPlayerFacing");
-            return false;
+            return null;
         }
 
         // プレーヤーの向き（yaw）から方向を判定
@@ -356,13 +462,14 @@ public class CommandExecutor {
         MinecraftEduMod.LOGGER.info("Player facing: " + facing + " (yaw: " + yaw + ")");
 
         // 結果データを設定
-        lastResult.addProperty("facing", facing);
-        lastResult.addProperty("yaw", yaw);
+        JsonObject result = new JsonObject();
+        result.addProperty("facing", facing);
+        result.addProperty("yaw", yaw);
 
-        return true;
+        return result;
     }
 
-    private boolean executeGetBlockType(JsonObject params) {
+    private JsonObject executeGetBlockType(JsonObject params) {
         int x = params.get("x").getAsInt();
         int y = params.get("y").getAsInt();
         int z = params.get("z").getAsInt();
@@ -377,7 +484,7 @@ public class CommandExecutor {
 
         if (blockId == null) {
             MinecraftEduMod.LOGGER.warn("Failed to get block ID at " + x + "," + y + "," + z);
-            return false;
+            return null;
         }
 
         // "minecraft:" プレフィックスを削除してシンプルな形式にする
@@ -386,20 +493,37 @@ public class CommandExecutor {
             blockType = blockType.substring(10);
         }
 
+        // 翻訳キーを取得 (例: block.minecraft.stone)
+        String translationKey = block.getDescriptionId();
+
+        // 翻訳コンポーネントを作成 (クライアントの言語設定に合わせて表示される)
+        // 余計な装飾なし、ブロック名のみを表示
+        net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.translatable(translationKey);
+
+        // 署名なしで送信
+        sendRawChatMessage(message);
+
         MinecraftEduMod.LOGGER.info("Block type retrieved: " + blockType + " at " + x + "," + y + "," + z);
 
         // 結果データを設定
-        lastResult.addProperty("blockType", blockType);
+        JsonObject result = new JsonObject();
+        result.addProperty("blockType", blockType);
         JsonObject position = new JsonObject();
         position.addProperty("x", x);
         position.addProperty("y", y);
         position.addProperty("z", z);
-        lastResult.add("position", position);
+        result.add("position", position);
 
-        return true;
+        return result;
     }
 
-    private boolean executeSummonEntity(JsonObject params) {
+    private JsonObject executeSummonEntity(JsonObject params) {
+        // エンティティ召喚が禁止されている場合は拒否
+        if (!entitySpawningAllowed) {
+            MinecraftEduMod.LOGGER.info("Entity spawning is disabled - command rejected");
+            return null;
+        }
+
         String entityType = params.get("entityType").getAsString();
         double x = params.get("x").getAsDouble();
         double y = params.get("y").getAsDouble();
@@ -410,11 +534,12 @@ public class CommandExecutor {
 
         if (type == null) {
             MinecraftEduMod.LOGGER.warn("Unknown entity type: " + entityType);
-            return false;
+            return null;
         }
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             net.minecraft.world.entity.Entity entity = type.create(world);
 
             if (entity != null) {
@@ -424,10 +549,10 @@ public class CommandExecutor {
         });
 
         MinecraftEduMod.LOGGER.info("Entity summoned: " + entityType + " at " + x + "," + y + "," + z);
-        return true;
+        return new JsonObject();
     }
 
-    private boolean executeTeleport(JsonObject params) {
+    private JsonObject executeTeleport(JsonObject params) {
         double x = params.get("x").getAsDouble();
         double y = params.get("y").getAsDouble();
         double z = params.get("z").getAsDouble();
@@ -435,22 +560,23 @@ public class CommandExecutor {
         ServerPlayer player = getFirstPlayer();
         if (player == null) {
             MinecraftEduMod.LOGGER.warn("No player found for teleport");
-            return false;
+            return null;
         }
 
-        server.execute(() -> {
+        safeExecute(() -> {
             player.teleportTo(x, y, z);
         });
 
         MinecraftEduMod.LOGGER.info("Player teleported to " + x + "," + y + "," + z);
-        return true;
+        return new JsonObject();
     }
 
-    private boolean executeSetWeather(JsonObject params) {
+    private JsonObject executeSetWeather(JsonObject params) {
         String weather = params.get("weather").getAsString();
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
 
             switch (weather) {
                 case "clear":
@@ -465,29 +591,36 @@ public class CommandExecutor {
             }
         });
 
+        // チャット表示
+        sendChatMessage("天気: " + getWeatherNameJapanese(weather));
+
         MinecraftEduMod.LOGGER.info("Weather set to: " + weather);
-        return true;
+        return new JsonObject();
     }
 
-    private boolean executeSetTime(JsonObject params) {
+    private JsonObject executeSetTime(JsonObject params) {
         long time = params.get("time").getAsLong();
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             world.setDayTime(time);
         });
 
+        // チャット表示
+        sendChatMessage("時刻: " + getTimeNameJapanese(time));
+
         MinecraftEduMod.LOGGER.info("Time set to: " + time);
-        return true;
+        return new JsonObject();
     }
 
-    private boolean executeSetGameMode(JsonObject params) {
+    private JsonObject executeSetGameMode(JsonObject params) {
         String mode = params.get("mode").getAsString();
 
         ServerPlayer player = getFirstPlayer();
         if (player == null) {
             MinecraftEduMod.LOGGER.warn("No player found for setGameMode");
-            return false;
+            return null;
         }
 
         GameType gameType;
@@ -506,20 +639,21 @@ public class CommandExecutor {
                 break;
             default:
                 MinecraftEduMod.LOGGER.warn("Unknown game mode: " + mode);
-                return false;
+                return null;
         }
 
-        server.execute(() -> {
+        safeExecute(() -> {
             player.setGameMode(gameType);
         });
 
         MinecraftEduMod.LOGGER.info("Game mode set to: " + mode);
 
         // 結果データを設定
-        lastResult.addProperty("gameMode", mode);
-        lastResult.addProperty("playerName", player.getName().getString());
+        JsonObject result = new JsonObject();
+        result.addProperty("gameMode", mode);
+        result.addProperty("playerName", player.getName().getString());
 
-        return true;
+        return result;
     }
 
     /**
@@ -540,34 +674,30 @@ public class CommandExecutor {
      *   - Scratchの「ON (true)」→ Minecraftの「false」
      *   - Scratchの「OFF (false)」→ Minecraftの「true」
      */
-    private boolean executeSetGameRule(JsonObject params) {
+    private JsonObject executeSetGameRule(JsonObject params) {
         String rule = params.get("rule").getAsString();
         String value = params.get("value").getAsString();
         boolean boolValue = value.equalsIgnoreCase("true");
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
             net.minecraft.world.level.GameRules gameRules = world.getGameRules();
 
             switch (rule) {
                 case "doDaylightCycle":
-                    // Scratchの「時間固定ON」= Minecraftの「doDaylightCycle false」
-                    // 値を反転: ON (true) → false, OFF (false) → true
                     boolean invertedDaylightValue = !boolValue;
                     gameRules.getRule(net.minecraft.world.level.GameRules.RULE_DAYLIGHT)
                         .set(invertedDaylightValue, server);
                     MinecraftEduMod.LOGGER.info("GameRule set: doDaylightCycle = " + invertedDaylightValue + " (Scratch value: " + value + ")");
                     break;
                 case "doWeatherCycle":
-                    // Scratchの「天気固定ON」= Minecraftの「doWeatherCycle false」
-                    // 値を反転: ON (true) → false, OFF (false) → true
                     boolean invertedWeatherValue = !boolValue;
                     gameRules.getRule(net.minecraft.world.level.GameRules.RULE_WEATHER_CYCLE)
                         .set(invertedWeatherValue, server);
                     MinecraftEduMod.LOGGER.info("GameRule set: doWeatherCycle = " + invertedWeatherValue + " (Scratch value: " + value + ")");
                     break;
                 case "doMobSpawning":
-                    // モブスポーン: 反転不要（Scratchの意図とMinecraftの仕様が一致）
                     gameRules.getRule(net.minecraft.world.level.GameRules.RULE_DOMOBSPAWNING)
                         .set(boolValue, server);
                     MinecraftEduMod.LOGGER.info("GameRule set: doMobSpawning = " + boolValue);
@@ -578,12 +708,17 @@ public class CommandExecutor {
             }
         });
 
-        // 結果データを設定
-        lastResult.addProperty("gameRule", rule);
-        lastResult.addProperty("value", value);
-        lastResult.addProperty("success", true);
+        // チャット表示（ユーザー視点での表示）
+        String onOff = boolValue ? "ON" : "OFF";
+        sendChatMessage(getGameRuleNameJapanese(rule) + ": " + onOff);
 
-        return true;
+        // 結果データを設定
+        JsonObject result = new JsonObject();
+        result.addProperty("gameRule", rule);
+        result.addProperty("value", value);
+        result.addProperty("success", true);
+
+        return result;
     }
 
     /**
@@ -664,78 +799,133 @@ public class CommandExecutor {
 
     /**
      * 周囲クリア
-     * X:-50～50、Y:-64～100、Z:-50～50の範囲をスーパーフラットの初期状態に戻す
+     * 中心座標から±200の範囲をスーパーフラットの初期状態に戻す
      * Y=-64: 岩盤
      * Y=-63～-62: 土（2層）
      * Y=-61: 草ブロック
      * Y=-60～100: 空気
+     *
+     * チャンク単位（16×16ブロック列）に分割し、サーバーの時間予算に応じて
+     * 自動スロットリングすることでサーバーフリーズを防止する。
      */
-    private boolean executeClearArea(JsonObject params) {
+    private JsonObject executeClearArea(JsonObject params) {
+        // 重複実行チェック（実行中は失敗として返す）
+        if (clearAreaInProgress) {
+            MinecraftEduMod.LOGGER.warn("clearArea: 既に実行中です");
+            return null;
+        }
+
         // 中心座標を取得（デフォルト: 0, 0）
         int centerX = params.has("centerX") ? params.get("centerX").getAsInt() : 0;
         int centerZ = params.has("centerZ") ? params.get("centerZ").getAsInt() : 0;
 
-        server.execute(() -> {
-            ServerLevel world = server.overworld();
-            BlockState bedrock = net.minecraft.world.level.block.Blocks.BEDROCK.defaultBlockState();
-            BlockState dirt = net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState();
-            BlockState grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
-            BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+        int minX = centerX - 200;
+        int maxX = centerX + 200;
+        int minZ = centerZ - 200;
+        int maxZ = centerZ + 200;
 
-            // 中心座標から±50の範囲
-            int minX = centerX - 50;
-            int maxX = centerX + 50;
-            int minZ = centerZ - 50;
-            int maxZ = centerZ + 50;
+        // チャンク列ごとにタスクを分割してスケジュール
+        List<Runnable> tasks = new ArrayList<>();
+        for (int chunkX = minX; chunkX <= maxX; chunkX += 16) {
+            int cxEnd = Math.min(chunkX + 15, maxX);
+            for (int chunkZ = minZ; chunkZ <= maxZ; chunkZ += 16) {
+                int czEnd = Math.min(chunkZ + 15, maxZ);
+                final int fCxStart = chunkX, fCxEnd = cxEnd;
+                final int fCzStart = chunkZ, fCzEnd = czEnd;
 
-            int blocksCleared = 0;
-            for (int x = minX; x <= maxX; x++) {
-                for (int y = -64; y <= 100; y++) {
-                    for (int z = minZ; z <= maxZ; z++) {
-                        BlockPos pos = new BlockPos(x, y, z);
-                        BlockState blockToPlace;
-
-                        if (y == -64) {
-                            blockToPlace = bedrock;
-                        } else if (y >= -63 && y <= -62) {
-                            blockToPlace = dirt;
-                        } else if (y == -61) {
-                            blockToPlace = grass;
-                        } else {
-                            blockToPlace = air;
+                tasks.add(() -> {
+                    ServerLevel world = server.overworld();
+                    if (world == null) return;  // ワールド未ロード時の null guard
+                    BlockState bedrock = net.minecraft.world.level.block.Blocks.BEDROCK.defaultBlockState();
+                    BlockState dirt = net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState();
+                    BlockState grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
+                    BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+                    BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+                    for (int x = fCxStart; x <= fCxEnd; x++) {
+                        for (int y = -64; y <= 100; y++) {
+                            for (int z = fCzStart; z <= fCzEnd; z++) {
+                                mutablePos.set(x, y, z);
+                                BlockState blockToPlace;
+                                if (y == -64) {
+                                    blockToPlace = bedrock;
+                                } else if (y >= -63 && y <= -62) {
+                                    blockToPlace = dirt;
+                                } else if (y == -61) {
+                                    blockToPlace = grass;
+                                } else {
+                                    blockToPlace = air;
+                                }
+                                // フラグ2: クライアントに通知するが隣接ブロック更新なし
+                                // フラグ16: 近傍ブロックの形状更新を抑制
+                                world.setBlock(mutablePos, blockToPlace, 2 | 16);
+                            }
                         }
-
-                        world.setBlock(pos, blockToPlace, 3);
-                        blocksCleared++;
                     }
-                }
+                });
             }
+        }
 
-            MinecraftEduMod.LOGGER.info("周囲クリア完了: 中心(" + centerX + ", " + centerZ + ") から " + blocksCleared + "ブロック（スーパーフラット初期状態）");
+        clearAreaInProgress = true;
+        sendChatMessage("§a周囲クリア開始 (" + tasks.size() + "チャンク)");
+        scheduleChunkedTasks(tasks, 0, centerX, centerZ);
+
+        JsonObject result = new JsonObject();
+        result.addProperty("blocksCleared", 26573265);
+        result.addProperty("centerX", centerX);
+        result.addProperty("centerZ", centerZ);
+        result.addProperty("totalChunks", tasks.size());
+        return result;
+    }
+
+    /**
+     * タスクリストをサーバーの時間予算に応じて分割実行するスケジューラ
+     */
+    private void scheduleChunkedTasks(List<Runnable> tasks, int index, int centerX, int centerZ) {
+        // サーバ停止中は中断
+        if (serverStopping || !server.isRunning()) {
+            clearAreaInProgress = false;
+            MinecraftEduMod.LOGGER.info("clearArea aborted: server stopping (index=" + index + "/" + tasks.size() + ")");
+            return;
+        }
+        if (index >= tasks.size()) {
+            clearAreaInProgress = false;
+            sendChatMessage("§a周囲クリア完了: 中心(" + centerX + ", " + centerZ + ")");
+            MinecraftEduMod.LOGGER.info("チャンク分割タスク完了: " + tasks.size() + "チャンク処理済み");
+            return;
+        }
+        safeExecute(() -> {
+            // 25%ごとに進捗をチャットに表示
+            int quarter = tasks.size() / 4;
+            if (quarter > 0 && index > 0 && index % quarter == 0) {
+                int percent = (index * 100) / tasks.size();
+                sendChatMessage("§a周囲クリア進行中... " + percent + "%");
+            }
+            try {
+                tasks.get(index).run();
+            } catch (Exception e) {
+                MinecraftEduMod.LOGGER.error("チャンク処理エラー (index=" + index + "): " + e.getMessage());
+            }
+            scheduleChunkedTasks(tasks, index + 1, centerX, centerZ);
         });
-
-        lastResult.addProperty("blocksCleared", 1683165);  // 101 * 165 * 101
-        lastResult.addProperty("centerX", centerX);
-        lastResult.addProperty("centerZ", centerZ);
-        return true;
     }
 
     /**
      * 全エンティティをクリア
-     * X:-50～50、Y:-64～100、Z:-50～50の範囲のエンティティを削除（プレイヤーを除く）
+     * 中心座標から±200の範囲のエンティティを削除（プレイヤーを除く）
      */
-    private boolean executeClearAllEntities(JsonObject params) {
+    private JsonObject executeClearAllEntities(JsonObject params) {
         // 中心座標を取得（デフォルト: 0, 0）
         int centerX = params.has("centerX") ? params.get("centerX").getAsInt() : 0;
         int centerZ = params.has("centerZ") ? params.get("centerZ").getAsInt() : 0;
 
-        server.execute(() -> {
+        safeExecute(() -> {
             ServerLevel world = server.overworld();
+            if (world == null) return;
 
-            // 中心座標から±50の範囲
+            // 中心座標から±200の範囲
             net.minecraft.world.phys.AABB bounds = new net.minecraft.world.phys.AABB(
-                centerX - 50, -64, centerZ - 50,
-                centerX + 50, 100, centerZ + 50
+                centerX - 200, -64, centerZ - 200,
+                centerX + 200, 100, centerZ + 200
             );
 
             int entitiesRemoved = 0;
@@ -756,21 +946,21 @@ public class CommandExecutor {
             MinecraftEduMod.LOGGER.info("エンティティクリア完了: 中心(" + centerX + ", " + centerZ + ") から " + entitiesRemoved + "体");
         });
 
-        lastResult.addProperty("entitiesRemoved", true);
-        lastResult.addProperty("centerX", centerX);
-        lastResult.addProperty("centerZ", centerZ);
-        return true;
+        JsonObject result = new JsonObject();
+        result.addProperty("entitiesRemoved", true);
+        result.addProperty("centerX", centerX);
+        result.addProperty("centerZ", centerZ);
+        return result;
     }
 
     /**
      * プレイヤーの移動速度を設定
      * @param params multiplier: 速度倍率（小数点1位まで有効、例: 0.5, 1.0, 2.5）
-     * @return 成功時true
      */
-    private boolean executeSetMoveSpeed(JsonObject params) {
+    private JsonObject executeSetMoveSpeed(JsonObject params) {
         if (!params.has("multiplier")) {
             MinecraftEduMod.LOGGER.warn("setMoveSpeed: multiplier parameter required");
-            return false;
+            return null;
         }
 
         // 小数点1位まで有効にするため、0.1刻みで丸める
@@ -788,10 +978,10 @@ public class CommandExecutor {
         ServerPlayer player = getFirstPlayer();
         if (player == null) {
             MinecraftEduMod.LOGGER.warn("setMoveSpeed: No player found");
-            return false;
+            return null;
         }
 
-        server.execute(() -> {
+        safeExecute(() -> {
             // 全プレイヤーに適用
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                 p.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(newSpeed);
@@ -799,61 +989,64 @@ public class CommandExecutor {
             MinecraftEduMod.LOGGER.info("SetMoveSpeed: " + finalMultiplier + "x (speed=" + newSpeed + ")");
         });
 
-        lastResult.addProperty("multiplier", finalMultiplier);
-        lastResult.addProperty("speed", newSpeed);
+        // チャット表示
+        sendChatMessage("移動速度: " + finalMultiplier + "倍");
 
-        return true;
+        JsonObject result = new JsonObject();
+        result.addProperty("multiplier", finalMultiplier);
+        result.addProperty("speed", newSpeed);
+
+        return result;
     }
 
     /**
      * 暗視エフェクトの設定
      * @param params enabled: true=暗視ON、false=暗視OFF
-     * @return 成功時true
      */
-    private boolean executeSetNightVision(JsonObject params) {
+    private JsonObject executeSetNightVision(JsonObject params) {
         if (!params.has("enabled")) {
             MinecraftEduMod.LOGGER.warn("setNightVision: enabled parameter required");
-            return false;
+            return null;
         }
 
         boolean enabled = params.get("enabled").getAsBoolean();
 
-        server.execute(() -> {
+        safeExecute(() -> {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 if (enabled) {
-                    // 暗視エフェクトを付与（約27時間、パーティクル非表示）
-                    // duration: 999999 ticks (約13.9時間)、amplifier: 0、ambient: true、visible: false
                     MobEffectInstance effect = new MobEffectInstance(
                         MobEffects.NIGHT_VISION,
-                        999999,  // 持続時間（tick）
-                        0,       // 効果レベル（0=レベル1）
-                        true,    // アンビエント（パーティクル小さい）
-                        false    // パーティクル非表示
+                        999999,
+                        0,
+                        true,
+                        false
                     );
                     player.addEffect(effect);
                     MinecraftEduMod.LOGGER.info("Night vision enabled for player: " + player.getName().getString());
                 } else {
-                    // 暗視エフェクトを解除
                     player.removeEffect(MobEffects.NIGHT_VISION);
                     MinecraftEduMod.LOGGER.info("Night vision disabled for player: " + player.getName().getString());
                 }
             }
         });
 
-        lastResult.addProperty("nightVision", enabled);
+        // チャット表示
+        sendChatMessage("暗視: " + (enabled ? "ON" : "OFF"));
 
-        return true;
+        JsonObject result = new JsonObject();
+        result.addProperty("nightVision", enabled);
+
+        return result;
     }
 
     /**
      * 飛行速度の設定（クリエイティブモード用）
      * @param params multiplier: 速度倍率（例: 1.0=標準、2.0=2倍）
-     * @return 成功時true
      */
-    private boolean executeSetFlySpeed(JsonObject params) {
+    private JsonObject executeSetFlySpeed(JsonObject params) {
         if (!params.has("multiplier")) {
             MinecraftEduMod.LOGGER.warn("setFlySpeed: multiplier parameter required");
-            return false;
+            return null;
         }
 
         double rawMultiplier = params.get("multiplier").getAsDouble();
@@ -866,28 +1059,151 @@ public class CommandExecutor {
         final float newFlySpeed = (float)(baseFlySpeed * multiplier);
         final double finalMultiplier = multiplier;
 
-        server.execute(() -> {
+        safeExecute(() -> {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 player.getAbilities().setFlyingSpeed(newFlySpeed);
-                // ClientboundPlayerAbilitiesPacketを送信してクライアントに同期
-                // onUpdateAbilities()は飛行速度を同期しないため、直接パケットを送信
                 player.connection.send(new ClientboundPlayerAbilitiesPacket(player.getAbilities()));
             }
         });
 
+        // チャット表示
+        sendChatMessage("飛行速度: " + finalMultiplier + "倍");
+
         MinecraftEduMod.LOGGER.info("SetFlySpeed: " + finalMultiplier + "x (speed=" + newFlySpeed + ")");
 
-        lastResult.addProperty("multiplier", finalMultiplier);
-        lastResult.addProperty("flySpeed", newFlySpeed);
+        JsonObject result = new JsonObject();
+        result.addProperty("multiplier", finalMultiplier);
+        result.addProperty("flySpeed", newFlySpeed);
 
-        return true;
+        return result;
     }
 
     private ServerPlayer getFirstPlayer() {
-        if (server.getPlayerList().getPlayers().isEmpty()) {
+        // サーバ停止中やワールド未ロード時の null 安全性を強化
+        if (server == null || !server.isRunning()) return null;
+        try {
+            var playerList = server.getPlayerList();
+            if (playerList == null) return null;
+            var players = playerList.getPlayers();
+            if (players == null || players.isEmpty()) return null;
+            return players.get(0);
+        } catch (Exception e) {
+            MinecraftEduMod.LOGGER.warn("getFirstPlayer failed: " + e.getMessage());
             return null;
         }
-        return server.getPlayerList().getPlayers().get(0);
+    }
+
+    /**
+     * サーバ停止時の後処理
+     * このフラグが立った後、execute() は全てnullを返し、
+     * safeExecute() でキューイングされたタスクも no-op になる。
+     * 進行中のclearAreaも次タスク投入を停止する。
+     */
+    public void shutdown() {
+        this.serverStopping = true;
+        this.clearAreaInProgress = false;
+
+        // 録画中であれば強制停止（ゾンビプロセス防止）
+        // 開始直後に割り込まれた場合は isRecording が false でもプロセスが残るため、
+        // 条件を付けずに forceResetRecording() へ一本化する。
+        // 停止処理が進行中ならロック解放まで最大約5秒待つが、これは意図的な挙動。
+        // 途中で殺すと mp4 が壊れるため、書き終えてから後始末する（有界・デッドロックなし）
+        try {
+            forceResetRecording();
+        } catch (Exception e) {
+            // 後始末の失敗は ffmpeg の生き残り（画面録画の継続）に直結するため、無音にしない
+            MinecraftEduMod.LOGGER.error("録画の後始末に失敗しました", e);
+        }
+        MinecraftEduMod.LOGGER.info("CommandExecutor: shutdown signaled");
+    }
+
+    /**
+     * サーバ停止中かどうかを返す（MinecraftWebSocketHandler から参照される）
+     */
+    public boolean isServerStopping() {
+        return this.serverStopping;
+    }
+
+    /**
+     * server.execute() の安全ラッパー
+     *
+     * 1. 入口でserverStopping をチェック → trueなら何もしない
+     * 2. server.isRunning() でForge公式APIも併せてチェック
+     * 3. ラムダ内部でも再度 serverStopping / isRunning() をチェック
+     *    （キューに積まれてから実行までの間に停止状態に遷移する可能性があるため）
+     * 4. ラムダ内例外を捕捉してログ出力（メインスレッドに例外を漏らさない）
+     */
+    private void safeExecute(Runnable task) {
+        if (serverStopping || !server.isRunning()) {
+            return;
+        }
+        server.execute(() -> {
+            // メインスレッド時点での再チェック
+            if (serverStopping || !server.isRunning()) {
+                return;
+            }
+            try {
+                task.run();
+            } catch (Exception e) {
+                MinecraftEduMod.LOGGER.error("safeExecute task error", e);
+            }
+        });
+    }
+
+    // ========================================
+    // チャット表示用ヘルパーメソッド
+    // ========================================
+
+    /**
+     * ゲーム内チャットにメッセージを送信 (署名なし・コンポーネント指定)
+     */
+    private void sendRawChatMessage(net.minecraft.network.chat.Component message) {
+        safeExecute(() -> {
+            server.getPlayerList().getPlayers().forEach(player -> {
+                player.sendSystemMessage(message);
+            });
+        });
+    }
+
+    /**
+     * ゲーム内チャットにメッセージを送信
+     */
+    private void sendChatMessage(String message) {
+        safeExecute(() -> {
+            server.getPlayerList().getPlayers().forEach(player -> {
+                player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.literal("[MinecraftEdu] " + message)
+                );
+            });
+        });
+    }
+
+    private String getTimeNameJapanese(long time) {
+        if (time == 0 || time == 24000) return "夜明け";
+        if (time == 1000) return "朝";
+        if (time == 6000) return "正午";
+        if (time == 12000) return "夕方";
+        if (time == 13000) return "夜";
+        if (time == 18000) return "真夜中";
+        return time + " tick";
+    }
+
+    private String getWeatherNameJapanese(String weather) {
+        switch (weather) {
+            case "clear": return "晴れ";
+            case "rain": return "雨";
+            case "thunder": return "雷雨";
+            default: return weather;
+        }
+    }
+
+    private String getGameRuleNameJapanese(String rule) {
+        switch (rule) {
+            case "doDaylightCycle": return "時刻固定";
+            case "doWeatherCycle": return "天気固定";
+            case "doMobSpawning": return "モブスポーン";
+            default: return rule;
+        }
     }
 
     // ========================================
@@ -895,38 +1211,91 @@ public class CommandExecutor {
     // ========================================
 
     /**
-     * 録画を開始する
-     * FFmpegを使用してMinecraftウィンドウを録画
-     * @param params パラメータ（オプション: filename）
-     * @return 成功時true
+     * 録画の失敗理由を Scratch 側へ返すための結果を作る
+     * 子どもに見せる文言は Scratch 側が errorCode から組み立てる。
+     * ここで日本語の文言を作らないのは、ひらがな表示や多言語に対応できなくなるため。
+     * @param errorCode 失敗理由を表すコード（Scratch 側の表示文言と対応）
+     * @param logMessage ログに残す説明。画面には出さない
+     * @return success:false と errorCode を持つ結果
      */
-    private boolean executeStartRecording(JsonObject params) {
-        // 既に録画中の場合はエラー
+    private JsonObject createRecordingError(String errorCode, String logMessage) {
+        MinecraftEduMod.LOGGER.warn("録画エラー[" + errorCode + "]: " + logMessage);
+        JsonObject result = new JsonObject();
+        result.addProperty("success", false);
+        result.addProperty("errorCode", errorCode);
+        return result;
+    }
+
+    /**
+     * プロセスのパイプを閉じる
+     * 閉じ忘れるとファイルディスクリプタが GC まで残るため、後始末で必ず呼ぶ
+     * @param process 対象のプロセス
+     */
+    private void closeProcessStreams(Process process) {
+        try { process.getOutputStream().close(); } catch (Exception ignored) {}
+        try { process.getInputStream().close(); } catch (Exception ignored) {}
+        try { process.getErrorStream().close(); } catch (Exception ignored) {}
+    }
+
+    /**
+     * 録画の状態を強制的に初期化する
+     * 停止に失敗したまま録画中フラグが残ると二度と開始できなくなるため、後始末に使う
+     */
+    private void forceResetRecording() {
+        synchronized (recordingLock) {
+            if (ffmpegProcess != null) {
+                closeProcessStreams(ffmpegProcess);
+                ffmpegProcess.destroyForcibly();
+                ffmpegProcess = null;
+            }
+            isRecording = false;
+            currentRecordingPath = null;
+        }
+    }
+
+    /**
+     * 録画を開始する
+     * 「録画中か確かめてから開始する」の間に割り込まれないようロックで直列化する
+     */
+    private JsonObject executeStartRecording(JsonObject params) {
+        synchronized (recordingLock) {
+            return startRecordingLocked(params);
+        }
+    }
+
+    private JsonObject startRecordingLocked(JsonObject params) {
+        // ロック待ちの間に shutdown() が走ることがあるため、ここでも停止状態を再確認する。
+        // execute() の入口チェックだけだと、shutdown 完了後に ffmpeg を起動してしまい
+        // 以降の停止要求は serverStopping で拒否されるため誰も止められなくなる
+        if (serverStopping || !server.isRunning()) {
+            return createRecordingError("SERVER_STOPPING", "サーバ停止中のため録画を開始しません");
+        }
+
         if (isRecording) {
-            MinecraftEduMod.LOGGER.warn("録画は既に開始されています");
-            lastResult.addProperty("error", "既に録画中です");
-            lastResult.addProperty("isRecording", true);
-            return false;
+            return createRecordingError("RECORDING_ALREADY_STARTED", "すでに録画中です");
+        }
+
+        // 画面キャプチャに Windows 専用の gdigrab を使っているため、他のOSでは動作しない
+        // Locale.ROOT 指定はトルコ語ロケールで 'I' が 'ı' になり判定を誤るのを避けるため
+        String osName = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
+        if (!osName.contains("win")) {
+            return createRecordingError("RECORDING_WINDOWS_ONLY", "Windows以外のOSです: " + osName);
         }
 
         try {
-            // 録画保存先ディレクトリを作成
             String userHome = System.getProperty("user.home");
             File recordingsDir = new File(userHome, "MinecraftRecordings");
             if (!recordingsDir.exists()) {
                 recordingsDir.mkdirs();
             }
 
-            // ファイル名を生成（タイムスタンプ付き）
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
             String timestamp = sdf.format(new Date());
             String filename = "recording_" + timestamp + ".mp4";
 
-            // パラメータでファイル名が指定されている場合は上書き
             if (params != null && params.has("filename")) {
                 String customName = params.get("filename").getAsString();
                 if (!customName.isEmpty()) {
-                    // 拡張子がなければ追加
                     if (!customName.endsWith(".mp4")) {
                         customName += ".mp4";
                     }
@@ -936,84 +1305,81 @@ public class CommandExecutor {
 
             currentRecordingPath = new File(recordingsDir, filename).getAbsolutePath();
 
-            // FFmpegコマンドを構築（Windows GDI Grab）
-            // Minecraftウィンドウをキャプチャ
             String[] command = {
                 "ffmpeg",
-                "-y",                           // 上書き確認なし
-                "-f", "gdigrab",                // Windows画面キャプチャ
-                "-framerate", "30",             // 30fps
-                "-i", "title=Minecraft",        // Minecraftウィンドウ
-                "-c:v", "libx264",              // H.264コーデック
-                "-preset", "ultrafast",         // 高速エンコード
-                "-crf", "23",                   // 画質（23=バランス良い）
-                "-pix_fmt", "yuv420p",          // 互換性のあるピクセルフォーマット
+                "-y",
+                "-f", "gdigrab",
+                "-framerate", "30",
+                "-i", "title=Minecraft",
+                "-c:v", "libx264",
+                "-preset", "ultrafast",
+                "-crf", "23",
+                "-pix_fmt", "yuv420p",
                 currentRecordingPath
             };
 
-            // FFmpegプロセスを起動
             ProcessBuilder pb = new ProcessBuilder(command);
             pb.redirectErrorStream(true);
             ffmpegProcess = pb.start();
 
-            // プロセスが正常に起動したか確認（少し待つ）
             Thread.sleep(500);
             if (!ffmpegProcess.isAlive()) {
-                MinecraftEduMod.LOGGER.error("FFmpegプロセスの起動に失敗しました");
-                lastResult.addProperty("error", "FFmpegの起動に失敗しました。FFmpegがインストールされているか確認してください。");
-                return false;
+                forceResetRecording();
+                return createRecordingError("RECORDING_START_FAILED", "FFmpegプロセスが起動直後に終了しました");
             }
 
             isRecording = true;
             MinecraftEduMod.LOGGER.info("録画開始: " + currentRecordingPath);
 
-            lastResult.addProperty("success", true);
-            lastResult.addProperty("isRecording", true);
-            lastResult.addProperty("filePath", currentRecordingPath);
-            lastResult.addProperty("message", "録画を開始しました");
+            JsonObject result = new JsonObject();
+            result.addProperty("success", true);
+            result.addProperty("isRecording", true);
+            result.addProperty("filePath", currentRecordingPath);
+            result.addProperty("message", "録画を開始しました");
 
-            return true;
+            return result;
 
         } catch (IOException e) {
             MinecraftEduMod.LOGGER.error("録画開始エラー: " + e.getMessage(), e);
-            lastResult.addProperty("error", "FFmpegの起動に失敗しました: " + e.getMessage());
-            return false;
+            forceResetRecording();
+            return createRecordingError("FFMPEG_MISSING", "FFmpegを起動できませんでした: " + e.getMessage());
         } catch (InterruptedException e) {
             MinecraftEduMod.LOGGER.error("録画開始中断: " + e.getMessage(), e);
-            lastResult.addProperty("error", "録画開始が中断されました");
-            return false;
+            // 後始末をしないと ffmpeg が生き残ったまま止められなくなる
+            forceResetRecording();
+            // 割り込み状態を復元しないとスレッドプールの停止シグナルを握り潰す
+            Thread.currentThread().interrupt();
+            return createRecordingError("RECORDING_INTERRUPTED", "録画開始が割り込まれました");
         }
     }
 
     /**
      * 録画を停止する
-     * @param params パラメータ（未使用）
-     * @return 成功時true
+     * 開始側と同じロックで直列化し、状態の読み書きが交錯しないようにする
      */
-    private boolean executeStopRecording(JsonObject params) {
-        // 録画中でない場合はエラー
+    private JsonObject executeStopRecording(JsonObject params) {
+        synchronized (recordingLock) {
+            return stopRecordingLocked(params);
+        }
+    }
+
+    private JsonObject stopRecordingLocked(JsonObject params) {
         if (!isRecording || ffmpegProcess == null) {
-            MinecraftEduMod.LOGGER.warn("録画は開始されていません");
-            lastResult.addProperty("error", "録画は開始されていません");
-            lastResult.addProperty("isRecording", false);
-            return false;
+            return createRecordingError("RECORDING_NOT_STARTED", "録画が開始されていません");
         }
 
         try {
-            // FFmpegに終了シグナルを送る（'q'キーを送信）
-            // Windowsでは直接終了させる
             ffmpegProcess.getOutputStream().write('q');
             ffmpegProcess.getOutputStream().flush();
 
-            // プロセスの終了を待つ（最大5秒）
             boolean exited = ffmpegProcess.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
 
             if (!exited) {
-                // タイムアウトした場合は強制終了
                 ffmpegProcess.destroyForcibly();
                 MinecraftEduMod.LOGGER.warn("FFmpegプロセスを強制終了しました");
             }
 
+            closeProcessStreams(ffmpegProcess);
             isRecording = false;
             String recordedPath = currentRecordingPath;
             ffmpegProcess = null;
@@ -1021,45 +1387,131 @@ public class CommandExecutor {
 
             MinecraftEduMod.LOGGER.info("録画停止: " + recordedPath);
 
-            // ファイルが存在するか確認
+            JsonObject result = new JsonObject();
             File recordedFile = new File(recordedPath);
             if (recordedFile.exists()) {
                 long fileSize = recordedFile.length();
-                lastResult.addProperty("success", true);
-                lastResult.addProperty("isRecording", false);
-                lastResult.addProperty("filePath", recordedPath);
-                lastResult.addProperty("fileSize", fileSize);
-                lastResult.addProperty("message", "録画を停止しました");
+                result.addProperty("success", true);
+                result.addProperty("isRecording", false);
+                result.addProperty("filePath", recordedPath);
+                result.addProperty("fileSize", fileSize);
+                result.addProperty("message", "録画を停止しました");
             } else {
-                lastResult.addProperty("success", true);
-                lastResult.addProperty("isRecording", false);
-                lastResult.addProperty("filePath", recordedPath);
-                lastResult.addProperty("warning", "ファイルが見つかりません。録画時間が短すぎた可能性があります。");
+                result.addProperty("success", true);
+                result.addProperty("isRecording", false);
+                result.addProperty("filePath", recordedPath);
+                result.addProperty("warning", "ファイルが見つかりません。録画時間が短すぎた可能性があります。");
             }
 
-            return true;
+            return result;
 
         } catch (IOException e) {
             MinecraftEduMod.LOGGER.error("録画停止エラー: " + e.getMessage(), e);
-            lastResult.addProperty("error", "録画の停止に失敗しました: " + e.getMessage());
-            return false;
+            forceResetRecording();
+            return createRecordingError("RECORDING_STOP_FAILED", "FFmpegへの停止指示に失敗しました: " + e.getMessage());
         } catch (InterruptedException e) {
             MinecraftEduMod.LOGGER.error("録画停止中断: " + e.getMessage(), e);
-            lastResult.addProperty("error", "録画停止が中断されました");
-            return false;
+            forceResetRecording();
+            // 割り込み状態を復元しないとスレッドプールの停止シグナルを握り潰す
+            Thread.currentThread().interrupt();
+            return createRecordingError("RECORDING_STOP_FAILED", "録画停止が割り込まれました");
         }
     }
 
     /**
-     * 録画状態を取得する
-     * @param params パラメータ（未使用）
-     * @return 常にtrue
+     * 録画状態を返す
+     * Scratch 側はこの結果を「正」として自身の状態を上書きするため、
+     * 開始・停止と同じロックで直列化し、処理途中の値（ffmpeg 起動後・フラグ更新前）を返さない
      */
-    private boolean executeGetRecordingStatus(JsonObject params) {
-        lastResult.addProperty("isRecording", isRecording);
-        if (isRecording && currentRecordingPath != null) {
-            lastResult.addProperty("filePath", currentRecordingPath);
+    private JsonObject executeGetRecordingStatus(JsonObject params) {
+        synchronized (recordingLock) {
+            JsonObject result = new JsonObject();
+            result.addProperty("isRecording", isRecording);
+            if (isRecording && currentRecordingPath != null) {
+                result.addProperty("filePath", currentRecordingPath);
+            }
+            return result;
         }
-        return true;
+    }
+
+    private JsonObject executeSetEntitySpawning(JsonObject params) {
+        boolean enabled = params.get("enabled").getAsBoolean();
+        this.entitySpawningAllowed = enabled;
+
+        sendChatMessage("エンティティ召喚: " + (enabled ? "許可" : "禁止"));
+
+        MinecraftEduMod.LOGGER.info("Entity spawning " + (enabled ? "enabled" : "disabled") + " via WebSocket");
+
+        JsonObject result = new JsonObject();
+        result.addProperty("entitySpawningAllowed", enabled);
+
+        return result;
+    }
+
+    /**
+     * エンティティ召喚の許可/禁止を設定（スラッシュコマンド用）
+     */
+    public void setEntitySpawningAllowed(boolean allowed) {
+        this.entitySpawningAllowed = allowed;
+        MinecraftEduMod.LOGGER.info("Entity spawning " + (allowed ? "enabled" : "disabled") + " via command");
+    }
+
+    /**
+     * エンティティ召喚が許可されているか取得
+     */
+    public boolean isEntitySpawningAllowed() {
+        return this.entitySpawningAllowed;
+    }
+
+    /**
+     * コンテナブロック（ディスペンサー、チェスト、ホッパー等）にアイテムを設定する
+     */
+    private JsonObject executeSetContainerItem(JsonObject params) {
+        int x = params.get("x").getAsInt();
+        int y = params.get("y").getAsInt();
+        int z = params.get("z").getAsInt();
+        int slot = params.get("slot").getAsInt();
+        String itemType = params.get("itemType").getAsString();
+        int count = params.get("count").getAsInt();
+
+        BlockPos pos = new BlockPos(x, y, z);
+
+        safeExecute(() -> {
+            ServerLevel world = server.overworld();
+            if (world == null) return;
+            BlockEntity blockEntity = world.getBlockEntity(pos);
+
+            if (blockEntity instanceof Container container) {
+                if (slot < 0 || slot >= container.getContainerSize()) {
+                    MinecraftEduMod.LOGGER.warn("Invalid slot number: " + slot + " (max: " + (container.getContainerSize() - 1) + ")");
+                    return;
+                }
+
+                ResourceLocation itemId = new ResourceLocation(itemType);
+                Item item = BuiltInRegistries.ITEM.get(itemId);
+
+                int validCount = Math.min(64, Math.max(1, count));
+
+                ItemStack itemStack = new ItemStack(item, validCount);
+
+                container.setItem(slot, itemStack);
+                blockEntity.setChanged();
+
+                MinecraftEduMod.LOGGER.info("Container item set at " + pos + " slot " + slot + ": " + itemType + " x" + validCount);
+            } else {
+                MinecraftEduMod.LOGGER.warn("No container block at position: " + pos);
+            }
+        });
+
+        JsonObject result = new JsonObject();
+        result.addProperty("success", true);
+        result.addProperty("x", x);
+        result.addProperty("y", y);
+        result.addProperty("z", z);
+        result.addProperty("slot", slot);
+        result.addProperty("itemType", itemType);
+        result.addProperty("count", count);
+
+        return result;
     }
 }
