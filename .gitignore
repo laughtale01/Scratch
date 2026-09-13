@@ -30,3 +30,6 @@ node_modules/
 
 # Unused images
 Minecraft*.png
+
+# 環境固有の設定（アカウント情報を含むため公開しない）
+.env
