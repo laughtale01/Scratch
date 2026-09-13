@@ -39,9 +39,14 @@ public class CommandExecutor {
     private final MinecraftServer server;
 
     // 録画関連のフィールド
-    private Process ffmpegProcess;
-    private String currentRecordingPath;
-    private boolean isRecording;
+    // volatile 必須: ハンドラスレッドとメインスレッドの両方からアクセスされる
+    private volatile Process ffmpegProcess;
+    private volatile String currentRecordingPath;
+    private volatile boolean isRecording;
+
+    // 録画の開始・停止・後始末を直列化するロック
+    // volatile だけでは「録画中か確かめてから開始する」の間に割り込まれるのを防げない
+    private final Object recordingLock = new Object();
 
     // エンティティ召喚制御フラグ
     private boolean entitySpawningAllowed = true;
@@ -63,7 +68,8 @@ public class CommandExecutor {
 
     /**
      * コマンドを実行し、結果をJsonObjectで返す
-     * @return 成功時は結果オブジェクト、失敗時はnull
+     * @return 成功時は結果オブジェクト。失敗時は null、または
+     *         success:false と errorCode を持つ結果（失敗理由を Scratch 側へ伝える場合）
      */
     public JsonObject execute(String action, JsonObject params) {
         // サーバ停止中は何も実行しない（ハンドラスレッド入口チェック）
@@ -1098,13 +1104,15 @@ public class CommandExecutor {
         this.clearAreaInProgress = false;
 
         // 録画中であれば強制停止（ゾンビプロセス防止）
-        if (isRecording && ffmpegProcess != null) {
-            try {
-                ffmpegProcess.destroyForcibly();
-            } catch (Exception ignored) {}
-            isRecording = false;
-            ffmpegProcess = null;
-            currentRecordingPath = null;
+        // 開始直後に割り込まれた場合は isRecording が false でもプロセスが残るため、
+        // 条件を付けずに forceResetRecording() へ一本化する。
+        // 停止処理が進行中ならロック解放まで最大約5秒待つが、これは意図的な挙動。
+        // 途中で殺すと mp4 が壊れるため、書き終えてから後始末する（有界・デッドロックなし）
+        try {
+            forceResetRecording();
+        } catch (Exception e) {
+            // 後始末の失敗は ffmpeg の生き残り（画面録画の継続）に直結するため、無音にしない
+            MinecraftEduMod.LOGGER.error("録画の後始末に失敗しました", e);
         }
         MinecraftEduMod.LOGGER.info("CommandExecutor: shutdown signaled");
     }
@@ -1202,10 +1210,76 @@ public class CommandExecutor {
     // 録画機能
     // ========================================
 
+    /**
+     * 録画の失敗理由を Scratch 側へ返すための結果を作る
+     * 子どもに見せる文言は Scratch 側が errorCode から組み立てる。
+     * ここで日本語の文言を作らないのは、ひらがな表示や多言語に対応できなくなるため。
+     * @param errorCode 失敗理由を表すコード（Scratch 側の表示文言と対応）
+     * @param logMessage ログに残す説明。画面には出さない
+     * @return success:false と errorCode を持つ結果
+     */
+    private JsonObject createRecordingError(String errorCode, String logMessage) {
+        MinecraftEduMod.LOGGER.warn("録画エラー[" + errorCode + "]: " + logMessage);
+        JsonObject result = new JsonObject();
+        result.addProperty("success", false);
+        result.addProperty("errorCode", errorCode);
+        return result;
+    }
+
+    /**
+     * プロセスのパイプを閉じる
+     * 閉じ忘れるとファイルディスクリプタが GC まで残るため、後始末で必ず呼ぶ
+     * @param process 対象のプロセス
+     */
+    private void closeProcessStreams(Process process) {
+        try { process.getOutputStream().close(); } catch (Exception ignored) {}
+        try { process.getInputStream().close(); } catch (Exception ignored) {}
+        try { process.getErrorStream().close(); } catch (Exception ignored) {}
+    }
+
+    /**
+     * 録画の状態を強制的に初期化する
+     * 停止に失敗したまま録画中フラグが残ると二度と開始できなくなるため、後始末に使う
+     */
+    private void forceResetRecording() {
+        synchronized (recordingLock) {
+            if (ffmpegProcess != null) {
+                closeProcessStreams(ffmpegProcess);
+                ffmpegProcess.destroyForcibly();
+                ffmpegProcess = null;
+            }
+            isRecording = false;
+            currentRecordingPath = null;
+        }
+    }
+
+    /**
+     * 録画を開始する
+     * 「録画中か確かめてから開始する」の間に割り込まれないようロックで直列化する
+     */
     private JsonObject executeStartRecording(JsonObject params) {
+        synchronized (recordingLock) {
+            return startRecordingLocked(params);
+        }
+    }
+
+    private JsonObject startRecordingLocked(JsonObject params) {
+        // ロック待ちの間に shutdown() が走ることがあるため、ここでも停止状態を再確認する。
+        // execute() の入口チェックだけだと、shutdown 完了後に ffmpeg を起動してしまい
+        // 以降の停止要求は serverStopping で拒否されるため誰も止められなくなる
+        if (serverStopping || !server.isRunning()) {
+            return createRecordingError("SERVER_STOPPING", "サーバ停止中のため録画を開始しません");
+        }
+
         if (isRecording) {
-            MinecraftEduMod.LOGGER.warn("録画は既に開始されています");
-            return null;
+            return createRecordingError("RECORDING_ALREADY_STARTED", "すでに録画中です");
+        }
+
+        // 画面キャプチャに Windows 専用の gdigrab を使っているため、他のOSでは動作しない
+        // Locale.ROOT 指定はトルコ語ロケールで 'I' が 'ı' になり判定を誤るのを避けるため
+        String osName = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
+        if (!osName.contains("win")) {
+            return createRecordingError("RECORDING_WINDOWS_ONLY", "Windows以外のOSです: " + osName);
         }
 
         try {
@@ -1250,8 +1324,8 @@ public class CommandExecutor {
 
             Thread.sleep(500);
             if (!ffmpegProcess.isAlive()) {
-                MinecraftEduMod.LOGGER.error("FFmpegプロセスの起動に失敗しました");
-                return null;
+                forceResetRecording();
+                return createRecordingError("RECORDING_START_FAILED", "FFmpegプロセスが起動直後に終了しました");
             }
 
             isRecording = true;
@@ -1267,17 +1341,31 @@ public class CommandExecutor {
 
         } catch (IOException e) {
             MinecraftEduMod.LOGGER.error("録画開始エラー: " + e.getMessage(), e);
-            return null;
+            forceResetRecording();
+            return createRecordingError("FFMPEG_MISSING", "FFmpegを起動できませんでした: " + e.getMessage());
         } catch (InterruptedException e) {
             MinecraftEduMod.LOGGER.error("録画開始中断: " + e.getMessage(), e);
-            return null;
+            // 後始末をしないと ffmpeg が生き残ったまま止められなくなる
+            forceResetRecording();
+            // 割り込み状態を復元しないとスレッドプールの停止シグナルを握り潰す
+            Thread.currentThread().interrupt();
+            return createRecordingError("RECORDING_INTERRUPTED", "録画開始が割り込まれました");
         }
     }
 
+    /**
+     * 録画を停止する
+     * 開始側と同じロックで直列化し、状態の読み書きが交錯しないようにする
+     */
     private JsonObject executeStopRecording(JsonObject params) {
+        synchronized (recordingLock) {
+            return stopRecordingLocked(params);
+        }
+    }
+
+    private JsonObject stopRecordingLocked(JsonObject params) {
         if (!isRecording || ffmpegProcess == null) {
-            MinecraftEduMod.LOGGER.warn("録画は開始されていません");
-            return null;
+            return createRecordingError("RECORDING_NOT_STARTED", "録画が開始されていません");
         }
 
         try {
@@ -1291,6 +1379,7 @@ public class CommandExecutor {
                 MinecraftEduMod.LOGGER.warn("FFmpegプロセスを強制終了しました");
             }
 
+            closeProcessStreams(ffmpegProcess);
             isRecording = false;
             String recordedPath = currentRecordingPath;
             ffmpegProcess = null;
@@ -1318,20 +1407,31 @@ public class CommandExecutor {
 
         } catch (IOException e) {
             MinecraftEduMod.LOGGER.error("録画停止エラー: " + e.getMessage(), e);
-            return null;
+            forceResetRecording();
+            return createRecordingError("RECORDING_STOP_FAILED", "FFmpegへの停止指示に失敗しました: " + e.getMessage());
         } catch (InterruptedException e) {
             MinecraftEduMod.LOGGER.error("録画停止中断: " + e.getMessage(), e);
-            return null;
+            forceResetRecording();
+            // 割り込み状態を復元しないとスレッドプールの停止シグナルを握り潰す
+            Thread.currentThread().interrupt();
+            return createRecordingError("RECORDING_STOP_FAILED", "録画停止が割り込まれました");
         }
     }
 
+    /**
+     * 録画状態を返す
+     * Scratch 側はこの結果を「正」として自身の状態を上書きするため、
+     * 開始・停止と同じロックで直列化し、処理途中の値（ffmpeg 起動後・フラグ更新前）を返さない
+     */
     private JsonObject executeGetRecordingStatus(JsonObject params) {
-        JsonObject result = new JsonObject();
-        result.addProperty("isRecording", isRecording);
-        if (isRecording && currentRecordingPath != null) {
-            result.addProperty("filePath", currentRecordingPath);
+        synchronized (recordingLock) {
+            JsonObject result = new JsonObject();
+            result.addProperty("isRecording", isRecording);
+            if (isRecording && currentRecordingPath != null) {
+                result.addProperty("filePath", currentRecordingPath);
+            }
+            return result;
         }
-        return result;
     }
 
     private JsonObject executeSetEntitySpawning(JsonObject params) {
