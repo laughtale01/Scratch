@@ -71,11 +71,22 @@ public class MinecraftWebSocketHandler {
     }
 
     private String handleConnect(JsonObject message) {
+        // payload / clientId が無い接続要求は、セッションIDを更新する前に弾く。
+        // 後ろで NPE を出すと handleMessage の catch で INTERNAL_ERROR にはなるが、
+        // 失敗した要求でセッションIDだけ変わってしまうのを避ける
+        JsonElement payloadElement = message.get("payload");
+        if (payloadElement == null || !payloadElement.isJsonObject()) {
+            return createError("INVALID_REQUEST", "connect requires payload", getRequestId(message));
+        }
+        JsonObject payload = payloadElement.getAsJsonObject();
+        JsonElement clientIdElement = payload.get("clientId");
+        if (clientIdElement == null || !clientIdElement.isJsonPrimitive()) {
+            return createError("INVALID_REQUEST", "connect requires clientId", getRequestId(message));
+        }
+        String clientId = clientIdElement.getAsString();
+
         // セッションID生成
         sessionId = UUID.randomUUID().toString();
-
-        JsonObject payload = message.getAsJsonObject("payload");
-        String clientId = payload.get("clientId").getAsString();
 
         MinecraftEduMod.LOGGER.info("Client connected: " + clientId + " with session: " + sessionId);
 
@@ -87,9 +98,11 @@ public class MinecraftWebSocketHandler {
         response.addProperty("sessionId", sessionId);
         response.addProperty("type", "connect_response");
 
-        // 元のリクエストのmessageIdを含める
-        if (message.has("messageId")) {
-            response.addProperty("requestId", message.get("messageId").getAsString());
+        // 元のリクエストのmessageIdを含める（型を確かめずに読むと、ここで例外になって
+        // セッションIDだけ更新された状態で INTERNAL_ERROR を返してしまう）
+        String requestId = getRequestId(message);
+        if (requestId != null) {
+            response.addProperty("requestId", requestId);
         }
 
         JsonObject responsePayload = new JsonObject();

@@ -1,6 +1,7 @@
 package com.github.minecraftedu.commands;
 
 import com.github.minecraftedu.MinecraftEduMod;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -23,6 +24,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,8 +35,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 public class CommandExecutor {
+
+    // 録画ファイル名に許可する文字。拡張子は MOD 側で付けるので "." も含めない
+    private static final Pattern SAFE_FILENAME = Pattern.compile("[A-Za-z0-9_-]{1,64}");
+    // Windows のデバイス名。上の文字種は通ってしまい、"NUL.mp4" のように拡張子が付いても
+    // デバイス扱いになって録画が黙って消えるため、別に弾く
+    private static final Pattern RESERVED_FILENAME =
+        Pattern.compile("(?i)(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])");
+    // ffmpeg の出力を残すファイル。録画フォルダに置くので、動画と一緒に見つけられる
+    private static final String FFMPEG_LOG_NAME = "ffmpeg.log";
 
     private final MinecraftServer server;
 
@@ -49,7 +61,8 @@ public class CommandExecutor {
     private final Object recordingLock = new Object();
 
     // エンティティ召喚制御フラグ
-    private boolean entitySpawningAllowed = true;
+    // volatile 必須: WebSocket のハンドラスレッドとスラッシュコマンド（メインスレッド）の両方から書かれる
+    private volatile boolean entitySpawningAllowed = true;
 
     // clearArea重複実行防止フラグ
     private volatile boolean clearAreaInProgress = false;
@@ -1228,7 +1241,8 @@ public class CommandExecutor {
 
     /**
      * プロセスのパイプを閉じる
-     * 閉じ忘れるとファイルディスクリプタが GC まで残るため、後始末で必ず呼ぶ
+     * 閉じ忘れるとファイルディスクリプタが GC まで残るため、後始末で必ず呼ぶ。
+     * どのストリームが本物のパイプかは出力先の設定と OS で変わるため、リダイレクト先に関わらず 3 本とも閉じる
      * @param process 対象のプロセス
      */
     private void closeProcessStreams(Process process) {
@@ -1250,6 +1264,24 @@ public class CommandExecutor {
             }
             isRecording = false;
             currentRecordingPath = null;
+        }
+    }
+
+    /**
+     * ffmpeg の出力先を決める
+     * pb.start() はログファイルを開けないだけでも IOException を投げ、それが FFMPEG_MISSING と
+     * 区別できないため、先に自分で開いて確かめる（開いてから pb.start() までの間に状況が変われば
+     * 区別できないが、実用上は十分）。開けなければ録画自体は止めずに出力を捨てる
+     * @param recordingsDir 録画フォルダ
+     * @return ログファイルへの上書き出力。開けない場合は DISCARD
+     */
+    private ProcessBuilder.Redirect openFfmpegLog(File recordingsDir) {
+        File logFile = new File(recordingsDir, FFMPEG_LOG_NAME);
+        try (FileOutputStream probe = new FileOutputStream(logFile)) {
+            return ProcessBuilder.Redirect.to(logFile);
+        } catch (IOException e) {
+            MinecraftEduMod.LOGGER.warn("ffmpeg のログファイルを開けないため出力を捨てます: " + e.getMessage());
+            return ProcessBuilder.Redirect.DISCARD;
         }
     }
 
@@ -1288,26 +1320,75 @@ public class CommandExecutor {
             if (!recordingsDir.exists()) {
                 recordingsDir.mkdirs();
             }
+            // フォルダが作れない（同名のファイルがある等）と、ffmpeg が出力先を書けずに起動直後に
+            // 終了し、ログも残らないため「ウィンドウが見つからない」と区別できなくなる。先に弾く
+            if (!recordingsDir.isDirectory()) {
+                return createRecordingError("RECORDING_START_FAILED",
+                    "録画フォルダを作成できません: " + recordingsDir.getAbsolutePath());
+            }
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
             String timestamp = sdf.format(new Date());
             String filename = "recording_" + timestamp + ".mp4";
+            boolean customNameGiven = false;
 
-            if (params != null && params.has("filename")) {
-                String customName = params.get("filename").getAsString();
+            // オブジェクト・配列・null が来たら例外で COMMAND_FAILED にせず、指定なしとして扱う
+            JsonElement filenameElement = params != null ? params.get("filename") : null;
+            if (filenameElement != null && filenameElement.isJsonPrimitive()) {
+                String customName = filenameElement.getAsString();
                 if (!customName.isEmpty()) {
-                    if (!customName.endsWith(".mp4")) {
-                        customName += ".mp4";
+                    // ポート 14711 は無認証のため、Scratch 以外から "../" 入りの名前が届きうる。
+                    // 英数字と _ - だけに絞れば区切り文字・".."・代替データストリーム（":"）を弾ける。
+                    // 弾いた名前は改行などを含みうるのでログには載せず、長さだけ残す。
+                    // この文字種検査を最初に置くことが前提で、後ろの予約名検査（末尾ドットや
+                    // 上付き数字の細工を考えずに済む）とログ出力の安全性が成り立っている
+                    if (!SAFE_FILENAME.matcher(customName).matches()) {
+                        return createRecordingError("RECORDING_START_FAILED",
+                            "ファイル名に使えない文字が含まれています（長さ " + customName.length() + "）");
                     }
-                    filename = customName;
+                    // ここに来る名前は上の文字種検査を通っているので、そのままログに載せてよい
+                    if (RESERVED_FILENAME.matcher(customName).matches()) {
+                        return createRecordingError("RECORDING_START_FAILED",
+                            "Windows の予約名はファイル名に使えません: " + customName);
+                    }
+                    filename = customName + ".mp4";
+                    customNameGiven = true;
                 }
             }
 
-            currentRecordingPath = new File(recordingsDir, filename).getAbsolutePath();
+            // 文字種の制限をすり抜けても録画フォルダの外には書けないよう、正規化したパスで最終確認する。
+            // 正規化の失敗を下の catch に落とすと FFMPEG_MISSING（ffmpeg を入れてという案内）になり
+            // 原因と食い違うため、ここで別に受ける
+            String recordingsDirPath;
+            String recordingFilePath;
+            try {
+                recordingsDirPath = recordingsDir.getCanonicalPath();
+                recordingFilePath = new File(recordingsDir, filename).getCanonicalPath();
+            } catch (IOException e) {
+                MinecraftEduMod.LOGGER.error("録画パスの正規化エラー: " + e.getMessage(), e);
+                return createRecordingError("RECORDING_START_FAILED", "録画先のパスを確定できませんでした");
+            }
+            if (!recordingFilePath.startsWith(recordingsDirPath + File.separator)) {
+                return createRecordingError("RECORDING_START_FAILED",
+                    "録画フォルダの外への保存は許可しません: " + recordingFilePath);
+            }
+            // ffmpeg は -y で問答無用に上書きするため、名前の指定で過去の録画を消せないようにする。
+            // 既定名は秒精度なので「開始→停止→開始」が同じ秒に収まると衝突するが、消えるのは
+            // 1 秒未満の録画だけであり、ここで拒否すると子どもに原因と違うエラーが出るため対象外にする
+            if (customNameGiven && new File(recordingFilePath).exists()) {
+                return createRecordingError("RECORDING_START_FAILED",
+                    "同じ名前の録画がすでにあります: " + recordingFilePath);
+            }
+            currentRecordingPath = recordingFilePath;
 
             String[] command = {
                 "ffmpeg",
+                // -y を外すと既存ファイルがあるとき ffmpeg が上書き確認を標準入力で待ち続け、
+                // 起動直後の生存確認を「成功」と誤判定するので外さない（消すなら -n に置き換える）
                 "-y",
+                // 0.5秒ごとの進捗表示とバナーを止め、下のログファイルを小さく保つ
+                "-nostats",
+                "-hide_banner",
                 "-f", "gdigrab",
                 "-framerate", "30",
                 "-i", "title=Minecraft",
@@ -1319,13 +1400,28 @@ public class CommandExecutor {
             };
 
             ProcessBuilder pb = new ProcessBuilder(command);
+            // ffmpeg の出力は誰も読まない。パイプのままだとバッファが埋まった時点で ffmpeg が
+            // 書き込み待ちで止まり、長時間の録画が静かに途切れるため、ファイルへ流して OS に任せる。
+            // ffmpeg の診断はほぼ stderr に出るので、redirectErrorStream(true) で stdout に合流させた
+            // 上でファイルへ流す（この 1 行を消すと stderr がパイプのまま残り、詰まりが再発する）。
+            // 捨てずに残すのは、起動直後に終了したときの理由（ウィンドウが見つからない等）を
+            // 後から調べられるようにするため。追記だと起動失敗の繰り返しで際限なく増えるので
+            // 起動ごとに上書きし、直前の 1 回分だけを残す。
+            // 標準入力は停止時に 'q' を送るために使うので、パイプのまま残す
             pb.redirectErrorStream(true);
+            ProcessBuilder.Redirect ffmpegOutput = openFfmpegLog(recordingsDir);
+            pb.redirectOutput(ffmpegOutput);
             ffmpegProcess = pb.start();
 
             Thread.sleep(500);
             if (!ffmpegProcess.isAlive()) {
                 forceResetRecording();
-                return createRecordingError("RECORDING_START_FAILED", "FFmpegプロセスが起動直後に終了しました");
+                // ログを開けずに捨てた回は参照先が無いので、案内を変える
+                String hint = ffmpegOutput == ProcessBuilder.Redirect.DISCARD
+                    ? "（今回の ffmpeg 出力は保存されていません）"
+                    : "（理由は " + FFMPEG_LOG_NAME + " を参照）";
+                return createRecordingError("RECORDING_START_FAILED",
+                    "FFmpegプロセスが起動直後に終了しました" + hint);
             }
 
             isRecording = true;
