@@ -542,13 +542,14 @@ public class CommandExecutor {
         double y = params.get("y").getAsDouble();
         double z = params.get("z").getAsDouble();
 
-        ResourceLocation entityId = new ResourceLocation(entityType);
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(entityId);
-
-        if (type == null) {
+        // ENTITY_TYPE レジストリも、見つからない名前に対して null ではなく既定（ブタ）を返す。
+        // 打ち間違いでブタが出ないよう、名前として正しいかと登録されているかを先に確かめる。
+        ResourceLocation entityId = ResourceLocation.tryParse(entityType);
+        if (entityId == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(entityId)) {
             MinecraftEduMod.LOGGER.warn("Unknown entity type: " + entityType);
             return null;
         }
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(entityId);
 
         safeExecute(() -> {
             ServerLevel world = server.overworld();
@@ -765,13 +766,15 @@ public class CommandExecutor {
         }
 
         // ブロックを取得
-        ResourceLocation blockId = new ResourceLocation(blockTypeName);
-        Block block = BuiltInRegistries.BLOCK.get(blockId);
-
-        if (block == null) {
+        // BLOCK レジストリは見つからない名前に対して null ではなく「空気」を返す（DefaultedRegistry）。
+        // そのまま使うと、打ち間違いの名前で範囲が空気に置き換わり、作った建物が消えてしまう。
+        // 名前として正しいか（tryParse）と、登録されているか（containsKey）を先に確かめる。
+        ResourceLocation blockId = ResourceLocation.tryParse(blockTypeName);
+        if (blockId == null || !BuiltInRegistries.BLOCK.containsKey(blockId)) {
             MinecraftEduMod.LOGGER.warn("Unknown block type: " + blockTypeName);
             return null;
         }
+        Block block = BuiltInRegistries.BLOCK.get(blockId);
 
         // デフォルトのBlockStateを取得
         BlockState blockState = block.defaultBlockState();
@@ -1572,6 +1575,15 @@ public class CommandExecutor {
 
         BlockPos pos = new BlockPos(x, y, z);
 
+        // ITEM レジストリも、見つからない名前に対して null ではなく既定（空気＝空のアイテム）を返す。
+        // 打ち間違いでスロットの中身が消えないよう、マイクラ側で実行する前に名前を確かめる。
+        ResourceLocation itemId = ResourceLocation.tryParse(itemType);
+        if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
+            MinecraftEduMod.LOGGER.warn("Unknown item type: " + itemType);
+            return null;
+        }
+        final Item item = BuiltInRegistries.ITEM.get(itemId);
+
         safeExecute(() -> {
             ServerLevel world = server.overworld();
             if (world == null) return;
@@ -1582,9 +1594,6 @@ public class CommandExecutor {
                     MinecraftEduMod.LOGGER.warn("Invalid slot number: " + slot + " (max: " + (container.getContainerSize() - 1) + ")");
                     return;
                 }
-
-                ResourceLocation itemId = new ResourceLocation(itemType);
-                Item item = BuiltInRegistries.ITEM.get(itemId);
 
                 int validCount = Math.min(64, Math.max(1, count));
 
