@@ -72,7 +72,7 @@ gh-pages ブランチ（GitHub Pages用）:
 ## ディレクトリ構造
 
 ```
-D:\laughtale01-scratch\
+/Users/rise/dev/sandbox/laughtale01-scratch/   ← この Mac がマスター（2026-09-29〜）
 ├── index.html              # メインHTML
 ├── gui.js                  # Scratch GUI + Minecraft拡張（約47万行）
 ├── blocksonly.js           # ブロックのみバージョン
@@ -237,14 +237,16 @@ chmod +x minecraft-mod/gradlew
 
 ### ローカルファイルがマスター
 - ユーザーはローカルファイルを正とする開発スタイル
+- **マスターはこの Mac の作業コピー**（`/Users/rise/dev/sandbox/laughtale01-scratch`、2026-09-29 に Windows の `D:\` から移行）
 - GitHubは共有/デプロイ用
 - ローカルの変更を優先すること
+- 作業を始める前に `git fetch` で origin と比べ、他のマシンから push されたコミットがないか確認すること
 
 ## 開発ルール
 
 1. **ローカルファイルを削除しない** - ユーザーの明示的な指示がない限り
-2. **ローカルファイルがマスター** - 修正・追加は必ずローカルファイルを最優先で編集
-3. **バックアップの場所**: `D:\laughtale01-scratch(セーブデータ変換機能実装前)\laughtale01-scratch`
+2. **ローカルファイルがマスター** - 修正・追加は必ずこの Mac のローカルファイルを最優先で編集
+3. **旧環境のバックアップ**: Windows PC の `D:\laughtale01-scratch(セーブデータ変換機能実装前)\laughtale01-scratch`
 4. **MOD開発**: `main`ブランチで行う
 5. **Webデプロイ**: `gh-pages`ブランチを使用
 6. **コメントは日本語で書く**
