@@ -9,6 +9,9 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+// FieldValue は firebase-admin/firestore から取る（admin.firestore.FieldValue は古い書き方で、
+// Functions のエミュレーターでは undefined になり試験できないため）
+const { FieldValue } = require('firebase-admin/firestore');
 const cors = require('cors')({ origin: true });
 
 // Firebase Admin SDK 初期化
@@ -153,7 +156,7 @@ exports.createUser = functions.region('asia-northeast1').https.onCall(async (dat
         classroomId: role === 'admin' ? null : classroomId,
         // 先生が確認できるよう、平文のパスワードは生徒のみ保存する
         ...(role === 'student' ? { currentPassword: password } : {}),
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
         lastLoginAt: null,
         saveCount: 0
       });
@@ -250,7 +253,7 @@ exports.resetPassword = functions.region('asia-northeast1').https.onCall(async (
       await db.collection('users').doc(targetUid).update({
         currentPassword: targetUser.role === 'student'
           ? newPassword
-          : admin.firestore.FieldValue.delete()
+          : FieldValue.delete()
       });
     } catch (firestoreError) {
       console.error('resetPassword: Firestoreパスワード保存エラー（Auth側は更新済み）', firestoreError);
@@ -453,7 +456,7 @@ exports.updateUserId = functions.region('asia-northeast1').https.onCall(async (d
     try {
       await db.collection('users').doc(targetUid).update({
         email: newEmail,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp()
       });
     } catch (firestoreError) {
       // Firestore更新失敗時はAuthメールを元に戻す
@@ -560,7 +563,7 @@ exports.createUsers = functions.region('asia-northeast1').https.onCall(async (da
           classroomId: role === 'admin' ? null : classroomId,
           // 先生が確認できるよう、平文のパスワードは生徒のみ保存する
           ...(role === 'student' ? { currentPassword: password } : {}),
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
           lastLoginAt: null,
           saveCount: 0
         });
@@ -795,7 +798,7 @@ exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(asy
       publicUrl: publicUrl,
       title: title || '無題の録画',
       description: description || '',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       status: 'published',
       viewCount: 0
     });
