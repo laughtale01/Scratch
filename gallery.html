@@ -597,7 +597,7 @@
       if (!userDoc.exists) {
         throw new Error('ユーザー情報が見つかりません。管理者に連絡してください。');
       }
-      const data = { id: userDoc.id, ...userDoc.data() };
+      const data = { ...userDoc.data(), id: userDoc.id };
       if (!['admin', 'teacher', 'student'].includes(data.role)) {
         throw new Error('ユーザーロール設定が不正です。管理者に連絡してください。');
       }
@@ -639,18 +639,18 @@
       }
 
       if (userData.role === 'teacher' && userData.classroomId) {
+        // 講師は自教室の生徒のみ読める（ルールで他の講師・管理者の文書は拒否される）
         const snapshot = await db.collection('users')
           .where('classroomId', '==', userData.classroomId)
+          .where('role', '==', 'student')
           .get();
 
         snapshot.forEach(doc => {
           map[doc.id] = doc.data();
         });
 
-        if (!map[uid]) {
-          const selfDoc = await db.collection('users').doc(uid).get();
-          if (selfDoc.exists) map[uid] = selfDoc.data();
-        }
+        // 講師本人は一覧に入らないので、取得済みの本人の情報を使う（読み直さない）
+        if (!map[uid]) map[uid] = userData;
         return map;
       }
 
@@ -680,7 +680,8 @@
       const list = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        list.push({ id: doc.id, ...data });
+        // 文書の中に id という項目があっても、本当の作品IDを優先する
+        list.push({ ...data, id: doc.id });
       });
 
       list.sort((a, b) => toMillis(b.submittedAt) - toMillis(a.submittedAt));
@@ -847,7 +848,7 @@
       } else if (sortOrder === 'oldest') {
         filtered.sort((a, b) => toMillis(a.submittedAt) - toMillis(b.submittedAt));
       } else if (sortOrder === 'name') {
-        filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        filtered.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
       }
 
       if (filtered.length === 0) {
@@ -862,13 +863,13 @@
       grid.innerHTML = filtered.map(p => {
         const user = users[p.userId] || {};
         const classroom = classrooms[p.classroomId] || {};
-        const submittedAt = p.submittedAt ? formatDate(p.submittedAt.toDate()) : '-';
+        const submittedAt = formatTimestamp(p.submittedAt);
 
         return `
           <div class="project-card" data-project-id="${escapeHtml(p.id)}">
             <div class="project-thumbnail">
               ${p.thumbnailUrl
-                ? `<img class="gallery-thumb-img" src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}">`
+                ? `<img class="gallery-thumb-img" src="${safeUrl(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}">`
                 : '📁'}
             </div>
             <div class="project-info">
@@ -903,7 +904,7 @@
           <div style="flex: 0 0 200px;">
             <div style="width: 200px; height: 150px; background: #f5f5f5; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 48px;">
               ${project.thumbnailUrl
-                ? `<img class="gallery-thumb-img" src="${escapeHtml(project.thumbnailUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`
+                ? `<img class="gallery-thumb-img" src="${safeUrl(project.thumbnailUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`
                 : '📁'}
             </div>
           </div>
@@ -911,7 +912,7 @@
             <table style="font-size: 14px; width: 100%;">
               <tr><td style="color: #666; padding: 4px 16px 4px 0;">作成者:</td><td><strong>${escapeHtml(user.displayName || '不明')}</strong></td></tr>
               <tr><td style="color: #666; padding: 4px 16px 4px 0;">教室:</td><td>${escapeHtml(classroom.name || '-')}</td></tr>
-              <tr><td style="color: #666; padding: 4px 16px 4px 0;">提出日:</td><td>${project.submittedAt ? formatDate(project.submittedAt.toDate()) : '-'}</td></tr>
+              <tr><td style="color: #666; padding: 4px 16px 4px 0;">提出日:</td><td>${formatTimestamp(project.submittedAt)}</td></tr>
               <tr><td style="color: #666; padding: 4px 16px 4px 0;">説明:</td><td>${escapeHtml(project.description || 'なし')}</td></tr>
             </table>
           </div>
@@ -943,9 +944,21 @@
       });
     }
 
+    // Firestore の日時を表示用の文字列にする（日時以外の値なら '-'。ギャラリー全体を止めないため）
+    function formatTimestamp(value) {
+      return typeof value?.toDate === 'function' ? formatDate(value.toDate()) : '-';
+    }
+
+    // 画像に使う URL は http/https だけを通す
+    function safeUrl(url) {
+      const value = String(url || '').trim();
+      if (!/^https?:\/\//i.test(value)) return '';
+      return escapeHtml(value);
+    }
+
     function escapeHtml(str) {
-      if (!str) return '';
-      return str
+      if (str === null || str === undefined || str === '') return '';
+      return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')

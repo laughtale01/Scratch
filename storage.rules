@@ -5,8 +5,9 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    // Firestore の users 文書を読む（Storage のルールからは firestore.get を使う）
     function getUserData() {
-      return get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
     }
 
     function isAdmin() {
@@ -21,31 +22,43 @@ service firebase.storage {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    function canAccessProject(projectId) {
+    // 講師が受け持つ教室か確認（教室IDが未設定の講師はどの教室も受け持たない）
+    function isTeacherOfClassroom(classroomId) {
+      let myClassroomId = getUserData().classroomId;
+      return isTeacher() && myClassroomId is string && classroomId == myClassroomId;
+    }
+
+    // 作品のファイルを見てよいか確認
+    // （管理者か、作品の持ち主がこの場所の持ち主と同じで、その作品の教室の講師）
+    // 講師・管理者が作る作品は教室が null なので、講師に見えるのは自教室の生徒の作品だけ
+    function canAccessProject(ownerUid, projectId) {
+      let project = firestore.get(/databases/(default)/documents/projects/$(projectId));
       return isAdmin() || (
-        isTeacher() &&
-        get(/databases/(default)/documents/projects/$(projectId)).data.classroomId ==
-          getUserData().classroomId
+        project != null &&
+        project.data.userId == ownerUid &&
+        isTeacherOfClassroom(project.data.classroomId)
       );
     }
 
-    function canAccessUserClassroom(uid) {
-      return isAdmin() || (
-        isTeacher() &&
-        get(/databases/(default)/documents/users/$(uid)).data.classroomId ==
-          getUserData().classroomId
-      );
+    // サムネイルを見てよいか確認（fileName は "{作品ID}.png"。作品のファイルと同じく作品の文書で判定する）
+    function canAccessThumbnail(ownerUid, fileName) {
+      return fileName.matches('[A-Za-z0-9]{1,128}[.]png') &&
+        canAccessProject(ownerUid, fileName.split('[.]')[0]);
     }
 
     // Scratchプロジェクト本体・履歴
+    // - 読み取り・削除: 持ち主、管理者、その作品の教室の講師
+    // - 作成・上書き: 持ち主のみ（講師がファイルを書き換えることはない）
     match /projects/{ownerUid}/{projectId}/{allPaths=**} {
-      allow read, write: if isOwner(ownerUid) || canAccessProject(projectId);
+      allow read, delete: if isOwner(ownerUid) || canAccessProject(ownerUid, projectId);
+      allow create, update: if isOwner(ownerUid);
     }
 
     // サムネイル
     match /thumbnails/{ownerUid}/{fileName} {
       // fileNameは "{projectId}.png" 形式
-      allow read, write: if isOwner(ownerUid) || canAccessUserClassroom(ownerUid);
+      allow read, delete: if isOwner(ownerUid) || canAccessThumbnail(ownerUid, fileName);
+      allow create, update: if isOwner(ownerUid);
     }
 
     // 録画アップロード

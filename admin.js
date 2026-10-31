@@ -98,7 +98,8 @@ class AdminPanel {
       }
 
       const userData = userDoc.data();
-      console.log('AdminPanel: ユーザー情報取得', userData);
+      // ユーザー文書にはパスワードが入っている場合があるので、ロールだけを出す
+      console.log('AdminPanel: ユーザー情報取得', { role: userData.role });
 
       // 管理者または講師のみアクセス可能
       if (userData.role !== 'admin' && userData.role !== 'teacher') {
@@ -232,39 +233,42 @@ class AdminPanel {
       const isTeacher = this.currentUserData.role === 'teacher';
       const myClassroomId = this.currentUserData.classroomId;
 
-      let query = db.collection('users');
+      let snapshot = null;
 
-      // 講師は自分の教室のユーザーのみ取得
-      if (isTeacher && myClassroomId) {
-        query = query.where('classroomId', '==', myClassroomId);
+      if (isTeacher) {
+        // 講師は自分の教室の生徒のみ取得（ルールで他の講師・管理者の文書は読めない）
+        // 複合インデックスを増やさないよう、並べ替えは取得後に行う
+        if (myClassroomId) {
+          snapshot = await db.collection('users')
+            .where('classroomId', '==', myClassroomId)
+            .where('role', '==', 'student')
+            .get();
+        }
+      } else {
+        snapshot = await db.collection('users').orderBy('displayName').get();
       }
-
-      const snapshot = await query.orderBy('displayName').get();
       this.users = [];
 
-      snapshot.forEach(doc => {
-        const userData = doc.data();
-        // 講師は自分自身も表示（classroomIdがnullの講師も含む）
-        if (isTeacher && doc.id === this.currentUser.uid) {
-          this.users.push({
-            id: doc.id,
-            ...userData
-          });
-        } else if (!isTeacher || userData.classroomId === myClassroomId) {
-          this.users.push({
-            id: doc.id,
-            ...userData
-          });
-        }
+      snapshot?.forEach(doc => {
+        // 文書の中に id という項目があっても、本当の文書IDを優先する
+        this.users.push({
+          ...doc.data(),
+          id: doc.id
+        });
       });
+
+      // 講師の場合、表示名順に並べ替える（サーバー側では並べ替えていないため）
+      if (isTeacher) {
+        this.users.sort((a, b) => String(a.displayName || '').localeCompare(String(b.displayName || ''), 'ja'));
+      }
 
       // 講師の場合、自分自身を追加（既に含まれていない場合）
       if (isTeacher) {
         const selfExists = this.users.some(u => u.id === this.currentUser.uid);
         if (!selfExists) {
           this.users.unshift({
-            id: this.currentUser.uid,
-            ...this.currentUserData
+            ...this.currentUserData,
+            id: this.currentUser.uid
           });
         }
       }
@@ -333,9 +337,11 @@ class AdminPanel {
       this.projects = [];
 
       snapshot.forEach(doc => {
+        // 文書の中に id という項目があっても、本当の作品IDを優先する
+        //（他の子の作品IDを入れた作品で、先生に別の作品を削除させないため）
         this.projects.push({
-          id: doc.id,
-          ...doc.data()
+          ...doc.data(),
+          id: doc.id
         });
       });
 
@@ -482,7 +488,8 @@ class AdminPanel {
 
     tbody.innerHTML = users.map(user => {
       const classroomName = this.getClassroomDisplayName(user.classroomId);
-      const lastLogin = user.lastLoginAt ? this.formatDate(user.lastLoginAt.toDate()) : '-';
+      // 日時以外の値が入っていても一覧全体が止まらないようにする
+      const lastLogin = typeof user.lastLoginAt?.toDate === 'function' ? this.formatDate(user.lastLoginAt.toDate()) : '-';
 
       // 編集・削除ボタンの表示制御
       const isAdmin = this.currentUserData.role === 'admin';
@@ -496,19 +503,21 @@ class AdminPanel {
       const canDelete = (isAdmin && user.id !== this.currentUser.uid) || isStudentInMyClassroom;
       // パスワードリセット: 管理者は全員、講師は自教室の生徒のみ
       const canResetPassword = isAdmin || isStudentInMyClassroom;
+      // パスワード確認: 生徒のみ（講師・管理者のパスワードは保存していない）
+      const canShowPassword = canResetPassword && user.role === 'student';
 
       return `
         <tr>
           <td>${this.escapeHtml(user.email?.replace('@laughtale.local', '') || '-')}</td>
           <td>${this.escapeHtml(user.displayName || '-')}</td>
-          <td><span class="badge ${roleBadges[user.role]}">${roleLabels[user.role] || user.role}</span></td>
+          <td><span class="badge ${roleBadges[user.role] || ''}">${this.escapeHtml(roleLabels[user.role] || user.role)}</span></td>
           <td>${this.escapeHtml(classroomName)}</td>
           <td>${lastLogin}</td>
-          <td>${user.saveCount || 0}</td>
+          <td>${Number(user.saveCount) || 0}</td>
           <td>
             <div class="btn-group">
               ${canEdit ? `<button class="btn btn-secondary btn-sm" data-admin-action="edit-user" data-user-id="${this.escapeHtml(user.id)}">編集</button>` : ''}
-              ${canResetPassword ? `<button class="btn btn-info btn-sm" data-admin-action="show-password" data-user-id="${this.escapeHtml(user.id)}">PW確認</button>` : ''}
+              ${canShowPassword ? `<button class="btn btn-info btn-sm" data-admin-action="show-password" data-user-id="${this.escapeHtml(user.id)}">PW確認</button>` : ''}
               ${canResetPassword ? `<button class="btn btn-secondary btn-sm" data-admin-action="reset-user-password" data-user-id="${this.escapeHtml(user.id)}">PW変更</button>` : ''}
               ${canDelete ? `<button class="btn btn-danger btn-sm" data-admin-action="delete-user" data-user-id="${this.escapeHtml(user.id)}">削除</button>` : ''}
             </div>
@@ -536,7 +545,7 @@ class AdminPanel {
       const teacherName = teacher ? teacher.displayName : '-';
       const studentCount = this.users.filter(u => u.classroomId === classroom.id && u.role === 'student').length;
       const projectCount = this.projects.filter(p => p.classroomId === classroom.id).length;
-      const createdAt = classroom.createdAt ? this.formatDate(classroom.createdAt.toDate()) : '-';
+      const createdAt = this.formatTimestamp(classroom.createdAt);
       const classroomName = this.getClassroomDisplayName(classroom.id);
       const classroomColor = this.getClassroomColor(classroom);
 
@@ -573,7 +582,7 @@ class AdminPanel {
     grid.innerHTML = projects.map(project => {
       const user = this.users.find(u => u.id === project.userId);
       const userName = user ? user.displayName : '不明';
-      const updatedAt = project.updatedAt ? this.formatDate(project.updatedAt.toDate()) : '-';
+      const updatedAt = this.formatTimestamp(project.updatedAt);
       const statusBadge = project.isSubmitted
         ? '<span class="badge badge-submitted">提出済み</span>'
         : '<span class="badge badge-not-submitted">未提出</span>';
@@ -632,8 +641,8 @@ class AdminPanel {
 
     if (search) {
       filtered = filtered.filter(u =>
-        (u.displayName || '').toLowerCase().includes(search) ||
-        (u.email || '').toLowerCase().includes(search)
+        String(u.displayName || '').toLowerCase().includes(search) ||
+        String(u.email || '').toLowerCase().includes(search)
       );
     }
 
@@ -667,7 +676,7 @@ class AdminPanel {
 
     if (search) {
       filtered = filtered.filter(p =>
-        (p.name || '').toLowerCase().includes(search)
+        String(p.name || '').toLowerCase().includes(search)
       );
     }
 
@@ -883,6 +892,12 @@ class AdminPanel {
         updateData.classroomId = classroomId;
       }
 
+      // パスワードを保存するのは生徒のみ。生徒以外に変えるときは消す
+      // （項目が無ければ何も起きないので、手元のキャッシュの有無では判定しない）
+      if (role !== 'student') {
+        updateData.currentPassword = firebase.firestore.FieldValue.delete();
+      }
+
       // 管理者のみログインID変更を許可
       if (!isTeacher && nextUserId !== currentUserId) {
         await cloudFunctions.updateUserId({
@@ -916,7 +931,10 @@ class AdminPanel {
     if (!user) return;
 
     const userName = user.displayName || user.email;
-    const password = user.currentPassword || '（未設定）';
+    // パスワードを保存・表示するのは生徒のみ
+    const password = user.role === 'student'
+      ? (user.currentPassword || '（未設定）')
+      : '（生徒以外は表示しません）';
 
     document.getElementById('showPasswordUserName').textContent = userName;
     document.getElementById('showPasswordValue').value = password;
@@ -962,7 +980,7 @@ class AdminPanel {
 
       // ローカルキャッシュのパスワードも更新（PW確認ボタンで即座に反映させるため）
       const targetUser = this.users.find(u => u.id === targetUid);
-      if (targetUser) {
+      if (targetUser && targetUser.role === 'student') {
         targetUser.currentPassword = newPassword;
       }
 
@@ -1206,7 +1224,8 @@ class AdminPanel {
         .collection('versions').orderBy('createdAt', 'desc').get();
 
       versionsSnapshot.forEach(doc => {
-        versions.push({ id: doc.id, ...doc.data() });
+        // 文書の中に id という項目があっても、本当のバージョンIDを優先する
+        versions.push({ ...doc.data(), id: doc.id });
       });
     } catch (error) {
       console.error('AdminPanel: バージョン取得エラー', error);
@@ -1228,8 +1247,8 @@ class AdminPanel {
           <table style="font-size: 14px;">
             <tr><td style="color: #666; padding-right: 16px;">作成者:</td><td>${this.escapeHtml(user?.displayName || '不明')}</td></tr>
             <tr><td style="color: #666; padding-right: 16px;">教室:</td><td>${this.escapeHtml(classroom?.name || '-')}</td></tr>
-            <tr><td style="color: #666; padding-right: 16px;">作成日:</td><td>${project.createdAt ? this.formatDate(project.createdAt.toDate()) : '-'}</td></tr>
-            <tr><td style="color: #666; padding-right: 16px;">更新日:</td><td>${project.updatedAt ? this.formatDate(project.updatedAt.toDate()) : '-'}</td></tr>
+            <tr><td style="color: #666; padding-right: 16px;">作成日:</td><td>${this.formatTimestamp(project.createdAt)}</td></tr>
+            <tr><td style="color: #666; padding-right: 16px;">更新日:</td><td>${this.formatTimestamp(project.updatedAt)}</td></tr>
             <tr><td style="color: #666; padding-right: 16px;">状態:</td><td>${project.isSubmitted ? '<span class="badge badge-submitted">提出済み</span>' : '<span class="badge badge-not-submitted">未提出</span>'}</td></tr>
           </table>
         </div>
@@ -1259,7 +1278,7 @@ class AdminPanel {
             ${versions.map((v, i) => `
               <tr>
                 <td>v${versions.length - i}</td>
-                <td>${v.createdAt ? this.formatDate(v.createdAt.toDate()) : '-'}</td>
+                <td>${this.formatTimestamp(v.createdAt)}</td>
                 <td>${v.size ? this.formatSize(v.size) : '-'}</td>
                 <td>
                   <a href="${this.safeUrl(v.storageUrl)}" target="_blank" class="btn btn-secondary btn-sm" download>DL</a>
@@ -1332,11 +1351,44 @@ class AdminPanel {
     try {
       const project = this.projects.find(p => p.id === projectId);
 
+      // 消してよい Storage の場所（この作品の持ち主と作品IDの場所だけ）。
+      // 作品の文書に他の子のファイルの URL が書かれていても、それは消さない
+      const ownerUid = project?.userId || '';
+      const projectFolder = `projects/${ownerUid}/${projectId}/`;
+      const thumbnailPath = `thumbnails/${ownerUid}/${projectId}.png`;
+      // アプリが作る作品のファイルは current.sb3 と versions/v<番号>.sb3 だけ（ルールと同じ形）
+      const isProjectFilePath = (path) => {
+        if (path === `${projectFolder}current.sb3`) return true;
+        const versionPrefix = `${projectFolder}versions/`;
+        return path.startsWith(versionPrefix) && /^v[0-9]+\.sb3$/.test(path.slice(versionPrefix.length));
+      };
+      const appBucket = storage.ref().bucket;
+      const refInProject = (url, isAllowedPath) => {
+        const ref = storage.refFromURL(url);
+        if (!ownerUid || ref.bucket !== appBucket || !isAllowedPath(ref.fullPath)) {
+          throw new Error(`この作品の場所ではないため削除しません: ${ref.fullPath}`);
+        }
+        return ref;
+      };
+
+      // 同じファイルを二度消さないよう、消した場所を覚えておく。無いファイルは何もしない
+      const deletedPaths = new Set();
+      const deleteRef = async (ref, label) => {
+        if (deletedPaths.has(ref.fullPath)) return;
+        deletedPaths.add(ref.fullPath);
+        try {
+          await ref.delete();
+        } catch (e) {
+          if (e?.code !== 'storage/object-not-found') {
+            console.warn(`AdminPanel: ${label}削除エラー`, e);
+          }
+        }
+      };
+
       // Storageからファイルを削除
       if (project?.storageUrl) {
         try {
-          const storageRef = storage.refFromURL(project.storageUrl);
-          await storageRef.delete();
+          await deleteRef(refInProject(project.storageUrl, isProjectFilePath), 'Storageファイル');
         } catch (e) {
           console.warn('AdminPanel: Storageファイル削除エラー', e);
         }
@@ -1345,10 +1397,20 @@ class AdminPanel {
       // サムネイルを削除
       if (project?.thumbnailUrl) {
         try {
-          const thumbRef = storage.refFromURL(project.thumbnailUrl);
-          await thumbRef.delete();
+          await deleteRef(refInProject(project.thumbnailUrl, path => path === thumbnailPath), 'サムネイル');
         } catch (e) {
           console.warn('AdminPanel: サムネイル削除エラー', e);
+        }
+      }
+
+      // 決まった場所の本体とサムネイルも消す
+      // （復元で storageUrl が履歴を指していると、current.sb3 が残ってしまうため）
+      if (ownerUid) {
+        try {
+          await deleteRef(storage.ref(`${projectFolder}current.sb3`), 'Storageファイル');
+          await deleteRef(storage.ref(thumbnailPath), 'サムネイル');
+        } catch (e) {
+          console.warn('AdminPanel: Storageファイル削除エラー', e);
         }
       }
 
@@ -1360,26 +1422,47 @@ class AdminPanel {
         const version = doc.data();
         if (version.storageUrl) {
           try {
-            const versionRef = storage.refFromURL(version.storageUrl);
-            await versionRef.delete();
+            await deleteRef(refInProject(version.storageUrl, isProjectFilePath), 'バージョンファイル');
           } catch (e) {
             console.warn('AdminPanel: バージョンファイル削除エラー', e);
           }
         }
-        await doc.ref.delete();
       }
 
-      // プロジェクトドキュメントを削除
-      await db.collection('projects').doc(projectId).delete();
+      // 履歴とプロジェクトの文書をまとめて消す（途中で拒否されたら、どの文書も消えない）
+      // Storage のルールは作品の文書を見て講師の削除を許すので、文書はファイルの後で消す
+      const batch = db.batch();
+      versionsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+      batch.delete(db.collection('projects').doc(projectId));
+      try {
+        await batch.commit();
+      } catch (e) {
+        // ファイルは消えたが記録が残った。一覧からもう一度削除すれば片付く（無いファイルは飛ばす）
+        e.message = `${e.message}\n一覧からもう一度削除してください。直らないときは管理者に連絡してください。`;
+        throw e;
+      }
 
       console.log('AdminPanel: プロジェクト削除完了');
-      this.closeModal('confirmDeleteModal');
+      this.finishDeleteProject();
       await this.loadProjects();
       this.updateStats();
 
     } catch (error) {
       console.error('AdminPanel: プロジェクト削除エラー', error);
+      // 失敗しても同じ確認の画面からはやり直さない（途中で別の削除の確認が開かれていると取り違えるため）
+      this.finishDeleteProject();
+      await this.loadProjects();
       alert('プロジェクトの削除に失敗しました: ' + error.message);
+    }
+  }
+
+  /**
+   * 作品の削除が終わったら確認の画面を閉じる
+   * （削除の途中で別の削除の確認が開かれていたら、その画面は閉じない）
+   */
+  static finishDeleteProject() {
+    if (this.pendingDeleteAction === null) {
+      this.closeModal('confirmDeleteModal');
     }
   }
 
@@ -1441,10 +1524,17 @@ class AdminPanel {
   }
 
   /**
+   * Firestore の日時を表示用の文字列にする（日時以外の値なら '-'。一覧全体を止めないため）
+   */
+  static formatTimestamp(value) {
+    return typeof value?.toDate === 'function' ? this.formatDate(value.toDate()) : '-';
+  }
+
+  /**
    * URLを安全な外部URLのみに制限
    */
   static safeUrl(url) {
-    const value = (url || '').trim();
+    const value = String(url || '').trim();
     if (!value) return '';
     if (!/^https?:\/\//i.test(value)) return '';
     return this.escapeHtml(value);
@@ -1499,8 +1589,8 @@ class AdminPanel {
    * HTMLエスケープ
    */
   static escapeHtml(str) {
-    if (!str) return '';
-    return str
+    if (str === null || str === undefined || str === '') return '';
+    return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')

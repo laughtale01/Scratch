@@ -36,9 +36,73 @@ service cloud.firestore {
       return getUserData().classroomId == classroomId;
     }
 
+    // 講師が受け持つ教室か確認（教室IDが未設定の講師はどの教室も受け持たない）
+    function isTeacherOfClassroom(classroomId) {
+      let myClassroomId = getUserData().classroomId;
+      return isTeacher() && myClassroomId is string && classroomId == myClassroomId;
+    }
+
+    // 正規表現に入れてよい ID か確認（英数字だけ）
+    // （作品IDは生徒が決められるので、| や * を入れて URL の確認をすり抜けさせないため）
+    function isSafeId(id) {
+      return id is string && id.matches('[A-Za-z0-9]{1,128}');
+    }
+
+    // 作品のファイル（本体・履歴）の URL が、持ち主と作品IDの場所を指しているか確認
+    // （生徒が他の子のファイルを指す URL を入れて、先生の削除で消させないため）
+    // アプリが作るのは current.sb3 と versions/v<番号>.sb3 だけ。後ろはクエリ（?alt=media&token=...）だけを許す
+    function isOwnProjectFileUrl(url, ownerUid, projectId) {
+      return isSafeId(ownerUid) && isSafeId(projectId) &&
+        url is string && url.size() <= 2048 &&
+        url.matches('https://firebasestorage\\.googleapis\\.com/v0/b/laughtale-scratch-bcc8a\\.firebasestorage\\.app/o/projects%2F' +
+          ownerUid + '%2F' + projectId + '%2F(current\\.sb3|versions%2Fv[0-9]+\\.sb3)([?][^/#]*)?');
+    }
+
+    // サムネイルの URL が、持ち主と作品IDの場所を指しているか確認（未設定は null）
+    function isOwnThumbnailUrl(url, ownerUid, projectId) {
+      return url == null || (isSafeId(ownerUid) && isSafeId(projectId) &&
+        url is string && url.size() <= 2048 &&
+        url.matches('https://firebasestorage\\.googleapis\\.com/v0/b/laughtale-scratch-bcc8a\\.firebasestorage\\.app/o/thumbnails%2F' +
+          ownerUid + '%2F' + projectId + '\\.png([?][^/#]*)?'));
+    }
+
+    // 作品の項目の型と長さを確認（keys に入っている項目だけを見る）
+    function isValidProjectData(data, keys, ownerUid, projectId) {
+      return (!keys.hasAny(['name']) || (data.name is string && data.name.size() <= 200)) &&
+        (!keys.hasAny(['description']) || (data.description is string && data.description.size() <= 2000)) &&
+        (!keys.hasAny(['storageUrl']) || isOwnProjectFileUrl(data.storageUrl, ownerUid, projectId)) &&
+        (!keys.hasAny(['thumbnailUrl']) || isOwnThumbnailUrl(data.thumbnailUrl, ownerUid, projectId)) &&
+        (!keys.hasAny(['size']) || (data.size is int && data.size >= 0)) &&
+        (!keys.hasAny(['isSubmitted']) || data.isSubmitted is bool) &&
+        (!keys.hasAny(['submittedAt']) || data.submittedAt == null || data.submittedAt is timestamp) &&
+        (!keys.hasAny(['createdAt']) || data.createdAt is timestamp) &&
+        (!keys.hasAny(['updatedAt']) || data.updatedAt is timestamp);
+    }
+
+    // 作品を新しく作るときの中身を確認
+    // - 教室IDは自分の教室か null だけ（他の教室の一覧に作品を混ぜさせない）
+    // - 生徒以外（講師・管理者）が作る作品は null だけ
+    //   （講師が見られるのは自教室の「生徒」の作品だけにするため。作品の文書には持ち主の役割が無いので、教室で区別する）
+    // - 作った時点では未提出
+    function isValidProjectCreate(projectId) {
+      let data = request.resource.data;
+      let keys = data.keys();
+      return data.userId == request.auth.uid &&
+        isSafeId(projectId) &&
+        keys.hasAll(['userId', 'classroomId', 'name', 'storageUrl', 'createdAt', 'updatedAt', 'isSubmitted']) &&
+        keys.hasOnly(['userId', 'classroomId', 'name', 'description', 'thumbnailUrl', 'storageUrl',
+          'createdAt', 'updatedAt', 'isSubmitted', 'submittedAt', 'size']) &&
+        (data.classroomId == null ||
+          (getUserData().get('role', null) == 'student' && data.classroomId == getUserData().get('classroomId', null))) &&
+        data.isSubmitted == false &&
+        isValidProjectData(data, keys, request.auth.uid, projectId);
+    }
+
     // プロジェクト更新の許可フィールド（非admin向け）
-    function canUpdateProjectFields() {
-      return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+    // （追加・削除も含めて affectedKeys で見る。型と URL の場所も確かめる）
+    function canUpdateProjectFields(projectId) {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return keys.hasOnly([
         'name',
         'description',
         'thumbnailUrl',
@@ -47,7 +111,19 @@ service cloud.firestore {
         'isSubmitted',
         'submittedAt',
         'updatedAt'
-      ]);
+      ]) && isValidProjectData(request.resource.data, keys, resource.data.userId, projectId);
+    }
+
+    // 作品の履歴（バージョン）を作るときの中身を確認
+    function isValidVersionCreate(ownerUid, projectId) {
+      let data = request.resource.data;
+      let keys = data.keys();
+      return keys.hasAll(['versionNum', 'storageUrl', 'createdAt']) &&
+        keys.hasOnly(['versionNum', 'storageUrl', 'createdAt', 'size']) &&
+        data.versionNum is int &&
+        isOwnProjectFileUrl(data.storageUrl, ownerUid, projectId) &&
+        data.createdAt is timestamp &&
+        (!keys.hasAny(['size']) || (data.size is int && data.size >= 0));
     }
 
     // プロジェクトの不変項目を保護
@@ -57,21 +133,51 @@ service cloud.firestore {
         request.resource.data.createdAt == resource.data.createdAt;
     }
 
+    // 表示名として正しい値か確認（空でない50文字以内の文字列）
+    function isValidDisplayName(name) {
+      return name is string && name.size() > 0 && name.size() <= 50;
+    }
+
+    // 自分自身の users 文書で更新してよい項目か確認
+    // （追加・削除も含めて affectedKeys で見る。型も確かめる）
+    function isValidSelfUserUpdate() {
+      let data = request.resource.data;
+      let keys = data.diff(resource.data).affectedKeys();
+      return keys.hasOnly(['displayName', 'lastLoginAt', 'saveCount']) &&
+        (!keys.hasAny(['displayName']) || isValidDisplayName(data.displayName)) &&
+        (!keys.hasAny(['lastLoginAt']) || data.lastLoginAt is timestamp) &&
+        (!keys.hasAny(['saveCount']) || data.saveCount is int);
+    }
+
+    // 講師が自教室の生徒の users 文書で更新してよい項目か確認
+    function isValidTeacherUserUpdate() {
+      let data = request.resource.data;
+      let keys = data.diff(resource.data).affectedKeys();
+      return keys.hasOnly(['displayName', 'updatedAt']) &&
+        (!keys.hasAny(['displayName']) || isValidDisplayName(data.displayName)) &&
+        (!keys.hasAny(['updatedAt']) || data.updatedAt is timestamp);
+    }
+
+    // 講師が受け持つ自教室の生徒の文書か確認（教室IDが未設定の講師は対象なし）
+    function isStudentInMyClassroom() {
+      let myClassroomId = getUserData().classroomId;
+      return myClassroomId is string &&
+        resource.data.role == 'student' &&
+        resource.data.classroomId == myClassroomId;
+    }
+
     // ==========================================
     // ユーザーコレクション
     // ==========================================
     match /users/{userId} {
       // 読み取り:
       // - 管理者: 全員OK
-      // - 講師: 自分の教室のユーザーのみ
+      // - 講師: 自分自身と、自分の教室の生徒のみ（他の講師・管理者は読めない）
       // - 生徒: 自分自身のみ
       allow read: if isAuthenticated() && (
         isAdmin() ||
-        (isTeacher() && (
-          resource.data.classroomId == getUserData().classroomId ||
-          userId == request.auth.uid
-        )) ||
-        userId == request.auth.uid
+        userId == request.auth.uid ||
+        (isTeacher() && isStudentInMyClassroom())
       );
 
       // 作成: Cloud Functions経由のみ（直接作成不可）
@@ -79,22 +185,13 @@ service cloud.firestore {
 
       // 更新:
       // - 管理者: 全員OK
-      // - 講師: 自教室の生徒の表示名のみ変更可能
-      // - 生徒: 自分の特定フィールドのみ
+      // - 講師: 自教室の生徒の表示名（と更新日時）のみ変更可能
+      // - 本人: 表示名・最終ログイン日時・保存回数のみ変更可能
+      //   （パスワード・ロール・教室IDなどは Cloud Functions 経由でのみ変更する）
       allow update: if isAuthenticated() && (
         isAdmin() ||
-        (isTeacher() &&
-          resource.data.classroomId == getUserData().classroomId &&
-          resource.data.role == 'student' &&
-          // ロールと教室IDの変更は禁止
-          request.resource.data.role == resource.data.role &&
-          request.resource.data.classroomId == resource.data.classroomId
-        ) ||
-        (userId == request.auth.uid &&
-          // 自分自身は特定フィールドのみ更新可能
-          request.resource.data.role == resource.data.role &&
-          request.resource.data.classroomId == resource.data.classroomId
-        )
+        (isTeacher() && isStudentInMyClassroom() && isValidTeacherUserUpdate()) ||
+        (userId == request.auth.uid && isValidSelfUserUpdate())
       );
 
       // 削除: Cloud Functions経由のみ
@@ -128,13 +225,12 @@ service cloud.firestore {
       // - 生徒: 自分のプロジェクト
       allow read: if isAuthenticated() && (
         isAdmin() ||
-        (isTeacher() && resource.data.classroomId == getUserData().classroomId) ||
+        isTeacherOfClassroom(resource.data.classroomId) ||
         resource.data.userId == request.auth.uid
       );
 
-      // 作成: 認証済みユーザー（自分のプロジェクトのみ）
-      allow create: if isAuthenticated() &&
-        request.resource.data.userId == request.auth.uid;
+      // 作成: 認証済みユーザー（自分のプロジェクトのみ・項目と型を確認）
+      allow create: if isAuthenticated() && isValidProjectCreate(projectId);
 
       // 更新:
       // - 管理者: 全て
@@ -143,32 +239,46 @@ service cloud.firestore {
         isAdmin() ||
         (
           (
-            (isTeacher() && resource.data.classroomId == getUserData().classroomId) ||
+            isTeacherOfClassroom(resource.data.classroomId) ||
             resource.data.userId == request.auth.uid
           ) &&
-          canUpdateProjectFields() &&
+          canUpdateProjectFields(projectId) &&
           hasProjectImmutableFields()
         )
       );
 
-      // 削除: 管理者または講師（自教室）
+      // 削除:
+      // - 管理者: 全て
+      // - 講師: 自教室のプロジェクト
+      // - 持ち主: 自分の未提出のプロジェクト（提出済みは先生が消す）
       allow delete: if isAuthenticated() && (
         isAdmin() ||
-        (isTeacher() && resource.data.classroomId == getUserData().classroomId)
+        isTeacherOfClassroom(resource.data.classroomId) ||
+        (resource.data.userId == request.auth.uid && resource.data.get('isSubmitted', false) == false)
       );
 
       // バージョンサブコレクション
       match /versions/{versionId} {
         allow read: if isAuthenticated() && (
           isAdmin() ||
-          (isTeacher() && get(/databases/$(database)/documents/projects/$(projectId)).data.classroomId == getUserData().classroomId) ||
+          isTeacherOfClassroom(get(/databases/$(database)/documents/projects/$(projectId)).data.classroomId) ||
           get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid
         );
 
+        // 作成: 作品の持ち主のみ（項目と保存先の場所を確認）
         allow create: if isAuthenticated() &&
-          get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+          get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid &&
+          isValidVersionCreate(request.auth.uid, projectId);
 
-        allow delete: if isAdmin();
+        // 削除:
+        // - 管理者: 全て
+        // - 講師: 自教室の作品の履歴（作品を削除するときに履歴も消すため）
+        // - 持ち主: 自分の作品の履歴（保存のときに古い履歴を整理するため）
+        allow delete: if isAuthenticated() && (
+          isAdmin() ||
+          isTeacherOfClassroom(get(/databases/$(database)/documents/projects/$(projectId)).data.classroomId) ||
+          get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid
+        );
       }
     }
 

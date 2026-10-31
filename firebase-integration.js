@@ -185,11 +185,14 @@ class ScratchFirebase {
         .orderBy('updatedAt', 'desc')
         .get();
 
+      // 文書の中に id という項目があっても、本当の作品IDを優先する。
+      // 日時以外の値が入っていても一覧が止まらないようにする
+      const toDateOrNull = (value) => (typeof value?.toDate === 'function' ? value.toDate() : null);
       return snapshot.docs.map(doc => ({
-        id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
+        id: doc.id,
+        createdAt: toDateOrNull(doc.data().createdAt),
+        updatedAt: toDateOrNull(doc.data().updatedAt)
       }));
     } catch (error) {
       console.error('プロジェクト一覧取得エラー:', error);
@@ -228,7 +231,8 @@ class ScratchFirebase {
       // Firestoreにメタデータを保存
       const projectData = {
         userId: this.currentUser.uid,
-        classroomId: this.userData?.classroomId || null,
+        // 講師・管理者の作品は教室を付けない（講師が見られるのは自教室の生徒の作品だけ）
+        classroomId: this.userData?.role === 'student' ? (this.userData?.classroomId || null) : null,
         name: name,
         description: '',
         thumbnailUrl: thumbnailUrl,
@@ -417,36 +421,42 @@ class ScratchFirebase {
     }
 
     try {
-      // Storageからファイルを削除
-      const basePath = `projects/${this.currentUser.uid}/${projectId}`;
-
-      // current.sb3を削除
-      try {
-        await storage.ref(`${basePath}/current.sb3`).delete();
-      } catch (e) {}
-
-      // バージョンファイルを削除
-      const versionsSnapshot = await db.collection('projects')
-        .doc(projectId)
-        .collection('versions')
-        .get();
-
-      for (const versionDoc of versionsSnapshot.docs) {
-        const versionData = versionDoc.data();
-        try {
-          const versionPath = `${basePath}/versions/v${versionData.versionNum}.sb3`;
-          await storage.ref(versionPath).delete();
-        } catch (e) {}
-        await versionDoc.ref.delete();
+      const projectRef = db.collection('projects').doc(projectId);
+      const projectDoc = await projectRef.get();
+      if (!projectDoc.exists) {
+        return { success: false, error: 'プロジェクトが見つかりません' };
+      }
+      // 提出済みの作品は先生が消す（生徒は消せない。ファイルや履歴に触る前に止める）
+      if (projectDoc.data().isSubmitted) {
+        return { success: false, error: '提出済みの作品は消せません。提出を取り消してから消してね' };
       }
 
-      // サムネイルを削除
-      try {
-        await storage.ref(`thumbnails/${this.currentUser.uid}/${projectId}.png`).delete();
-      } catch (e) {}
+      const versionsSnapshot = await projectRef.collection('versions').get();
 
-      // Firestoreからメタデータを削除
-      await db.collection('projects').doc(projectId).delete();
+      // 先に Firestore の記録（履歴と作品）をまとめて消す。
+      // まとめて消すので、途中で拒否されたら何も消えず、ファイルも残る
+      const batch = db.batch();
+      versionsSnapshot.docs.forEach(versionDoc => batch.delete(versionDoc.ref));
+      batch.delete(projectRef);
+      await batch.commit();
+
+      // 記録を消したあとで Storage のファイルを消す（失敗してもファイルが残るだけ）
+      const basePath = `projects/${this.currentUser.uid}/${projectId}`;
+      const filePaths = [
+        `${basePath}/current.sb3`,
+        ...versionsSnapshot.docs.map(versionDoc => `${basePath}/versions/v${versionDoc.data().versionNum}.sb3`),
+        `thumbnails/${this.currentUser.uid}/${projectId}.png`
+      ];
+      for (const path of filePaths) {
+        try {
+          await storage.ref(path).delete();
+        } catch (e) {
+          // 無いファイルは気にしない。それ以外の失敗はファイルが残るので記録しておく
+          if (e?.code !== 'storage/object-not-found') {
+            console.warn('プロジェクト削除: ファイル削除エラー', path, e);
+          }
+        }
+      }
 
       return { success: true };
     } catch (error) {
@@ -1209,7 +1219,7 @@ class ScratchFirebaseUI {
     };
 
     const projectItems = projects.map(p => `
-      <div class="firebase-project-item" data-id="${p.id}" style="
+      <div class="firebase-project-item" data-id="${this.escapeHtml(p.id)}" style="
         padding: 12px; border: 1px solid #ddd; border-radius: 8px;
         margin-bottom: 8px; display: flex; justify-content: space-between;
         align-items: center; background: white;
@@ -1222,18 +1232,18 @@ class ScratchFirebaseUI {
           </div>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button data-action="load" data-project-id="${p.id}"
+          <button data-action="load" data-project-id="${this.escapeHtml(p.id)}"
             style="padding: 6px 12px; background: #4c97ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
             読込
           </button>
-          <button data-action="toggle-submit" data-project-id="${p.id}" data-submit="${!p.isSubmitted}"
+          <button data-action="toggle-submit" data-project-id="${this.escapeHtml(p.id)}" data-submit="${!p.isSubmitted}"
             style="padding: 6px 12px; background: ${p.isSubmitted ? '#ff9800' : '#4caf50'}; color: white; border: none; border-radius: 4px; cursor: pointer;">
             ${p.isSubmitted ? '取消' : '提出'}
           </button>
-          <button data-action="delete" data-project-id="${p.id}"
+          ${p.isSubmitted ? '' : `<button data-action="delete" data-project-id="${this.escapeHtml(p.id)}"
             style="padding: 6px 12px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
             削除
-          </button>
+          </button>`}
         </div>
       </div>
     `).join('');
@@ -1291,8 +1301,8 @@ class ScratchFirebaseUI {
    * HTMLエスケープ
    */
   escapeHtml(str) {
-    if (!str) return '';
-    return str
+    if (str === null || str === undefined || str === '') return '';
+    return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')

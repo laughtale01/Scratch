@@ -2492,7 +2492,8 @@
         users.forEach(user => {
           // 講師は自教室の生徒のみ編集可能
           const canEdit = isAdmin || (isTeacher && user.classroomId === myClassroomId && user.role === 'student');
-          const userId = user.uid || user.id || '';
+          // 文書の中の uid 項目ではなく、本当の文書IDだけを使う
+          const userId = user.id || '';
 
           const item = document.createElement('div');
           item.className = 'list-item';
@@ -2569,7 +2570,7 @@
         }
 
         classrooms.forEach(classroom => {
-          const teacher = this.users?.find(u => (u.id || u.uid) === classroom.teacherId);
+          const teacher = this.users?.find(u => u.id === classroom.teacherId);
           const studentCount = this.users?.filter(u => u.classroomId === classroom.id && u.role === 'student').length || 0;
           const classroomColor = typeof this.getClassroomColor === 'function'
             ? this.getClassroomColor(classroom)
