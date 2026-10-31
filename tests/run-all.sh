@@ -34,7 +34,7 @@ node_major=$(node -p 'process.versions.node.split(".")[0]')
 if [ "$node_major" != "22" ]; then
   echo "注意: 今の Node は $(node -v) です。Functions の試験は Node 22 で動かしてください（README.md を参照）"
 fi
-run "Cloud Functions" fb emulators:exec --config "$CONFIG" --only auth,firestore,functions --project demo-fn-test "node tests/functions-callable.test.mjs"
+run "Cloud Functions" fb emulators:exec --config "$CONFIG" --only auth,firestore,storage,functions --project demo-fn-test "node tests/functions-callable.test.mjs"
 
 if [ "$failed" = 0 ]; then echo "すべての試験が成功しました"; else echo "失敗した試験があります"; fi
 exit "$failed"

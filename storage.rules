@@ -61,9 +61,15 @@ service firebase.storage {
       allow create, update: if isOwner(ownerUid);
     }
 
-    // 録画アップロード
+    // 録画（インターネットには公開しない。講師・管理者には Cloud Functions が 15 分の署名付き URL を渡す）
+    // - 置くのは Cloud Functions の署名付き URL だけ。SDK から直接は置けない
+    //   （SDK で置くと期限のないダウンロード用トークンが付き、誰でも見られてしまうため）
+    // - 読み取り: SDK からは誰も読めない（読むと期限のないトークンが作られるため。管理者も署名付き URL で見る）
+    // - 削除: 持ち主、管理者
     match /recordings/{ownerUid}/{fileName} {
-      allow read, write: if isOwner(ownerUid) || isAdmin();
+      allow read: if false;
+      allow delete: if isOwner(ownerUid) || isAdmin();
+      allow create, update: if false;
     }
 
     // それ以外は拒否

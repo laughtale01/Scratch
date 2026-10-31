@@ -13,6 +13,7 @@ const admin = require('firebase-admin');
 // Functions のエミュレーターでは undefined になり試験できないため）
 const { FieldValue } = require('firebase-admin/firestore');
 const cors = require('cors')({ origin: true });
+const crypto = require('crypto');
 
 // Firebase Admin SDK 初期化
 admin.initializeApp();
@@ -688,15 +689,63 @@ exports.auditUserDocumentCoverage = functions.region('asia-northeast1').https.on
 // 動画アップロード機能
 // ========================================
 
+// 録画で受け付ける動画の種類と拡張子
+const RECORDING_TYPES = {
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov'
+};
+// 録画の大きさの上限（500MB）
+const MAX_RECORDING_BYTES = 500 * 1024 * 1024;
+const RECORDING_RULE_MESSAGE = '動画（mp4 / webm / mov、500MB まで）だけを保存できます';
+// 録画のファイル名の形（サーバーで決める: <時刻>-<16 進 8 文字>.<拡張子>）
+const RECORDING_NAME_PATTERN = /^[0-9]{13}-[0-9a-f]{8}\.(mp4|webm|mov)$/;
+
 /**
- * 動画アップロード用の署名付きURLを生成
+ * 録画で受け付ける動画の種類か確認（Object の組み込みの名前 constructor などは通さない）
+ * @param {*} contentType
+ * @returns {boolean}
+ */
+function isRecordingType(contentType) {
+  return typeof contentType === 'string' && Object.prototype.hasOwnProperty.call(RECORDING_TYPES, contentType);
+}
+
+/**
+ * 決まりに合わない録画を消す（確かめた世代だけを消す。あとから置き直された正しい録画は消さない）
+ * @param {Object} file - Storage のファイル
+ * @param {string|number} generation - 確かめたときの世代
+ */
+async function deleteRecordingGeneration(file, generation) {
+  try {
+    await file.delete({ ifGenerationMatch: generation, ignoreNotFound: true });
+  } catch (error) {
+    // 世代が変わっていた（置き直された）ときは消さない
+    if (error && error.code === 412) return;
+    throw error;
+  }
+}
+
+/**
+ * 録画のパスが、この利用者の録画の場所で、サーバーが決めた形か確認
+ * @param {string} filePath - recordings/<uid>/<ファイル名>
+ * @param {string} uid - 持ち主の uid
+ * @returns {boolean}
+ */
+function isOwnRecordingPath(filePath, uid) {
+  if (typeof filePath !== 'string') return false;
+  const prefix = `recordings/${uid}/`;
+  return filePath.startsWith(prefix) && RECORDING_NAME_PATTERN.test(filePath.slice(prefix.length));
+}
+
+/**
+ * 動画アップロード用の署名付きURLを取得
  *
- * 認証済みユーザーのみ使用可能
- * 動画はFirebase Storageのrecordings/{userId}/{timestamp}.mp4に保存される
+ * ユーザー情報（users 文書）のある利用者だけが使える
+ * ファイル名はサーバーで決め、動画の種類は mp4 / webm / mov だけを受け付ける
+ * （大きさは保存のときと、アップロード直後の cleanupRecordingUpload で確かめる）
  *
  * @param {Object} data
- * @param {string} data.filename - ファイル名（オプション）
- * @param {string} data.contentType - コンテンツタイプ（デフォルト: video/mp4）
+ * @param {string} data.contentType - 動画の種類（既定: video/mp4）
  */
 exports.getUploadUrl = functions.region('asia-northeast1').https.onCall(async (data, context) => {
   // 認証確認
@@ -705,11 +754,18 @@ exports.getUploadUrl = functions.region('asia-northeast1').https.onCall(async (d
   }
 
   const userId = context.auth.uid;
-  const timestamp = Date.now();
-  const filename = data.filename || `recording_${timestamp}.mp4`;
-  const contentType = data.contentType || 'video/mp4';
+  const userData = await getUserData(userId);
+  if (!userData) {
+    throw new functions.https.HttpsError('permission-denied', 'ユーザー情報が見つかりません');
+  }
 
-  // ファイルパスを生成
+  const contentType = (data && data.contentType) || 'video/mp4';
+  if (!isRecordingType(contentType)) {
+    throw new functions.https.HttpsError('invalid-argument', '動画（mp4 / webm / mov）だけをアップロードできます');
+  }
+
+  // ファイル名はサーバーで決める（利用者の決めた名前は使わない）
+  const filename = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${RECORDING_TYPES[contentType]}`;
   const filePath = `recordings/${userId}/${filename}`;
 
   try {
@@ -736,17 +792,20 @@ exports.getUploadUrl = functions.region('asia-northeast1').https.onCall(async (d
 
   } catch (error) {
     console.error('getUploadUrl error:', error);
-    throw new functions.https.HttpsError('internal', 'アップロードURL生成に失敗しました: ' + error.message);
+    throw new functions.https.HttpsError('internal', 'アップロードURL生成に失敗しました');
   }
 });
 
 /**
  * 動画アップロード完了後にメタデータを保存
  *
+ * 録画はインターネットに公開しない（自教室の講師と管理者だけが getPublicVideos で見られる）
+ * 大きさと種類を確かめ、合わないファイルは消して断る。期限のないダウンロード用トークンが付いていたら外す
+ *
  * @param {Object} data
- * @param {string} data.filePath - アップロードしたファイルのパス
- * @param {string} data.title - 動画タイトル（オプション）
- * @param {string} data.description - 説明（オプション）
+ * @param {string} data.filePath - getUploadUrl が返したファイルのパス
+ * @param {string} data.title - 動画タイトル（オプション、100 文字まで）
+ * @param {string} data.description - 説明（オプション、500 文字まで）
  */
 exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(async (data, context) => {
   // 認証確認
@@ -754,52 +813,61 @@ exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(asy
     throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
   }
 
-  const { filePath, title, description } = data;
+  const { filePath } = data || {};
+  const userId = context.auth.uid;
 
-  if (!filePath) {
-    throw new functions.https.HttpsError('invalid-argument', 'filePathが必要です');
+  if (!isOwnRecordingPath(filePath, userId)) {
+    throw new functions.https.HttpsError('permission-denied', '自分がアップロードした録画のみ保存できます');
+  }
+  // 題名と説明は文字にそろえる（Scratch のブロックからは数が届くこともある）
+  const toText = (value) => (typeof value === 'number' || typeof value === 'boolean') ? String(value) : value;
+  const title = toText((data || {}).title);
+  const description = toText((data || {}).description);
+  if ((title !== undefined && title !== null && typeof title !== 'string') ||
+      (description !== undefined && description !== null && typeof description !== 'string')) {
+    throw new functions.https.HttpsError('invalid-argument', 'タイトルと説明は文字で入力してください');
   }
 
-  const userId = context.auth.uid;
-  const expectedPrefix = `recordings/${userId}/`;
-
-  if (!filePath.startsWith(expectedPrefix)) {
-    throw new functions.https.HttpsError('permission-denied', '自分のアップロードファイルのみ公開できます');
+  const userData = await getUserData(userId);
+  if (!userData) {
+    throw new functions.https.HttpsError('permission-denied', 'ユーザー情報が見つかりません');
   }
 
   try {
-    // ユーザー情報を取得
-    const userData = await getUserData(userId);
-    const displayName = userData ? userData.displayName : '不明';
-    const classroomId = userData ? userData.classroomId : null;
-
-    // ファイルの公開URLを取得
     const bucket = storage.bucket();
     const file = bucket.file(filePath);
 
-    // ファイルが存在するか確認
+    // ファイルが存在するか確認（決まりに合わないときは cleanupRecordingUpload が先に消していることがある）
     const [exists] = await file.exists();
     if (!exists) {
-      throw new functions.https.HttpsError('not-found', 'ファイルが見つかりません');
+      throw new functions.https.HttpsError('not-found', `ファイルが見つかりません。${RECORDING_RULE_MESSAGE}`);
     }
 
-    // ファイルを公開設定に変更
-    await file.makePublic();
+    // 大きさと種類を確かめる（合わなければ、確かめた世代だけを消して断る）
+    const [metadata] = await file.getMetadata();
+    const size = Number(metadata.size);
+    if (!(size > 0 && size <= MAX_RECORDING_BYTES) || !isRecordingType(metadata.contentType)) {
+      await deleteRecordingGeneration(file, metadata.generation);
+      throw new functions.https.HttpsError('invalid-argument', RECORDING_RULE_MESSAGE);
+    }
 
-    // 公開URLを取得
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+    // 期限のないダウンロード用トークンが付いていたら外す（録画は署名付き URL でだけ見せる）
+    if (metadata.metadata && metadata.metadata.firebaseStorageDownloadTokens) {
+      await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: null } });
+    }
 
-    // Firestoreにメタデータを保存
+    // Firestoreにメタデータを保存（公開はしない）
     const videoDoc = await db.collection('videos').add({
       userId: userId,
-      userDisplayName: displayName,
-      classroomId: classroomId,
+      userDisplayName: userData.displayName || '不明',
+      classroomId: userData.role === 'student' ? (userData.classroomId || null) : null,
       filePath: filePath,
-      publicUrl: publicUrl,
-      title: title || '無題の録画',
-      description: description || '',
+      // 文字数で切る（コードポイント単位で数えるので、サロゲートペアの絵文字は半分に割れない）
+      title: Array.from((title || '').trim()).slice(0, 100).join('') || '無題の録画',
+      description: Array.from((description || '').trim()).slice(0, 500).join(''),
+      size: size,
       createdAt: FieldValue.serverTimestamp(),
-      status: 'published',
+      status: 'private',
       viewCount: 0
     });
 
@@ -808,7 +876,6 @@ exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(asy
     return {
       success: true,
       videoId: videoDoc.id,
-      publicUrl: publicUrl,
       message: '動画を保存しました'
     };
 
@@ -817,53 +884,119 @@ exports.saveVideoMetadata = functions.region('asia-northeast1').https.onCall(asy
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
-    throw new functions.https.HttpsError('internal', 'メタデータ保存に失敗しました: ' + error.message);
+    // 確かめている間に、決まりに合わないとして cleanupRecordingUpload が消した場合など
+    if (error && error.code === 404) {
+      throw new functions.https.HttpsError('not-found', `ファイルが見つかりません。${RECORDING_RULE_MESSAGE}`);
+    }
+    throw new functions.https.HttpsError('internal', 'メタデータ保存に失敗しました');
   }
 });
 
 /**
- * ギャラリー用の動画一覧取得（HTTP関数）
+ * アップロード直後の録画を確かめ、合わないものを消す
  *
- * 公開された動画の一覧を取得
- * 認証不要（ギャラリーは公開）
+ * 署名付きURLでのアップロードは Storage のルールを通らないため、ここで大きさ・種類・名前を確かめる
+ * 期限のないダウンロード用トークンが付いていたら外す
+ */
+// 失敗したら（一時的な Storage のエラーなど）やり直す。中身は何度動いても同じ結果になる作り
+exports.cleanupRecordingUpload = functions.runWith({ failurePolicy: true }).region('asia-northeast1').storage.object().onFinalize(async (object) => {
+  const name = object.name || '';
+  if (!name.startsWith('recordings/')) return null;
+
+  const parts = name.split('/');
+  const size = Number(object.size);
+  const ok = parts.length === 3 &&
+    RECORDING_NAME_PATTERN.test(parts[2]) &&
+    isRecordingType(object.contentType) &&
+    size > 0 && size <= MAX_RECORDING_BYTES;
+  const file = storage.bucket(object.bucket).file(name);
+  if (ok) {
+    if (object.metadata && object.metadata.firebaseStorageDownloadTokens) {
+      await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: null } });
+    }
+    return null;
+  }
+
+  console.warn(`cleanupRecordingUpload: 決まりに合わない録画を消します: ${name} (${object.contentType}, ${size} bytes)`);
+  await deleteRecordingGeneration(file, object.generation);
+  return null;
+});
+
+/**
+ * 録画の一覧を取得（HTTP関数）
+ *
+ * ログインが必要（Authorization: Bearer <ID トークン>）
+ * - 講師: 自分の教室の生徒の録画だけ（教室IDが空の講師は取れない）
+ * - 管理者: すべて（classroomId で絞れる）
+ * - 生徒・未ログイン: 取れない
+ * 動画の URL は 15 分だけ使える署名付き URL を返す（録画はインターネットに公開しない）
  */
 exports.getPublicVideos = functions.region('asia-northeast1').https.onRequest(async (req, res) => {
   cors(req, res, async () => {
     try {
+      if (req.method !== 'GET') {
+        res.status(405).json({ success: false, error: 'GET だけ使えます' });
+        return;
+      }
+
+      // ID トークンで利用者を確かめる
+      const header = req.get('Authorization') || '';
+      const match = header.match(/^Bearer (.+)$/);
+      if (!match) {
+        res.status(401).json({ success: false, error: 'ログインが必要です' });
+        return;
+      }
+      let decoded;
+      try {
+        decoded = await auth.verifyIdToken(match[1]);
+      } catch (e) {
+        res.status(401).json({ success: false, error: 'ログインが必要です' });
+        return;
+      }
+      const caller = await getUserData(decoded.uid);
+      const isCallerAdmin = !!caller && caller.role === 'admin';
+      const isCallerTeacher = !!caller && caller.role === 'teacher' &&
+        typeof caller.classroomId === 'string' && caller.classroomId !== '';
+      if (!isCallerAdmin && !isCallerTeacher) {
+        res.status(403).json({ success: false, error: '先生と管理者だけが見られます' });
+        return;
+      }
+
       const requestedLimit = parseInt(req.query.limit, 10);
       const limit = Number.isFinite(requestedLimit)
         ? Math.min(Math.max(requestedLimit, 1), 50)
         : 20;
-      const classroomId = req.query.classroomId || null;
+      // 講師は自分の教室だけ。管理者は classroomId で絞れる
+      const classroomId = isCallerTeacher
+        ? caller.classroomId
+        : (typeof req.query.classroomId === 'string' && req.query.classroomId ? req.query.classroomId : null);
 
       let query = db.collection('videos')
-        .where('status', '==', 'published')
-        .orderBy('createdAt', 'desc')
-        .limit(limit);
-
-      if (classroomId) {
-        query = db.collection('videos')
-          .where('status', '==', 'published')
-          .where('classroomId', '==', classroomId)
-          .orderBy('createdAt', 'desc')
-          .limit(limit);
+        .where('status', '==', 'private');
+      // 講師にはいつも教室の条件を付ける
+      if (isCallerTeacher || classroomId) {
+        query = query.where('classroomId', '==', classroomId);
       }
+      const snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get();
 
-      const snapshot = await query.get();
-
-      const videos = [];
-      snapshot.forEach(doc => {
+      const bucket = storage.bucket();
+      const videos = await Promise.all(snapshot.docs.map(async (doc) => {
         const data = doc.data();
-        videos.push({
+        const [url] = await bucket.file(data.filePath).getSignedUrl({
+          version: 'v4',
+          action: 'read',
+          expires: Date.now() + 15 * 60 * 1000 // 15分
+        });
+        return {
           id: doc.id,
           title: data.title,
           description: data.description,
-          publicUrl: data.publicUrl,
+          url: url,
           userDisplayName: data.userDisplayName,
           createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : null,
           viewCount: data.viewCount || 0
-        });
-      });
+        };
+      }));
 
       res.json({
         success: true,
@@ -875,7 +1008,7 @@ exports.getPublicVideos = functions.region('asia-northeast1').https.onRequest(as
       console.error('getPublicVideos error:', error);
       res.status(500).json({
         success: false,
-        error: error.message
+        error: '録画の一覧を取得できませんでした'
       });
     }
   });

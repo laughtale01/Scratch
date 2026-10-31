@@ -119,10 +119,22 @@ await t('同じ教室の別の講師は、講師が作った作品のサムネ�
 await t('作った講師本人は読める', () => assertSucceeds(read('t2', 'projects/t2/pT2/current.sb3')));
 await t('管理者は講師が作った作品も読める', () => assertSucceeds(read('admin1', 'projects/t2/pT2/current.sb3')));
 
-console.log('--- 録画（変更なし）');
-await t('持ち主は自分の録画を読める', () => assertSucceeds(read('s1', 'recordings/s1/x.mp4')));
-await t('管理者は録画を読める', () => assertSucceeds(read('admin1', 'recordings/s1/x.mp4')));
+console.log('--- 録画（SDK からは置けない・読めない。署名付き URL だけ）');
+await t('持ち主も SDK からは録画を読めない（期限のないトークンを作らせない）', () => assertFails(read('s1', 'recordings/s1/x.mp4')));
+await t('管理者も SDK からは録画を読めない（期限のないトークンを作らせない）', () => assertFails(read('admin1', 'recordings/s1/x.mp4')));
+await t('未ログインでは録画を読めない', () => assertFails(read(null, 'recordings/s1/x.mp4')));
 await t('講師は録画を読めない', () => assertFails(read('t1', 'recordings/s1/x.mp4')));
+const putAs = (who, path, contentType) => uploadString(ref(st(who), path), 'y', 'raw', { contentType });
+await t('持ち主も SDK からは録画を置けない（動画でも）', () => assertFails(putAs('s1', 'recordings/s1/1700000000000-0a1b2c3d.mp4', 'video/mp4')));
+await t('持ち主も SDK からは録画を上書きできない', () => assertFails(putAs('s1', 'recordings/s1/x.mp4', 'video/mp4')));
+await t('持ち主でも動画でないファイルは置けない', () => assertFails(putAs('s1', 'recordings/s1/evil.html', 'text/html')));
+await t('管理者も SDK からは録画を置けない', () => assertFails(putAs('admin1', 'recordings/s1/1700000000000-0a1b2c3d.mp4', 'video/mp4')));
+await t('他の子の録画の場所には置けない', () => assertFails(putAs('s2', 'recordings/s1/1700000000000-0a1b2c3d.mp4', 'video/mp4')));
+await t('講師は録画を置けない', () => assertFails(putAs('t1', 'recordings/s1/1700000000000-0a1b2c3d.mp4', 'video/mp4')));
+await t('講師は録画を消せない', () => assertFails(del('t1', 'recordings/s1/x.mp4')));
+await t('他の子は録画を消せない', () => assertFails(del('s2', 'recordings/s1/x.mp4')));
+await t('管理者は録画を消せる', () => assertSucceeds(del('admin1', 'recordings/s1/x.mp4')));
+await t('持ち主は自分の録画を消せる', () => assertSucceeds(del('s1', 'recordings/s1/x.mp4')));
 
 console.log('--- それ以外');
 await t('決まった場所以外には置けない', () => assertFails(put('s1', 'other/s1/x.txt')));

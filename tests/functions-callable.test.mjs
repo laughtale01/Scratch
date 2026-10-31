@@ -2,6 +2,20 @@
 // 平文のパスワードが生徒の分だけ保存されることを確かめる（エミュレーターのみ・値は架空）
 const P = 'demo-fn-test';
 const AUTH = 'http://127.0.0.1:9099', FS = `http://127.0.0.1:8085/v1/projects/${P}/databases/(default)/documents`;
+const BUCKET = `${P}.appspot.com`;
+const ST = 'http://127.0.0.1:9199';
+// Storage のエミュレーターにファイルを置く（管理者として。ルールを通らない、署名付き URL と同じ立場）
+async function putObject(path, contentType, body = 'x') {
+  const r = await fetch(`${ST}/upload/storage/v1/b/${BUCKET}/o?uploadType=media&name=${encodeURIComponent(path)}`, { method: 'POST', headers: { Authorization: 'Bearer owner', 'Content-Type': contentType }, body });
+  if (r.status !== 200) throw new Error(`試験のファイルを置けなかった: ${path} (${r.status})`);
+  return r.status;
+}
+async function objectExists(path) {
+  const r = await fetch(`${ST}/storage/v1/b/${BUCKET}/o/${encodeURIComponent(path)}`, { headers: { Authorization: 'Bearer owner' } });
+  if (r.status !== 200 && r.status !== 404) throw new Error(`ファイルの有無を確かめられなかった: ${path} (${r.status})`);
+  return r.status === 200;
+}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const FN = (name) => `http://127.0.0.1:5001/${P}/asia-northeast1/${name}`;
 const owner = { Authorization: 'Bearer owner', 'Content-Type': 'application/json' };
 
@@ -76,8 +90,7 @@ check('講師は講師を作れない', r.status !== 200, r.status);
 r = await call('createUser', tea1Login.idToken, { userId: 'stu3', displayName: '生徒3', password: 'pass123', role: 'student', classroomId: 'c1' });
 check('講師は自教室の生徒を作れる', r.status === 200, r);
 const pv = await fetch(`${FN('getPublicVideos')}?limit=1`, { headers: { Origin: 'https://laughtale01.github.io' } });
-check('getPublicVideos: ログインなしの GET に応答し、ブラウザーから読める（CORS）',
-  pv.status === 200 && pv.headers.get('access-control-allow-origin') === 'https://laughtale01.github.io', { status: pv.status, cors: pv.headers.get('access-control-allow-origin') });
+check('getPublicVideos: ブラウザーから読める（CORS）', pv.headers.get('access-control-allow-origin') === 'https://laughtale01.github.io', { status: pv.status, cors: pv.headers.get('access-control-allow-origin') });
 
 console.log('--- ほかの関数（Node 22 で動くか）');
 r = await call('updateUserId', T, { targetUid: stu1, newUserId: 'stu1b' });
@@ -88,7 +101,70 @@ check('deleteUser: ユーザーを消せる', r.status === 200, r);
 check('deleteUser: users 文書も消える', (await j(`${FS}/users/${stu2}`, { headers: owner })).status === 404, stu2);
 r = await call('auditUserDocumentCoverage', T, {});
 check('auditUserDocumentCoverage: 動く', r.status === 200, r);
-// getUploadUrl と saveVideoMetadata は、署名付き URL と公開の設定がエミュレーターでできないので試さない
+console.log('--- 録画（公開しない・決まりに合わないものは断る）');
+r = await call('getUploadUrl', T, { contentType: 'text/html' });
+check('getUploadUrl: 動画でない種類は断る', r.status === 400, r);
+r = await call('getUploadUrl', T, { contentType: 'constructor' });
+check('getUploadUrl: Object の組み込みの名前（constructor）は断る', r.status === 400, r);
+r = await call('getUploadUrl', T, { contentType: ['video/mp4'] });
+check('getUploadUrl: 文字でない種類（配列）は断る', r.status === 400, r);
+const ghost = await signUp('ghost1@laughtale.local', 'ghostpw1');
+r = await call('getUploadUrl', ghost.idToken, { contentType: 'video/mp4' });
+check('getUploadUrl: ユーザー情報の無い人は使えない', r.status === 403, r);
+const stuLogin = (await j(`${AUTH}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'stu1b@laughtale.local', password: 'newpass2', returnSecureToken: true }) })).body;
+const goodPath = `recordings/${stu1}/1700000000000-0a1b2c3d.mp4`;
+await putObject(goodPath, 'video/mp4');
+// 題名は 100 文字までに切る。100 文字目をまたぐ絵文字（サロゲートペア）が半分に割れないこと
+r = await call('saveVideoMetadata', stuLogin.idToken, { filePath: goodPath, title: 'あ'.repeat(99) + '😀😀' });
+check('saveVideoMetadata: 正しい録画は保存できる', r.status === 200 && r.body.result?.success === true && !r.body.result?.publicUrl, r);
+const vq = await j(`${FS}:runQuery`, { method: 'POST', headers: owner, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'videos' }] } }) });
+const video = vq.body.find(x => x.document)?.document.fields || {};
+check('saveVideoMetadata: 公開しない（status は private、公開の URL を持たない）', video.status?.stringValue === 'private' && !('publicUrl' in video), video);
+const savedTitle = video.title?.stringValue || '';
+check('saveVideoMetadata: 題名は 100 文字まで（絵文字を割らない）', Array.from(savedTitle).length === 100 && savedTitle.endsWith('😀') && !/[\ud800-\udbff]$/.test(savedTitle), savedTitle.slice(-3));
+check('saveVideoMetadata: 生徒の録画には教室IDが付く', video.classroomId?.stringValue === 'c1', video.classroomId);
+// 期限のないダウンロード用トークンを外す処理は、エミュレーターがトークンを本番と別の形で持つため、ここでは確かめられない（本番で確かめる）
+const numPath = `recordings/${stu1}/1700000000002-0a1b2c3f.mp4`;
+await putObject(numPath, 'video/mp4');
+r = await call('saveVideoMetadata', stuLogin.idToken, { filePath: numPath, title: 12 });
+check('saveVideoMetadata: 数の題名も文字にして受け付ける', r.status === 200 && r.body.result?.success === true, r);
+r = await call('saveVideoMetadata', stuLogin.idToken, { filePath: numPath, title: { x: 1 } });
+check('saveVideoMetadata: 文字にできない題名は断る', r.status === 400, r);
+r = await call('saveVideoMetadata', stuLogin.idToken, { filePath: `recordings/${stu1}/my-own-name.mp4` });
+check('saveVideoMetadata: サーバーが決めた形でない名前は断る', r.status === 403, r);
+r = await call('saveVideoMetadata', stuLogin.idToken, { filePath: `recordings/${tea1}/1700000000000-0a1b2c3d.mp4` });
+check('saveVideoMetadata: 他の人の録画は保存できない', r.status === 403, r);
+const badTypePath = `recordings/${stu1}/1700000000001-0a1b2c3e.mp4`;
+await putObject(badTypePath, 'text/html', '<script>x</script>');
+r = await call('saveVideoMetadata', stuLogin.idToken, { filePath: badTypePath });
+let gone = false;
+for (let i = 0; i < 20 && !gone; i++) { gone = !(await objectExists(badTypePath)); if (!gone) await sleep(500); }
+// cleanupRecordingUpload が先に消すこともあるので、どちらが消しても断られることだけを確かめる
+check('動画でない中身の録画は保存できず、ファイルも消える（保存の確かめで 400、掃除が先なら 404）', [400, 404].includes(r.status) && gone, { status: r.status, gone });
+const oddPath = `recordings/${stu1}/evil.html`;
+await putObject(oddPath, 'text/html', '<script>x</script>');
+let removed = false;
+for (let i = 0; i < 20 && !removed; i++) { removed = !(await objectExists(oddPath)); if (!removed) await sleep(500); }
+check('cleanupRecordingUpload: 決まりに合わないアップロードは、保存を呼ばなくても消える', removed, oddPath);
+check('cleanupRecordingUpload: 正しい録画は消さない', await objectExists(goodPath), goodPath);
+
+const listUrl = `${FN('getPublicVideos')}?limit=5`;
+let lr = await fetch(listUrl);
+check('getPublicVideos: ログインなしでは取れない', lr.status === 401, lr.status);
+lr = await fetch(listUrl, { headers: { Authorization: `Bearer ${stuLogin.idToken}` } });
+check('getPublicVideos: 生徒は取れない', lr.status === 403, lr.status);
+const t9 = await signUp('t9@laughtale.local', 't9pass1');
+await setUserDoc(t9.localId, { role: { stringValue: 'teacher' }, classroomId: { stringValue: 'c9' }, email: { stringValue: 't9@laughtale.local' } });
+lr = await fetch(listUrl, { headers: { Authorization: `Bearer ${t9.idToken}` } });
+const t9Body = await lr.json().catch(() => ({}));
+check('getPublicVideos: 講師は自分の教室の分だけ（他の教室の録画は出ない）', lr.status === 200 && t9Body.count === 0, { status: lr.status, body: t9Body });
+const tEmpty = await signUp('tempty@laughtale.local', 'temptypw1');
+await setUserDoc(tEmpty.localId, { role: { stringValue: 'teacher' }, classroomId: { stringValue: '' }, email: { stringValue: 'tempty@laughtale.local' } });
+lr = await fetch(listUrl, { headers: { Authorization: `Bearer ${tEmpty.idToken}` } });
+check('getPublicVideos: 教室IDが空の講師は取れない（全教室が見えないように）', lr.status === 403, lr.status);
+lr = await fetch(listUrl, { headers: { Authorization: 'Bearer not-a-token' } });
+check('getPublicVideos: ID トークンが正しくなければ取れない', lr.status === 401, lr.status);
+// 自教室の講師と管理者が録画を見られる場合は、署名付き URL を作るため本番の資格情報が要り、エミュレーターでは試せない
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
 process.exit(fail ? 1 : 0);
