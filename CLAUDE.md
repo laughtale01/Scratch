@@ -155,7 +155,7 @@ cd minecraft-mod
 ```bash
 cd minecraft-mod
 ./gradlew build
-# 出力: build/libs/minecraftedu-mod-0.1.0.jar
+# 出力: build/libs/minecraftedu-mod-0.2.0-1.20.1.jar（版は build.gradle の version）
 ```
 
 ### インストール先
@@ -165,7 +165,8 @@ C:\Users\riyum\AppData\Roaming\.minecraft_1.20.1\mods\
 
 ### インストールコマンド
 ```bash
-cp minecraft-mod/build/libs/minecraftedu-mod-0.1.0.jar "/c/Users/riyum/AppData/Roaming/.minecraft_1.20.1/mods/"
+# 先に mods フォルダの古い minecraftedu-mod-*.jar を外す（同じ MOD が 2 つあると正しく読み込めない）
+cp minecraft-mod/build/libs/minecraftedu-mod-0.2.0-1.20.1.jar "/c/Users/riyum/AppData/Roaming/.minecraft_1.20.1/mods/"
 ```
 
 ### 必須ファイル（ビルドに必要）
@@ -265,7 +266,7 @@ minecraft-mod/src/...     ← MOD側コマンド実装
 ```bash
 cd minecraft-mod
 ./gradlew build
-# 出力: build/libs/minecraftedu-mod-0.1.0.jar
+# 出力: build/libs/minecraftedu-mod-0.2.0-1.20.1.jar（版は build.gradle の version）
 ```
 ※ MOD側（CommandExecutor.java等）を変更した場合は必須
 

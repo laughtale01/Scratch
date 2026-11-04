@@ -39,7 +39,7 @@ gradlew.bat build
 ビルドが成功すると、以下にMODファイルが生成されます：
 
 ```
-build/libs/minecraftedu-mod-0.1.0-1.20.1.jar
+build/libs/minecraftedu-mod-0.2.0-1.20.1.jar
 ```
 
 ## インストール方法
@@ -54,15 +54,18 @@ build/libs/minecraftedu-mod-0.1.0-1.20.1.jar
 
 ビルドしたJARファイルをMinecraftのmodsフォルダにコピー：
 
+先に、mods フォルダにある古い `minecraftedu-mod-*.jar` を外してください（同じ MOD が 2 つあると正しく読み込めません）。
+`build/libs/` には前にビルドした古い jar が残ることがあるので、コピーする jar は名前を書いて選びます。
+
 ```bash
 # Windows
-copy build\libs\*.jar %APPDATA%\.minecraft\mods\
+copy build\libs\minecraftedu-mod-0.2.0-1.20.1.jar %APPDATA%\.minecraft\mods\
 
 # macOS
-cp build/libs/*.jar ~/Library/Application\ Support/minecraft/mods/
+cp build/libs/minecraftedu-mod-0.2.0-1.20.1.jar ~/Library/Application\ Support/minecraft/mods/
 
 # Linux
-cp build/libs/*.jar ~/.minecraft/mods/
+cp build/libs/minecraftedu-mod-0.2.0-1.20.1.jar ~/.minecraft/mods/
 ```
 
 ### 3. Minecraftの起動
@@ -81,14 +84,13 @@ cp build/libs/*.jar ~/.minecraft/mods/
 
 ### 対応コマンド
 
-- `chat` - チャットメッセージ送信
-- `setBlock` - ブロック配置（絶対座標・相対座標）
-- `summonEntity` - エンティティ召喚
-- `teleport` - プレイヤーテレポート
-- `setWeather` - 天気変更
-- `setTime` - 時刻変更
+- ブロック: `setBlock`（絶対座標・相対座標）、`fillBlocks`、`getBlock`、`getBlockType`、`getTargetBlock`、`setContainerItem`
+- プレイヤー: `getPosition`、`getPlayerFacing`、`teleport`、`setGameMode`、`setMoveSpeed`、`setFlySpeed`、`setNightVision`
+- ワールド: `chat`、`setWeather`、`setTime`、`setGameRule`、`summonEntity`、`setEntitySpawning`、`clearArea`、`clearAllEntities`
+- 録画（Windows だけ）: `startRecording`、`stopRecording`、`getRecordingStatus`
 
-詳細は `shared/protocol/PROTOCOL_SPEC.md` を参照してください。
+命令の中身（受け付ける値・断るとき）は `src/main/java/com/github/minecraftedu/commands/CommandExecutor.java` を、
+上限や断ったときのチャットの確かめ方は `tests/websocket/README.md` を参照してください。
 
 ## 開発
 
@@ -106,14 +108,17 @@ cp build/libs/*.jar ~/.minecraft/mods/
 
 ```
 src/main/java/com/github/minecraftedu/
-├── MinecraftEduMod.java          # メインMODクラス
-├── network/                       # ネットワーク層
-│   ├── WebSocketServer.java
+├── MinecraftEduMod.java          # メインMODクラス（起動・停止、/entityspawn）
+├── network/                       # Scratch との通信（WebSocket）
+│   ├── SimpleWebSocketServer.java
 │   └── MinecraftWebSocketHandler.java
-├── commands/                      # コマンド処理
+├── commands/                      # 命令の実行
 │   └── CommandExecutor.java
-├── education/                     # 教育機能（今後実装）
-└── utils/                         # ユーティリティ
+├── block/                         # 追加ブロック（縦スラブ）
+│   └── VerticalSlabBlock.java
+└── init/                          # ブロック・アイテムの登録
+    ├── ModBlocks.java
+    └── ModItems.java
 ```
 
 ## トラブルシューティング
@@ -169,6 +174,6 @@ MIT License
 
 ---
 
-**バージョン**: 0.1.0
+**バージョン**: 0.2.0（build.gradle の version）
 **対応Minecraft**: 1.20.1
-**最終更新**: 2025-11-12
+**最終更新**: 2026-11-04

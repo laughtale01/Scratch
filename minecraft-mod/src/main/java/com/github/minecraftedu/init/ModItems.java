@@ -8,25 +8,25 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * Item registration for custom items and block items
+ * この MOD が追加するアイテムの登録
  *
- * This class manages the registration of all items in the MinecraftEdu MOD,
- * including BlockItems that represent blocks in the player's inventory.
+ * MinecraftEdu MOD のアイテムをまとめて登録する。
+ * 持ち物の中でブロックを表すアイテム（BlockItem）も、ここで登録する。
  */
 public class ModItems {
 
     /**
-     * Deferred register for items
-     * Uses the MOD_ID from MinecraftEduMod to properly namespace all custom items
+     * アイテムの登録先（MOD の起動の途中で、まとめて登録される）
+     * 名前は MinecraftEduMod の MOD_ID（minecraftedu:）で始まる
      */
     public static final DeferredRegister<Item> ITEMS =
         DeferredRegister.create(ForgeRegistries.ITEMS, MinecraftEduMod.MOD_ID);
 
     /**
-     * Vertical Oak Slab Item
+     * オークの縦スラブのアイテム
      *
-     * This is the item form of the vertical_oak_slab block.
-     * When placed, it will place the VerticalSlabBlock with appropriate facing direction.
+     * vertical_oak_slab ブロックを持ち物に入れたときの形。
+     * 置くと、向きを決めて VerticalSlabBlock を置く。
      */
     public static final RegistryObject<Item> VERTICAL_OAK_SLAB = ITEMS.register(
         "vertical_oak_slab",

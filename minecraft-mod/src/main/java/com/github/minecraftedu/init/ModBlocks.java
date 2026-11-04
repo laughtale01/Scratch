@@ -10,36 +10,36 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * Block registration for custom blocks
+ * この MOD が追加するブロックの登録
  *
- * This class manages the registration of all custom blocks in the MinecraftEdu MOD.
- * Currently includes vertical slab variants for directional placement.
+ * MinecraftEdu MOD の追加ブロックをまとめて登録する。
+ * 今は、向きを選んで置ける縦スラブだけ。
  */
 public class ModBlocks {
 
     /**
-     * Deferred register for blocks
-     * Uses the MOD_ID from MinecraftEduMod to properly namespace all custom blocks
+     * ブロックの登録先（MOD の起動の途中で、まとめて登録される）
+     * 名前は MinecraftEduMod の MOD_ID（minecraftedu:）で始まる
      */
     public static final DeferredRegister<Block> BLOCKS =
         DeferredRegister.create(ForgeRegistries.BLOCKS, MinecraftEduMod.MOD_ID);
 
     /**
-     * Vertical Oak Slab - Prototype vertical slab block
+     * オークの縦スラブ（最初に作った縦スラブ）
      *
-     * Properties:
-     * - facing: north, south, east, west (horizontal directional placement)
-     * - waterlogged: true/false (compatibility with water)
-     * - Collision box: 8x16x16 (half width, full height and depth)
+     * プロパティ:
+     * - facing: north / south / east / west（東西南北の向きに置ける）
+     * - waterlogged: true / false（水に浸かっているか）
+     * - 当たり判定: 8×16×16（厚さ半分、高さと横幅はまるごと）
      *
-     * Unlike vanilla slabs which only have vertical positioning (bottom/top/double),
-     * vertical slabs can be placed facing any of the 4 horizontal directions.
+     * バニラのハーフブロックは上・下（と 2 枚重ね）にしか置けないが、
+     * 縦スラブは東西南北の 4 つの向きに置ける。
      */
     public static final RegistryObject<Block> VERTICAL_OAK_SLAB = BLOCKS.register(
         "vertical_oak_slab",
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)
-                .strength(2.0F, 3.0F)  // Same as oak planks
+                .strength(2.0F, 3.0F)  // オークの板材と同じ
                 .requiresCorrectToolForDrops()
         )
     );

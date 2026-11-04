@@ -30,7 +30,7 @@ public class SimpleWebSocketServer {
     private static final String WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
     // 同時につなげる数の上限（Scratch のタブ数本分。超えたら断る）
-    private static final int MAX_CLIENTS = 8;
+    static final int MAX_CLIENTS = 8;
     // 1 つのメッセージの大きさの上限（命令の JSON には十分。巨大な長さを名乗ってメモリを使い切らせないため）
     private static final int MAX_PAYLOAD_BYTES = 1024 * 1024;
     // ヘッダーの 1 行の長さと行数の上限
@@ -40,8 +40,8 @@ public class SimpleWebSocketServer {
     private static final int HANDSHAKE_TIMEOUT_MS = 5000;
     // 受付が失敗し続けたときに待つ時間（すぐやり直して CPU とログを使い切らないため）
     private static final int ACCEPT_RETRY_DELAY_MS = 100;
-    // ログに出す Origin の長さの上限
-    private static final int MAX_LOGGED_ORIGIN_CHARS = 100;
+    // ログに出す、相手が送った値（Origin・命令の名前・ブロックの名前など）の長さの上限
+    private static final int MAX_LOGGED_CHARS = 100;
     // 断った接続のログを出す間隔（つなぎ直しを繰り返されても、ログが際限なく増えないように）
     private static final long REJECT_LOG_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(60);
     // つないでよいサイト（Origin）。公開している Scratch と、手元での確認（python3 -m http.server 8000）だけ
@@ -61,7 +61,8 @@ public class SimpleWebSocketServer {
         ORIGIN("origin"),
         BAD_REQUEST("bad request"),
         HANDSHAKE_TIMEOUT("handshake timed out"),
-        HANDSHAKE_ERROR("handshake failed");
+        HANDSHAKE_ERROR("handshake failed"),
+        BAD_FRAME("bad frame");
 
         final String label;
 
@@ -108,7 +109,7 @@ public class SimpleWebSocketServer {
         running = true;
         MinecraftEduMod.LOGGER.info("WebSocket server started on port " + port);
 
-        // Accept connections in a separate thread
+        // 接続の受け付けは、別のスレッドで回す
         executor.submit(() -> {
             while (running) {
                 Socket client = null;
@@ -210,12 +211,13 @@ public class SimpleWebSocketServer {
 
     /**
      * ログに出してよい形にする（相手が送った値に改行や制御文字があっても、偽の行を作れないように）
-     * ブラウザが送る Origin は必ず ASCII なので、見える ASCII（0x20〜0x7E）以外はすべて ? にする
+     * Origin・命令の名前・ブロックの名前・例外の文などに使う。見える ASCII（0x20〜0x7E）以外はすべて ? にする
+     * （ログは英数字だけで足りる。子どもが日本語で打った名前も ? になる）
      * （Unicode の行区切り U+2028 や向きを変える文字なども、これで残らない）
      */
-    static String sanitizeForLog(String value) {
+    public static String sanitizeForLog(String value) {
         if (value == null) return "(none)";
-        String cut = value.length() > MAX_LOGGED_ORIGIN_CHARS ? value.substring(0, MAX_LOGGED_ORIGIN_CHARS) + "..." : value;
+        String cut = value.length() > MAX_LOGGED_CHARS ? value.substring(0, MAX_LOGGED_CHARS) + "..." : value;
         StringBuilder sb = new StringBuilder(cut.length());
         for (int i = 0; i < cut.length(); i++) {
             char c = cut.charAt(i);
@@ -321,7 +323,7 @@ public class SimpleWebSocketServer {
                 return;
             }
 
-            // Perform WebSocket handshake
+            // WebSocket のハンドシェイクの返事を送る
             String acceptKey = generateAcceptKey(webSocketKey);
             String response = "HTTP/1.1 101 Switching Protocols\r\n" +
                     "Upgrade: websocket\r\n" +
@@ -338,9 +340,9 @@ public class SimpleWebSocketServer {
             // ハンドシェイクの後は、命令を待つ間に切れないよう時間制限を外す（つなげるのは自分の PC からだけ）
             client.setSoTimeout(0);
 
-            // Handle WebSocket frames
+            // WebSocket のフレームを読む
             while (running && !client.isClosed()) {
-                // Read WebSocket frame
+                // フレームを 1 つ読む
                 int firstByte = in.read();
                 if (firstByte == -1) break;
 
@@ -355,11 +357,12 @@ public class SimpleWebSocketServer {
 
                 // クライアントからのフレームは必ずマスクされている（RFC 6455）。されていなければ切る
                 if (!masked) {
-                    MinecraftEduMod.LOGGER.warn("Unmasked WebSocket frame from client; closing");
+                    // 決まりに合わないフレームのログも、くり返されても増えないよう間引く
+                    logRejected(RejectReason.BAD_FRAME, "unmasked");
                     break;
                 }
 
-                // Extended payload length
+                // 長さが 126 以上のときは、続きのバイトに長さが入っている
                 if (payloadLength == 126) {
                     byte[] ext = new byte[2];
                     if (!readFully(in, ext, 2)) break;
@@ -372,7 +375,7 @@ public class SimpleWebSocketServer {
                         longLength = (longLength << 8) | (ext[i] & 0xFF);
                     }
                     if (longLength < 0 || longLength > MAX_PAYLOAD_BYTES) {
-                        MinecraftEduMod.LOGGER.warn("Payload too large: " + longLength);
+                        logRejected(RejectReason.BAD_FRAME, "payload too large: " + longLength);
                         break;
                     }
                     payloadLength = (int) longLength;
@@ -380,12 +383,12 @@ public class SimpleWebSocketServer {
 
                 // 大きすぎるメッセージは、メモリを確保する前に断る
                 if (payloadLength > MAX_PAYLOAD_BYTES) {
-                    MinecraftEduMod.LOGGER.warn("Payload too large: " + payloadLength);
+                    logRejected(RejectReason.BAD_FRAME, "payload too large: " + payloadLength);
                     break;
                 }
                 // 制御フレーム（Close / Ping / Pong）は 125 バイトまで（RFC 6455）
                 if (opcode >= 0x8 && payloadLength > 125) {
-                    MinecraftEduMod.LOGGER.warn("Control frame too large: " + payloadLength);
+                    logRejected(RejectReason.BAD_FRAME, "control frame too large: " + payloadLength);
                     break;
                 }
 
@@ -400,17 +403,17 @@ public class SimpleWebSocketServer {
                     payload[i] = (byte) (payload[i] ^ maskingKey[i % 4]);
                 }
 
-                // Handle message based on opcode
-                if (opcode == 0x1) { // Text frame
+                // 種類（opcode）ごとに扱う
+                if (opcode == 0x1) { // 文字のフレーム
                     String message = new String(payload, StandardCharsets.UTF_8);
                     // 受け取った全文はログに出さない（ログが大きくなり、偽の行も差し込めてしまうため）
                     MinecraftEduMod.LOGGER.debug("Received WebSocket message (" + payload.length + " bytes)");
                     handleWebSocketMessage(handler, message, out);
-                } else if (opcode == 0x8) { // Close frame
+                } else if (opcode == 0x8) { // Close のフレーム
                     MinecraftEduMod.LOGGER.info("Client requested close");
                     break;
-                } else if (opcode == 0x9) { // Ping frame
-                    // Send pong
+                } else if (opcode == 0x9) { // Ping のフレーム
+                    // Pong を返す
                     sendPong(out, payload);
                 }
             }
@@ -427,6 +430,9 @@ public class SimpleWebSocketServer {
                 // ハンドシェイクの前の通信の失敗（途中で切られた等）は、別のサイトからもくり返し起こせるので間引く
                 // （詳しい中身は出さず、例外の種類だけ出す。プログラムの不具合は下の error で詳しく出す）
                 logRejected(RejectReason.HANDSHAKE_ERROR, e.getClass().getSimpleName());
+            } else if (running && e instanceof IOException) {
+                // つないだあとに、相手が乱暴に切った（タブを閉じた等）。よくあることで、くり返されても増えないよう debug
+                MinecraftEduMod.LOGGER.debug("Client connection lost: " + e.getClass().getSimpleName());
             } else if (running) {
                 MinecraftEduMod.LOGGER.error("Error handling client", e);
             } else {
@@ -459,14 +465,17 @@ public class SimpleWebSocketServer {
         return true;
     }
 
-    private void handleWebSocketMessage(MinecraftWebSocketHandler handler, String message, OutputStream out) {
+    private void handleWebSocketMessage(MinecraftWebSocketHandler handler, String message, OutputStream out) throws IOException {
         try {
-            // Parse JSON and delegate to handler（セッション状態を維持するため既存のハンドラーを使用）
+            // JSON の読み取りと命令の実行はハンドラーに任せる（セッションの状態を保つため、接続ごとのハンドラーを使う）
             String response = handler.handleMessage(message);
 
             if (response != null) {
                 sendTextFrame(out, response);
             }
+        } catch (IOException e) {
+            // 返事を書けなかった（相手が切れた）。外に投げて、読み取りの「切れた」の道（debug）で終える
+            throw e;
         } catch (Exception e) {
             MinecraftEduMod.LOGGER.error("Error handling message", e);
         }
@@ -476,10 +485,10 @@ public class SimpleWebSocketServer {
         byte[] payload = text.getBytes(StandardCharsets.UTF_8);
         ByteArrayOutputStream frame = new ByteArrayOutputStream();
 
-        // First byte: FIN + opcode (0x1 for text)
+        // 1 バイト目: FIN と種類（0x1 は文字）
         frame.write(0x81);
 
-        // Second byte: payload length (no mask for server-to-client)
+        // 2 バイト目: 中身の長さ（サーバーからクライアントへはマスクを付けない）
         if (payload.length < 126) {
             frame.write(payload.length);
         } else if (payload.length < 65536) {
@@ -489,11 +498,12 @@ public class SimpleWebSocketServer {
         } else {
             frame.write(127);
             for (int i = 7; i >= 0; i--) {
-                frame.write((int) ((payload.length >> (i * 8)) & 0xFF));
+                // long でずらす（int のままだと 32 ビット以上ずらせず、長さの上の桁が壊れるため）
+                frame.write((int) (((long) payload.length >> (i * 8)) & 0xFF));
             }
         }
 
-        // Payload
+        // 中身
         frame.write(payload);
 
         byte[] bytes = frame.toByteArray();
@@ -520,7 +530,7 @@ public class SimpleWebSocketServer {
 
     /**
      * 全クライアントへ正常クローズ通知（Close フレーム）を送信
-     * RFC 6455: opcode 0x8 + status code 1001 (Going Away)
+     * RFC 6455: 種類 0x8（Close）と、理由のコード 1001（Going Away: サーバーが止まる）
      */
     private void sendCloseToAllClients() {
         byte[] closeFrame = new byte[] {

@@ -65325,14 +65325,8 @@ const DECORATION_BLOCKS = [{
   text: '植木鉢',
   value: 'flower_pot'
 }, {
-  text: '額縁',
-  value: 'item_frame'
-}, {
   text: '苔ブロック',
   value: 'moss_block'
-}, {
-  text: '絵画',
-  value: 'painting'
 }, {
   text: '滑らかな玄武岩',
   value: 'smooth_basalt'
@@ -65587,9 +65581,6 @@ const NATURE_BLOCKS = [{
   text: 'しだれツタ',
   value: 'weeping_vines'
 }, {
-  text: 'グロウベリー',
-  value: 'glow_berries'
-}, {
   text: 'ツツジ',
   value: 'azalea'
 }, {
@@ -65764,9 +65755,6 @@ const FUNCTIONAL_BLOCKS = [{
 }, {
   text: 'コンジット',
   value: 'conduit'
-}, {
-  text: 'かまど付きトロッコ',
-  value: 'furnace_minecart'
 }, {
   text: '重量用感圧板（重）',
   value: 'heavy_weighted_pressure_plate'
@@ -65994,9 +65982,6 @@ const SPECIAL_BLOCKS = [{
 }, {
   text: 'コマンドブロック',
   value: 'command_block'
-}, {
-  text: 'デバッグ棒',
-  value: 'debug_stick'
 }, {
   text: 'ドラゴンの卵',
   value: 'dragon_egg'
@@ -67331,11 +67316,20 @@ class Scratch3MinecraftBlocks {
 
   /**
    * 周囲クリア
-   * 固定範囲（X:-25~25, Y:-4~100, Z:-25~25）を初期状態に戻す
+   * 中心（X, Z）のまわりを初期状態に戻す（範囲は MOD が決める。gui.js と同じく中心を送る）
+   * （前は中心を送らず、MOD が原点 (0, 0) のまわりを平らにしていた。今の MOD は中心の無い命令を断る）
+   * @param {object} args - 引数オブジェクト
+   * @param {number} args.X - 中心X座標
+   * @param {number} args.Z - 中心Z座標
    */
-  clearArea() {
-    console.log('周囲クリア開始: 273,255ブロック');
-    return this.sendCommand('clearArea', {}).then(() => {
+  clearArea(args) {
+    const centerX = Number(args.X) || 0;
+    const centerZ = Number(args.Z) || 0;
+    console.log('周囲クリア開始: 中心(' + centerX + ', ' + centerZ + ')');
+    return this.sendCommand('clearArea', {
+      centerX: centerX,
+      centerZ: centerZ
+    }).then(() => {
       console.log('周囲クリア完了');
     }).catch(error => {
       console.error('周囲クリアエラー:', error);

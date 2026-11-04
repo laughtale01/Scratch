@@ -268,6 +268,21 @@ try:
     s, _ = handshake(); s.sendall(frame(8, b''))
     check('Close を送ると切れる', is_closed(s)); s.close()
     check('ここまでの後もサーバーは動いている', alive())
+    # 決まりに合わないフレーム（マスクなし・大きすぎるなど）を何度送っても、ログは間引かれて 1 行だけ
+    time.sleep(0.3)
+    check('決まりに合わないフレームのログは、くり返しても 1 行だけ（WARN）', len(rejected_lines('bad frame')) == 1
+          and all(l.startswith('WARN') for l in rejected_lines('bad frame'))
+          and not any(('Unmasked' in l or 'too large' in l) and 'Rejected' not in l for l in logs), rejected_lines('bad frame'))
+    # つないだあとに乱暴に切られても（RST）、ERROR は出さない（タブを閉じたときなど、よくあることなので debug）
+    n = len(logs)
+    for _ in range(3):
+        s, _ = handshake(); time.sleep(0.1)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0)); s.close()
+    time.sleep(0.5)
+    check('つないだあとに乱暴に切られても、ERROR は出さない（「切れた」の debug の行で終える）',
+          not any(l.startswith('ERROR') for l in logs[n:])
+          and any(l.startswith('DEBUG') and 'Client connection lost' in l for l in logs[n:]),
+          [l for l in logs[n:] if l.startswith('ERROR') or 'connection lost' in l][:3])
 
     print('--- 同時接続の上限')
     for _ in range(20):

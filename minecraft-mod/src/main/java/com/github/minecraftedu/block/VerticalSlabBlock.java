@@ -19,62 +19,61 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import javax.annotation.Nullable;
 
 /**
- * Vertical Slab Block
+ * 縦スラブ（縦向きのハーフブロック）
  *
- * A custom block that provides vertical slab functionality not present in vanilla Minecraft.
- * Unlike vanilla slabs which only have vertical positioning (bottom/top/double), vertical slabs
- * can be placed facing any of the 4 horizontal directions (north, south, east, west).
+ * バニラの Minecraft には無い、縦向きのハーフブロック。
+ * バニラのハーフブロックは上・下（と 2 枚重ね）にしか置けないが、
+ * 縦スラブは東西南北の 4 つの向きに置ける。
  *
- * Properties:
- * - facing: The horizontal direction the slab faces (north, south, east, west)
- * - waterlogged: Whether the block is waterlogged
+ * プロパティ:
+ * - facing: 向き（north / south / east / west）
+ * - waterlogged: 水に浸かっているか
  *
- * Collision Box:
- * - Half-width (8 pixels) in the direction perpendicular to facing
- * - Full height (16 pixels)
- * - Full depth (16 pixels in the facing direction)
+ * 当たり判定:
+ * - 向きの方向に厚さ半分（8 ピクセル）
+ * - 高さはまるごと（16 ピクセル）
+ * - 横幅はまるごと（16 ピクセル）
  *
- * Example:
- * - Facing NORTH: Occupies the northern half of the block space
- * - Facing EAST: Occupies the eastern half of the block space
+ * 例:
+ * - 北向き: ブロックの北半分をうめる
+ * - 東向き: ブロックの東半分をうめる
  */
 public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
 
     /**
-     * Horizontal facing direction property (north, south, east, west)
+     * 向き（東西南北）
      */
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     /**
-     * Waterlogged property for compatibility with water
+     * 水に浸かっているか（水の中にも置けるようにするため）
      */
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
     /**
-     * VoxelShapes for each facing direction
-     * These define the collision and selection boxes for the block
+     * 向きごとの形（当たり判定と、選んだときの枠）
      */
-    // North facing: occupies northern half (Z: 0-8)
+    // 北向き: 北半分（Z: 0〜8）
     protected static final VoxelShape SHAPE_NORTH = Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 8.0);
 
-    // South facing: occupies southern half (Z: 8-16)
+    // 南向き: 南半分（Z: 8〜16）
     protected static final VoxelShape SHAPE_SOUTH = Block.box(0.0, 0.0, 8.0, 16.0, 16.0, 16.0);
 
-    // West facing: occupies western half (X: 0-8)
+    // 西向き: 西半分（X: 0〜8）
     protected static final VoxelShape SHAPE_WEST = Block.box(0.0, 0.0, 0.0, 8.0, 16.0, 16.0);
 
-    // East facing: occupies eastern half (X: 8-16)
+    // 東向き: 東半分（X: 8〜16）
     protected static final VoxelShape SHAPE_EAST = Block.box(8.0, 0.0, 0.0, 16.0, 16.0, 16.0);
 
     /**
-     * Constructor
+     * コンストラクタ
      *
-     * @param properties Block properties (typically copied from a similar vanilla block)
+     * @param properties ブロックの性質（ふつうは、似たバニラのブロックからコピーする）
      */
     public VerticalSlabBlock(Properties properties) {
         super(properties);
 
-        // Set default state: facing north, not waterlogged
+        // はじめの状態: 北向き、水に浸かっていない
         this.registerDefaultState(
             this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
@@ -83,8 +82,7 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
     }
 
     /**
-     * Create the block state definition
-     * Defines which properties this block has
+     * このブロックが持つプロパティ（向き・水に浸かっているか）を決める
      */
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -92,13 +90,13 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
     }
 
     /**
-     * Get the VoxelShape (collision box) for this block based on its facing direction
+     * 向きに合った形（当たり判定）を返す
      *
-     * @param state The block state
-     * @param level The world/level
-     * @param pos The block position
-     * @param context Collision context
-     * @return The appropriate VoxelShape for the current facing direction
+     * @param state ブロックの状態
+     * @param level ワールド
+     * @param pos ブロックの位置
+     * @param context 当たり判定の場面
+     * @return 今の向きに合った形
      */
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
@@ -114,23 +112,23 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
             case EAST:
                 return SHAPE_EAST;
             default:
-                return SHAPE_NORTH; // Fallback (should never happen)
+                return SHAPE_NORTH; // 念のため（横向き以外は来ない）
         }
     }
 
     /**
-     * Get the block state for placement
+     * 置くときの状態（向き）を決める
      *
-     * This method determines the facing direction based on:
-     * 1. The side of the block that was clicked
-     * 2. The player's look direction
+     * 向きは、次で決める:
+     * 1. クリックしたブロックの面
+     * 2. プレイヤーの向いている方向
      *
-     * Logic:
-     * - If clicking on a horizontal face (north/south/east/west), place facing that direction
-     * - If clicking on top/bottom, use the player's horizontal facing direction
+     * 決め方:
+     * - 横の面（東西南北）をクリックしたら、その面の向きにする
+     * - 上か下の面をクリックしたら、プレイヤーの向いている方向にする
      *
-     * @param context The placement context (includes player direction, clicked face, etc.)
-     * @return The block state to place, or null if placement should fail
+     * @param context 置くときの情報（プレイヤーの向き、クリックした面など）
+     * @return 置く状態（置けないときは null）
      */
     @Nullable
     @Override
@@ -138,16 +136,16 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
         Direction clickedFace = context.getClickedFace();
         FluidState fluidState = context.getLevel().getFluidState(context.getClickedPos());
 
-        // Determine facing direction
+        // 向きを決める
         Direction facing;
 
         if (clickedFace.getAxis().isHorizontal()) {
-            // Clicked on a horizontal face (north/south/east/west)
-            // Place the slab facing that direction
+            // 横の面（東西南北）をクリックした
+            // その面の向きに置く
             facing = clickedFace;
         } else {
-            // Clicked on top or bottom
-            // Use player's horizontal facing direction
+            // 上か下の面をクリックした
+            // プレイヤーの向いている方向にする
             facing = context.getHorizontalDirection();
         }
 
@@ -157,29 +155,27 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
     }
 
     /**
-     * Get the fluid state for this block
-     * Required for waterlogging support
+     * このブロックの中の液体を返す（水の中に置けるようにするため）
      *
-     * @param state The block state
-     * @return The fluid state (water if waterlogged, empty otherwise)
+     * @param state ブロックの状態
+     * @return 水に浸かっていれば水、そうでなければ空
      */
     @Override
     public FluidState getFluidState(BlockState state) {
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
-    // Future enhancement: Allow combining two vertical slabs into a full block
-    // This would require additional logic to detect adjacent vertical slabs
-    // and potentially replace them with a full block (similar to vanilla slab behavior)
+    // これからの案: 縦スラブを 2 枚重ねて、まるごとのブロックにできるようにする
+    // （バニラのハーフブロックと同じように、反対向きの同じ縦スラブを重ねたら入れ替える）
     //
-    // Potential implementation:
+    // 書き方の案:
     // @Override
     // public boolean canBeReplaced(BlockState state, BlockPlaceContext context) {
     //     ItemStack itemStack = context.getItemInHand();
-    //     // Check if placing same type of vertical slab in opposite direction
-    //     // If so, allow replacement to create full block
+    //     // 同じ種類の縦スラブを、反対向きに置こうとしているか確かめる
+    //     // そうなら入れ替えて、まるごとのブロックにする
     //     return itemStack.getItem() instanceof BlockItem blockItem
     //         && blockItem.getBlock() == this
-    //         && /* check if opposite direction */;
+    //         && /* 反対向きか確かめる */;
     // }
 }

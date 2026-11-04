@@ -9,10 +9,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -29,20 +31,34 @@ public class MinecraftEduMod {
     //            /entityspawn コマンドディスパッチスレッドの両方からアクセスされる
     private volatile SimpleWebSocketServer webSocketServer;
     private volatile CommandExecutor commandExecutor;
+    // Scratch とつなぐ受け口を開けなかったか（開けなかったら、ワールドに入った人にチャットで知らせる）
+    private volatile boolean webSocketStartFailed = false;
+
+    // Scratch とつなぐ受け口のポート
+    private static final int WEBSOCKET_PORT = 14711;
 
     public MinecraftEduMod() {
-        // Get the MOD event bus for registration
+        // 登録用の MOD のイベントバスを取る
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // Register deferred registries to the MOD event bus
+        // ブロックとアイテムの登録先を、MOD のイベントバスにつなぐ
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
 
-        // Register this class to the Forge event bus for server events
+        // サーバーの起動・停止などのイベントを受け取るため、Forge のイベントバスにこのクラスをつなぐ
         MinecraftForge.EVENT_BUS.register(this);
 
         LOGGER.info("MinecraftEdu Mod initializing...");
-        LOGGER.info("Registered custom blocks: vertical_oak_slab");
+        LOGGER.info("Registered custom blocks: " + ModBlocks.BLOCKS.getEntries().size() + " vertical slabs");
+    }
+
+    /**
+     * この MOD のバージョン（mods.toml の version。Scratch へ返す接続の返事に入れる）
+     */
+    public static String getModVersion() {
+        return ModList.get().getModContainerById(MOD_ID)
+            .map(container -> container.getModInfo().getVersion().toString())
+            .orElse("unknown");
     }
 
     @SubscribeEvent
@@ -60,12 +76,15 @@ public class MinecraftEduMod {
             commandExecutor = new CommandExecutor(server);
 
             // WebSocketサーバー起動（CommandExecutorを渡す）
-            webSocketServer = new SimpleWebSocketServer(14711, server, commandExecutor);
+            webSocketServer = new SimpleWebSocketServer(WEBSOCKET_PORT, server, commandExecutor);
             webSocketServer.start();
+            webSocketStartFailed = false;
 
-            LOGGER.info("WebSocket server started on port 14711");
+            // 「started on port」はサーバー側で出すので、ここでは出さない
             LOGGER.info("Scratch clients can now connect!");
         } catch (Exception e) {
+            // ポートがほかのアプリ（別の Minecraft など）に使われているときなど
+            webSocketStartFailed = true;
             LOGGER.error("Failed to start WebSocket server", e);
         }
     }
@@ -90,7 +109,7 @@ public class MinecraftEduMod {
         if (ws != null) {
             try {
                 ws.stop();
-                LOGGER.info("WebSocket server stopped");
+                // 「stopped」はサーバー側で出すので、ここでは出さない（起動のログと同じ）
             } catch (Exception e) {
                 LOGGER.error("Error stopping WebSocket server", e);
             }
@@ -99,6 +118,20 @@ public class MinecraftEduMod {
         // 次回 ServerStartingEvent で確実に新規生成されるよう参照をクリア
         this.webSocketServer = null;
         this.commandExecutor = null;
+        this.webSocketStartFailed = false;
+    }
+
+    /**
+     * ワールドに入った人に、Scratch とつなげない状態なら知らせる
+     * （受け口を開けなかったことはログにしか出ないので、子どもや先生が気づけるように）
+     */
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (webSocketStartFailed) {
+            event.getEntity().sendSystemMessage(Component.literal(
+                "[MinecraftEdu] §cScratch と つなげません（ポート " + WEBSOCKET_PORT
+                    + " ばんを ひらけませんでした。Minecraft が 2 つ ひらいていないか たしかめてね）"));
+        }
     }
 
     /**

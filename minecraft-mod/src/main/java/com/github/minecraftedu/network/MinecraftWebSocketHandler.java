@@ -23,8 +23,8 @@ public class MinecraftWebSocketHandler {
     }
 
     public String handleMessage(String request) {
-        // 受け取った全文はログに出さない（Forge は debug の行も debug.log に書くため。大きさだけ残す）
-        MinecraftEduMod.LOGGER.debug("Received message (" + (request == null ? 0 : request.length()) + " chars)");
+        // 受け取ったことは SimpleWebSocketServer が大きさだけを debug に出すので、ここでは出さない
+        // （全文は出さない。Forge は debug の行も debug.log に書くため）
 
         // catch でも requestId を載せられるよう、try の外で宣言する
         JsonObject message = null;
@@ -89,7 +89,8 @@ public class MinecraftWebSocketHandler {
         // セッションID生成
         sessionId = UUID.randomUUID().toString();
 
-        MinecraftEduMod.LOGGER.info("Client connected: " + clientId + " with session: " + sessionId);
+        // つながったことは SimpleWebSocketServer が info で出すので、ここは debug（「つなぐ」をくり返されても増えないように）
+        MinecraftEduMod.LOGGER.debug("Client connected: " + SimpleWebSocketServer.sanitizeForLog(clientId) + " with session: " + sessionId);
 
         // 接続レスポンス
         JsonObject response = new JsonObject();
@@ -113,9 +114,9 @@ public class MinecraftWebSocketHandler {
         responsePayload.addProperty("role", "STUDENT_FULL");
 
         JsonObject serverInfo = new JsonObject();
-        serverInfo.addProperty("version", "0.1.0");
+        serverInfo.addProperty("version", MinecraftEduMod.getModVersion());
         serverInfo.addProperty("minecraftVersion", "1.20.1");
-        serverInfo.addProperty("maxClients", 10);
+        serverInfo.addProperty("maxClients", SimpleWebSocketServer.MAX_CLIENTS);
         serverInfo.addProperty("currentClients", 1);
 
         responsePayload.add("serverInfo", serverInfo);
@@ -155,9 +156,13 @@ public class MinecraftWebSocketHandler {
             // handleMessage の catch に抜け、requestId 無しの応答になってハングする
             JsonObject payload = message.getAsJsonObject("payload");
             String action = payload.get("action").getAsString();
-            JsonObject params = payload.getAsJsonObject("params");
+            // params が無い・オブジェクトでないときは null を渡し、CommandExecutor が値の誤りとして断る
+            // （空として扱わない。命令ごとのキーの確かめとあわせて、二重の守り）
+            JsonObject params = payload.has("params") && payload.get("params").isJsonObject()
+                ? payload.getAsJsonObject("params") : null;
 
-            MinecraftEduMod.LOGGER.info("Executing command: " + action);
+            // 命令は「ずっと」の中で何度も来るので、毎回の行は debug にとどめる
+            MinecraftEduMod.LOGGER.debug("Executing command: " + SimpleWebSocketServer.sanitizeForLog(action));
 
             // コマンド実行（結果はJsonObjectで直接返される）
             JsonObject result = commandExecutor.execute(action, params);
@@ -218,9 +223,11 @@ public class MinecraftWebSocketHandler {
             // payload の取り出しも try の内側に入れる（handleCommand と同じ理由）
             JsonObject payload = message.getAsJsonObject("payload");
             String action = payload.get("action").getAsString();
-            JsonObject params = payload.has("params") ? payload.getAsJsonObject("params") : new JsonObject();
+            // params が無い・オブジェクトでないときは null を渡し、CommandExecutor が値の誤りとして断る（命令と同じ）
+            JsonObject params = payload.has("params") && payload.get("params").isJsonObject()
+                ? payload.getAsJsonObject("params") : null;
 
-            MinecraftEduMod.LOGGER.info("Executing query: " + action);
+            MinecraftEduMod.LOGGER.debug("Executing query: " + SimpleWebSocketServer.sanitizeForLog(action));
 
             // クエリ実行（結果はJsonObjectで直接返される）
             JsonObject result = commandExecutor.execute(action, params);
