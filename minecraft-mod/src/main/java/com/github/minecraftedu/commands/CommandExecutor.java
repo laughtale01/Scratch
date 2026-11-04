@@ -124,9 +124,6 @@ public class CommandExecutor {
                 case "setBlock":
                     return executeSetBlock(params);
 
-                case "getBlock":
-                    return executeGetBlock(params);
-
                 case "fillBlocks":
                     return executeFillBlocks(params);
 
@@ -309,39 +306,6 @@ public class CommandExecutor {
         position.addProperty("y", y);
         position.addProperty("z", z);
         result.add("position", position);
-
-        return result;
-    }
-
-    private JsonObject executeGetBlock(JsonObject params) {
-        int x = params.get("x").getAsInt();
-        int y = params.get("y").getAsInt();
-        int z = params.get("z").getAsInt();
-
-        BlockPos pos = new BlockPos(x, y, z);
-        ServerLevel world = server.overworld();
-
-        // ブロック情報取得
-        BlockState blockState = world.getBlockState(pos);
-        Block block = blockState.getBlock();
-        ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(block);
-
-        if (blockId == null) {
-            MinecraftEduMod.LOGGER.warn("Failed to get block ID at " + x + "," + y + "," + z);
-            return null;
-        }
-
-        MinecraftEduMod.LOGGER.debug("Block retrieved: " + blockId + " at " + x + "," + y + "," + z);
-
-        // 結果データを設定
-        JsonObject result = new JsonObject();
-        result.addProperty("blockType", blockId.toString());
-        JsonObject position = new JsonObject();
-        position.addProperty("x", x);
-        position.addProperty("y", y);
-        position.addProperty("z", z);
-        result.add("position", position);
-        result.add("blockState", new JsonObject());
 
         return result;
     }

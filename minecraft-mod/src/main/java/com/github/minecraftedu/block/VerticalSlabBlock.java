@@ -4,7 +4,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -124,7 +127,9 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
      * 2. プレイヤーの向いている方向
      *
      * 決め方:
-     * - 横の面（東西南北）をクリックしたら、その面の向きにする
+     * - 横の面（東西南北）をクリックしたら、クリックしたブロックにくっつく向きにする
+     *   （まるごとのブロックの南の面をクリックすると、新しいブロックはその南に置かれる。そこで北半分をうめると、
+     *    すき間なくくっつく。縦スラブの平らな面をクリックしたときは、そのブロックの中にすき間が半マス残る）
      * - 上か下の面をクリックしたら、プレイヤーの向いている方向にする
      *
      * @param context 置くときの情報（プレイヤーの向き、クリックした面など）
@@ -141,8 +146,8 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
 
         if (clickedFace.getAxis().isHorizontal()) {
             // 横の面（東西南北）をクリックした
-            // その面の向きに置く
-            facing = clickedFace;
+            // クリックした面の反対向きに置く（その面の向きにすると、半マスはなれて すき間ができるため）
+            facing = clickedFace.getOpposite();
         } else {
             // 上か下の面をクリックした
             // プレイヤーの向いている方向にする
@@ -163,6 +168,37 @@ public class VerticalSlabBlock extends Block implements SimpleWaterloggedBlock {
     @Override
     public FluidState getFluidState(BlockState state) {
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
+    }
+
+    /**
+     * となりのブロックが変わったときに呼ばれる
+     *
+     * 水に浸かっていたら、水が流れ直すように知らせる
+     * （知らせないと、となりを空けても水が流れ出さず、見た目が乱れるため。バニラのハーフブロックと同じ）
+     */
+    @Override
+    public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
+                                  LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+        if (state.getValue(WATERLOGGED)) {
+            level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+        }
+        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+    }
+
+    /**
+     * 回したときの状態（ストラクチャーブロックなどで建物を回して写すときに、向きもいっしょに回す）
+     */
+    @Override
+    public BlockState rotate(BlockState state, Rotation rotation) {
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+    }
+
+    /**
+     * 裏返したときの状態（ストラクチャーブロックなどで建物を反転して写すときに、向きもいっしょに裏返す）
+     */
+    @Override
+    public BlockState mirror(BlockState state, Mirror mirror) {
+        return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
     // これからの案: 縦スラブを 2 枚重ねて、まるごとのブロックにできるようにする

@@ -33,7 +33,7 @@ mise exec -- bash tests/websocket/run.sh
 - 受付のループで Error が起きたときの片付け（枠を返して閉じる）と、失敗が続いたときの 100ms の待ち
 - 停止（stop）の途中に来た接続の片付け
 - Windows での動き（この試験は Mac で作った）
-- `CommandExecutor` の中身（座標と範囲の上限、名前の打ちまちがい、キーや params が無いとき、問い合わせ（query）の受け口、チャットの長さと見えない文字、断ったときのチャットとその間引き）。下の手順で、本物の MOD で確かめる
+- `CommandExecutor` の中身（座標と範囲の上限、名前の打ちまちがい、キーや params が無いとき、消した入口（query の受け口・getBlock の命令）が残っていないこと、チャットの長さと見えない文字、断ったときのチャットとその間引き）。下の手順で、本物の MOD で確かめる
 - 下の手順でも出せないチャット: 「MOD の なかで まちがいが おきました（せんせいに しらせてね）」（MOD の不具合のときだけ）、「いま まわりを きれいにしている とちゅうです。おわるまで まってね」（「周りをきれいにする」を動かす必要がある）、「いまは いきものを だせない せっていです」（先生が `/entityspawn deny` にしたとき）
 - MOD の受け口を開けなかったときの知らせ。下の「ポートが使われているときの知らせを確かめる手順」で確かめる
 
@@ -146,11 +146,8 @@ Scratch（gui.js）は体積を先に確かめて断るので、Scratch のブ�
 | 周りをきれいにする、params が配列 | 断られる | 「うまく できませんでした（いれた あたいを たしかめてね）」 |
 | 周りをきれいにする、params はあるが中心のキーが無い | 断られる | 「うまく できませんでした（いれた あたいを たしかめてね）」（決まった中心 (0, 0) で動かさない） |
 | 生き物を全部消す、中心の z が無い | 断られる | 「うまく できませんでした（いれた あたいを たしかめてね）」 |
-| 問い合わせ（query）の受け口で、今いる位置、params が `{}` | 成功（問い合わせの返事） | なし |
-| 問い合わせ（query）の受け口で、今いる位置、params が無い | 断られる（問い合わせの返事） | 「うまく できませんでした（いれた あたいを たしかめてね）」 |
-| 問い合わせ（query）の受け口で、今いる位置、params が配列 | 断られる（問い合わせの返事） | 「うまく できませんでした（いれた あたいを たしかめてね）」 |
-| 問い合わせ（query）の受け口で、今いる位置、params が null | 断られる（問い合わせの返事） | 「うまく できませんでした（いれた あたいを たしかめてね）」 |
-| 問い合わせ（query）の受け口で、今いる位置、params が文字 | 断られる（問い合わせの返事） | 「うまく できませんでした（いれた あたいを たしかめてね）」 |
+| 問い合わせ（query）の受け口（消した。gui.js からは送らない） | エラーの返事（`UNKNOWN_TYPE`） | なし |
+| ブロックを調べる（getBlock）の命令（消した。gui.js は getBlockType を使う） | 断られる | 「その めいれいは この MOD では つかえません（MOD が ふるいかもしれません）」 |
 | 天気、ない名前 | 断られる | 「その てんきは ありません: no_such_weather」 |
 | ゲームルール、ない名前 | 断られる | 「その ルールは ありません: no_such_rule」 |
 | チャット、a を 255 文字と Z（256 文字） | 成功 | a が 255 文字と Z だけの行（切られずに Z で終わる） |
@@ -177,7 +174,8 @@ Scratch（gui.js）は体積を先に確かめて断るので、Scratch のブ�
 `probe_fill.py` のあとに、Minecraft のログで、失敗のログが増えすぎていないかを確かめる（Mac は `~/Library/Application Support/minecraft/logs/`、Windows は `%APPDATA%\.minecraft\logs\`）。
 
 - `latest.log` の `WARN` の行が、失敗の種類ごとに 1 行だけ（60 秒のあいだ）であること。2 回目からは `debug.log` にだけ出る
-- 「params が無い」の件が `Command without params: clearArea` の WARN 1 行であること（問い合わせの受け口の件も、同じ行の間引きに入る。ただし 60 秒より長くかけて答えたときは、`Command without params: getPosition` の行がもう 1 行出てよい）。「中心のキーが無い」の件が `Bad command parameters: clearArea (MissingParameterException: …)` の WARN 1 行であること。「x が無い」の件が `Bad command parameters: teleport (MissingParameterException: missing parameter)` の WARN 1 行であること
+- 「MOD が知らない命令」と「ブロックを調べる（getBlock）の命令」の件は同じ間引きに入り、`Unknown command: noSuchCommand` の WARN 1 行であること（ただし 60 秒より長くかけて答えたときは、`Unknown command: getBlock` の行がもう 1 行出てよい）
+- 「params が無い」の件が `Command without params: clearArea` の WARN 1 行であること。「中心のキーが無い」の件が `Bad command parameters: clearArea (MissingParameterException: …)` の WARN 1 行であること。「x が無い」の件が `Bad command parameters: teleport (MissingParameterException: missing parameter)` の WARN 1 行であること
 - 「知らないプロパティが 2 つ」の件が、`Unknown property '…' for block air (2 unknown properties)` の 1 行にまとまっていること（DEBUG も含めて、1 回の命令で 1 行）
 - 「座標が数でない」と「ブロックの名前が無い」の件が、`Bad command parameters: setBlock (UnsupportedOperationException: …)` と `Bad command parameters: setBlock (NullPointerException: …)` の WARN 1 行ずつで、スタックトレース（`at com.github…` の行）が付いていないこと（同じ命令でも、例外の種類ごとに 1 行）
 - 子どもが打った名前（改行・§ など）が、ログでは `?` に置きかわっていること
@@ -204,3 +202,39 @@ MOD の受け口（ポート 14711）をほかのアプリが使っていると�
 2. Scratch の「録画をはじめる」を、60 秒以内に 3 回くり返す
 3. `%APPDATA%\.minecraft\logs\latest.log` で、`録画開始エラー` の ERROR（スタックトレース付き）が 1 回だけ、`録画エラー[FFMPEG_MISSING]` の WARN が 1 行だけであることを確かめる（2 回目からは debug.log にだけ出る）
 4. 61 秒たってからもう 1 回くり返すと、ERROR と WARN がまた 1 回ずつ出る
+
+## 縦スラブを回す・裏返すときの向きを確かめる手順（手で確かめる）
+
+ストラクチャーブロックや `/place template` で建物を回したり裏返したりして写すとき、縦スラブの向きもいっしょに変わるかを確かめます（変わらないと、写した建物の縦スラブだけ向きがずれる）。試し用のワールド（チートあり）で行います。
+
+1. 空の上などの何もない所に、向きの違う縦スラブを 4 つ並べて置く。写したあとでどれがどれか分かるように、向きごとに木の種類を変える（写すと、並ぶ場所も回ったり逆の順になったりするので、置き場所では見分けられないため）
+
+   | 木の種類 | 置く向き | Scratch から置くときの名前 |
+   |---|---|---|
+   | オーク | 北向き | `minecraftedu:vertical_oak_slab[facing=north]` |
+   | シラカバ | 東向き | `minecraftedu:vertical_birch_slab[facing=east]` |
+   | マツ（spruce） | 南向き | `minecraftedu:vertical_spruce_slab[facing=south]` |
+   | ジャングル | 西向き | `minecraftedu:vertical_jungle_slab[facing=west]` |
+
+2. ストラクチャーブロック（`/give @s minecraft:structure_block`）の「保存」で、4 つを 1 つの構造物として保存する（名前は例えば `edu_slab_test`）
+3. チャットで、別々の場所に向きを変えて写す（`X Y Z` は場所ごとに変えた、空いている場所）
+
+   ```
+   /place template minecraft:edu_slab_test X Y Z clockwise_90 none
+   /place template minecraft:edu_slab_test X Y Z 180 none
+   /place template minecraft:edu_slab_test X Y Z counterclockwise_90 none
+   /place template minecraft:edu_slab_test X Y Z none left_right
+   /place template minecraft:edu_slab_test X Y Z none front_back
+   ```
+
+4. F3 を押して、写した縦スラブを 1 つずつ見て、画面の右の `facing` を確かめる（木の種類で、もとのどれかを見分ける）
+
+| 写し方 | オーク（もとは北）・シラカバ（東）・マツ（南）・ジャングル（西）が、それぞれ |
+|---|---|
+| 時計回りに 90 度（`clockwise_90`） | 東・南・西・北 |
+| 180 度（`180`） | 南・西・北・東 |
+| 反時計回りに 90 度（`counterclockwise_90`） | 西・北・東・南 |
+| 左右に裏返す（`left_right`） | 南・東・北・西（北と南だけ入れかわる） |
+| 前後に裏返す（`front_back`） | 北・西・南・東（東と西だけ入れかわる） |
+
+5. 見た目（板の側）と、選んだときの枠（黒い線）が同じ側にあることも見る

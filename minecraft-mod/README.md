@@ -84,7 +84,7 @@ cp build/libs/minecraftedu-mod-0.2.0-1.20.1.jar ~/.minecraft/mods/
 
 ### 対応コマンド
 
-- ブロック: `setBlock`（絶対座標・相対座標）、`fillBlocks`、`getBlock`、`getBlockType`、`getTargetBlock`、`setContainerItem`
+- ブロック: `setBlock`（絶対座標・相対座標）、`fillBlocks`、`getBlockType`、`getTargetBlock`、`setContainerItem`
 - プレイヤー: `getPosition`、`getPlayerFacing`、`teleport`、`setGameMode`、`setMoveSpeed`、`setFlySpeed`、`setNightVision`
 - ワールド: `chat`、`setWeather`、`setTime`、`setGameRule`、`summonEntity`、`setEntitySpawning`、`clearArea`、`clearAllEntities`
 - 録画（Windows だけ）: `startRecording`、`stopRecording`、`getRecordingStatus`

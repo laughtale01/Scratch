@@ -7,7 +7,10 @@ import com.github.minecraftedu.network.SimpleWebSocketServer;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -18,6 +21,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.RegistryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +48,10 @@ public class MinecraftEduMod {
         // ブロックとアイテムの登録先を、MOD のイベントバスにつなぐ
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        // クリエイティブの持ち物の画面に、縦スラブを並べる
+        modEventBus.addListener(this::onBuildCreativeTab);
+        // 起動の準備のイベントも MOD のイベントバスに出る（Forge のイベントバスにつないでも呼ばれない）
+        modEventBus.addListener(this::onCommonSetup);
 
         // サーバーの起動・停止などのイベントを受け取るため、Forge のイベントバスにこのクラスをつなぐ
         MinecraftForge.EVENT_BUS.register(this);
@@ -61,8 +69,19 @@ public class MinecraftEduMod {
             .orElse("unknown");
     }
 
-    @SubscribeEvent
-    public void onCommonSetup(FMLCommonSetupEvent event) {
+    /**
+     * クリエイティブの持ち物の画面の「建築ブロック」のタブに、縦スラブ 39 種を並べる
+     * （並べないと、ゲームの中では手に取れず、Scratch か /give でしか出せないため）
+     */
+    private void onBuildCreativeTab(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            for (RegistryObject<Item> item : ModItems.ITEMS.getEntries()) {
+                event.accept(item);
+            }
+        }
+    }
+
+    private void onCommonSetup(FMLCommonSetupEvent event) {
         LOGGER.info("MinecraftEdu common setup");
     }
 

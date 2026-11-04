@@ -219,16 +219,21 @@ def judge(reply, action, expect, kind='command'):
     expect が None なら、断られたこと（正しい形の返事で success が false）を期待する
     （エラーの返事や、形の違う返事は NG にする。ただし、断った理由は返事では分からない。
       ほかの理由で断られても同じ返事になるので、期待した理由で断ったかは、チャットの文を目で確かめて答えてもらう）
+    kind が 'error' なら、消した受け口として、知らない種類（UNKNOWN_TYPE）のエラーの返事を期待する（action と expect は見ない）
     """
     if reply.get('probe_error'):
         return reply['probe_error']
     payload = reply.get('payload')
-    # 送った種類（命令 command か、問い合わせ query か）に合う返事か
-    failed_code = {'command': 'COMMAND_FAILED', 'query': 'QUERY_FAILED'}[kind]
+    # 消した受け口（query）は、知らない種類のエラーの返事を期待する
+    if kind == 'error':
+        if reply.get('type') != 'error' or not isinstance(payload, dict) or payload.get('errorCode') != 'UNKNOWN_TYPE':
+            return '知らない種類のエラーの返事ではない（受け口が残っているかもしれない）'
+        return None
+    # 送った種類（命令 command）に合う返事か
     if reply.get('type') != kind + '_response' or not isinstance(payload, dict) or payload.get('action') != action:
         return '命令の返事の形ではない（%s の返事を待っていた）' % kind
     if expect is None:
-        if payload.get('success') is not False or payload.get('errorCode') != failed_code:
+        if payload.get('success') is not False or payload.get('errorCode') != 'COMMAND_FAILED':
             return '断られなかった（または断り方が違う）'
         return None
     if payload.get('success') is not True:
@@ -260,7 +265,7 @@ TP_X, TP_Y, TP_Z = 1000, -60, 0
 
 CASES = [
     # (説明, 命令を送る関数, 命令の名前, 期待する結果（None は断られる）, 確かめるチャットの文（None なら確かめない）
-    #  [, 送る種類（'command' か 'query'。書かなければ 'command'）])
+    #  [, 期待する返事の種類（'command' なら命令の返事、'error' なら消した受け口へのエラーの返事。書かなければ 'command'）])
     # 「ブロックで埋める」を先に置く（前の MOD なら、ここで NG になって止まる）
     ('横の上限ちょうど 256×1×256（空気を y=300 に）', lambda s: fill(s, 0, 300, 0, 255, 300, 255), 'fillBlocks',
      {'blocksFilled': 65536}, None),
@@ -373,18 +378,12 @@ CASES = [
      None, 'うまく できませんでした'),
     ('生き物を全部消す: 中心の z が無い', lambda s: request(s, 'command', {'action': 'clearAllEntities', 'params': {'centerX': 0}}),
      'clearAllEntities', None, 'うまく できませんでした'),
-    # もう 1 つの受け口（query）でも、params が無い・オブジェクトでなければ断る。{} なら動く
-    # （「今いる位置」はキーが要らないので、params の扱いだけを確かめられる。6 つ目は送る種類）
-    ('問い合わせ: 今いる位置、params が {}（動く）', lambda s: request(s, 'query', {'action': 'getPosition', 'params': {}}),
-     'getPosition', {}, None, 'query'),
-    ('問い合わせ: 今いる位置、params が無い', lambda s: request(s, 'query', {'action': 'getPosition'}), 'getPosition', None,
-     'うまく できませんでした', 'query'),
-    ('問い合わせ: 今いる位置、params が配列', lambda s: request(s, 'query', {'action': 'getPosition', 'params': []}),
-     'getPosition', None, 'うまく できませんでした', 'query'),
-    ('問い合わせ: 今いる位置、params が null', lambda s: request(s, 'query', {'action': 'getPosition', 'params': None}),
-     'getPosition', None, 'うまく できませんでした', 'query'),
-    ('問い合わせ: 今いる位置、params が文字', lambda s: request(s, 'query', {'action': 'getPosition', 'params': 'x'}),
-     'getPosition', None, 'うまく できませんでした', 'query'),
+    # 使われていない入口は消した（gui.js から送らないため。守る所を減らす）。問い合わせ（query）の受け口は、
+    # 知らない種類としてエラーの返事になる（6 つ目は期待する返事の種類）。getBlock は知らない命令として断る
+    ('問い合わせ（query）の受け口は無い', lambda s: request(s, 'query', {'action': 'getPosition', 'params': {}}),
+     'getPosition', None, None, 'error'),
+    ('ブロックを調べる（getBlock）の命令は無い', lambda s: request(s, 'command', {'action': 'getBlock',
+     'params': {'x': 0, 'y': -64, 'z': 0}}), 'getBlock', None, 'その めいれいは この MOD では つかえません'),
     # 知らない天気・ゲームルールの名前（前は「天気: （名前）」と出して成功にしていた）
     ('天気: ない名前', lambda s: request(s, 'command', {'action': 'setWeather', 'params': {'weather': 'no_such_weather'}}),
      'setWeather', None, 'その てんきは ありません: no_such_weather'),
@@ -521,7 +520,7 @@ try:
             failed = True
             break
         done += 1
-        print('ok  %s（%s）' % (name, '成功' if expect is not None else '断られた'))
+        print('ok  %s（%s）' % (name, 'エラーの返事' if kind == 'error' else '成功' if expect is not None else '断られた'))
     # 間引きの確かめ（2 つの番号の行のあいだに、期待した文が上から順にそれだけ出るか）
     for t, (name, steps, lines) in enumerate(THROTTLE_CASES if not failed else [], 1):
         begin, end = '[probe] 間引き %d' % t, '[probe] 間引き %d おわり' % t

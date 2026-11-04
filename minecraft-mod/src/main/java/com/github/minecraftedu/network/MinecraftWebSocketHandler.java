@@ -59,9 +59,6 @@ public class MinecraftWebSocketHandler {
             case "command":
                 return handleCommand(message);
 
-            case "query":
-                return handleQuery(message);
-
             case "heartbeat":
                 return handleHeartbeat();
 
@@ -215,71 +212,6 @@ public class MinecraftWebSocketHandler {
             // 例外の詳細はログのみ。応答に載せると内部情報が子どもの画面に届きうる
             MinecraftEduMod.LOGGER.error("Command execution error", e);
             return createError("COMMAND_FAILED", "Command execution error", getRequestId(message));
-        }
-    }
-
-    private String handleQuery(JsonObject message) {
-        try {
-            // payload の取り出しも try の内側に入れる（handleCommand と同じ理由）
-            JsonObject payload = message.getAsJsonObject("payload");
-            String action = payload.get("action").getAsString();
-            // params が無い・オブジェクトでないときは null を渡し、CommandExecutor が値の誤りとして断る（命令と同じ）
-            JsonObject params = payload.has("params") && payload.get("params").isJsonObject()
-                ? payload.getAsJsonObject("params") : null;
-
-            MinecraftEduMod.LOGGER.debug("Executing query: " + SimpleWebSocketServer.sanitizeForLog(action));
-
-            // クエリ実行（結果はJsonObjectで直接返される）
-            JsonObject result = commandExecutor.execute(action, params);
-            boolean success = (result != null);
-
-            // command 側と同じく「理由付きの失敗」を失敗として扱う。
-            // 揃えないと同じ実行結果がクエリ経路でだけ成功と解釈される
-            String errorCode = "QUERY_FAILED";
-            if (success) {
-                String failureCode = extractFailureCode(result, "QUERY_FAILED");
-                if (failureCode != null) {
-                    success = false;
-                    errorCode = failureCode;
-                }
-            }
-
-            // レスポンス
-            JsonObject response = new JsonObject();
-            response.addProperty("version", "1.0");
-            response.addProperty("messageId", UUID.randomUUID().toString());
-            response.addProperty("timestamp", System.currentTimeMillis());
-            response.addProperty("sessionId", sessionId);
-            response.addProperty("type", "query_response");
-
-            // 元のリクエストのmessageIdを含める
-            if (message.has("messageId")) {
-                response.addProperty("requestId", message.get("messageId").getAsString());
-            }
-
-            JsonObject responsePayload = new JsonObject();
-            responsePayload.addProperty("success", success);
-            responsePayload.addProperty("action", action);
-
-            if (success) {
-                if (result.size() == 0) {
-                    // 結果データがない場合はデフォルトメッセージ
-                    result.addProperty("message", "Query executed successfully");
-                }
-                responsePayload.add("result", result);
-            } else {
-                // errorMessage はログ・デバッグ用。内部情報を載せない
-                responsePayload.addProperty("errorCode", errorCode);
-                responsePayload.addProperty("errorMessage", "Failed to execute query");
-            }
-
-            response.add("payload", responsePayload);
-            return gson.toJson(response);
-
-        } catch (Exception e) {
-            // 例外の詳細はログのみ。応答に載せると内部情報が子どもの画面に届きうる
-            MinecraftEduMod.LOGGER.error("Query execution error", e);
-            return createError("QUERY_FAILED", "Query execution error", getRequestId(message));
         }
     }
 
