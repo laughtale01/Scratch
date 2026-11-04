@@ -5,14 +5,17 @@ issueTrackerURL="https://github.com/laughtale01/Scratch/issues"
 
 [[mods]]
 modId="minecraftedu"
-version="0.1.0"
+# 版は build.gradle の version だけに書く（jar の名前とゲームの中の表示をそろえるため）
+version="${file.jarVersion}"
 displayName="MinecraftEdu Scratch Controller"
 displayURL="https://github.com/laughtale01/Scratch"
 credits="Based on concepts from takecx's Scratch-Minecraft integration"
 authors="MinecraftEdu Team"
 description='''
-Educational Minecraft controller with Scratch 3.0.
-Features: Multiplayer support, Tutorial system, Progress tracking.
+Scratch 3.0 から Minecraft を動かすための、教育用の MOD です。
+Scratch のブロックで、ブロックを置く・テレポート・天気や時刻を変えるなどの命令を送れます（自分の PC の Scratch からだけ）。
+縦向きのハーフブロック（縦スラブ）39 種類も追加します。
+Educational MOD to control Minecraft from Scratch 3.0 on the same PC, with 39 vertical slabs.
 '''
 
 [[dependencies.minecraftedu]]
