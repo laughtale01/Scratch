@@ -194,6 +194,18 @@ public class CommandExecutor {
         int x, y, z;
         ServerPlayer player = getFirstPlayer();
 
+        // ワールドの外の座標は断る（int にする前に確かめる。大きすぎる数は上の桁が落ちて、別の場所に置かれてしまうため）
+        String[] coordKeys = params.has("x")
+            ? new String[]{"x", "y", "z"}
+            : new String[]{"relativeX", "relativeY", "relativeZ"};
+        for (String key : coordKeys) {
+            if (params.has(key) && !isWithinWorldLimit(params.get(key))) {
+                MinecraftEduMod.LOGGER.warn("setBlock coordinates out of world limit");
+                sendChatMessage("§cばしょがワールドの外です");
+                return null;
+            }
+        }
+
         if (params.has("x")) {
             // 絶対座標
             x = params.get("x").getAsInt();
@@ -210,9 +222,19 @@ public class CommandExecutor {
             int relY = params.get("relativeY").getAsInt();
             int relZ = params.get("relativeZ").getAsInt();
 
-            x = (int) player.getX() + relX;
-            y = (int) player.getY() + relY;
-            z = (int) player.getZ() + relZ;
+            // 足したあとの場所もワールドの中か確かめる（ずらす量が中でも、プレイヤーの位置と足すと外に出ることがあるため。
+            // long で足すので、あふれない）
+            long sumX = (long) player.getX() + relX;
+            long sumY = (long) player.getY() + relY;
+            long sumZ = (long) player.getZ() + relZ;
+            if (!isWithinWorldLimit(sumX) || !isWithinWorldLimit(sumY) || !isWithinWorldLimit(sumZ)) {
+                MinecraftEduMod.LOGGER.warn("setBlock relative position out of world limit");
+                sendChatMessage("§cばしょがワールドの外です");
+                return null;
+            }
+            x = (int) sumX;
+            y = (int) sumY;
+            z = (int) sumZ;
         }
 
         // ブロック状態を解析（プロパティを含む）
@@ -279,11 +301,57 @@ public class CommandExecutor {
         return result;
     }
 
+    // ワールドの端（Minecraft がブロックを置けるのは X・Z が -30,000,000 以上 30,000,000 未満）。これより外の座標は断る
+    private static final int WORLD_COORD_LIMIT = 30_000_000;
+    // テレポート・生き物を出すときの高さの上限（Minecraft の /tp・/summon と同じく -20,000,000 以上 20,000,000 未満）
+    private static final int SPAWN_HEIGHT_LIMIT = 20_000_000;
+    // 1 回の fillBlocks で置けるブロックの数の上限
+    private static final long MAX_FILL_VOLUME = 2_000_000L;
+    // 1 回の fillBlocks の横（X・Z）の 1 辺の上限
+    // （置くたびにまだ読み込んでいないチャンクを読み込み・生成するので、広すぎるとサーバーが長く止まるため。
+    //  256 なら最大 17×17 = 289 チャンクで、ほぼ描画距離の中に収まる）
+    private static final long MAX_FILL_SIDE = 256L;
+
+    /**
+     * 座標がワールドの端より内側か確認（大きすぎる数で計算があふれたり、ループが終わらなくなったりしないように）
+     * int にする前に、送られた数のまま確かめる（getAsInt は上の桁を落とすので、4294967296 が 0 になり、
+     * ワールドの外の数が原点の近くとして通ってしまうため）。NaN や無限大も外として扱う
+     */
+    private static boolean isWithinWorldLimit(JsonElement value) {
+        return isWithinWorldLimit(value.getAsDouble());
+    }
+
+    /**
+     * 座標がワールドの端より内側か確認（-30,000,000 以上 30,000,000 未満。Minecraft がブロックを置ける範囲と同じ）
+     * NaN は比べると false になるので、外として扱われる
+     */
+    private static boolean isWithinWorldLimit(double value) {
+        return value >= -WORLD_COORD_LIMIT && value < WORLD_COORD_LIMIT;
+    }
+
+    /**
+     * テレポート・生き物を出す場所がワールドの中か確認（Minecraft の /tp・/summon と同じ範囲）
+     * 横（X・Z）は isWithinWorldLimit と同じ、高さ（Y）は -20,000,000 以上 20,000,000 未満。NaN は外として扱われる
+     */
+    private static boolean isWithinSpawnableBounds(JsonObject params) {
+        double y = params.get("y").getAsDouble();
+        return isWithinWorldLimit(params.get("x")) && isWithinWorldLimit(params.get("z"))
+            && y >= -SPAWN_HEIGHT_LIMIT && y < SPAWN_HEIGHT_LIMIT;
+    }
+
     private JsonObject executeFillBlocks(JsonObject params) {
         // fromとtoの座標を取得
         JsonObject from = params.getAsJsonObject("from");
         JsonObject to = params.getAsJsonObject("to");
         String blockType = params.get("blockType").getAsString();
+
+        // ワールドの外の座標は断る（int にする前に確かめる）
+        if (!isWithinWorldLimit(from.get("x")) || !isWithinWorldLimit(from.get("y")) || !isWithinWorldLimit(from.get("z"))
+                || !isWithinWorldLimit(to.get("x")) || !isWithinWorldLimit(to.get("y")) || !isWithinWorldLimit(to.get("z"))) {
+            MinecraftEduMod.LOGGER.warn("Fill coordinates out of world limit");
+            sendChatMessage("§cはんいがワールドの外です");
+            return null;
+        }
 
         int fromX = from.get("x").getAsInt();
         int fromY = from.get("y").getAsInt();
@@ -293,20 +361,44 @@ public class CommandExecutor {
         int toY = to.get("y").getAsInt();
         int toZ = to.get("z").getAsInt();
 
-        // 座標範囲を正規化（小さい方から大きい方へ）
-        int minX = Math.min(fromX, toX);
-        int maxX = Math.max(fromX, toX);
-        int minY = Math.min(fromY, toY);
-        int maxY = Math.max(fromY, toY);
-        int minZ = Math.min(fromZ, toZ);
-        int maxZ = Math.max(fromZ, toZ);
-
-        // 範囲チェック（最大2000000ブロックまで）
-        int volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-        if (volume > 2000000) {
-            MinecraftEduMod.LOGGER.warn("Fill volume too large: " + volume + " blocks (max: 2000000)");
+        ServerLevel overworld = server.overworld();
+        if (overworld == null) {
+            MinecraftEduMod.LOGGER.warn("Fill skipped: overworld is not loaded");
             return null;
         }
+
+        // 座標範囲を正規化（小さい方から大きい方へ）
+        // 高さは建てられる範囲（1.20.1 のオーバーワールドは -64〜319）に切りそろえる
+        // （範囲の外はもともと何も置かれないので、置ける所だけを回す。全部が外なら断る）
+        int minX = Math.min(fromX, toX);
+        int maxX = Math.max(fromX, toX);
+        int minY = Math.max(Math.min(fromY, toY), overworld.getMinBuildHeight());
+        int maxY = Math.min(Math.max(fromY, toY), overworld.getMaxBuildHeight() - 1);
+        int minZ = Math.min(fromZ, toZ);
+        int maxZ = Math.max(fromZ, toZ);
+        if (minY > maxY) {
+            MinecraftEduMod.LOGGER.warn("Fill range is outside the build height");
+            // 前は何も置かずに成功を返していたので、断った理由をゲームの中で知らせる
+            sendChatMessage("§cその高さには ブロックを おけません（高すぎるか ひくすぎます）");
+            return null;
+        }
+
+        // 範囲チェック（最大2000000ブロックまで）
+        // int のかけ算はあふれて小さな数（や負の数）になり、チェックをすり抜けるので、
+        // long で計算する（横は 1 辺 256 まで、高さは建てられる範囲に切りそろえたので、3 辺の積も long に収まる）
+        // 横（X・Z）は 1 辺 MAX_FILL_SIDE まで（チャンクを読み込みすぎないため）
+        long sizeX = (long) maxX - minX + 1;
+        long sizeY = (long) maxY - minY + 1;
+        long sizeZ = (long) maxZ - minZ + 1;
+        if (sizeX > MAX_FILL_SIDE || sizeZ > MAX_FILL_SIDE || sizeX * sizeY * sizeZ > MAX_FILL_VOLUME) {
+            MinecraftEduMod.LOGGER.warn("Fill range too large: " + sizeX + "x" + sizeY + "x" + sizeZ
+                + " (max side: " + MAX_FILL_SIDE + ", max: " + MAX_FILL_VOLUME + " blocks)");
+            // Scratch 側は体積しか確かめないので、断った理由をゲームの中で知らせる
+            // 小学生に読みやすいよう、ブロックの数は「200まん」と書く
+            sendChatMessage("§cはんいが広すぎます（よこも おくゆきも " + MAX_FILL_SIDE + " マスまで、ぜんぶで " + (MAX_FILL_VOLUME / 10_000) + "まん ブロックまで）");
+            return null;
+        }
+        long volume = sizeX * sizeY * sizeZ;
 
         // ブロック状態を解析（プロパティを含む）
         BlockState blockState = parseBlockState(blockType);
@@ -531,6 +623,13 @@ public class CommandExecutor {
     }
 
     private JsonObject executeSummonEntity(JsonObject params) {
+        // ワールドの外の座標は断る（Minecraft の /summon と同じく、ワールドの端の外や高すぎる所に生き物を出さない）
+        if (!isWithinSpawnableBounds(params)) {
+            MinecraftEduMod.LOGGER.warn("summonEntity coordinates out of world limit");
+            sendChatMessage("§cばしょがワールドの外です");
+            return null;
+        }
+
         // エンティティ召喚が禁止されている場合は拒否
         if (!entitySpawningAllowed) {
             MinecraftEduMod.LOGGER.info("Entity spawning is disabled - command rejected");
@@ -567,6 +666,13 @@ public class CommandExecutor {
     }
 
     private JsonObject executeTeleport(JsonObject params) {
+        // ワールドの外の座標は断る（Minecraft の /tp と同じく、ワールドの端の外や高すぎる所へは行かせない）
+        if (!isWithinSpawnableBounds(params)) {
+            MinecraftEduMod.LOGGER.warn("Teleport coordinates out of world limit");
+            sendChatMessage("§cばしょがワールドの外です");
+            return null;
+        }
+
         double x = params.get("x").getAsDouble();
         double y = params.get("y").getAsDouble();
         double z = params.get("z").getAsDouble();
@@ -831,6 +937,14 @@ public class CommandExecutor {
             return null;
         }
 
+        // ワールドの外の中心は断る（int にする前に確かめる。centerX + 200 があふれると、下のループが終わらなくなるため）
+        if ((params.has("centerX") && !isWithinWorldLimit(params.get("centerX")))
+                || (params.has("centerZ") && !isWithinWorldLimit(params.get("centerZ")))) {
+            MinecraftEduMod.LOGGER.warn("clearArea: center out of world limit");
+            sendChatMessage("§cばしょがワールドの外です");
+            return null;
+        }
+
         // 中心座標を取得（デフォルト: 0, 0）
         int centerX = params.has("centerX") ? params.get("centerX").getAsInt() : 0;
         int centerZ = params.has("centerZ") ? params.get("centerZ").getAsInt() : 0;
@@ -930,6 +1044,15 @@ public class CommandExecutor {
      * 中心座標から±200の範囲のエンティティを削除（プレイヤーを除く）
      */
     private JsonObject executeClearAllEntities(JsonObject params) {
+        // ワールドの外の中心は断る（int にする前に確かめる。大きすぎる数は上の桁が落ちて原点の近くになり、
+        // centerX ± 200 があふれると、範囲がワールド全体に広がって、たくさんの生き物が消え、サーバーも長く止まるため）
+        if ((params.has("centerX") && !isWithinWorldLimit(params.get("centerX")))
+                || (params.has("centerZ") && !isWithinWorldLimit(params.get("centerZ")))) {
+            MinecraftEduMod.LOGGER.warn("clearAllEntities: center out of world limit");
+            sendChatMessage("§cばしょがワールドの外です");
+            return null;
+        }
+
         // 中心座標を取得（デフォルト: 0, 0）
         int centerX = params.has("centerX") ? params.get("centerX").getAsInt() : 0;
         int centerZ = params.has("centerZ") ? params.get("centerZ").getAsInt() : 0;
@@ -1566,6 +1689,21 @@ public class CommandExecutor {
      * コンテナブロック（ディスペンサー、チェスト、ホッパー等）にアイテムを設定する
      */
     private JsonObject executeSetContainerItem(JsonObject params) {
+        // ワールドの外の座標は断る（int にする前に確かめる。大きすぎる数は上の桁が落ちて、別の場所の入れ物に入ってしまうため）
+        if (!isWithinWorldLimit(params.get("x")) || !isWithinWorldLimit(params.get("y")) || !isWithinWorldLimit(params.get("z"))) {
+            MinecraftEduMod.LOGGER.warn("setContainerItem coordinates out of world limit");
+            sendChatMessage("§cばしょがワールドの外です");
+            return null;
+        }
+
+        // スロットの番号も int にする前に確かめる（4294967296 などが 0 になり、スロット 0 の中身を上書きしないように）
+        double slotValue = params.get("slot").getAsDouble();
+        if (!(slotValue >= 0 && slotValue <= Integer.MAX_VALUE)) {
+            MinecraftEduMod.LOGGER.warn("setContainerItem slot out of range");
+            sendChatMessage("§cその スロットの ばんごうは つかえません");
+            return null;
+        }
+
         int x = params.get("x").getAsInt();
         int y = params.get("y").getAsInt();
         int z = params.get("z").getAsInt();

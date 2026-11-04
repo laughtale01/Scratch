@@ -8,20 +8,79 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SimpleWebSocketServer {
     private static final String WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+    // 同時につなげる数の上限（Scratch のタブ数本分。超えたら断る）
+    private static final int MAX_CLIENTS = 8;
+    // 1 つのメッセージの大きさの上限（命令の JSON には十分。巨大な長さを名乗ってメモリを使い切らせないため）
+    private static final int MAX_PAYLOAD_BYTES = 1024 * 1024;
+    // ヘッダーの 1 行の長さと行数の上限
+    private static final int MAX_HEADER_LINE_BYTES = 8 * 1024;
+    private static final int MAX_HEADER_LINES = 100;
+    // ハンドシェイク全体の締め切り（何も送らない・少しずつしか送らない接続をいつまでも残さないため）
+    private static final int HANDSHAKE_TIMEOUT_MS = 5000;
+    // 受付が失敗し続けたときに待つ時間（すぐやり直して CPU とログを使い切らないため）
+    private static final int ACCEPT_RETRY_DELAY_MS = 100;
+    // ログに出す Origin の長さの上限
+    private static final int MAX_LOGGED_ORIGIN_CHARS = 100;
+    // 断った接続のログを出す間隔（つなぎ直しを繰り返されても、ログが際限なく増えないように）
+    private static final long REJECT_LOG_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(60);
+    // つないでよいサイト（Origin）。公開している Scratch と、手元での確認（python3 -m http.server 8000）だけ
+    // （localhost の他のポートを許すと、生徒の PC で動く別のアプリの画面を踏み台にされうるため）
+    private static final String ALLOWED_ORIGIN = "https://laughtale01.github.io";
+    private static final Pattern LOCAL_DEV_ORIGIN = Pattern.compile("^http://(localhost|127\\.0\\.0\\.1):8000$");
+
+    // 同時接続の数を数える
+    private final Semaphore clientSlots = new Semaphore(MAX_CLIENTS);
+    /**
+     * 接続を断った理由の種類（ログの間引きは種類ごとに行う。1 つにまとめると、
+     * 大量に断った種類のせいで、ほかの種類のログが「ほかに N 件」に埋もれるため）
+     */
+    private enum RejectReason {
+        NON_LOCAL("non-local address"),
+        TOO_MANY_CLIENTS("too many clients"),
+        ORIGIN("origin"),
+        BAD_REQUEST("bad request"),
+        HANDSHAKE_TIMEOUT("handshake timed out"),
+        HANDSHAKE_ERROR("handshake failed");
+
+        final String label;
+
+        RejectReason(String label) {
+            this.label = label;
+        }
+    }
+
+    /**
+     * 断った接続のログをまとめるための状態（種類ごとに 1 つ。rejectLogLock で守る）
+     */
+    private static class RejectLogState {
+        boolean loggedOnce = false;
+        long lastLogNanos;
+        long suppressed = 0;
+    }
+
+    private final Object rejectLogLock = new Object();
+    private final Map<RejectReason, RejectLogState> rejectLogStates = new EnumMap<>(RejectReason.class);
     private final int port;
     private final MinecraftServer minecraftServer;
     private final CommandExecutor commandExecutor;
@@ -43,6 +102,8 @@ public class SimpleWebSocketServer {
     public void start() throws IOException {
         serverSocket = new ServerSocket();
         serverSocket.setReuseAddress(true);  // TIME_WAIT 状態のソケット回収を許可
+        // 待ち受けはこれまでどおり全部のアドレスで行う（ブラウザが localhost を ::1 と 127.0.0.1 の
+        // どちらで引いてもつながるように）。自分の PC 以外からの接続は、受け付けた直後に切る
         serverSocket.bind(new InetSocketAddress(port));
         running = true;
         MinecraftEduMod.LOGGER.info("WebSocket server started on port " + port);
@@ -50,44 +111,213 @@ public class SimpleWebSocketServer {
         // Accept connections in a separate thread
         executor.submit(() -> {
             while (running) {
+                Socket client = null;
+                boolean slotAcquired = false;
+                boolean handedOff = false;
                 try {
-                    Socket client = serverSocket.accept();
-                    MinecraftEduMod.LOGGER.info("Client connected: " + client.getRemoteSocketAddress());
-                    executor.submit(() -> handleClient(client));
-                } catch (IOException e) {
+                    client = serverSocket.accept();
+                    // 停止の途中に受け付けた接続は、そのまま閉じる（finally で閉じる）
+                    if (!running) {
+                        continue;
+                    }
+                    // 自分の PC（ループバック）からの接続だけを受け付ける（同じ LAN の別の端末からはつなげない）
+                    if (!client.getInetAddress().isLoopbackAddress()) {
+                        logRejected(RejectReason.NON_LOCAL, client.getInetAddress().getHostAddress());
+                        continue;
+                    }
+                    // 同時接続の上限を超えたら断る
+                    if (!clientSlots.tryAcquire()) {
+                        logRejected(RejectReason.TOO_MANY_CLIENTS, null);
+                        continue;
+                    }
+                    slotAcquired = true;
+                    // つながったことは、ハンドシェイクが済んでから info で出す
+                    // （ここでは debug でも出さない。断る接続をくり返されると、debug.log の古い記録が押し出されるため）
+                    final Socket accepted = client;
+                    executor.submit(() -> handleClient(accepted));
+                    handedOff = true;
+                } catch (Throwable e) {
+                    // どんな失敗でも受付ループは止めない（止まると再接続できなくなるため）
                     if (running) {
                         MinecraftEduMod.LOGGER.error("Error accepting client", e);
+                        // 同じ失敗が続くとき（ファイルの数の上限など）に、すぐやり直して回り続けないよう少し待つ
+                        try {
+                            Thread.sleep(ACCEPT_RETRY_DELAY_MS);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                } finally {
+                    // handleClient に渡せなかった接続は、ここで枠を返して閉じる（渡せた接続は handleClient が片付ける）
+                    if (!handedOff) {
+                        if (slotAcquired) {
+                            clientSlots.release();
+                        }
+                        closeQuietly(client);
                     }
                 }
             }
         });
     }
 
-    private void handleClient(Socket client) {
-        // 停止時の明示的なソケットclose対象として追跡
-        activeClients.add(client);
-        // クライアントごとにハンドラーを作成してセッション状態を維持
-        // CommandExecutorは全クライアントで共有
-        MinecraftWebSocketHandler handler = new MinecraftWebSocketHandler(minecraftServer, commandExecutor);
+    /**
+     * つないでよいサイト（Origin）か確認
+     * ブラウザは WebSocket の接続で必ず Origin を送る。無いもの・許可していないものは断る
+     */
+    static boolean isAllowedOrigin(String origin) {
+        if (origin == null) return false;
+        return ALLOWED_ORIGIN.equals(origin) || LOCAL_DEV_ORIGIN.matcher(origin).matches();
+    }
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
+    /**
+     * ソケットを閉じる（閉じるときの失敗は気にしない）
+     */
+    private static void closeQuietly(Socket socket) {
+        if (socket == null) return;
+        try {
+            socket.close();
+        } catch (IOException ignored) {
+            // 閉じられなくても、これ以上できることはない
+        }
+    }
+
+    /**
+     * 断った接続をログに出す
+     * 種類ごとに、1 回目はすぐ出し、そのあとは 60 秒に 1 行まで（間に断った数をまとめて書く）
+     * （別のサイトのページからでも、普通のリクエストをくり返し送らせてログを増やせるため、
+     *   断る道はすべてここを通す）
+     * detail は相手が送った値を含みうるので、呼ぶ側で sanitizeForLog などを通しておく
+     */
+    private void logRejected(RejectReason reason, String detail) {
+        long now = System.nanoTime();
+        long suppressed;
+        synchronized (rejectLogLock) {
+            RejectLogState state = rejectLogStates.computeIfAbsent(reason, r -> new RejectLogState());
+            if (state.loggedOnce && now - state.lastLogNanos < REJECT_LOG_INTERVAL_NANOS) {
+                state.suppressed++;
+                return;
+            }
+            suppressed = state.suppressed;
+            state.suppressed = 0;
+            state.lastLogNanos = now;
+            state.loggedOnce = true;
+        }
+        MinecraftEduMod.LOGGER.warn("Rejected WebSocket connection (" + reason.label + ")"
+            + (detail != null ? ": " + detail : "")
+            + (suppressed > 0 ? " (and " + suppressed + " more since the last log)" : ""));
+    }
+
+    /**
+     * ログに出してよい形にする（相手が送った値に改行や制御文字があっても、偽の行を作れないように）
+     * ブラウザが送る Origin は必ず ASCII なので、見える ASCII（0x20〜0x7E）以外はすべて ? にする
+     * （Unicode の行区切り U+2028 や向きを変える文字なども、これで残らない）
+     */
+    static String sanitizeForLog(String value) {
+        if (value == null) return "(none)";
+        String cut = value.length() > MAX_LOGGED_ORIGIN_CHARS ? value.substring(0, MAX_LOGGED_ORIGIN_CHARS) + "..." : value;
+        StringBuilder sb = new StringBuilder(cut.length());
+        for (int i = 0; i < cut.length(); i++) {
+            char c = cut.charAt(i);
+            sb.append(c >= 0x20 && c <= 0x7E ? c : '?');
+        }
+        return sb.toString();
+    }
+
+    /**
+     * ハンドシェイクの上限（行が長すぎる・多すぎる）に当たったときの例外
+     * 想定内の失敗なので、ログは例外の詳しい中身を付けずに warn で出す
+     */
+    private static class HandshakeLimitException extends IOException {
+        HandshakeLimitException(String message) {
+            super(message);
+        }
+    }
+
+    /**
+     * ヘッダーを 1 行読む（CRLF まで）。長すぎる行は HandshakeLimitException。接続が終わったら null
+     * deadlineNanos（System.nanoTime の値）を過ぎたら SocketTimeoutException
+     * （setSoTimeout は 1 回の読み取りの待ち時間にしか効かないので、読むたびに残り時間を設定し直す）
+     */
+    private static String readHeaderLine(InputStream in, Socket client, long deadlineNanos) throws IOException {
+        ByteArrayOutputStream line = new ByteArrayOutputStream();
+        int b;
+        while (true) {
+            long remainingMs = TimeUnit.NANOSECONDS.toMillis(deadlineNanos - System.nanoTime());
+            if (remainingMs <= 0) {
+                throw new SocketTimeoutException("WebSocket handshake timed out");
+            }
+            client.setSoTimeout((int) Math.min(remainingMs, Integer.MAX_VALUE));
+            if ((b = in.read()) == -1) break;
+            if (b == '\n') {
+                byte[] bytes = line.toByteArray();
+                int len = bytes.length;
+                if (len > 0 && bytes[len - 1] == '\r') len--;
+                return new String(bytes, 0, len, StandardCharsets.UTF_8);
+            }
+            if (line.size() >= MAX_HEADER_LINE_BYTES) {
+                throw new HandshakeLimitException("WebSocket header line too long");
+            }
+            line.write(b);
+        }
+        return line.size() == 0 ? null : line.toString(StandardCharsets.UTF_8);
+    }
+
+    private static void sendHttpError(OutputStream out, String status) throws IOException {
+        out.write(("HTTP/1.1 " + status + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+        out.flush();
+    }
+
+    private void handleClient(Socket client) {
+        // ハンドシェイクの締め切り（受け付けてからの時間で数える）
+        long handshakeDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(HANDSHAKE_TIMEOUT_MS);
+        // ハンドシェイクが済んだか（済んだ接続だけ、切れたことを info で出す）
+        boolean handshakeDone = false;
+
+        // ヘッダーとフレームは同じストリームから読む（先読みしたバイトを取りこぼさないため）
+        // （下の finally で必ず枠を返すため、ここから先は全部 try の中に置く）
+        try (InputStream in = new BufferedInputStream(client.getInputStream());
              OutputStream out = client.getOutputStream()) {
 
-            // Read HTTP headers
-            String line;
-            StringBuilder headers = new StringBuilder();
-            String webSocketKey = null;
+            // 停止時の明示的なソケットclose対象として追跡
+            activeClients.add(client);
+            // 一覧に入れる前に stop() が一覧を閉じ終えていたら、ここで終える（読み取りで最大 5 秒残らないように）
+            if (!running) {
+                return;
+            }
+            // クライアントごとにハンドラーを作成してセッション状態を維持
+            // CommandExecutorは全クライアントで共有
+            MinecraftWebSocketHandler handler = new MinecraftWebSocketHandler(minecraftServer, commandExecutor);
 
-            while ((line = reader.readLine()) != null && !line.isEmpty()) {
-                headers.append(line).append("\r\n");
-                if (line.startsWith("Sec-WebSocket-Key:")) {
-                    webSocketKey = line.substring("Sec-WebSocket-Key:".length()).trim();
+            // HTTP のヘッダーを読む（行の長さと行数に上限を付けて、名前は小文字にそろえる）
+            Map<String, String> headers = new HashMap<>();
+            String requestLine = readHeaderLine(in, client, handshakeDeadline);
+            if (requestLine == null) return;
+            int lines = 0;
+            String line;
+            while ((line = readHeaderLine(in, client, handshakeDeadline)) != null && !line.isEmpty()) {
+                if (++lines > MAX_HEADER_LINES) {
+                    throw new HandshakeLimitException("Too many WebSocket header lines");
+                }
+                int colon = line.indexOf(':');
+                if (colon > 0) {
+                    headers.put(line.substring(0, colon).trim().toLowerCase(Locale.ROOT), line.substring(colon + 1).trim());
                 }
             }
 
-            if (webSocketKey == null) {
-                MinecraftEduMod.LOGGER.warn("No WebSocket key found in headers");
-                client.close();
+            String webSocketKey = headers.get("sec-websocket-key");
+            if (webSocketKey == null || webSocketKey.isEmpty()) {
+                // 別のサイトのページからも <img> などで送らせられるので、ログは間引く
+                logRejected(RejectReason.BAD_REQUEST, "no websocket key");
+                sendHttpError(out, "400 Bad Request");
+                return;
+            }
+
+            // 公開している Scratch（と手元での開発）以外のサイトからの接続は断る
+            String origin = headers.get("origin");
+            if (!isAllowedOrigin(origin)) {
+                logRejected(RejectReason.ORIGIN, sanitizeForLog(origin));
+                sendHttpError(out, "403 Forbidden");
                 return;
             }
 
@@ -102,10 +332,13 @@ public class SimpleWebSocketServer {
             out.write(response.getBytes(StandardCharsets.UTF_8));
             out.flush();
 
-            MinecraftEduMod.LOGGER.info("WebSocket handshake completed");
+            handshakeDone = true;
+            MinecraftEduMod.LOGGER.info("WebSocket handshake completed: " + client.getRemoteSocketAddress());
+
+            // ハンドシェイクの後は、命令を待つ間に切れないよう時間制限を外す（つなげるのは自分の PC からだけ）
+            client.setSoTimeout(0);
 
             // Handle WebSocket frames
-            InputStream in = client.getInputStream();
             while (running && !client.isClosed()) {
                 // Read WebSocket frame
                 int firstByte = in.read();
@@ -120,6 +353,12 @@ public class SimpleWebSocketServer {
                 boolean masked = (secondByte & 0x80) != 0;
                 int payloadLength = secondByte & 0x7F;
 
+                // クライアントからのフレームは必ずマスクされている（RFC 6455）。されていなければ切る
+                if (!masked) {
+                    MinecraftEduMod.LOGGER.warn("Unmasked WebSocket frame from client; closing");
+                    break;
+                }
+
                 // Extended payload length
                 if (payloadLength == 126) {
                     byte[] ext = new byte[2];
@@ -132,33 +371,40 @@ public class SimpleWebSocketServer {
                     for (int i = 0; i < 8; i++) {
                         longLength = (longLength << 8) | (ext[i] & 0xFF);
                     }
-                    if (longLength > Integer.MAX_VALUE) {
+                    if (longLength < 0 || longLength > MAX_PAYLOAD_BYTES) {
                         MinecraftEduMod.LOGGER.warn("Payload too large: " + longLength);
                         break;
                     }
                     payloadLength = (int) longLength;
                 }
 
-                // Masking key
-                byte[] maskingKey = new byte[4];
-                if (masked) {
-                    if (!readFully(in, maskingKey, 4)) break;
+                // 大きすぎるメッセージは、メモリを確保する前に断る
+                if (payloadLength > MAX_PAYLOAD_BYTES) {
+                    MinecraftEduMod.LOGGER.warn("Payload too large: " + payloadLength);
+                    break;
+                }
+                // 制御フレーム（Close / Ping / Pong）は 125 バイトまで（RFC 6455）
+                if (opcode >= 0x8 && payloadLength > 125) {
+                    MinecraftEduMod.LOGGER.warn("Control frame too large: " + payloadLength);
+                    break;
                 }
 
-                // Payload data
+                // マスクの鍵（マスクの無いフレームは上で切ったので、ここに来るのはいつもマスク付き）
+                byte[] maskingKey = new byte[4];
+                if (!readFully(in, maskingKey, 4)) break;
+
+                // 中身を読んで、マスクを外す
                 byte[] payload = new byte[payloadLength];
                 if (!readFully(in, payload, payloadLength)) break;
-
-                if (masked) {
-                    for (int i = 0; i < payload.length; i++) {
-                        payload[i] = (byte) (payload[i] ^ maskingKey[i % 4]);
-                    }
+                for (int i = 0; i < payload.length; i++) {
+                    payload[i] = (byte) (payload[i] ^ maskingKey[i % 4]);
                 }
 
                 // Handle message based on opcode
                 if (opcode == 0x1) { // Text frame
                     String message = new String(payload, StandardCharsets.UTF_8);
-                    MinecraftEduMod.LOGGER.info("Received WebSocket message: " + message);
+                    // 受け取った全文はログに出さない（ログが大きくなり、偽の行も差し込めてしまうため）
+                    MinecraftEduMod.LOGGER.debug("Received WebSocket message (" + payload.length + " bytes)");
                     handleWebSocketMessage(handler, message, out);
                 } else if (opcode == 0x8) { // Close frame
                     MinecraftEduMod.LOGGER.info("Client requested close");
@@ -169,18 +415,32 @@ public class SimpleWebSocketServer {
                 }
             }
 
+        } catch (SocketTimeoutException e) {
+            // ハンドシェイクの締め切りを過ぎた（想定内なので詳しい中身は出さない）
+            logRejected(RejectReason.HANDSHAKE_TIMEOUT, null);
+        } catch (HandshakeLimitException e) {
+            // ヘッダーが長すぎる・多すぎる（想定内なので詳しい中身は出さない。長い URL なら別のサイトからも起こせる）
+            logRejected(RejectReason.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
             // 停止中の SocketException 等は想定内なので debug レベルに落とす
-            if (running) {
+            if (running && !handshakeDone && e instanceof IOException) {
+                // ハンドシェイクの前の通信の失敗（途中で切られた等）は、別のサイトからもくり返し起こせるので間引く
+                // （詳しい中身は出さず、例外の種類だけ出す。プログラムの不具合は下の error で詳しく出す）
+                logRejected(RejectReason.HANDSHAKE_ERROR, e.getClass().getSimpleName());
+            } else if (running) {
                 MinecraftEduMod.LOGGER.error("Error handling client", e);
             } else {
                 MinecraftEduMod.LOGGER.debug("Client connection closed during shutdown: " + e.getMessage());
             }
         } finally {
             activeClients.remove(client);
+            clientSlots.release();
             try {
                 client.close();
-                MinecraftEduMod.LOGGER.info("Client disconnected");
+                // ハンドシェイクの前に切れた接続は出さない（断った理由は logRejected で出している）
+                if (handshakeDone) {
+                    MinecraftEduMod.LOGGER.info("Client disconnected");
+                }
             } catch (IOException e) {
                 MinecraftEduMod.LOGGER.error("Error closing client", e);
             }
@@ -247,6 +507,7 @@ public class SimpleWebSocketServer {
     private void sendPong(OutputStream out, byte[] payload) throws IOException {
         ByteArrayOutputStream frame = new ByteArrayOutputStream();
         frame.write(0x8A); // FIN + opcode 0xA (pong)
+        // 受け取る Ping は 125 バイトまでに絞っているので、長さは 1 バイトで書ける
         frame.write(payload.length);
         frame.write(payload);
         byte[] bytes = frame.toByteArray();

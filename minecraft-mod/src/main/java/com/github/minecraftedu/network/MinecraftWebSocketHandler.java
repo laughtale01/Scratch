@@ -23,7 +23,8 @@ public class MinecraftWebSocketHandler {
     }
 
     public String handleMessage(String request) {
-        MinecraftEduMod.LOGGER.debug("Received: " + request);
+        // 受け取った全文はログに出さない（Forge は debug の行も debug.log に書くため。大きさだけ残す）
+        MinecraftEduMod.LOGGER.debug("Received message (" + (request == null ? 0 : request.length()) + " chars)");
 
         // catch でも requestId を載せられるよう、try の外で宣言する
         JsonObject message = null;
