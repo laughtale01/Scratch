@@ -15,6 +15,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
@@ -111,7 +112,22 @@ public class MinecraftEduMod {
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         LOGGER.info("MinecraftEdu server stopping...");
+        stopAll();
+    }
 
+    /**
+     * サーバーが止まったあと（Minecraft が落ちたときは ServerStoppingEvent が来ないので、ここでも後始末する。
+     * ふつうに止めたときは、もう片づいているので何もしない）
+     */
+    @SubscribeEvent
+    public void onServerStopped(ServerStoppedEvent event) {
+        stopAll();
+    }
+
+    /**
+     * CommandExecutor（命令の列とタイマーも）と WebSocket サーバを止めて、参照を外す（2 回呼んでもよい）
+     */
+    private void stopAll() {
         // 最初に CommandExecutor を停止状態にし、新規コマンドを全てブロック
         // ローカル変数にスナップショットしてからnullチェック → スレッドセーフ
         final CommandExecutor ce = this.commandExecutor;

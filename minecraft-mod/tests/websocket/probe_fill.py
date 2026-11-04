@@ -12,10 +12,14 @@
 # 何もない所に空気を置くだけで済む（ふつうのワールドで山などがあると、そこが削れる）。断られる範囲は何も置かれない。
 # 下限の確かめでは、y=-64 の岩盤の 1 マスに岩盤を置く（もとから岩盤なので変わらない）。
 # 入れ物の確かめでは、空の上（x=2, y=300, z=2）にチェストを置き、終わったら消す（途中で止まったときも消す）。
+# 順番の確かめでは、空の上（x 0〜99, y 200〜219, z 0〜99）を石で 20 万ブロック埋め（2 回）、(99, 219, 99) に金ブロックを置く。
+# また、プレイヤーを x=1000, y=-60, z=0 へテレポートして、その 5 マス上にエメラルドブロックを置く
+# （まちがった MOD では、はじめの場所の 5 マス上に置かれることがある）。区画の境の確かめでは、x -18〜-14, y 206〜210,
+# z -2〜2 を石で埋める。置いたらすぐ調べる確かめでは、(3, 300, 3) に金ブロックを置く。どれも確かめたら空気に戻す。
 # 間引きの確かめでは、時刻を正午にする。
 # 相対座標の確かめのため、プレイヤーを x=1000, y=-60, z=0 へテレポートする（終わったら元の場所へ戻す）。
 # 期待と違う結果が 1 件でも出たら、そこで止める（古い MOD に流して、本当に動かしてしまわないように）。
-import base64, json, os, socket, struct, sys, time, uuid
+import base64, json, math, os, socket, struct, sys, time, uuid
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 14711
 ORIGIN = 'http://localhost:8000'
@@ -113,8 +117,11 @@ def chat(s, message):
     return request(s, 'command', {'action': 'chat', 'params': {'message': message}})
 
 
-# 途中で止まったときに片づけるもの（チェストを置いたら True。finally で空気に戻す）
-CLEANUP = {'chest': False}
+# 途中で止まったときに片づけるもの（チェストを置いたら True。順番の確かめで置いたブロックのマスと、石で埋めた範囲。
+# finally で空気に戻す）
+# maybe は、エメラルドブロックが置かれたかもしれないマス（テレポートの前の場所の上。もともと何かあったかもしれないので、
+# エメラルドブロックだったときだけ消す）
+CLEANUP = {'chest': False, 'cells': set(), 'maybe': set(), 'box': False, 'edge': False}
 
 
 def place_chest(s):
@@ -212,6 +219,269 @@ def set_container_item(s, x, y, z, slot=0, item='minecraft:stone'):
         'x': x, 'y': y, 'z': z, 'slot': slot, 'itemType': item, 'count': 1}})
 
 
+def block_type(s, x, y, z):
+    """そのマスのブロックの名前（MOD は前の命令が終わってから答える。答えられなければ None）"""
+    reply = request(s, 'command', {'action': 'getBlockType', 'params': {'x': x, 'y': y, 'z': z}})
+    return ((reply.get('payload') or {}).get('result') or {}).get('blockType')
+
+
+# 列が空くのを待つ長さ（秒）。一度待ちきれなかったら、そのあとの片づけでは短く待つ（列が空かないまま、
+# 片づけのたびに 60 秒ずつ黙って待ち続けないように）
+QUEUE_WAIT = {'limit': 60}
+
+
+def wait_queue(s, limit=None):
+    """
+    MOD の列にたまった命令が終わるまで待つ。「見ているブロック」は、列がすいていれば列に並んで答え、答えに queued: true が付く
+    （列が混んでいると、並ばずに今の様子を答えて queued: false になる）。queued: true の答えが来るまで、limit 秒までやり直す。
+    終わったら True
+    """
+    deadline = time.monotonic() + (QUEUE_WAIT['limit'] if limit is None else limit)
+    while time.monotonic() < deadline:
+        reply = request(s, 'command', {'action': 'getTargetBlock', 'params': {}})
+        payload = reply.get('payload') or {}
+        if payload.get('success') is True and (payload.get('result') or {}).get('queued') is True:
+            return True
+        time.sleep(0.5)
+    QUEUE_WAIT['limit'] = 5
+    return False
+
+
+def clear_tracked(s):
+    """
+    覚えたマスを空気に戻し、空気になったか確かめる（消せたマスだけ忘れる）。全部消せたら True
+    空気に戻す命令が断られたマスと、列が空くのを待てなかったときは、覚えたままにする
+    （待たずに読むと、まだ列に残っている「置く」の前の空気を読んで、消せたと思ってしまうため）
+    """
+    if not CLEANUP['cells']:
+        return True
+    sent = set()
+    for cell in sorted(CLEANUP['cells']):
+        if (set_block(s, *cell, 'air').get('payload') or {}).get('success') is True:
+            sent.add(cell)
+    if not wait_queue(s):
+        return False
+    for cell in sorted(sent):
+        if block_type(s, *cell) == 'air':
+            CLEANUP['cells'].discard(cell)
+    return not CLEANUP['cells']
+
+
+def settle_maybe(s):
+    """
+    エメラルドブロックが置かれたかもしれないマスを、列が空いてから調べる（列に残った「置く」が、あとで置くことがあるため）。
+    エメラルドブロックなら消すマス（cells）に移し、ほかのブロックなら（もともとあった物なので）忘れる。
+    列が空くのを待てなかったときや、調べられなかったマスは、覚えたままにする
+    """
+    if not CLEANUP['maybe'] or not wait_queue(s):
+        return
+    for cell in sorted(CLEANUP['maybe']):
+        found = block_type(s, *cell)
+        if found == 'emerald_block':
+            CLEANUP['cells'].add(cell)
+        if found is not None:
+            CLEANUP['maybe'].discard(cell)
+
+
+# 順番の確かめで石を埋める範囲（空の上。100×20×100 = 20 万ブロック。MOD が何回にも分けて置く大きさ。
+# 空気は、空気しかない所では MOD が飛ばしてすぐ終わるので、石を使う）と、その範囲の終わりのほうのマス・最後のマス
+ORDER_BOX = ((0, 200, 0), (99, 219, 99))
+ORDER_MARK = (98, 218, 98)
+ORDER_LAST = (99, 219, 99)
+
+
+def fill_order_box(s, block):
+    (x1, y1, z1), (x2, y2, z2) = ORDER_BOX
+    return fill(s, x1, y1, z1, x2, y2, z2, block)
+
+
+def clear_order_box(s):
+    """石で埋めた範囲を空気に戻し、空気になったか確かめる（すみ・目印・最後のマス）。戻せたら True"""
+    fill_order_box(s, 'air')
+    if not wait_queue(s):
+        return False
+    (x1, y1, z1), (x2, y2, z2) = ORDER_BOX
+    cells = [(x, y, z) for x in (x1, x2) for y in (y1, y2) for z in (z1, z2)] + [ORDER_MARK, ORDER_LAST]
+    if all(block_type(s, *cell) == 'air' for cell in cells):
+        CLEANUP['box'] = False
+        return True
+    return False
+
+
+def fill_then_set_block(s):
+    """
+    大きく埋めたすぐあとに、その最後のマスへ置いた金ブロックが、埋める続きで消されないか
+    （MOD は大きな仕事を少しずつ進める。あとから届いた命令が途中に割りこむと、金ブロックが石で上書きされる）
+    空の上を石で 20 万ブロック埋め、すぐその最後のマスに金ブロックを置く。前の命令が終わるのを待ってから、
+    範囲の終わりのほうのマスが石になった（埋めるが本当に終わった）ことと、金ブロックが残っていることを調べ、空気に戻す
+    """
+    CLEANUP['box'] = True
+    try:
+        big = fill_order_box(s, 'stone')
+        if (big.get('payload') or {}).get('success') is not True:
+            return dict(big, probe_error='埋めるのが成功しなかった')
+        placed = set_block(s, *ORDER_LAST, 'gold_block')
+        if (placed.get('payload') or {}).get('success') is not True:
+            return dict(placed, probe_error='金ブロックを置くのが成功しなかった')
+        if not wait_queue(s):
+            return dict(placed, probe_error='前の命令が終わるのを待てなかった（60 秒）')
+        found_mark = block_type(s, *ORDER_MARK)
+        if found_mark != 'stone':
+            return dict(placed, probe_error='範囲の終わりのほうが石になっていない（%r。埋めるが終わる前に答えが返ったかもしれない）' % found_mark)
+        found = block_type(s, *ORDER_LAST)
+        if found != 'gold_block':
+            return dict(placed, probe_error='置いた金ブロックが残っていない（%r。埋める続きに上書きされたかもしれない）' % found)
+        return placed
+    finally:
+        try:
+            if not clear_order_box(s):
+                print('    （埋めた石を、まだ消せていない。最後にもう一度消す）')
+        except Exception:
+            pass
+
+
+def teleport_then_relative(s):
+    """
+    大きな仕事のあとに「テレポート → 相対座標で置く」を続けて送ると、テレポートした先を基準に置かれるか
+    （MOD は相対座標の場所を、列で順番が来たときのプレイヤーの位置で決める。届いた時点で決めると、テレポートの前の場所に置かれる）
+    空の上を石で 20 万ブロック埋め、待たずにプレイヤーを (TP_X, TP_Y, TP_Z) へテレポートし、真上 5 マスにエメラルドブロックを置く
+    """
+    before = get_position(s)
+    if not before:
+        return {'probe_error': 'プレイヤーの場所が分からない'}
+    old_cell = (math.floor(before['x']), math.floor(before['y']) + 5, math.floor(before['z']))
+    # 前の版の MOD は 0 の方へ切り捨てたので、マイナスの座標では 1 マスずれた所に置くことがある。そこも片づけの候補にする
+    old_cells = {old_cell, (math.trunc(before['x']), math.trunc(before['y']) + 5, math.trunc(before['z']))}
+    new_cell = (TP_X, TP_Y + 5, TP_Z)
+    if new_cell in old_cells:
+        return {'probe_error': 'プレイヤーがもうテレポート先にいるので、確かめられない'}
+    # 使うマスがもともと空気か確かめる（あとで空気に戻すので、もとからあったブロックを消さないように。
+    # 前の場所の上がもとからエメラルドブロックだと、置かれたのか見分けられないため）
+    if not wait_queue(s):
+        return {'probe_error': '前の命令が終わるのを待てなかった（60 秒）'}
+    found = {cell: block_type(s, *cell) for cell in sorted(old_cells | {new_cell})}
+    if any(name != 'air' for name in found.values()):
+        return {'probe_error': 'プレイヤーの 5 マス上か、テレポート先の 5 マス上が、もともと空気ではない（%r。'
+                               '空の見える所に立って流してください）' % found}
+    CLEANUP['box'] = True
+    try:
+        big = fill_order_box(s, 'stone')
+        if (big.get('payload') or {}).get('success') is not True:
+            return dict(big, probe_error='埋めるのが成功しなかった')
+        moved = teleport(s, TP_X, TP_Y, TP_Z)
+        if (moved.get('payload') or {}).get('success') is not True:
+            return dict(moved, probe_error='テレポートが成功しなかった')
+        # 片づけのため、どのマスも覚えておく（まちがった場所に置かれたときも消す。前の場所の上は、
+        # エメラルドブロックだったときだけ消す）
+        CLEANUP['maybe'].update(old_cells)
+        CLEANUP['cells'].add(new_cell)
+        placed = request(s, 'command', {'action': 'setBlock', 'params': {
+            'relativeX': 0, 'relativeY': 5, 'relativeZ': 0, 'blockType': 'emerald_block'}})
+        if (placed.get('payload') or {}).get('success') is not True:
+            return dict(placed, probe_error='相対座標で置くのが成功しなかった')
+        if not wait_queue(s):
+            return dict(placed, probe_error='前の命令が終わるのを待てなかった（60 秒）')
+        at_new, at_old = block_type(s, *new_cell), block_type(s, *old_cell)
+        if at_new is None or at_old is None:
+            return dict(placed, probe_error='置いた所を調べられなかった（先: %r、前の場所の上: %r）' % (at_new, at_old))
+        if at_new != 'emerald_block' or at_old == 'emerald_block':
+            return dict(placed, probe_error='テレポート先の上に置かれていない（先: %r、前の場所の上: %r）' % (at_new, at_old))
+        return placed
+    finally:
+        try:
+            # 前の場所の上は、もともとあったブロックを消さないよう、列が空いてから調べ、エメラルドブロックのときだけ消す
+            # （待てなかったときや、調べられなかったときは、覚えたままにして、最後にもう一度見る）
+            settle_maybe(s)
+            if not clear_tracked(s):
+                print('    （置いたブロックを、まだ消せていない。最後にもう一度消す）')
+            if not clear_order_box(s):
+                print('    （埋めた石を、まだ消せていない。最後にもう一度消す）')
+        except Exception:
+            pass
+
+
+def read_right_after_place(s):
+    """
+    置いた直後に（前の命令が終わるのを待たずに）ブロックの種類を調べると、置いたブロックが答えられるか
+    （列がすいているときは、調べる命令も列に並ぶので、前の「置く」が終わってから読む。並ばずに読むと、置く前の空気を答える）
+    空の上 (3, 300, 3) に金ブロックを置き、すぐ調べ、空気に戻す
+    """
+    cell = (3, 300, 3)
+    if not wait_queue(s):
+        return {'probe_error': '前の命令が終わるのを待てなかった（60 秒）'}
+    CLEANUP['cells'].add(cell)
+    try:
+        placed = set_block(s, *cell, 'gold_block')
+        if (placed.get('payload') or {}).get('success') is not True:
+            return dict(placed, probe_error='金ブロックを置くのが成功しなかった')
+        reply = request(s, 'command', {'action': 'getBlockType', 'params': {'x': cell[0], 'y': cell[1], 'z': cell[2]}})
+        result = (reply.get('payload') or {}).get('result') or {}
+        if result.get('blockType') != 'gold_block' or result.get('queued') is not True:
+            return dict(reply, probe_error='置いた金ブロックが答えられなかった（%r、列に並んだか: %r）'
+                        % (result.get('blockType'), result.get('queued')))
+        return placed
+    finally:
+        try:
+            if not clear_tracked(s):
+                print('    （置いたブロックを、まだ消せていない。最後にもう一度消す）')
+        except Exception:
+            pass
+
+
+# 区画の境の確かめで石を埋める範囲（x はチャンク -2 と -1、y は 16 マスの区画 12 と 13、z はチャンク -1 と 0 にまたがる）
+EDGE_BOX = ((-18, 206, -2), (-14, 210, 2))
+# その中の 125 マス全部（はじめに空気か、埋めたら石か、片づけたら空気かを、全部のマスで調べる）と、範囲のすぐ外の 6 マス
+EDGE_INSIDE = [(x, y, z) for x in range(-18, -13) for y in range(206, 211) for z in range(-2, 3)]
+EDGE_OUTSIDE = [(-19, 208, 0), (-13, 208, 0), (-16, 205, 0), (-16, 211, 0), (-16, 208, -3), (-16, 208, 3)]
+
+
+def clear_edge_box(s):
+    """区画の境の確かめで埋めた範囲を空気に戻し、空気になったか確かめる（埋めるが断られたときも、消せていないとする）。戻せたら True"""
+    (x1, y1, z1), (x2, y2, z2) = EDGE_BOX
+    cleared = fill(s, x1, y1, z1, x2, y2, z2, 'air')
+    if (cleared.get('payload') or {}).get('success') is not True or not wait_queue(s):
+        return False
+    if all(block_type(s, *cell) == 'air' for cell in EDGE_INSIDE):
+        CLEANUP['edge'] = False
+        return True
+    return False
+
+
+def fill_across_edges(s):
+    """
+    チャンクと 16 マスの区画の境をまたぐ小さな範囲を石で埋めると、どの区画も抜けずに置かれ、範囲の外は変わらないか
+    （MOD はチャンクごと・区画ごとに分けて置くので、分け方をまちがえると、一部の区画が抜けたり、はみ出したりする）
+    範囲の 125 マス全部（8 つに分かれる区画にまたがる）と、範囲のすぐ外の 6 マスを調べ、空気に戻して確かめる
+    """
+    (x1, y1, z1), (x2, y2, z2) = EDGE_BOX
+    if not wait_queue(s):
+        return {'probe_error': '前の命令が終わるのを待てなかった（60 秒）'}
+    if any(block_type(s, *cell) != 'air' for cell in EDGE_INSIDE + EDGE_OUTSIDE):
+        return {'probe_error': '使う所がもともと空気ではない（試し用のスーパーフラットのワールドで流してください）'}
+    CLEANUP['edge'] = True
+    try:
+        filled = fill(s, x1, y1, z1, x2, y2, z2, 'stone')
+        if (filled.get('payload') or {}).get('success') is not True:
+            return dict(filled, probe_error='埋めるのが成功しなかった')
+        if not wait_queue(s):
+            return dict(filled, probe_error='前の命令が終わるのを待てなかった（60 秒）')
+        missing = [cell for cell in EDGE_INSIDE if block_type(s, *cell) != 'stone']
+        spilled = [cell for cell in EDGE_OUTSIDE if block_type(s, *cell) != 'air']
+        # 範囲の外に置かれたマスは、もとは空気だったと確かめてあるので、空気に戻す
+        CLEANUP['cells'].update(spilled)
+        if missing or spilled:
+            return dict(filled, probe_error='石が置かれていないマス %r、範囲の外に置かれたマス %r' % (missing[:5], spilled[:5]))
+        return filled
+    finally:
+        try:
+            if not clear_edge_box(s):
+                print('    （埋めた石を、まだ消せていない。最後にもう一度消す）')
+            if CLEANUP['cells'] and not clear_tracked(s):
+                print('    （置いたブロックを、まだ消せていない。最後にもう一度消す）')
+        except Exception:
+            pass
+
+
 def judge(reply, action, expect, kind='command'):
     """
     返事が期待どおりか確かめる（期待どおりなら None、違えば理由）
@@ -272,8 +542,11 @@ CASES = [
     ('横（x）の上限を 1 マス超える 257×1×256', lambda s: fill(s, 0, 300, 0, 256, 300, 255), 'fillBlocks', None, 'はんいが広すぎます'),
     ('おくゆき（z）の上限を 1 マス超える 256×1×257', lambda s: fill(s, 0, 300, 0, 255, 300, 256), 'fillBlocks', None,
      'はんいが広すぎます'),
-    ('体積の上限ちょうど 200×100×100 = 2,000,000（空気を y=200〜299 に。数秒止まることがある）',
+    ('体積の上限ちょうど 200×100×100 = 2,000,000（空気を y=200〜299 に。MOD は少しずつ置く）',
      lambda s: fill(s, 0, 200, 0, 199, 299, 99), 'fillBlocks', {'blocksFilled': 2000000}, None),
+    ('大きく埋めたすぐあとに、その最後のマスへ置いた金ブロックが残る（順番の確かめ）', fill_then_set_block, 'setBlock', {}, None),
+    ('置いた直後に調べると、置いたブロックが答えられる（調べる命令も列に並ぶ）', read_right_after_place, 'setBlock', {}, None),
+    ('チャンクと区画の境をまたぐ範囲を埋めると、抜けもはみ出しも無い', fill_across_edges, 'fillBlocks', {}, None),
     ('体積の上限を超える 200×101×100 = 2,020,000', lambda s: fill(s, 0, 200, 0, 199, 300, 99), 'fillBlocks', None,
      'はんいが広すぎます'),
     ('高さの上の外 y=1000〜1010', lambda s: fill(s, 0, 1000, 0, 5, 1010, 5), 'fillBlocks', None, 'その高さには ブロックを おけません'),
@@ -312,12 +585,15 @@ CASES = [
     ('ブロックを置く: x が回り込む数', lambda s: set_block(s, WRAP, 300, 0), 'setBlock', None, 'ばしょがワールドの外です'),
     ('ブロックを置く（相対）: ずらす x が回り込む数', lambda s: set_block_relative(s, WRAP, 0, 0), 'setBlock', None,
      'ばしょがワールドの外です'),
+    ('大きな仕事のあとの「テレポート → 相対座標で置く」は、テレポートした先を基準に置く', teleport_then_relative, 'setBlock',
+     {}, None),
     ('テレポート: x=40,000,000', lambda s: teleport(s, 40000000, TP_Y, 0), 'teleport', None, 'ばしょがワールドの外です'),
     ('テレポート: x=%d, y=%d, z=%d へ（次の相対座標の確かめのため）' % (TP_X, TP_Y, TP_Z),
      lambda s: teleport_and_wait(s, TP_X, TP_Y, TP_Z), 'teleport', {}, None),
     # ずらす量（29,999,500）はワールドの中だが、プレイヤーの x=1000 と足すと 30,000,500 で外になる
+    # 足したあとの場所は、列で順番が来たときのプレイヤーの位置で確かめるので、返事は成功で、順番が来たときに断ってチャットに出す
     ('ブロックを置く（相対）: 足すとワールドの外 x=1000+29,999,500', lambda s: set_block_relative(s, 29999500, 0, 0), 'setBlock',
-     None, 'ばしょがワールドの外です'),
+     {}, 'ばしょがワールドの外です'),
     ('生き物を出す: x=40,000,000', lambda s: summon(s, 40000000, TP_Y, 0), 'summonEntity', None, 'ばしょがワールドの外です'),
     ('生き物を出す: z=40,000,000', lambda s: summon(s, 0, TP_Y, 40000000), 'summonEntity', None, 'ばしょがワールドの外です'),
     # 高さは Minecraft の /summon と同じく -20,000,000 以上 20,000,000 未満
@@ -467,7 +743,7 @@ THROTTLE_CASES = [
      ['そこに いれものが ありません', NORMAL_CHAT, 'そこに いれものが ありません']),
 ]
 
-print('このスクリプトは、Minecraft のワールドに空気を置き（チェストも置いて消します）、時刻を正午にし、')
+print('このスクリプトは、Minecraft のワールドに空気を置き（チェスト・石・金ブロック・エメラルドブロックも置いて消します）、時刻を正午にし、')
 print('「周りをきれいにする」「生き物を全部消す」の命令も送ります（どれも断られるはずの形で）。')
 print('プレイヤーを x=%d へテレポートします（終わったら元の場所へ戻します）。' % TP_X)
 print('チャットを確かめる命令のたびに止まるので、ゲームのチャットを見て答えてください。')
@@ -490,6 +766,12 @@ start = get_position(s)
 if not start or not all(isinstance(start.get(k), (int, float)) for k in 'xyz'):
     s.close()
     sys.exit('プレイヤーの場所が分かりません。ワールドに入ってから流してください')
+# 待ち列の入った MOD か確かめる（版の数は前のビルドと同じなので、「見ているブロック」の答えに queued があるかで見る。
+# 無いと、列が空くのを待つ確かめが毎回 60 秒待ち続けたうえ、片づけの案内もまちがうため）
+aim = (request(s, 'command', {'action': 'getTargetBlock', 'params': {}}).get('payload') or {})
+if aim.get('success') is not True or 'queued' not in (aim.get('result') or {}):
+    s.close()
+    sys.exit('MOD が前のビルドのようです（「見ているブロック」の答えに queued がありません）。新しくビルドした jar を入れてください')
 # 途中でゲームが落ちても手で戻れるよう、はじめの場所を出しておく
 print('はじめの場所: x=%.1f, y=%.1f, z=%.1f（終わったらここへ戻します）' % (start['x'], start['y'], start['z']))
 done = 0
@@ -555,21 +837,53 @@ try:
             break
         print('ok  間引き: %s' % name)
 finally:
-    # 途中で止まったら、置いたチェストを空気に戻す（ここでも例外は出さない）
+    # 残っているものを、自動で空気に戻す（ここでも例外は出さない）。Ctrl+C を押されたら自動の片づけはやめて、
+    # 手で消す案内だけ出す（案内まで飛ばされないように）
+    if any(CLEANUP[k] for k in ('box', 'edge', 'maybe', 'cells', 'chest')):
+        print('\n片づけています（MOD の列が空くのを待つので、少しかかることがあります。'
+              'Ctrl+C を押すと、片づけをやめて、手で消す案内を出します）')
+    try:
+        for flag, clean in (('box', clear_order_box), ('edge', clear_edge_box), ('maybe', settle_maybe),
+                            ('cells', clear_tracked), ('chest', remove_chest)):
+            if CLEANUP[flag]:
+                try:
+                    clean(s)
+                except Exception as e:
+                    print('    （片づけの途中で %s が起きた）' % type(e).__name__)
+    except KeyboardInterrupt:
+        print('\n片づけをやめました')
+    # 消せなかったものを、手で消す案内
+    if CLEANUP['box']:
+        failed = True
+        (bx1, by1, bz1), (bx2, by2, bz2) = ORDER_BOX
+        # Minecraft の /fill は 1 回 32,768 ブロックまでなので、高さ 3 段ずつ（3 万ブロック）に分けて出す
+        print('\n埋めた石を消せませんでした。ゲームで次の命令を 1 行ずつ打って消してください')
+        for low in range(by1, by2 + 1, 3):
+            print('  /fill %d %d %d %d %d %d air' % (bx1, low, bz1, bx2, min(low + 2, by2), bz2))
+    if CLEANUP['edge']:
+        failed = True
+        print('\n区画の境の確かめで埋めた石を消せませんでした。ゲームで /fill %d %d %d %d %d %d air と打って消してください'
+              % (EDGE_BOX[0] + EDGE_BOX[1]))
+    for (x, y, z) in sorted(CLEANUP['cells']):
+        failed = True
+        print('\n置いたブロックを消せませんでした。ゲームで /setblock %d %d %d air と打って消してください' % (x, y, z))
+    for (x, y, z) in sorted(CLEANUP['maybe']):
+        failed = True
+        print('\nエメラルドブロックが置かれたかもしれないマスを調べられませんでした。(%d, %d, %d) がエメラルドブロックなら、'
+              'ゲームで /setblock %d %d %d air と打って消してください' % (x, y, z, x, y, z))
     if CLEANUP['chest']:
-        try:
-            remove_chest(s)
-        except Exception:
-            pass
-        if CLEANUP['chest']:
-            failed = True
-            print('\nチェストを消せませんでした。ゲームで /setblock 2 300 2 air と打って消してください')
+        failed = True
+        print('\nチェストを消せませんでした。ゲームで /setblock 2 300 2 air と打って消してください')
     # はじめの場所へ戻す（途中で接続が切れていても、元の失敗を隠さないよう、ここでは例外を出さない）
     try:
         if not return_to_start(s, start):
             failed = True
             print('\nはじめの場所へ戻せませんでした。ゲームで /tp @s %.1f %.1f %.1f と打って戻ってください'
                   % (start['x'], start['y'], start['z']))
+    except (Exception, KeyboardInterrupt):
+        failed = True
+        print('\nはじめの場所へ戻せませんでした。ゲームで /tp @s %.1f %.1f %.1f と打って戻ってください'
+              % (start['x'], start['y'], start['z']))
     finally:
         s.close()
 if failed:

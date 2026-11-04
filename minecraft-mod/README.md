@@ -113,7 +113,9 @@ src/main/java/com/github/minecraftedu/
 │   ├── SimpleWebSocketServer.java
 │   └── MinecraftWebSocketHandler.java
 ├── commands/                      # 命令の実行
-│   └── CommandExecutor.java
+│   ├── CommandExecutor.java
+│   ├── BuildQueue.java            # 世界を変える仕事を届いた順に並べ、少しずつ進める列
+│   └── FillJob.java               # 箱の形の範囲に、続きから置いていく仕事（埋める・周りをきれいにする）
 ├── block/                         # 追加ブロック（縦スラブ）
 │   └── VerticalSlabBlock.java
 └── init/                          # ブロック・アイテムの登録
