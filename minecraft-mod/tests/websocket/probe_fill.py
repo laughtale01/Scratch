@@ -15,7 +15,9 @@
 # 順番の確かめでは、空の上（x 0〜99, y 200〜219, z 0〜99）を石で 20 万ブロック埋め（2 回）、(99, 219, 99) に金ブロックを置く。
 # また、プレイヤーを x=1000, y=-60, z=0 へテレポートして、その 5 マス上にエメラルドブロックを置く
 # （まちがった MOD では、はじめの場所の 5 マス上に置かれることがある）。区画の境の確かめでは、x -18〜-14, y 206〜210,
-# z -2〜2 を石で埋める。置いたらすぐ調べる確かめでは、(3, 300, 3) に金ブロックを置く。どれも確かめたら空気に戻す。
+# z -2〜2 を石で埋める。置いたらすぐ調べる確かめでは、(3, 300, 3) に金ブロックを置く。
+# 見ているブロックの確かめでは、空の上（x -43〜-37, y 257〜264, z -43〜-37）に石の箱を作り、中を空気にして、
+# プレイヤーを (-40, 258, -40) へテレポートする（終わったら前の場所へ戻してから箱を消す）。どれも確かめたら空気に戻す。
 # 間引きの確かめでは、時刻を正午にする。
 # 相対座標の確かめのため、プレイヤーを x=1000, y=-60, z=0 へテレポートする（終わったら元の場所へ戻す）。
 # 期待と違う結果が 1 件でも出たら、そこで止める（古い MOD に流して、本当に動かしてしまわないように）。
@@ -121,7 +123,8 @@ def chat(s, message):
 # finally で空気に戻す）
 # maybe は、エメラルドブロックが置かれたかもしれないマス（テレポートの前の場所の上。もともと何かあったかもしれないので、
 # エメラルドブロックだったときだけ消す）
-CLEANUP = {'chest': False, 'cells': set(), 'maybe': set(), 'box': False, 'edge': False}
+# edge は、区画の境の確かめで石を埋めた範囲（EDGE_BOX）。look は、見ているブロックの確かめで作った石の箱（LOOK_BOX）
+CLEANUP = {'chest': False, 'cells': set(), 'maybe': set(), 'box': False, 'edge': False, 'look': False}
 
 
 def place_chest(s):
@@ -155,6 +158,10 @@ def clear_entities(s, center_x, center_z):
 
 def set_block(s, x, y, z, block='air'):
     return request(s, 'command', {'action': 'setBlock', 'params': {'x': x, 'y': y, 'z': z, 'blockType': block}})
+
+
+def get_block_type(s, x, y, z):
+    return request(s, 'command', {'action': 'getBlockType', 'params': {'x': x, 'y': y, 'z': z}})
 
 
 def set_block_relative(s, rel_x, rel_y, rel_z):
@@ -482,6 +489,150 @@ def fill_across_edges(s):
             pass
 
 
+# 「見ているブロック」の確かめで、プレイヤーを入れる石の箱（空の上。外側 7×8×7 の石の中を 5×6×5 の空気にする）と、
+# プレイヤーを立たせる場所（箱の床の上。MOD のテレポートはマスのまん中に寄せないので、マスの境 (-40, 258, -40) に立つ。
+# 目は床から 1.62 マス（しゃがんでも 1.27）、横の壁まで 2 と 3 マス、天井まで 4.38 マス、いちばん遠いすみまで約 6.1 マス。
+# なので、どちらを向いていても 8 マスまでに石の壁に当たり、1 マスまででは、どこにも届かない）
+LOOK_BOX = ((-43, 257, -43), (-37, 264, -37))
+LOOK_INSIDE = ((-42, 258, -42), (-38, 263, -38))
+LOOK_STAND = (-40, 258, -40)
+# プレイヤーの目の高さ（立っているとき）
+EYE_HEIGHT = 1.62
+
+
+def look_box_cells():
+    """
+    箱のすみの 8 マスと、立たせるマス（はじめに空気か、片づけたら空気かを調べる）
+    （箱の 392 マス全部は調べない。ブロックの種類を調べる命令は、1 回ごとにチャットへ名前を出すので、チャットが流れてしまうため。
+      場所は空の上 y=257 より上なので、ふつうは何も無い）
+    """
+    (x1, y1, z1), (x2, y2, z2) = LOOK_BOX
+    return [(x, y, z) for x in (x1, x2) for y in (y1, y2) for z in (z1, z2)] + [LOOK_STAND]
+
+
+def angle_diff(a, b):
+    """2 つの向き（度）の差（0〜180。-179 度と 179 度は 2 度ちがいとする）"""
+    return abs((a - b + 180) % 360 - 180)
+
+
+def expected_look_cell(pos):
+    """
+    プレイヤーの場所と向き（getPosition の x・y・z・yaw・pitch）から、見ている先で最初に当たる箱の壁のマスを計算する
+    （向きは Minecraft と同じ式で出す。目から少しずつ進んで、箱の中の空気から出た所のマス。8 マスまでに出なければ None）
+    """
+    yaw, pitch = math.radians(pos['yaw']), math.radians(pos['pitch'])
+    step = (-math.sin(yaw) * math.cos(pitch), -math.sin(pitch), math.cos(yaw) * math.cos(pitch))
+    eye = (pos['x'], pos['y'] + EYE_HEIGHT, pos['z'])
+    (ix1, iy1, iz1), (ix2, iy2, iz2) = LOOK_INSIDE
+    t = 0.0
+    while t <= 8:
+        cell = tuple(math.floor(eye[i] + step[i] * t) for i in range(3))
+        if not (ix1 <= cell[0] <= ix2 and iy1 <= cell[1] <= iy2 and iz1 <= cell[2] <= iz2):
+            return cell
+        t += 0.005
+    return None
+
+
+def clear_look_box(s):
+    """石の箱を空気に戻し、空気になったか確かめる（埋めるが断られたときも、消せていないとする）。戻せたら True"""
+    (x1, y1, z1), (x2, y2, z2) = LOOK_BOX
+    cleared = fill(s, x1, y1, z1, x2, y2, z2, 'air')
+    if (cleared.get('payload') or {}).get('success') is not True or not wait_queue(s):
+        return False
+    if all(block_type(s, *cell) == 'air' for cell in look_box_cells()):
+        CLEANUP['look'] = False
+        return True
+    return False
+
+
+def look_at_box(s):
+    """
+    「見ているブロック」が、見ている先のブロックに当たるか（MOD は見ている先を自分でたどるので、たどり方をまちがえると当たらなくなる）
+    プレイヤーを空の上の石の箱に入れ、届く長さ 8 で調べて、当たったこと・石であること・場所が箱の壁であることと、
+    その場所が、プレイヤーの向きから計算したマスと 1 マスまでしかずれていないこと（たどる向きのまちがいを見つけるため）を確かめる。
+    1 マスは許す（マスの境に立っているので、軸に沿った向きでは、ごく小さな差でとなりのマスになる。Minecraft の sin は
+    表を引く float の値で、ここの計算と少しちがう。しゃがんでいると目が 1.27 マスに下がる。どれも 1 マスまでのずれになる）。
+    向きは、そのときのプレイヤーの向きのままなので、向きによっては、向きのまちがいを見逃すことがある（正しい MOD を
+    まちがって NG にすることはない）。
+    届く長さ 1 では、どこにも届かないので、当たらないことも確かめる。
+    終わったら、前の場所へ戻してから箱を消す（先に消すと、空の上から落ちるため）
+    """
+    if not wait_queue(s):
+        return {'probe_error': '前の命令が終わるのを待てなかった（60 秒）'}
+    found = {cell: block_type(s, *cell) for cell in look_box_cells()}
+    if any(name is None for name in found.values()):
+        return {'probe_error': '使う所を調べられなかった（%r。チャンクの読み込みが間に合わなかったかもしれない）' % found}
+    if any(name != 'air' for name in found.values()):
+        return {'probe_error': '使う所がもともと空気ではない（%r。試し用のスーパーフラットのワールドで流してください）' % found}
+    before = get_position(s)
+    if not before:
+        return {'probe_error': 'プレイヤーの場所が分からない'}
+    CLEANUP['look'] = True
+    moved_in = False
+    try:
+        (x1, y1, z1), (x2, y2, z2) = LOOK_BOX
+        (ix1, iy1, iz1), (ix2, iy2, iz2) = LOOK_INSIDE
+        made = fill(s, x1, y1, z1, x2, y2, z2, 'stone')
+        if (made.get('payload') or {}).get('success') is not True:
+            return dict(made, probe_error='石の箱を作るのが成功しなかった（石で埋める）')
+        made = fill(s, ix1, iy1, iz1, ix2, iy2, iz2, 'air')
+        if (made.get('payload') or {}).get('success') is not True:
+            return dict(made, probe_error='石の箱を作るのが成功しなかった（中を空気にする）')
+        moved_in = True
+        moved = teleport_and_wait(s, *LOOK_STAND)
+        if moved.get('probe_error') or (moved.get('payload') or {}).get('success') is not True:
+            return dict(moved, probe_error=moved.get('probe_error') or 'テレポートが成功しなかった')
+        pos = get_position(s)
+        if not pos or not all(isinstance(pos.get(k), (int, float)) for k in ('x', 'y', 'z', 'yaw', 'pitch')):
+            return {'probe_error': 'プレイヤーの場所と向きが分からない（%r）' % (pos,)}
+        want = expected_look_cell(pos)
+        far = request(s, 'command', {'action': 'getTargetBlock', 'params': {'reach': 8}})
+        if (far.get('payload') or {}).get('success') is not True:
+            return dict(far, probe_error='届く長さ 8 で調べるのが成功しなかった')
+        # 向きを読んだときと、見ているブロックを調べたときのあいだに、向きが変わっていないか
+        # （場所と向きは列に並ばずに読み、見ているブロックは列に並んで調べるので、そのあいだにマウスが動くと、計算した場所とずれる）
+        after = get_position(s)
+        if not after or not all(isinstance(after.get(k), (int, float)) for k in ('yaw', 'pitch')) \
+                or angle_diff(after['yaw'], pos['yaw']) > 0.5 or abs(after['pitch'] - pos['pitch']) > 0.5:
+            return {'probe_error': '調べているあいだに向きが変わった（%r → %r）。マウスを動かさずに、もう一度流してください' % (
+                (pos['yaw'], pos['pitch']), after and (after.get('yaw'), after.get('pitch')))}
+        hit = (far.get('payload') or {}).get('result') or {}
+        cell = (hit.get('x'), hit.get('y'), hit.get('z'))
+        on_wall = (all(isinstance(v, int) for v in cell) and x1 <= cell[0] <= x2 and y1 <= cell[1] <= y2 and z1 <= cell[2] <= z2
+                   and (cell[0] in (x1, x2) or cell[1] in (y1, y2) or cell[2] in (z1, z2)))
+        if hit.get('hit') is not True or hit.get('blockType') != 'minecraft:stone' or not on_wall:
+            return dict(far, probe_error='箱の石の壁に当たらなかった（当たったか: %r、種類: %r、場所: %r）'
+                        % (hit.get('hit'), hit.get('blockType'), cell))
+        if want is None or any(abs(a - b) > 1 for a, b in zip(cell, want)):
+            return dict(far, probe_error='見ている向きと違う壁に当たった（当たった場所: %r、向きから計算した場所: %r、yaw %.1f・pitch %.1f）'
+                        % (cell, want, pos['yaw'], pos['pitch']))
+        near = request(s, 'command', {'action': 'getTargetBlock', 'params': {'reach': 1}})
+        near_payload = near.get('payload') or {}
+        if near_payload.get('success') is not True:
+            return dict(near, probe_error='届く長さ 1 で調べるのが成功しなかった')
+        if (near_payload.get('result') or {}).get('hit') is not False:
+            return dict(near, probe_error='届く長さ 1 なのに、何かに当たった')
+        print('    （向き yaw %.1f・pitch %.1f、当たった場所 %r、計算した場所 %r）' % (pos['yaw'], pos['pitch'], cell, want))
+        return far
+    finally:
+        # 先に前の場所へ戻す（箱を消すと、プレイヤーが空の上から落ちるため）。戻せたと確かめられたときだけ箱を消す
+        # （戻せなかったときは、最後の片づけで、はじめの場所へ戻してから消す）
+        returned = not moved_in
+        try:
+            if moved_in:
+                back = teleport_and_wait(s, before['x'], before['y'], before['z'])
+                returned = not back.get('probe_error') and (back.get('payload') or {}).get('success') is True
+        except Exception:
+            returned = False
+        try:
+            if not returned:
+                print('    （前の場所へ戻せなかったので、石の箱はまだ消さない。最後にもう一度戻してから消す）')
+            elif not clear_look_box(s):
+                print('    （石の箱を、まだ消せていない。最後にもう一度消す）')
+        except Exception:
+            pass
+
+
 def judge(reply, action, expect, kind='command'):
     """
     返事が期待どおりか確かめる（期待どおりなら None、違えば理由）
@@ -533,6 +684,8 @@ CONTROL_NAME_SHOWN = 'minecraft:????b'
 # 相対座標の確かめでプレイヤーを置く場所（スーパーフラットの地面の上）
 TP_X, TP_Y, TP_Z = 1000, -60, 0
 
+# README の「遠くのチャンクで Minecraft が止まらないことを確かめる手順」は、この行より前（関数と決まった値）だけを
+# exec して使う（試験の一覧の始まりの行で切る）。この名前を変えたり、これより前に試験を動かす文を足したりするときは、README も直す
 CASES = [
     # (説明, 命令を送る関数, 命令の名前, 期待する結果（None は断られる）, 確かめるチャットの文（None なら確かめない）
     #  [, 期待する返事の種類（'command' なら命令の返事、'error' なら消した受け口へのエラーの返事。書かなければ 'command'）])
@@ -584,6 +737,18 @@ CASES = [
      'ばしょがワールドの外です'),
     ('ブロックを置く: x が回り込む数', lambda s: set_block(s, WRAP, 300, 0), 'setBlock', None, 'ばしょがワールドの外です'),
     ('ブロックを置く（相対）: ずらす x が回り込む数', lambda s: set_block_relative(s, WRAP, 0, 0), 'setBlock', None,
+     'ばしょがワールドの外です'),
+    # どの件も、確かめが抜けていたときに読む場所が、建てられる高さの外になるようにする（遠くのチャンクを読み込まないように）。
+    # x・z の件は y=1000 にする。y の件は y そのものが外（回り込む数は int にすると 10,000,000 になる）
+    ('ブロックの種類を調べる: x が回り込む数', lambda s: get_block_type(s, WRAP, 1000, 0), 'getBlockType', None,
+     'ばしょがワールドの外です'),
+    ('ブロックの種類を調べる: z が回り込む数', lambda s: get_block_type(s, 0, 1000, WRAP), 'getBlockType', None,
+     'ばしょがワールドの外です'),
+    ('ブロックの種類を調べる: y が回り込む数', lambda s: get_block_type(s, 0, WRAP, 0), 'getBlockType', None,
+     'ばしょがワールドの外です'),
+    ('ブロックの種類を調べる: z=40,000,000', lambda s: get_block_type(s, 0, 1000, 40000000), 'getBlockType', None,
+     'ばしょがワールドの外です'),
+    ('ブロックの種類を調べる: y=40,000,000', lambda s: get_block_type(s, 0, 40000000, 0), 'getBlockType', None,
      'ばしょがワールドの外です'),
     ('大きな仕事のあとの「テレポート → 相対座標で置く」は、テレポートした先を基準に置く', teleport_then_relative, 'setBlock',
      {}, None),
@@ -701,6 +866,9 @@ CASES = [
     # キーが無い（同じ命令で、ちがう種類の例外。これも値の誤りとして、ログは種類ごとに 1 行）
     ('ブロックを置く: ブロックの名前が無い', lambda s: request(s, 'command', {'action': 'setBlock', 'params': {
         'x': 0, 'y': 300, 'z': 0}}), 'setBlock', None, 'うまく できませんでした'),
+    # プレイヤーを動かすので最後にする（前の件には、テレポート先 x=1000 にいることを使うものがある）
+    ('見ているブロック: 石の箱の中で、見ている先の壁に当たる（届く長さ 1 では当たらない）', look_at_box, 'getTargetBlock',
+     {'hit': True}, None),
 ]
 
 # 失敗のチャットの間引きの確かめ（番号の行をはさまずに、失敗を続けて送る）
@@ -745,7 +913,8 @@ THROTTLE_CASES = [
 
 print('このスクリプトは、Minecraft のワールドに空気を置き（チェスト・石・金ブロック・エメラルドブロックも置いて消します）、時刻を正午にし、')
 print('「周りをきれいにする」「生き物を全部消す」の命令も送ります（どれも断られるはずの形で）。')
-print('プレイヤーを x=%d へテレポートします（終わったら元の場所へ戻します）。' % TP_X)
+print('プレイヤーを x=%d へテレポートし、最後に空の上の石の箱の中 (%d, %d, %d) へもテレポートします（箱は消し、終わったら元の場所へ戻します）。'
+      % ((TP_X,) + LOOK_STAND))
 print('チャットを確かめる命令のたびに止まるので、ゲームのチャットを見て答えてください。')
 print('授業で使うワールドではなく、試し用のスーパーフラットのワールドを開き、')
 print('オーバーワールド（ネザーやエンドではない）で、クリエイティブにしていますか？')
@@ -837,14 +1006,30 @@ try:
             break
         print('ok  間引き: %s' % name)
 finally:
+    # はじめの場所へ先に戻す（石の箱の中にいるまま箱を消すと、空の上から落ちるため。ほかの片づけは決まった場所なので、
+    # 先に戻しても困らない。途中で接続が切れていても、元の失敗を隠さないよう、ここでは例外を出さない）
+    try:
+        # 列に残った命令（大きな「埋める」など）のあとにテレポートが並ぶので、先に少し待つ
+        # （待たないと、テレポートが動く前に確かめて、戻れたのに「戻せませんでした」と出ることがある）
+        s.settimeout(10)
+        wait_queue(s, 10)
+        returned = return_to_start(s, start)
+    except (Exception, KeyboardInterrupt):
+        returned = False
+    if not returned:
+        failed = True
+        print('\nはじめの場所へ戻せませんでした。ゲームで /tp @s %.1f %.1f %.1f と打って戻ってください（下の案内より先に打ってください）'
+              % (start['x'], start['y'], start['z']))
     # 残っているものを、自動で空気に戻す（ここでも例外は出さない）。Ctrl+C を押されたら自動の片づけはやめて、
-    # 手で消す案内だけ出す（案内まで飛ばされないように）
-    if any(CLEANUP[k] for k in ('box', 'edge', 'maybe', 'cells', 'chest')):
+    # 手で消す案内だけ出す（案内まで飛ばされないように）。戻せなかったときは、石の箱は消さない（中にいるかもしれないため）
+    cleaners = (('box', clear_order_box), ('edge', clear_edge_box), ('look', clear_look_box), ('maybe', settle_maybe),
+                ('cells', clear_tracked), ('chest', remove_chest))
+    cleaners = tuple((flag, clean) for flag, clean in cleaners if returned or flag != 'look')
+    if any(CLEANUP[flag] for flag, _ in cleaners):
         print('\n片づけています（MOD の列が空くのを待つので、少しかかることがあります。'
               'Ctrl+C を押すと、片づけをやめて、手で消す案内を出します）')
     try:
-        for flag, clean in (('box', clear_order_box), ('edge', clear_edge_box), ('maybe', settle_maybe),
-                            ('cells', clear_tracked), ('chest', remove_chest)):
+        for flag, clean in cleaners:
             if CLEANUP[flag]:
                 try:
                     clean(s)
@@ -852,6 +1037,8 @@ finally:
                     print('    （片づけの途中で %s が起きた）' % type(e).__name__)
     except KeyboardInterrupt:
         print('\n片づけをやめました')
+    finally:
+        s.close()
     # 消せなかったものを、手で消す案内
     if CLEANUP['box']:
         failed = True
@@ -864,6 +1051,10 @@ finally:
         failed = True
         print('\n区画の境の確かめで埋めた石を消せませんでした。ゲームで /fill %d %d %d %d %d %d air と打って消してください'
               % (EDGE_BOX[0] + EDGE_BOX[1]))
+    if CLEANUP['look']:
+        failed = True
+        print('\n「見ているブロック」の確かめで置いた石の箱を消せませんでした。ゲームで /fill %d %d %d %d %d %d air と打って消してください'
+              % (LOOK_BOX[0] + LOOK_BOX[1]))
     for (x, y, z) in sorted(CLEANUP['cells']):
         failed = True
         print('\n置いたブロックを消せませんでした。ゲームで /setblock %d %d %d air と打って消してください' % (x, y, z))
@@ -874,18 +1065,6 @@ finally:
     if CLEANUP['chest']:
         failed = True
         print('\nチェストを消せませんでした。ゲームで /setblock 2 300 2 air と打って消してください')
-    # はじめの場所へ戻す（途中で接続が切れていても、元の失敗を隠さないよう、ここでは例外を出さない）
-    try:
-        if not return_to_start(s, start):
-            failed = True
-            print('\nはじめの場所へ戻せませんでした。ゲームで /tp @s %.1f %.1f %.1f と打って戻ってください'
-                  % (start['x'], start['y'], start['z']))
-    except (Exception, KeyboardInterrupt):
-        failed = True
-        print('\nはじめの場所へ戻せませんでした。ゲームで /tp @s %.1f %.1f %.1f と打って戻ってください'
-              % (start['x'], start['y'], start['z']))
-    finally:
-        s.close()
 if failed:
     sys.exit(1)
 print('\nすべて期待どおり（%d 件と、間引きの %d 件）' % (len(CASES), len(THROTTLE_CASES)))

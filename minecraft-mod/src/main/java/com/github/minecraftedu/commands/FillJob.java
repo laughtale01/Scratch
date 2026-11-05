@@ -25,27 +25,31 @@ import java.util.function.IntFunction;
  * 置いている間は、範囲のチャンクを読み込んだままにする（チケットを付ける）。
  * プレイヤーから遠い所は、Minecraft が付ける一時的なチケットが 1 tick で切れてチャンクが下ろされるので、
  * 途中で止めるたびに読み込み直しになり、ほとんど進まなくなるため（「周りをきれいにする」で起きた）。
- * となりを読む置き方（となりに知らせるフラグ 1 か、となりの形を直すとき＝フラグ 16 が無いとき）は、
- * 範囲がチャンクの端に触れている側のとなりのチャンクにも付ける
- * （端に置いたブロックがとなりを読むので、そこが読み込み直しになると、メインスレッドが読み込みを待って止まるため）。
+ * 範囲がチャンクの端から 2 マスの中に触れている側のとなりのチャンクも、読み込まれるのを待つ
+ * （端の近くで置いたり消したりしたブロックがとなりを読むので、そこが読み込まれていないと、メインスレッドが読み込みを待って止まるため。
+ *   チェストなどは、比較器へ知らせるときに 2 マス先まで読む。消すときは、どのフラグでも読む）。
+ * となりを読む置き方（となりに知らせるフラグ 1 か、となりの形を直すとき＝フラグ 16 が無いとき）は、となりにも同じチケットを付ける。
+ * そうでない置き方（「周りをきれいにする」のフラグ 2|16）は、となりには時間で切れる別のチケット（BlockJob と同じ）を付けて待つ
+ * （となりは、となりの列の範囲でもあるので、同じチケットを付けると、先に終わった列が外すときに消してしまうため）。
  * チャンクの読み込みは待たずに次の回へ回す（メインスレッドで読み込みを待つと、そのあいだ止まるため）。
- * 待つのは、これから置くチャンク（とそのとなりのチケットを付けたチャンク）だけ。
+ * 待つのは、これから置くチャンクとそのとなりだけ。
  */
 class FillJob implements BuildQueue.Job {
 
     // 置いている間、チャンクを読み込んだままにするチケット（時間で切れない。終わったら外す）
     // 同じチャンクに同じチケットを 2 回付けても 1 つにまとまり、1 回外すと無くなる。
     // いまチケットを同時に持つのは「周りをきれいにする」の列（先の 16 列にも付ける）だけで、どの列もチャンクの境にそろい、
-    // となりのチャンクには付けない置き方（フラグ 2|16）なので、重ならない
+    // となりのチャンクにはこのチケットを付けない置き方（フラグ 2|16。となりは時間で切れる別のチケットで待つ）なので、重ならない
     // （となりにも付ける置き方にしたり、仕事を並べて進めるようにしたりするときは注意）
     private static final TicketType<ChunkPos> BUILD_TICKET =
         TicketType.create("minecraftedu_build", Comparator.comparingLong(ChunkPos::toLong));
 
     // 時間を確かめる間隔（ブロックの数）
     private static final int CHECK_EVERY = 256;
-    // 1 つのチャンクの読み込みを待つ長さの上限（初めて待ったときから数える。これを過ぎたら、待たずに置く。
-    // そのときは読み込みをメインスレッドで待つ）
-    private static final long MAX_LOAD_WAIT_NANOS = TimeUnit.SECONDS.toNanos(5);
+    // 1 つのチャンクの読み込みを待つ長さの上限（初めて待ったときから数える。これを過ぎたら、あきらめて仕事をやめる。
+    // 前は 5 秒で待つのをやめて置いていたが、そのときはメインスレッドが読み込み・地形の生成を待ち、そのあいだ止まっていた）
+    // 1 つのマスを触る仕事（BlockJob）も、この長さまで待つ
+    static final long MAX_LOAD_WAIT_NANOS = TimeUnit.SECONDS.toNanos(30);
 
     private final MinecraftServer server;
     private final int minX, minY, minZ, maxX, maxY, maxZ;
@@ -53,8 +57,12 @@ class FillJob implements BuildQueue.Job {
     private final IntFunction<BlockState> stateForY;
     // Level.setBlock に渡すフラグ
     private final int flags;
-    // チケットを付けるチャンクの範囲（範囲のチャンクと、端に触れている側のとなり）
+    // 読み込まれるのを待つチャンクの範囲（範囲のチャンクと、端から 2 マスの中に触れている側のとなり）
+    private final int waitMinX, waitMaxX, waitMinZ, waitMaxZ;
+    // BUILD_TICKET を付けるチャンクの範囲（となりを読む置き方なら待つ範囲と同じ。そうでなければ範囲のチャンクだけ）
     private final int ticketMinX, ticketMaxX, ticketMinZ, ticketMaxZ;
+    // となりを読む置き方か
+    private final boolean notifies;
 
     // いまの区画（チャンクの x・z と、16 マスの高さの段）
     private int cx, cz, sy;
@@ -64,6 +72,8 @@ class FillJob implements BuildQueue.Job {
     private boolean inCell;
     // 全部置いたか
     private boolean finished;
+    // チャンクが読み込まれず、あきらめたか
+    private boolean gaveUp;
     // 置いた数（飛ばした区画のマスも数える）
     private long placed;
     // チケットを付けたワールド（付けていなければ null）
@@ -87,11 +97,18 @@ class FillJob implements BuildQueue.Job {
         this.stateForY = stateForY;
         this.flags = flags;
         // となりを読む置き方か（フラグ 1: となりに知らせる。フラグ 16 が無い: となりの形を直す）
-        boolean notifies = (flags & 1) != 0 || (flags & 16) == 0;
-        this.ticketMinX = (minX >> 4) - (notifies && (minX & 15) == 0 ? 1 : 0);
-        this.ticketMaxX = (maxX >> 4) + (notifies && (maxX & 15) == 15 ? 1 : 0);
-        this.ticketMinZ = (minZ >> 4) - (notifies && (minZ & 15) == 0 ? 1 : 0);
-        this.ticketMaxZ = (maxZ >> 4) + (notifies && (maxZ & 15) == 15 ? 1 : 0);
+        this.notifies = (flags & 1) != 0 || (flags & 16) == 0;
+        // 端から BlockJob.NEIGHBOR_MARGIN マスの中に触れていれば、その側のとなりも待つ
+        // （チェストなどを置いたり消したりすると、比較器へ知らせるときに 2 マス先まで読むため）
+        int margin = BlockJob.NEIGHBOR_MARGIN;
+        this.waitMinX = (minX >> 4) - ((minX & 15) < margin ? 1 : 0);
+        this.waitMaxX = (maxX >> 4) + ((maxX & 15) >= 16 - margin ? 1 : 0);
+        this.waitMinZ = (minZ >> 4) - ((minZ & 15) < margin ? 1 : 0);
+        this.waitMaxZ = (maxZ >> 4) + ((maxZ & 15) >= 16 - margin ? 1 : 0);
+        this.ticketMinX = notifies ? waitMinX : minX >> 4;
+        this.ticketMaxX = notifies ? waitMaxX : maxX >> 4;
+        this.ticketMinZ = notifies ? waitMinZ : minZ >> 4;
+        this.ticketMaxZ = notifies ? waitMaxZ : maxZ >> 4;
         this.cx = minX >> 4;
         this.cz = minZ >> 4;
         this.sy = minY >> 4;
@@ -110,6 +127,9 @@ class FillJob implements BuildQueue.Job {
             while (!finished) {
                 if (!inCell) {
                     if (!chunkReady(world)) {
+                        if (gaveUp) {
+                            break;  // 読み込まれなかった。ここでやめる（チケットは下で外す）
+                        }
                         return false;  // これから置くチャンクがまだ読み込み中。次の回にまた見る
                     }
                     if (canSkipCell(world)) {
@@ -173,6 +193,20 @@ class FillJob implements BuildQueue.Job {
     }
 
     /**
+     * となりを読まない置き方で、待つ範囲のチャンク（範囲のチャンクと、範囲が端から 2 マスの中に触れている側のとなり）に
+     * 時間で切れるチケット（BlockJob）を付けて、先に読み込みを頼む（範囲のチャンクには BUILD_TICKET もあるので、こちらは、
+     * となりのためのもの）
+     * （付けてあれば付け直す。「周りをきれいにする」が、prepare と一緒に、この先の列の分を回ごとに呼ぶ。
+     *   呼ばないと、列ごとにとなりの読み込みを待つので、ずっと遅くなる）
+     */
+    void prefetchNeighbors(ServerLevel world) {
+        if (notifies || finished) {
+            return;
+        }
+        BlockJob.requestLoaded(world, waitMinX, waitMaxX, waitMinZ, waitMaxZ, true);
+    }
+
+    /**
      * 付けたチケットを外す（付けていなければ何もしない）
      */
     void removeTickets() {
@@ -189,32 +223,29 @@ class FillJob implements BuildQueue.Job {
     }
 
     /**
-     * これから置くチャンクと、そのとなりのチケットを付けたチャンクが読み込まれたか
-     * 読み込み中なら false。ただし、そのチャンクを初めて待ってから MAX_LOAD_WAIT_NANOS を過ぎたら true
-     * （そのあとは setBlock がメインスレッドで読み込みを待つ）
+     * これから置くチャンクと、待つ範囲の中のそのとなりのチャンクが読み込まれたか
+     * 読み込み中なら false。そのチャンクを初めて待ってから MAX_LOAD_WAIT_NANOS を過ぎたら、gaveUp を立てて false
+     * （待たずに置くと、メインスレッドが読み込み・地形の生成を待って Minecraft が止まるため）
+     * 1 つでも読み込まれていなければ、見たチャンク全部に、時間で切れるチケット（BlockJob）も付けて読み込みを頼む。
+     * となりを読まない置き方は、となりに BUILD_TICKET が無いので、区画に入るたびに時間で切れるチケットを付け直す
+     * （置いている途中で切れて、となりが下ろされないように）
      */
     private boolean chunkReady(ServerLevel world) {
         long key = ChunkPos.asLong(cx, cz);
-        if (readyChunk == key) {
+        if (readyChunk == key && notifies) {
             return true;
         }
-        boolean ready = true;
-        for (int tx = Math.max(ticketMinX, cx - 1); tx <= Math.min(ticketMaxX, cx + 1) && ready; tx++) {
-            for (int tz = Math.max(ticketMinZ, cz - 1); tz <= Math.min(ticketMaxZ, cz + 1); tz++) {
-                if (world.getChunkSource().getChunkNow(tx, tz) == null) {
-                    ready = false;
-                    break;
-                }
-            }
-        }
+        boolean ready = BlockJob.requestLoaded(world, Math.max(waitMinX, cx - 1), Math.min(waitMaxX, cx + 1),
+            Math.max(waitMinZ, cz - 1), Math.min(waitMaxZ, cz + 1), !notifies);
         if (!ready) {
             long now = System.nanoTime();
             if (loadWaitStart == 0) {
                 loadWaitStart = now;
             }
-            if (now - loadWaitStart < MAX_LOAD_WAIT_NANOS) {
-                return false;
+            if (now - loadWaitStart >= MAX_LOAD_WAIT_NANOS) {
+                gaveUp = true;
             }
+            return false;
         }
         readyChunk = key;
         loadWaitStart = 0;
@@ -300,5 +331,12 @@ class FillJob implements BuildQueue.Job {
      */
     long placed() {
         return placed;
+    }
+
+    /**
+     * チャンクが読み込まれず、途中でやめたか（step が true を返したあとに見る）
+     */
+    boolean gaveUp() {
+        return gaveUp;
     }
 }
