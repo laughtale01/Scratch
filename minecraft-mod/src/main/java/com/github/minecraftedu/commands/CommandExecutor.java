@@ -5,12 +5,15 @@ import com.github.minecraftedu.network.SimpleWebSocketServer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,6 +26,10 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,6 +51,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -126,6 +134,12 @@ public class CommandExecutor {
     private final AtomicLong lastClearAreaBusyNoticeNanos = new AtomicLong();
     // 「周りをきれいにする」の途中に、もう一度頼まれたときの知らせ
     private static final String CLEAR_AREA_BUSY_CHAT = "いま まわりを きれいにしている とちゅうです。おわるまで まってね";
+    // チャンクの読み込みを待ちきれずにやめたときの知らせの始まり（後ろに、やめたことを足す）
+    private static final String LOAD_GAVE_UP_CHAT_PREFIX = "ばしょの よみこみが まにあわなかったので、";
+    // 読む命令が、チャンクの読み込みを待ちきれなかったときの知らせ
+    private static final String READ_LOAD_PENDING_CHAT = "ばしょを よみこんでいる とちゅうです。すこし まってから もういちど しらべてね";
+    // 読む命令が、チャンクの読み込みや列を待つあいだに、メインスレッドに読めたかを聞き直す間隔（ミリ秒。1 tick）
+    private static final long READ_POLL_MILLIS = 50;
 
     public CommandExecutor(MinecraftServer server) {
         this.server = server;
@@ -336,29 +350,30 @@ public class CommandExecutor {
         int relY = relative ? params.get("relativeY").getAsInt() : 0;
         int relZ = relative ? params.get("relativeZ").getAsInt() : 0;
 
-        // ブロック配置（列が混んでいて並べられなければ、断ったことにする。知らせは safeExecute が出す）
-        boolean queued = safeExecute(() -> {
-            ServerLevel world = server.overworld();
-            if (world == null) return;
-            BlockPos target = pos;
-            if (relative) {
-                ServerPlayer current = getFirstPlayer();
-                if (current == null) {
-                    logInputError("No player found for relative coordinates", "No player found for relative coordinates");
-                    return;
-                }
-                long sumX = (long) net.minecraft.util.Mth.floor(current.getX()) + relX;
-                long sumY = (long) net.minecraft.util.Mth.floor(current.getY()) + relY;
-                long sumZ = (long) net.minecraft.util.Mth.floor(current.getZ()) + relZ;
-                if (!isWithinWorldLimit(sumX) || !isWithinWorldLimit(sumY) || !isWithinWorldLimit(sumZ)) {
-                    logInputError("setBlock relative position out of world limit", "setBlock relative position out of world limit");
-                    sendErrorChat("ばしょがワールドの外です");
-                    return;
-                }
-                target = new BlockPos((int) sumX, (int) sumY, (int) sumZ);
+        // ブロック配置（列が混んでいて並べられなければ、断ったことにする。知らせは enqueue が出す）
+        // まだ読み込まれていないチャンクなら、読み込まれるのを待ってから置く（BlockJob。その場で置くと Minecraft が止まるため）
+        boolean queued = enqueue(new BlockJob(server, world -> {
+            if (!relative) {
+                return pos;
             }
-            world.setBlock(target, blockState, 3);
-        });
+            ServerPlayer current = getFirstPlayer();
+            if (current == null) {
+                logInputError("No player found for relative coordinates", "No player found for relative coordinates");
+                return null;
+            }
+            long sumX = (long) net.minecraft.util.Mth.floor(current.getX()) + relX;
+            long sumY = (long) net.minecraft.util.Mth.floor(current.getY()) + relY;
+            long sumZ = (long) net.minecraft.util.Mth.floor(current.getZ()) + relZ;
+            if (!isWithinWorldLimit(sumX) || !isWithinWorldLimit(sumY) || !isWithinWorldLimit(sumZ)) {
+                logInputError("setBlock relative position out of world limit", "setBlock relative position out of world limit");
+                sendErrorChat("ばしょがワールドの外です");
+                return null;
+            }
+            return new BlockPos((int) sumX, (int) sumY, (int) sumZ);
+        }, true, (world, target) -> world.setBlock(target, blockState, 3), () -> {
+            logInputError("setBlock chunk not loaded", "setBlock: gave up waiting for the chunk to load");
+            sendErrorChat(LOAD_GAVE_UP_CHAT_PREFIX + "ブロックを おけませんでした");
+        }));
         if (!queued) {
             return null;
         }
@@ -515,7 +530,12 @@ public class CommandExecutor {
             @Override
             public boolean step(long deadlineNanos) {
                 boolean done = fill.step(deadlineNanos);
-                if (done) {
+                if (done && fill.gaveUp()) {
+                    // チャンクの読み込みを待ちきれず、途中でやめた（メインスレッドの上なので、知らせはその場で出る）
+                    logInputError("fillBlocks chunk not loaded", "fillBlocks: gave up waiting for a chunk to load after "
+                        + fill.placed() + " blocks");
+                    sendErrorChat(LOAD_GAVE_UP_CHAT_PREFIX + "うめるのを とちゅうで やめました");
+                } else if (done) {
                     MinecraftEduMod.LOGGER.debug("Filled " + fill.placed() + " blocks with " + loggedType);
                 }
                 return done;
@@ -598,26 +618,26 @@ public class CommandExecutor {
         // 0〜256 ブロックにおさめる（遠すぎると、たどるマスが多くなり Minecraft が重くなるため）
         double reach = Math.max(0.0, Math.min(MAX_TARGET_REACH, requestedReach));
 
-        // メインスレッドでレイキャストを実行（pick()はワールドデータにアクセスするため。ほかの命令と同じ列に並び、
-        // 前の命令で置いたブロックも見えるようにする）。プレイヤーは順番が来たときに引き直す
+        // メインスレッドでレイキャストを実行（ワールドデータにアクセスするため。ほかの命令と同じ列に並び、
+        // 前の命令で置いたブロックも見えるようにする。読み込まれていないチャンクの手前でやめる＝pickLoaded）。
+        // プレイヤーは順番が来たときに引き直す
         // （列で待つ間にやられて生き返ると、プレイヤーが新しく作り直されるため）
         // 読む中で例外が起きたときは、ほかの命令と同じく execute の catch で知らせる
         // （前はここで捕まえてチャットを出さなかった。いまは「MOD の なかで まちがいが おきました」などが出る）
-        return callInQueue("getTargetBlock", () -> {
+        return callInQueue("getTargetBlock", () -> true, () -> {
             ServerPlayer current = getFirstPlayer();
             if (current == null) {
                 logInputError("No player found for getTargetBlock", "No player found for getTargetBlock");
                 return null;
             }
             JsonObject result = new JsonObject();
-            net.minecraft.world.phys.HitResult hitResult = current.pick(reach, 0.0F, false);
+            ServerLevel level = current.serverLevel();
+            net.minecraft.world.phys.BlockHitResult blockHit = pickLoaded(current, level, reach);
 
-            if (hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-                net.minecraft.world.phys.BlockHitResult blockHit = (net.minecraft.world.phys.BlockHitResult) hitResult;
+            if (blockHit != null) {
                 BlockPos pos = blockHit.getBlockPos();
 
                 // ブロックの種類も取得
-                ServerLevel level = current.serverLevel();
                 BlockState blockState = level.getBlockState(pos);
                 String blockName = BuiltInRegistries.BLOCK.getKey(blockState.getBlock()).toString();
 
@@ -640,6 +660,32 @@ public class CommandExecutor {
             }
             return result;
         });
+    }
+
+    /**
+     * プレイヤーが見ている先のブロック（Entity.pick(reach, 0, false) と同じたどり方。当たらなければ null。メインスレッドで呼ぶ）
+     * 読み込まれていないチャンクに入ったら、そこでやめて「当たらなかった」とする
+     * （pick は、たどる途中のチャンクをその場で読み込み・生成し、そのあいだ Minecraft が止まるため。
+     *   読み込まれている範囲より先は、プレイヤーの画面にも映っていない）
+     */
+    private static BlockHitResult pickLoaded(ServerPlayer player, ServerLevel level, double reach) {
+        Vec3 from = player.getEyePosition(0.0F);
+        Vec3 view = player.getViewVector(0.0F);
+        Vec3 to = from.add(view.x * reach, view.y * reach, view.z * reach);
+        ClipContext context = new ClipContext(from, to, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
+        // たどるのをやめた印（読み込まれていないチャンクに入ったとき・最後まで当たらなかったとき）
+        BlockHitResult stop = BlockHitResult.miss(to, Direction.UP, BlockPos.containing(to));
+        // 1 マスずつの当たり方は Minecraft の BlockGetter.clip と同じ（水などを見ない Fluid.NONE なので、液体の当たりは調べない）
+        BlockHitResult hit = BlockGetter.traverseBlocks(from, to, context, (ctx, pos) -> {
+            // 建てられる高さの外は、Minecraft がチャンクを読まずに空気と答えるので、読み込まれていなくても通り抜ける（pick と同じ）
+            if (!level.isOutsideBuildHeight(pos) && !BlockJob.isLoaded(level, pos)) {
+                return stop;
+            }
+            BlockState state = level.getBlockState(pos);
+            VoxelShape shape = ctx.getBlockShape(state, level, pos);
+            return level.clipWithInteractionOverride(ctx.getFrom(), ctx.getTo(), pos, shape, state);
+        }, ctx -> stop);
+        return hit != stop && hit.getType() == HitResult.Type.BLOCK ? hit : null;
     }
 
     private JsonObject executeGetPlayerFacing(JsonObject params) {
@@ -681,6 +727,13 @@ public class CommandExecutor {
     }
 
     private JsonObject executeGetBlockType(JsonObject params) {
+        // ワールドの外の座標は断る（int にする前に確かめる。大きすぎる数は上の桁が落ちて、別の場所を読んでしまうため）
+        if (!isWithinWorldLimit(params.get("x")) || !isWithinWorldLimit(params.get("y")) || !isWithinWorldLimit(params.get("z"))) {
+            logInputError("getBlockType coordinates out of world limit", "getBlockType coordinates out of world limit");
+            sendErrorChat("ばしょがワールドの外です");
+            return null;
+        }
+
         int x = params.get("x").getAsInt();
         int y = params.get("y").getAsInt();
         int z = params.get("z").getAsInt();
@@ -689,7 +742,12 @@ public class CommandExecutor {
 
         // 列に並んで、メインスレッドで読む（前の命令で置いたブロックが見えるように。
         // 列に並ばずに読むと、大きな「埋める」の途中の、置く前のブロックを答えてしまうため）
+        // まだ読み込まれていないチャンクなら、読み込まれるのを待ってから読む（その場で読むと Minecraft が止まるため。
+        // 建てられる高さの外は、Minecraft がチャンクを読まずに答えるので待たない）
         return callInQueue("getBlockType", () -> {
+            ServerLevel world = server.overworld();
+            return world == null || world.isOutsideBuildHeight(pos) || BlockJob.requestLoaded(world, pos, false);
+        }, () -> {
             ServerLevel world = server.overworld();
             if (world == null) {
                 return null;
@@ -1233,6 +1291,8 @@ public class CommandExecutor {
                     if (world != null) {
                         for (int ahead = index + 1; ahead <= index + PREFETCH_COLUMNS && ahead < columns.size(); ahead++) {
                             columns.get(ahead).prepare(world);
+                            // 消すときに読むとなりのチャンクも、先に読み込みを頼む（時間で切れるチケットなので、回ごとに付け直す）
+                            columns.get(ahead).prefetchNeighbors(world);
                         }
                     }
                 } catch (Exception e) {
@@ -1245,6 +1305,12 @@ public class CommandExecutor {
                 } catch (Exception e) {
                     // 1 つの列のエラーで全体を止めない（終わりの印を下ろせなくなるため）
                     MinecraftEduMod.LOGGER.error("チャンク処理エラー (index=" + index + "): " + e.getMessage());
+                }
+                if (columns.get(index).gaveUp()) {
+                    // チャンクの読み込みを待ちきれなかった。残りもやめる（列ごとに待って知らせると、何分も続くため）
+                    // （上の catch の外で呼ぶ。中で例外が起きても、次の列へ進まないように）
+                    giveUp();
+                    return true;
                 }
                 index++;
                 // 25%ごとに進捗をチャットに表示
@@ -1260,6 +1326,20 @@ public class CommandExecutor {
             sendChatMessage("§a周囲クリア完了: 中心(" + centerX + ", " + centerZ + ")");
             MinecraftEduMod.LOGGER.info("チャンク分割タスク完了: " + columns.size() + "チャンク処理済み");
             return true;
+        }
+
+        /**
+         * 途中でやめる（先に付けた、この先の列のチケットを外し、終わりの印を下ろして知らせる）
+         */
+        private void giveUp() {
+            // 印は先に下ろす（チケットを外す途中で例外が起きても、次の「周りをきれいにする」を受け付けられるように）
+            clearAreaInProgress.set(false);
+            for (int rest = index + 1; rest < columns.size(); rest++) {
+                columns.get(rest).removeTickets();
+            }
+            logInputError("clearArea chunk not loaded", "clearArea: gave up waiting for a chunk to load at column "
+                + index + "/" + columns.size());
+            sendErrorChat(LOAD_GAVE_UP_CHAT_PREFIX + "まわりを きれいにするのを とちゅうで やめました");
         }
     }
 
@@ -1544,16 +1624,26 @@ public class CommandExecutor {
      * 命令の仕事はすべてここを通すので、届いた順に動く（大きな「埋める」のあとの命令は、それが終わるまで待つ）
      */
     private boolean safeExecute(Runnable task) {
-        if (serverStopping || !server.isRunning()) {
-            return false;
-        }
-        boolean queued = buildQueue.offer(BuildQueue.of(() -> {
+        return enqueue(BuildQueue.of(() -> {
             try {
                 task.run();
             } catch (Exception e) {
                 MinecraftEduMod.LOGGER.error("safeExecute task error", e);
             }
         }));
+    }
+
+    /**
+     * 仕事を、世界を変える仕事の列（BuildQueue）の最後に並べる（守りは safeExecute と同じ。
+     * 仕事の中の例外は BuildQueue が捕まえてログに出し、その仕事をやめる）
+     *
+     * @return 列に並べたら true（サーバーが止まりかけている・列がいっぱいなら false。いっぱいのときは知らせる）
+     */
+    private boolean enqueue(BuildQueue.Job job) {
+        if (serverStopping || !server.isRunning()) {
+            return false;
+        }
+        boolean queued = buildQueue.offer(job);
         if (!queued && !serverStopping) {
             // 列にたまった仕事の数が上限に届いた（「ずっと」の中で送り続けたときなど）
             logInputError("Build queue full", "Build queue full: too many queued commands");
@@ -1595,43 +1685,82 @@ public class CommandExecutor {
      * 待ちすぎると、その間このタブのほかの命令も止まり、Scratch が待つのをやめて「空気」と答えてしまうため。
      * 答えには、列に並んで読んだか（queued）を入れる（試験で、前の命令が終わったかを確かめるのに使う）
      *
+     * 読む前に ready で、読む所のチャンクが読み込まれているかを見る。まだなら、ready が読み込みを頼み、読まずに待つ
+     * （列の中では、その仕事のところで列が待つ。列を追い越すときは、READ_POLL_MILLIS ごとに聞き直す）。
+     * 待つ時間は上と同じ上限の中なので、読み込みが間に合わなければ失敗になる（そのときはチャットで知らせる）
+     *
      * @param what ログに出す命令の名前
+     * @param ready メインスレッドで、読む用意ができたか（読み込みを待つなら false）
      * @param task メインスレッドで動かす読み取り（答えが無ければ null）
      * @return 答え（失敗したら null）
      */
-    private JsonObject callInQueue(String what, Supplier<JsonObject> task) {
+    private JsonObject callInQueue(String what, BooleanSupplier ready, Supplier<JsonObject> task) {
         if (server.isSameThread()) {
-            // メインスレッドで待つと、列が進まず止まってしまうので、その場で動かす
+            // メインスレッドで待つと、列が進まず止まってしまうので、その場で動かす（いまは呼ばれない）
             return withQueued(task.get(), false);
         }
+        // 列を追い越して読むときに待つ時間（列に並ばなかったときは、列で待つはずだった時間も、読み込みを待つのに使う）
+        long nowWaitMillis = READ_QUEUE_WAIT_MILLIS + READ_NOW_WAIT_MILLIS;
+        PendingRead queued = null;
         if (buildQueue.pendingWeight() <= READ_WAIT_MAX_PENDING_WEIGHT) {
-            PendingRead queued = new PendingRead(task);
-            if (safeExecute(queued::run)) {
+            queued = new PendingRead(ready, task);
+            PendingRead read = queued;
+            if (enqueue(deadlineNanos -> read.run())) {
                 JsonObject answer = awaitRead(what, queued.future, READ_QUEUE_WAIT_MILLIS);
-                if (answer != null || serverStopping) {
-                    return withQueued(answer, true);
+                if (queued.future.isDone() || serverStopping) {
+                    return withQueued(answerIfDone(what, queued.future, answer), true);
                 }
                 if (!queued.abandon()) {
                     // 待ち終わるのと同時に順番が来て、もう読み始めた（または読み終えた）。その答えを使う
                     // （列を追い越して読み直すと、ブロックの名前のチャットが 2 回出るため）
                     return withQueued(awaitRead(what, queued.future, READ_FINISH_WAIT_MILLIS), true);
                 }
-                // 順番が来なかった。並んだ仕事は、順番が来ても何もしない（abandon で決まった）
+                // 順番が来なかった（または読み込みを待っていた）。並んだ仕事は、次の回に何もせず終わる（abandon で決まった）
                 logInputError(what + " waited too long", what + ": read without waiting for the build queue");
+                nowWaitMillis = READ_NOW_WAIT_MILLIS;
             } else if (serverStopping) {
                 return null;
             }
         }
-        PendingRead now = new PendingRead(task);
-        if (!executeAheadOfQueue(now::run)) {
-            return null;  // サーバーが止まりかけている
+        PendingRead now = new PendingRead(ready, task);
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(nowWaitMillis);
+        JsonObject answer = null;
+        while (true) {
+            if (!executeAheadOfQueue(now::run)) {
+                return null;  // サーバーが止まりかけている
+            }
+            long left = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime());
+            answer = awaitRead(what, now.future, Math.max(1, Math.min(READ_POLL_MILLIS, left)));
+            if (now.future.isDone() || serverStopping || left <= READ_POLL_MILLIS) {
+                break;
+            }
         }
-        JsonObject answer = awaitRead(what, now.future, READ_NOW_WAIT_MILLIS);
-        if (answer == null && !serverStopping && !now.abandon()) {
-            // 待ち終わるのと同時に読み始めた（または読み終えた）。その答えを使う
-            answer = awaitRead(what, now.future, READ_FINISH_WAIT_MILLIS);
+        // 答えが無ければ、やめられるかで決める（「終わったか」を先に見ると、見たあとに読み終えたときに答えを捨てるため）
+        boolean abandoned = false;
+        if (answer == null && !serverStopping) {
+            if (now.abandon()) {
+                abandoned = true;
+            } else {
+                // 読み始めた（または読み終えた）。その答えを受け取る
+                answer = awaitRead(what, now.future, READ_FINISH_WAIT_MILLIS);
+            }
+        }
+        if (abandoned && (now.waitedForLoad || (queued != null && queued.waitedForLoad))) {
+            // チャンクの読み込みが間に合わなかった（Scratch は「空気」と答えるので、まだ読めていないことを知らせる。
+            // 列に並べると、前の仕事が終わるまで出ないので、列を追い越して出す）
+            logInputError(what + " chunk not loaded", what + ": the chunk did not load in time");
+            sendErrorChatAheadOfQueue(READ_LOAD_PENDING_CHAT);
         }
         return withQueued(answer, false);
+    }
+
+    /**
+     * 読み取りが終わっていれば、その答え（か、メインスレッドで起きた例外）を受け取り直す。終わっていなければ answer のまま
+     * （待つのを区切った直後に読み終えると、awaitRead は null を返したまま future だけが終わっているので、
+     *   読めていたのに失敗として返さないように）
+     */
+    private JsonObject answerIfDone(String what, CompletableFuture<JsonObject> future, JsonObject answer) {
+        return future.isDone() ? awaitRead(what, future, READ_FINISH_WAIT_MILLIS) : answer;
     }
 
     /**
@@ -1639,6 +1768,7 @@ public class CommandExecutor {
      * メインスレッドが読み始めるのと、待つ側が待ちきれずにやめるのは、先に来た方だけが通る
      * （やめた読み取りをあとからメインスレッドが動かして、ブロックの名前のチャットが 2 回出たり、
      *   読み終えた答えを待つ側が捨てたりしないように）
+     * 読む所のチャンクが読み込まれるまでは、読み始めない（その間は、待つ側がやめられる）
      */
     private static final class PendingRead {
         // まだ読んでいない・メインスレッドが読み始めた・待つ側がやめた
@@ -1648,24 +1778,46 @@ public class CommandExecutor {
 
         private final AtomicInteger state = new AtomicInteger(WAITING);
         private final CompletableFuture<JsonObject> future = new CompletableFuture<>();
+        private final BooleanSupplier ready;
         private final Supplier<JsonObject> task;
+        // チャンクの読み込みを待ったことがあるか（間に合わなかったときに知らせるため）
+        private volatile boolean waitedForLoad;
 
-        PendingRead(Supplier<JsonObject> task) {
+        PendingRead(BooleanSupplier ready, Supplier<JsonObject> task) {
+            this.ready = ready;
             this.task = task;
         }
 
         /**
          * 読み取りを動かして答えを入れる（メインスレッド。待つ側がもうやめていたら何もしない）
+         *
+         * @return 終わったら true（読んだ・待つ側がやめていた）。チャンクの読み込みを待つときは false
          */
-        void run() {
+        boolean run() {
+            if (state.get() != WAITING) {
+                return true;
+            }
+            try {
+                if (!ready.getAsBoolean()) {
+                    waitedForLoad = true;
+                    return false;  // 読み込みを頼んだ。次の回にまた見る
+                }
+            } catch (RuntimeException e) {
+                // 用意の確かめで失敗した。読み取りと同じく、待つ側に投げ直してもらう
+                if (state.compareAndSet(WAITING, READING)) {
+                    future.completeExceptionally(e);
+                }
+                return true;
+            }
             if (!state.compareAndSet(WAITING, READING)) {
-                return;
+                return true;
             }
             try {
                 future.complete(task.get());
             } catch (RuntimeException e) {
                 future.completeExceptionally(e);
             }
+            return true;
         }
 
         /**
@@ -2361,10 +2513,10 @@ public class CommandExecutor {
         }
         final Item item = BuiltInRegistries.ITEM.get(itemId);
 
-        boolean queued = safeExecute(() -> {
-            ServerLevel world = server.overworld();
-            if (world == null) return;
-            BlockEntity blockEntity = world.getBlockEntity(pos);
+        // まだ読み込まれていないチャンクなら、読み込まれるのを待ってから入れる（BlockJob。その場で入れると Minecraft が止まるため。
+        // 中身を変えると、入れ物は比較器へ知らせるために 2 マス先まで読むので、端の近くならとなりのチャンクも待つ）
+        boolean queued = enqueue(new BlockJob(server, world -> pos, true, (world, target) -> {
+            BlockEntity blockEntity = world.getBlockEntity(target);
 
             if (blockEntity instanceof Container container) {
                 if (slot < 0 || slot >= container.getContainerSize()) {
@@ -2385,9 +2537,12 @@ public class CommandExecutor {
                 logInputError("No container block", "No container block at position: " + pos);
                 sendErrorChat("そこに いれものが ありません");
             }
-        });
+        }, () -> {
+            logInputError("setContainerItem chunk not loaded", "setContainerItem: gave up waiting for the chunk to load");
+            sendErrorChat(LOAD_GAVE_UP_CHAT_PREFIX + "アイテムを いれられませんでした");
+        }));
         if (!queued) {
-            return null;  // 列が混んでいて並べられなかった（知らせは safeExecute が出す）
+            return null;  // 列が混んでいて並べられなかった（知らせは enqueue が出す）
         }
 
         JsonObject result = new JsonObject();
