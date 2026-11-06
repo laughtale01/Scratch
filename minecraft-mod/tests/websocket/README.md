@@ -15,6 +15,7 @@ mise exec -- bash tests/websocket/run.sh
 - 試験用のポートは 24711 です（本物の MOD の 14711 とぶつからないように）。変えるときは `WS_TEST_PORT=24800` を付けます。
 - 2 分ほどかかります（時間切れの確かめで数秒ずつ待つのと、ログの間引きの確かめで 60 秒待つため）。
 - MOD のビルド（`./gradlew build`）には含まれません。
+- はじめに `tests/data/check_vertical_slab_data.py` も流し、縦スラブの名前が ModBlocks・ModItems・loot table・タグでそろっているかを確かめます（食い違いがあれば、そこで止まります）。
 
 ## 確かめていること
 

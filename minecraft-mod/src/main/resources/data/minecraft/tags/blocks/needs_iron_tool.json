@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "minecraftedu:vertical_gold_block_slab",
+      "required": false
+    },
+    {
+      "id": "minecraftedu:vertical_diamond_block_slab",
+      "required": false
+    },
+    {
+      "id": "minecraftedu:vertical_emerald_block_slab",
+      "required": false
+    }
+  ]
+}

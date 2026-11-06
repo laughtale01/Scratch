@@ -34,18 +34,19 @@ public class ModBlocks {
      *
      * バニラのハーフブロックは上・下（と 2 枚重ね）にしか置けないが、
      * 縦スラブは東西南北の 4 つの向きに置ける。
+     * 手でも壊せて落ちる（下の木材系の縦スラブと同じ）。
      */
     public static final RegistryObject<Block> VERTICAL_OAK_SLAB = BLOCKS.register(
         "vertical_oak_slab",
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)
                 .strength(2.0F, 3.0F)  // オークの板材と同じ
-                .requiresCorrectToolForDrops()
         )
     );
 
     // ========================================
     // 木材系垂直スラブ (Wood Vertical Slabs)
+    // 木の縦スラブは、バニラの板材と同じく、手でも壊せて落ちる（斧だと速い。道具の決まりは data/minecraft/tags/blocks）
     // ========================================
 
     public static final RegistryObject<Block> VERTICAL_BIRCH_SLAB = BLOCKS.register(
@@ -53,7 +54,6 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.BIRCH_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
@@ -62,7 +62,6 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.SPRUCE_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
@@ -71,7 +70,6 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.JUNGLE_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
@@ -80,7 +78,6 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.ACACIA_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
@@ -89,7 +86,6 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.DARK_OAK_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
@@ -98,7 +94,6 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.CHERRY_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
@@ -107,7 +102,6 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.MANGROVE_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
@@ -116,7 +110,6 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.CRIMSON_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
@@ -125,12 +118,14 @@ public class ModBlocks {
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.WARPED_PLANKS)
                 .strength(2.0F, 3.0F)
-                .requiresCorrectToolForDrops()
         )
     );
 
     // ========================================
     // 石材系垂直スラブ (Stone Vertical Slabs)
+    // 石や金属の縦スラブは、元のブロックと同じく、正しい道具でないと落ちない
+    // （Properties.copy で元のブロックから写るので、requiresCorrectToolForDrops を書かなくても同じ。
+    //   要る道具の強さは data/minecraft/tags/blocks の needs_*_tool で、元のブロックに合わせている）
     // ========================================
 
     public static final RegistryObject<Block> VERTICAL_STONE_SLAB = BLOCKS.register(
