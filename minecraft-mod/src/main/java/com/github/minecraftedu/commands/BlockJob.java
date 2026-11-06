@@ -52,16 +52,20 @@ class BlockJob implements BuildQueue.Job {
     private final BiConsumer<ServerLevel, BlockPos> action;
     // 読み込まれずにあきらめたときに呼ぶ（メインスレッド）
     private final Runnable onGiveUp;
+    // 前もって分かっている場所（前の仕事が読み込みを待っている間に、先に読み込みを頼むのに使う）。
+    // 相対座標は、順番が来たときのプレイヤーの位置で決まるので、前もっては分からない（null）
+    private final BlockPos prefetchPos;
 
     // 決めた場所（まだ決めていなければ null）
     private BlockPos pos;
     // 読み込みを待ち始めた時刻（0 は待っていない）
     private long loadWaitStart;
 
-    BlockJob(MinecraftServer server, Function<ServerLevel, BlockPos> target, boolean neighbors,
+    BlockJob(MinecraftServer server, Function<ServerLevel, BlockPos> target, BlockPos prefetchPos, boolean neighbors,
              BiConsumer<ServerLevel, BlockPos> action, Runnable onGiveUp) {
         this.server = server;
         this.target = target;
+        this.prefetchPos = prefetchPos;
         this.neighbors = neighbors;
         this.action = action;
         this.onGiveUp = onGiveUp;
@@ -104,6 +108,13 @@ class BlockJob implements BuildQueue.Job {
      * 読み込み直しにならないように）。見える範囲の中なら付けない（近くに置くたびにチケットを付け外ししないように）
      */
     static boolean requestLoaded(ServerLevel world, BlockPos pos, boolean neighbors) {
+        return requestLoaded(world, pos, neighbors, outsideView(world, pos.getX() >> 4, pos.getZ() >> 4));
+    }
+
+    /**
+     * pos のチャンク（neighbors ならとなりも）について、上の requestLoaded と同じ。refreshLoaded なら、全部読み込まれていても付け直す
+     */
+    private static boolean requestLoaded(ServerLevel world, BlockPos pos, boolean neighbors, boolean refreshLoaded) {
         int cx = pos.getX() >> 4;
         int cz = pos.getZ() >> 4;
         int minX = cx, maxX = cx, minZ = cz, maxZ = cz;
@@ -113,7 +124,7 @@ class BlockJob implements BuildQueue.Job {
             minZ -= (pos.getZ() & 15) < NEIGHBOR_MARGIN ? 1 : 0;
             maxZ += (pos.getZ() & 15) >= 16 - NEIGHBOR_MARGIN ? 1 : 0;
         }
-        return requestLoaded(world, minX, maxX, minZ, maxZ, outsideView(world, cx, cz));
+        return requestLoaded(world, minX, maxX, minZ, maxZ, refreshLoaded);
     }
 
     /**
@@ -169,5 +180,36 @@ class BlockJob implements BuildQueue.Job {
     @Override
     public long weight() {
         return 1;
+    }
+
+    @Override
+    public boolean waitingForLoad() {
+        return loadWaitStart != 0;
+    }
+
+    /**
+     * 前もって分かっている場所のチャンク（建てられる高さの外は、順番が来ても読み込まないので無し）
+     */
+    @Override
+    public long prefetchChunk() {
+        ServerLevel world = server.overworld();
+        if (prefetchPos == null || world == null || world.isOutsideBuildHeight(prefetchPos)) {
+            return BuildQueue.NO_PREFETCH;
+        }
+        return ChunkPos.asLong(prefetchPos.getX() >> 4, prefetchPos.getZ() >> 4);
+    }
+
+    /**
+     * 前もって分かっている場所のチャンク（となりも待つなら、となりも）にチケットを付ける（順番が来たときと同じチケット。LINGER_TICKS で切れる）。
+     * 読み込み済みでも付け直す（先頭が長く待つ間に、先読みしたチャンクが切れて下ろされ、読み直しにならないように。
+     * 付け直すのは BuildQueue が見る PREFETCH_CHUNKS 個の中だけなので、読み込んだままにするチャンクの数は増えない）
+     */
+    @Override
+    public void prefetch() {
+        ServerLevel world = server.overworld();
+        if (prefetchChunk() == BuildQueue.NO_PREFETCH || world == null) {
+            return;
+        }
+        requestLoaded(world, prefetchPos, neighbors, true);
     }
 }
