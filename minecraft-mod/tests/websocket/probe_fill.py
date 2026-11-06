@@ -790,6 +790,15 @@ CASES = [
      'fillBlocks', None, 'その ブロックの なまえが ちがいます'),
     ('生き物を出す: 生き物の名前の打ちまちがい', lambda s: summon(s, 0, TP_Y, 0, entity='minecraft:no_such_mob'), 'summonEntity',
      None, 'その いきものの なまえが ちがいます'),
+    # 出さないもの（作品を壊す・燃やすものの一覧と、Minecraft の /summon でも出せないもの）。
+    # 断る決まりがこわれても作品に害が出ないものを使う（ドラゴンの火の玉はダメージの雲だけ、プレイヤーは作られない）
+    ('生き物を出す: 出さない一覧のもの（ドラゴンの火の玉）', lambda s: summon(s, 0, TP_Y, 0, entity='minecraft:dragon_fireball'),
+     'summonEntity', None, 'その いきものは ここでは だせません'),
+    ('生き物を出す: Minecraft でも出せないもの（プレイヤー）', lambda s: summon(s, 0, TP_Y, 0, entity='minecraft:player'),
+     'summonEntity', None, 'その いきものは ここでは だせません'),
+    # 弾そのもの（雪玉）は、作ってみてから断るので、返事は成功（あとで Minecraft の中で分かる）、チャットで知らせる
+    ('生き物を出す: 弾そのもの（雪玉）', lambda s: summon(s, 0, TP_Y, 0, entity='minecraft:snowball'),
+     'summonEntity', {}, 'その いきものは ここでは だせません'),
     ('入れ物にアイテムを入れる: アイテムの名前の打ちまちがい', lambda s: set_container_item(s, 0, 300, 0, item='minecraft:no_such_item'),
      'setContainerItem', None, 'その アイテムの なまえが ちがいます'),
     ('ゲームモード: ない名前', lambda s: request(s, 'command', {'action': 'setGameMode', 'params': {'mode': 'no_such_mode'}}),

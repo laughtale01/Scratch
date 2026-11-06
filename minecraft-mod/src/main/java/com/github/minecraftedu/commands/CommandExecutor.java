@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameType;
@@ -406,6 +407,16 @@ public class CommandExecutor {
     private static final int WORLD_COORD_LIMIT = 30_000_000;
     // テレポート・生き物を出すときの高さの上限（Minecraft の /tp・/summon と同じく -20,000,000 以上 20,000,000 未満）
     private static final int SPAWN_HEIGHT_LIMIT = 20_000_000;
+    // summonEntity で出さないもの（出しただけで、まわりを壊す・燃やすもの。みんなの作品が消えてしまう）
+    // ほかの生き物は、出したあと SummonedEntityGuard が作品を壊させない。
+    // 弾そのものは、ここにない種類も、作ったあとで断る（持ち主がいない弾は、見張りでは止めきれないため）
+    private static final Set<EntityType<?>> BLOCKED_SUMMON_TYPES = Set.of(
+            EntityType.WITHER, EntityType.ENDER_DRAGON,                      // ボス（ブロックを壊しながら動く）
+            EntityType.TNT, EntityType.TNT_MINECART, EntityType.END_CRYSTAL, // 出したとたんに爆発する・爆発させられる
+            EntityType.LIGHTNING_BOLT,                                       // 出したとたんに火がつく
+            EntityType.FIREBALL, EntityType.SMALL_FIREBALL, EntityType.WITHER_SKULL, // 当たると爆発・火がつく弾
+            EntityType.DRAGON_FIREBALL,                                      // 当たるとダメージの雲が出る弾
+            EntityType.FALLING_BLOCK);                                       // 落ちた所の水などを砂に置き換える
     // 1 回の fillBlocks で置けるブロックの数の上限
     private static final long MAX_FILL_VOLUME = 2_000_000L;
     // 1 回の fillBlocks の横（X・Z）の 1 辺の上限
@@ -944,14 +955,27 @@ public class CommandExecutor {
             return null;
         }
         EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(entityId);
+        // 壊す・燃やすもの、Minecraft の /summon でも出せないもの（プレイヤーなど）は断る
+        if (BLOCKED_SUMMON_TYPES.contains(type) || !type.canSummon()) {
+            logInputError("Blocked entity type", "Blocked entity type: " + entityId);
+            sendErrorChat("その いきものは ここでは だせません: " + chatSafeName(entityType));
+            return null;
+        }
 
         boolean queued = safeExecute(() -> {
             ServerLevel world = server.overworld();
             if (world == null) return;
             net.minecraft.world.entity.Entity entity = type.create(world);
+            if (entity instanceof Projectile) {
+                // 弾（矢・雪玉など）は、作ってみないと分からないので、ここで断る（返事はもう成功で返している）
+                logInputError("Blocked entity type", "Blocked entity type: " + entityId);
+                sendErrorChat("その いきものは ここでは だせません: " + chatSafeName(entityType));
+                return;
+            }
 
             if (entity != null) {
                 entity.setPos(x, y, z);
+                SummonedEntityGuard.mark(entity);  // 作品を壊させない印
                 world.addFreshEntity(entity);
             }
         });
@@ -959,7 +983,8 @@ public class CommandExecutor {
             return null;  // 列が混んでいて並べられなかった（知らせは safeExecute が出す）
         }
 
-        MinecraftEduMod.LOGGER.debug("Entity summoned: " + entityType + " at " + x + "," + y + "," + z);
+        // 列に並べただけ（弾だったときは、列の中で断る）
+        MinecraftEduMod.LOGGER.debug("Entity summon queued: " + entityType + " at " + x + "," + y + "," + z);
         return new JsonObject();
     }
 
