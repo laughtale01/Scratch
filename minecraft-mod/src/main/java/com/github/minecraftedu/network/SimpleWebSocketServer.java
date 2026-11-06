@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.ArrayDeque;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -29,15 +30,26 @@ import java.util.regex.Pattern;
 public class SimpleWebSocketServer {
     private static final String WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-    // 同時につなげる数の上限（Scratch のタブ数本分。超えたら断る）
+    // 同時につなげる数の上限（Scratch のタブ数本分。ハンドシェイクが済んだ接続を数え、超えたら断る）
     static final int MAX_CLIENTS = 8;
+    // ハンドシェイクの前の接続の数の上限（上の 8 本とは別に数える。いっぱいなら一番古いものを切る）
+    // （ブラウザが前もって開く接続や、何も送らない接続をためても、本物の Scratch が入れなくならないように。
+    //  本物の Scratch は、つないですぐハンドシェイクを送るので、押し出される前に済む。
+    //  Minecraft が止まったあとに、たまった接続をまとめて受け付けても押し出されにくいよう、多めにしておく）
+    private static final int MAX_PENDING_HANDSHAKES = 64;
+    // 接続を受け持つスレッドの数の上限（ハンドシェイクの前とつないだあとの全部に、断る返事を送る途中の分を足す）。
+    // 押し出した接続のスレッドが終わる前に次を受け付けて、スレッドが増え続けないように
+    private static final int MAX_HANDLERS = MAX_PENDING_HANDSHAKES + MAX_CLIENTS + 8;
+    // 受け持つスレッドがいっぱいのとき、空くのを待つ時間（押し出したスレッドはすぐ終わるので、ふつうは一瞬で空く）
+    private static final int HANDLER_WAIT_MS = 1000;
     // 1 つのメッセージの大きさの上限（命令の JSON には十分。巨大な長さを名乗ってメモリを使い切らせないため）
     private static final int MAX_PAYLOAD_BYTES = 1024 * 1024;
     // ヘッダーの 1 行の長さと行数の上限
     private static final int MAX_HEADER_LINE_BYTES = 8 * 1024;
     private static final int MAX_HEADER_LINES = 100;
-    // ハンドシェイク全体の締め切り（何も送らない・少しずつしか送らない接続をいつまでも残さないため）
-    private static final int HANDSHAKE_TIMEOUT_MS = 5000;
+    // ハンドシェイク全体の締め切り（何も送らない・少しずつしか送らない接続をいつまでも残さないため。
+    // 本物の Scratch は自分の PC の中でつなぐので数ミリ秒で済むが、遅い PC で Minecraft が少し止まっても切らないよう 2 秒）
+    private static final int HANDSHAKE_TIMEOUT_MS = 2000;
     // 受付が失敗し続けたときに待つ時間（すぐやり直して CPU とログを使い切らないため）
     private static final int ACCEPT_RETRY_DELAY_MS = 100;
     // ログに出す、相手が送った値（Origin・命令の名前・ブロックの名前など）の長さの上限
@@ -49,8 +61,12 @@ public class SimpleWebSocketServer {
     private static final String ALLOWED_ORIGIN = "https://laughtale01.github.io";
     private static final Pattern LOCAL_DEV_ORIGIN = Pattern.compile("^http://(localhost|127\\.0\\.0\\.1):8000$");
 
-    // 同時接続の数を数える
+    // 同時接続の数を数える（ハンドシェイクが済んだ接続だけ）
     private final Semaphore clientSlots = new Semaphore(MAX_CLIENTS);
+    // ハンドシェイクの前の接続（古い順。自分自身で守る）
+    private final ArrayDeque<Socket> pendingHandshakes = new ArrayDeque<>();
+    // 接続を受け持つスレッドの数を数える
+    private final Semaphore handlerSlots = new Semaphore(MAX_HANDLERS);
     /**
      * 接続を断った理由の種類（ログの間引きは種類ごとに行う。1 つにまとめると、
      * 大量に断った種類のせいで、ほかの種類のログが「ほかに N 件」に埋もれるため）
@@ -58,6 +74,8 @@ public class SimpleWebSocketServer {
     private enum RejectReason {
         NON_LOCAL("non-local address"),
         TOO_MANY_CLIENTS("too many clients"),
+        TOO_MANY_PENDING("too many pending handshakes"),
+        HANDLERS_BUSY("handler threads busy"),
         ORIGIN("origin"),
         BAD_REQUEST("bad request"),
         HANDSHAKE_TIMEOUT("handshake timed out"),
@@ -113,7 +131,8 @@ public class SimpleWebSocketServer {
         executor.submit(() -> {
             while (running) {
                 Socket client = null;
-                boolean slotAcquired = false;
+                boolean pendingAdded = false;
+                boolean handlerAcquired = false;
                 boolean handedOff = false;
                 try {
                     client = serverSocket.accept();
@@ -126,16 +145,32 @@ public class SimpleWebSocketServer {
                         logRejected(RejectReason.NON_LOCAL, client.getInetAddress().getHostAddress());
                         continue;
                     }
-                    // 同時接続の上限を超えたら断る
-                    if (!clientSlots.tryAcquire()) {
-                        logRejected(RejectReason.TOO_MANY_CLIENTS, null);
+                    // ハンドシェイクの前の接続として数える（同時接続の 8 本は、ハンドシェイクが済むときに数える）。
+                    // いっぱいなら一番古いものを切る
+                    Socket evicted = addPending(client);
+                    pendingAdded = true;
+                    if (evicted != null) {
+                        logRejected(RejectReason.TOO_MANY_PENDING, null);
+                        closeQuietly(evicted);
+                    }
+                    // 受け持つスレッドが空くのを待つ（空かなければ、この接続を閉じる。finally で一覧から外す）
+                    if (!handlerSlots.tryAcquire(HANDLER_WAIT_MS, TimeUnit.MILLISECONDS)) {
+                        if (running) {
+                            logRejected(RejectReason.HANDLERS_BUSY, null);
+                        }
                         continue;
                     }
-                    slotAcquired = true;
+                    handlerAcquired = true;
                     // つながったことは、ハンドシェイクが済んでから info で出す
                     // （ここでは debug でも出さない。断る接続をくり返されると、debug.log の古い記録が押し出されるため）
                     final Socket accepted = client;
-                    executor.submit(() -> handleClient(accepted));
+                    executor.submit(() -> {
+                        try {
+                            handleClient(accepted);
+                        } finally {
+                            handlerSlots.release();
+                        }
+                    });
                     handedOff = true;
                 } catch (Throwable e) {
                     // どんな失敗でも受付ループは止めない（止まると再接続できなくなるため）
@@ -150,16 +185,39 @@ public class SimpleWebSocketServer {
                         }
                     }
                 } finally {
-                    // handleClient に渡せなかった接続は、ここで枠を返して閉じる（渡せた接続は handleClient が片付ける）
+                    // handleClient に渡せなかった接続は、ここで一覧から外して閉じる（渡せた接続は handleClient が片付ける）
                     if (!handedOff) {
-                        if (slotAcquired) {
-                            clientSlots.release();
+                        if (pendingAdded) {
+                            removePending(client);
+                        }
+                        if (handlerAcquired) {
+                            handlerSlots.release();
                         }
                         closeQuietly(client);
                     }
                 }
             }
         });
+    }
+
+    /**
+     * ハンドシェイクの前の接続の一覧に足す。いっぱいなら、一番古いものを一覧から外して返す（呼ぶ側で閉じる）
+     */
+    private Socket addPending(Socket client) {
+        synchronized (pendingHandshakes) {
+            Socket oldest = pendingHandshakes.size() >= MAX_PENDING_HANDSHAKES ? pendingHandshakes.pollFirst() : null;
+            pendingHandshakes.addLast(client);
+            return oldest;
+        }
+    }
+
+    /**
+     * ハンドシェイクの前の接続の一覧から外す。入っていなければ false（押し出されて切られたあとなど。2 回呼んでもよい）
+     */
+    private boolean removePending(Socket client) {
+        synchronized (pendingHandshakes) {
+            return pendingHandshakes.remove(client);
+        }
     }
 
     /**
@@ -238,18 +296,22 @@ public class SimpleWebSocketServer {
 
     /**
      * ヘッダーを 1 行読む（CRLF まで）。長すぎる行は HandshakeLimitException。接続が終わったら null
-     * deadlineNanos（System.nanoTime の値）を過ぎたら SocketTimeoutException
-     * （setSoTimeout は 1 回の読み取りの待ち時間にしか効かないので、読むたびに残り時間を設定し直す）
+     * deadlineNanos（System.nanoTime の値）を過ぎて、まだ届いていないバイトを待つことになったら SocketTimeoutException
+     * （setSoTimeout は 1 回の読み取りの待ち時間にしか効かないので、読むたびに残り時間を設定し直す。
+     *  締め切りを過ぎても、もう届いているバイトは読み切る。読む途中で Minecraft が止まっても、届いたヘッダーで切らないため。
+     *  長さと行数の上限があるので、送り続けても終わる）
      */
     private static String readHeaderLine(InputStream in, Socket client, long deadlineNanos) throws IOException {
         ByteArrayOutputStream line = new ByteArrayOutputStream();
         int b;
         while (true) {
             long remainingMs = TimeUnit.NANOSECONDS.toMillis(deadlineNanos - System.nanoTime());
-            if (remainingMs <= 0) {
+            if (remainingMs > 0) {
+                client.setSoTimeout((int) Math.min(remainingMs, Integer.MAX_VALUE));
+            } else if (in.available() == 0) {
+                // 締め切りを過ぎて、届いているバイトも無い（available はソケットにも聞くので、締め切りを過ぎたときだけ呼ぶ）
                 throw new SocketTimeoutException("WebSocket handshake timed out");
             }
-            client.setSoTimeout((int) Math.min(remainingMs, Integer.MAX_VALUE));
             if ((b = in.read()) == -1) break;
             if (b == '\n') {
                 byte[] bytes = line.toByteArray();
@@ -271,19 +333,24 @@ public class SimpleWebSocketServer {
     }
 
     private void handleClient(Socket client) {
-        // ハンドシェイクの締め切り（受け付けてからの時間で数える）
+        // ハンドシェイクの締め切り（受け持ちが始まってからの時間で数える。受け付けたあと、受け持つスレッドが空くのを
+        // 待ったときは、その分あとになる）
         long handshakeDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(HANDSHAKE_TIMEOUT_MS);
         // ハンドシェイクが済んだか（済んだ接続だけ、切れたことを info で出す）
         boolean handshakeDone = false;
+        // 同時接続の枠（8 本）を取ったか（取った接続だけ、終わるときに返す）
+        boolean slotAcquired = false;
+        // ハンドシェイクの前の一覧から、自分で外したか（外していないのに一覧に無ければ、押し出されて切られた）
+        boolean leftPending = false;
 
         // ヘッダーとフレームは同じストリームから読む（先読みしたバイトを取りこぼさないため）
-        // （下の finally で必ず枠を返すため、ここから先は全部 try の中に置く）
+        // （下の finally で必ず一覧から外し、取った枠を返すため、ここから先は全部 try の中に置く）
         try (InputStream in = new BufferedInputStream(client.getInputStream());
              OutputStream out = client.getOutputStream()) {
 
             // 停止時の明示的なソケットclose対象として追跡
             activeClients.add(client);
-            // 一覧に入れる前に stop() が一覧を閉じ終えていたら、ここで終える（読み取りで最大 5 秒残らないように）
+            // 一覧に入れる前に stop() が一覧を閉じ終えていたら、ここで終える（読み取りで最大 2 秒残らないように）
             if (!running) {
                 return;
             }
@@ -322,6 +389,19 @@ public class SimpleWebSocketServer {
                 sendHttpError(out, "403 Forbidden");
                 return;
             }
+
+            // ハンドシェイクの前の一覧から外す（外せなかったら、一番古い接続として押し出されて切られたあと）
+            if (!removePending(client)) {
+                return;
+            }
+            leftPending = true;
+            // 同時接続の枠（8 本）は、ここで取る（ハンドシェイクの前の接続や、ほかのサイトからの接続は、枠を使わない）
+            if (!clientSlots.tryAcquire()) {
+                logRejected(RejectReason.TOO_MANY_CLIENTS, null);
+                sendHttpError(out, "503 Service Unavailable");
+                return;
+            }
+            slotAcquired = true;
 
             // WebSocket のハンドシェイクの返事を送る
             String acceptKey = generateAcceptKey(webSocketKey);
@@ -425,22 +505,34 @@ public class SimpleWebSocketServer {
             // ヘッダーが長すぎる・多すぎる（想定内なので詳しい中身は出さない。長い URL なら別のサイトからも起こせる）
             logRejected(RejectReason.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            // 停止中の SocketException 等は想定内なので debug レベルに落とす
-            if (running && !handshakeDone && e instanceof IOException) {
-                // ハンドシェイクの前の通信の失敗（途中で切られた等）は、別のサイトからもくり返し起こせるので間引く
-                // （詳しい中身は出さず、例外の種類だけ出す。プログラムの不具合は下の error で詳しく出す）
-                logRejected(RejectReason.HANDSHAKE_ERROR, e.getClass().getSimpleName());
+            // ハンドシェイクの前の通信の失敗か
+            boolean beforeHandshakeIo = running && !handshakeDone && e instanceof IOException;
+            if (beforeHandshakeIo) {
+                // 自分で一覧から外していないのに一覧に無ければ、一番古い接続として押し出されて切られた。
+                // 押し出したときに、間引いた too many pending handshakes を出しているので、ここでは debug でも出さない
+                // （押し出しをくり返されると、debug.log の古い記録が押し出されるため）。
+                // removePending は一覧から外す（finally でも外すので、2 回になってもよい）
+                boolean evicted = !leftPending && !removePending(client);
+                if (!evicted) {
+                    // 途中で切られた等は、別のサイトからもくり返し起こせるので間引く
+                    // （詳しい中身は出さず、例外の種類だけ出す。プログラムの不具合は下の error で詳しく出す）
+                    logRejected(RejectReason.HANDSHAKE_ERROR, e.getClass().getSimpleName());
+                }
             } else if (running && e instanceof IOException) {
                 // つないだあとに、相手が乱暴に切った（タブを閉じた等）。よくあることで、くり返されても増えないよう debug
                 MinecraftEduMod.LOGGER.debug("Client connection lost: " + e.getClass().getSimpleName());
             } else if (running) {
                 MinecraftEduMod.LOGGER.error("Error handling client", e);
             } else {
+                // 停止中の SocketException 等は想定内なので debug レベルに落とす
                 MinecraftEduMod.LOGGER.debug("Client connection closed during shutdown: " + e.getMessage());
             }
         } finally {
             activeClients.remove(client);
-            clientSlots.release();
+            removePending(client);
+            if (slotAcquired) {
+                clientSlots.release();
+            }
             try {
                 client.close();
                 // ハンドシェイクの前に切れた接続は出さない（断った理由は logRejected で出している）

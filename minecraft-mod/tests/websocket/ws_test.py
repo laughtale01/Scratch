@@ -133,8 +133,39 @@ try:
         print(''.join(logs[-20:]))
         sys.exit(1)
 
-    # 断った接続のログは 1 回目だけすぐ出るので、ログの確かめを最初にする
+    # ハンドシェイクの前の接続の試験は、ほかの断り方のログがまだ間引かれていない、いちばん初めに流す
+    # （押し出された接続を、まちがって「handshake failed」に分けたら、ここで 1 行出て見つかるように）
+    print('--- ハンドシェイクの前の接続は、8 本の枠に数えない')
+    n = len(logs)
+    # ブラウザが前もって開く接続（何も送らない）が 8 本あっても、Scratch はつながる
+    idle = [conn() for _ in range(8)]
+    time.sleep(0.1)
+    s, st = handshake()
+    check('何も送らない接続が 8 本あっても、Scratch はつながる（何も送らない接続はまだ切れていない）',
+          '101' in st and not is_closed(idle[-1], wait=0.05), st); s.close()
+    for c in idle: c.close()
+    time.sleep(0.3)
+    # ハンドシェイクの前の接続が上限（64 本）を超えたら、一番古いものから切る。新しい本物の接続は入れる
+    idle = [conn() for _ in range(70)]
+    time.sleep(0.1)
+    # 先に、切られた 6 本を見る（切られていれば、70 本すべてを受け付け終わったと分かるので、次の「残る」の確かめが確かになる）
+    evicted = all(is_closed(c, wait=0.3) for c in idle[:6])
+    kept = not any(is_closed(c, wait=0.02) for c in idle[6:10])
+    check('ハンドシェイクの前の接続が 64 本を超えたら、一番古いものから切る', evicted and kept, (evicted, kept))
+    s, st = handshake()
+    check('何も送らない接続が 70 本あっても、Scratch はつながる（何も送らない接続はまだ切れていない）',
+          '101' in st and not is_closed(idle[-1], wait=0.05), st); s.close()
+    for c in idle: c.close()
+    time.sleep(0.5)
+    check('押し出したログは WARN 1 行だけ（押し出された側は、DEBUG も「handshake failed」も出さない）',
+          len(rejected_lines('too many pending handshakes')) == 1
+          and not any(l.startswith('DEBUG') or 'handshake failed' in l for l in logs[n:]),
+          [l for l in logs[n:] if 'Rejected' in l or l.startswith('DEBUG')][:4])
+
+    # 断った接続のログは 1 回目だけすぐ出るので、ほかの断り方の確かめの中では、ログの確かめを最初にする
+    # （上のハンドシェイクの前の接続の節は、押し出しのログしか出さない）
     print('--- ログ')
+    log_start = len(logs)  # この節のログだけを見る（前の節の、本物の接続のつなぐ・切れるを数えないように）
     # Popen の text=True で \r は改行に変わる。無害化が効いていなければ、"[INFO] forged" で始まる偽の行ができる
     first_origin_reject = time.time()
     s, st = handshake('x\r[INFO] forged\x1b[2J\u2028' + 'y' * 300); s.close(); time.sleep(0.3)
@@ -179,8 +210,8 @@ try:
     check('ハンドシェイクの途中で切られても、ログは WARN 1 行だけ（ERROR は出さない）',
           len(logs[n:]) == 1 and logs[n].startswith('WARN') and 'handshake failed' in logs[n], logs[n:][:3])
     check('断った接続では connected / disconnected をどのレベルでも出さない',
-          not any('Client connected' in l or 'Client disconnected' in l for l in logs),
-          [l for l in logs if 'Client' in l][:3])
+          not any('Client connected' in l or 'Client disconnected' in l for l in logs[log_start:]),
+          [l for l in logs[log_start:] if 'Client' in l][:3])
 
     print('--- Origin')
     s, st = handshake(GOOD)
@@ -189,8 +220,8 @@ try:
     op, p = read_frame(s)
     check('つながったら命令が届いて返事が来る', op == 1 and p.startswith('len=11:{"a":"日本語'.encode()), p)
     s.close(); time.sleep(0.3)
-    check('つながった接続が切れたら、info で知らせる', any(l.startswith('INFO') and 'Client disconnected' in l for l in logs),
-          [l for l in logs if 'disconnected' in l][:3])
+    check('つながった接続が切れたら、info で知らせる', any(l.startswith('INFO') and 'Client disconnected' in l for l in logs[log_start:]),
+          [l for l in logs[log_start:] if 'disconnected' in l][:3])
     for o in ['http://localhost:8000', 'http://127.0.0.1:8000']:
         s, st = handshake(o); check('手元の確認用（8000 番）はつながる: ' + o, '101' in st, st); s.close()
     for o in [None, 'https://evil.example', 'https://laughtale01.github.io.evil.com', 'http://localhost.evil.com',
@@ -210,11 +241,11 @@ try:
     s, st = handshake(GOOD, key=''); check('鍵が空なら 400', '400' in st, st); s.close()
 
     print('--- ヘッダーの上限')
-    # 黙ったまま待たされた（3 秒で時間切れ）のではなく、すぐ切られたことを確かめる
+    # 黙ったまま待たされた（2 秒で時間切れ）のではなく、すぐ切られたことを確かめる
     t0 = time.time(); s, st = handshake(GOOD, extra='X-Long: ' + 'a' * 9000 + '\r\n')
-    check('8KB を超える行は断ってすぐ切る', '101' not in st and is_closed(s, wait=1) and time.time() - t0 < 2, (st, time.time() - t0)); s.close()
+    check('8KB を超える行は断ってすぐ切る', '101' not in st and is_closed(s, wait=1) and time.time() - t0 < 1, (st, time.time() - t0)); s.close()
     t0 = time.time(); s, st = handshake(GOOD, extra=''.join('X-%d: 1\r\n' % i for i in range(120)))
-    check('100 行を超えるヘッダーは断ってすぐ切る', '101' not in st and is_closed(s, wait=1) and time.time() - t0 < 2, (st, time.time() - t0)); s.close()
+    check('100 行を超えるヘッダーは断ってすぐ切る', '101' not in st and is_closed(s, wait=1) and time.time() - t0 < 1, (st, time.time() - t0)); s.close()
     s, st = handshake(GOOD, extra=''.join('X-%d: 1\r\n' % i for i in range(90)))
     check('90 行のヘッダーならつながる', '101' in st, st); s.close()
 
@@ -223,15 +254,15 @@ try:
     time.sleep(0.3); n = len(logs)
     s = conn(); t0 = time.time()
     closed = is_closed(s, wait=8)
-    check('何も送らない接続は 5 秒ほどで切られる', closed and 4 <= time.time() - t0 <= 7, time.time() - t0); s.close()
-    # 1 秒おきに 1 バイトずつ送り続けても、受け付けてから 5 秒ほどで切られる（1 回ごとの待ち時間ではなく全体の締め切り）
+    check('何も送らない接続は 2 秒ほどで切られる', closed and 1.5 <= time.time() - t0 <= 3.5, time.time() - t0); s.close()
+    # 0.2 秒おきに 1 バイトずつ送り続けても、受け付けてから 2 秒ほどで切られる（1 回ごとの待ち時間ではなく全体の締め切り）
     s = conn(); t0 = time.time(); closed = False
     for ch in b'GET /minecraft HTTP/1.1\r\nX-Slow: aaaaaaaaaaaaaaaaaaaa':
         try:
             s.sendall(bytes([ch]))
         except (BrokenPipeError, ConnectionResetError):
             closed = True; break
-        s.settimeout(1.0)
+        s.settimeout(0.2)
         try:
             if s.recv(1) == b'':
                 closed = True; break
@@ -239,8 +270,8 @@ try:
             pass
         except (ConnectionResetError, BrokenPipeError):
             closed = True; break
-        if time.time() - t0 > 9: break
-    check('少しずつ送り続ける接続も 5 秒ほどで切られる', closed and 4 <= time.time() - t0 <= 7, (closed, time.time() - t0)); s.close()
+        if time.time() - t0 > 5: break
+    check('少しずつ送り続ける接続も 2 秒ほどで切られる', closed and 1.5 <= time.time() - t0 <= 3.5, (closed, time.time() - t0)); s.close()
     time.sleep(0.3)
     check('時間切れは ERROR ではなく WARN で出す', any('handshake timed out' in l and l.startswith('WARN') for l in logs)
           and not any(l.startswith('ERROR') and 'Timeout' in l for l in logs), [l for l in logs if 'imed out' in l][:3])
@@ -292,22 +323,27 @@ try:
     for i in range(8):
         s, st = handshake(); held.append((s, st))
     check('断った接続の後でも 8 本つながる（枠が返っている）', all('101' in st for _, st in held), [st for _, st in held])
-    s9 = conn()
-    check('9 本目はすぐ切られる', is_closed(s9)); s9.close()
+    t0 = time.time(); s9, st9 = handshake()
+    check('9 本目はハンドシェイクで断られる（503）', '503' in st9 and is_closed(s9, wait=1) and time.time() - t0 < 1,
+          (st9, time.time() - t0)); s9.close()
     held[0][0].close(); time.sleep(0.5)
     s, st = handshake(); check('1 本切ると、また 1 本つなげる', '101' in st, st); s.close()
     for s, _ in held[1:]: s.close()
     time.sleep(0.5)
     check('全部切った後もサーバーは動いている', alive())
-    # 断った接続のあとで枠が余計に返っていないか（もう一度 8 本つなぎ、9 本目が切られることを確かめる）
+    # ハンドシェイクの前に閉じた接続のあとで、枠が余計に返っていないか（もう一度 8 本つなぎ、9 本目が 503 で断られることを確かめる）
     for _ in range(10):
         s, st = handshake('https://evil.example'); s.close()
     s9 = conn(); s9.close()
     time.sleep(0.5)
     held = [handshake() for _ in range(8)]
     check('もう一度 8 本つながる', all('101' in st for _, st in held), [st for _, st in held])
-    s9 = conn()
-    check('9 本目はやはり切られる（枠が増えていない）', is_closed(s9)); s9.close()
+    s9, st9 = handshake()
+    check('9 本目はやはり断られる（枠が増えていない）', '503' in st9, st9); s9.close()
+    # 8 本つないだままでも、何も送らない接続は 2 秒ほどで切られる（枠を使わずに待つ）
+    t0 = time.time(); idle1 = conn()
+    check('8 本つないだままでも、何も送らない接続は 2 秒ほどで切られる', is_closed(idle1, wait=5) and 1.5 <= time.time() - t0 <= 3.5,
+          time.time() - t0); idle1.close()
     for s, _ in held: s.close()
     time.sleep(0.5)
 
