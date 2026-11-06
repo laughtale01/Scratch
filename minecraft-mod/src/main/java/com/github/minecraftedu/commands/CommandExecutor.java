@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ClipContext;
@@ -26,6 +27,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -191,6 +193,9 @@ public class CommandExecutor {
                 case "getBlockType":
                     return executeGetBlockType(params);
 
+                case "getBlockUnderPlayer":
+                    return executeGetBlockUnderPlayer(params);
+
                 case "summonEntity":
                     return executeSummonEntity(params);
 
@@ -220,6 +225,9 @@ public class CommandExecutor {
 
                 case "setNightVision":
                     return executeSetNightVision(params);
+
+                case "clearInventory":
+                    return executeClearInventory(params);
 
                 case "setFlySpeed":
                     return executeSetFlySpeed(params);
@@ -577,23 +585,34 @@ public class CommandExecutor {
             return null;
         }
 
-        double x = player.getX();
-        double y = player.getY();
-        double z = player.getZ();
-        float yaw = player.getYRot();
-        float pitch = player.getXRot();
+        // 列に並んで、メインスレッドで読む（「テレポート → 今いる場所」と続けたとき、テレポートのあとの場所を答えるように。
+        // 前は受け口のスレッドでそのまま読んでいたので、列で待っているテレポートの前の場所を答えていた）。
+        // ただし列がとても混んでいるときや、2.5 秒待っても順番が来ないときは、列を追い越して読む（答えの queued が false になる）。
+        // プレイヤーは順番が来たときに引き直す（列で待つ間にやられて生き返ると、プレイヤーが新しく作り直されるため）
+        return callInQueue("getPosition", () -> true, () -> {
+            ServerPlayer current = getFirstPlayer();
+            if (current == null) {
+                logInputError("No player found for getPosition", "No player found for getPosition");
+                return null;
+            }
+            double x = current.getX();
+            double y = current.getY();
+            double z = current.getZ();
+            float yaw = current.getYRot();
+            float pitch = current.getXRot();
 
-        MinecraftEduMod.LOGGER.debug("Player position: " + x + "," + y + "," + z);
+            MinecraftEduMod.LOGGER.debug("Player position: " + x + "," + y + "," + z);
 
-        // 結果データを設定
-        JsonObject result = new JsonObject();
-        result.addProperty("x", x);
-        result.addProperty("y", y);
-        result.addProperty("z", z);
-        result.addProperty("yaw", yaw);
-        result.addProperty("pitch", pitch);
+            // 結果データを設定
+            JsonObject result = new JsonObject();
+            result.addProperty("x", x);
+            result.addProperty("y", y);
+            result.addProperty("z", z);
+            result.addProperty("yaw", yaw);
+            result.addProperty("pitch", pitch);
 
-        return result;
+            return result;
+        });
     }
 
     /**
@@ -695,35 +714,46 @@ public class CommandExecutor {
             return null;
         }
 
-        // プレーヤーの向き（yaw）から方向を判定
-        // yaw: 0=南、90=西、180=北、270=東
-        float yaw = player.getYRot();
+        // 列に並んで、メインスレッドで読む（今いる場所と同じ。前の命令が終わってからの向きを答えるように。
+        // 列がとても混んでいるときや、2.5 秒待っても順番が来ないときは、列を追い越して読む）。
+        // プレイヤーは順番が来たときに引き直す
+        return callInQueue("getPlayerFacing", () -> true, () -> {
+            ServerPlayer current = getFirstPlayer();
+            if (current == null) {
+                logInputError("No player found for getPlayerFacing", "No player found for getPlayerFacing");
+                return null;
+            }
 
-        // Yawを0～360の範囲に正規化
-        yaw = yaw % 360;
-        if (yaw < 0) {
-            yaw += 360;
-        }
+            // プレーヤーの向き（yaw）から方向を判定
+            // yaw: 0=南、90=西、180=北、270=東
+            float yaw = current.getYRot();
 
-        String facing;
-        if (yaw >= 315 || yaw < 45) {
-            facing = "south";
-        } else if (yaw >= 45 && yaw < 135) {
-            facing = "west";
-        } else if (yaw >= 135 && yaw < 225) {
-            facing = "north";
-        } else {
-            facing = "east";
-        }
+            // Yawを0～360の範囲に正規化
+            yaw = yaw % 360;
+            if (yaw < 0) {
+                yaw += 360;
+            }
 
-        MinecraftEduMod.LOGGER.debug("Player facing: " + facing + " (yaw: " + yaw + ")");
+            String facing;
+            if (yaw >= 315 || yaw < 45) {
+                facing = "south";
+            } else if (yaw >= 45 && yaw < 135) {
+                facing = "west";
+            } else if (yaw >= 135 && yaw < 225) {
+                facing = "north";
+            } else {
+                facing = "east";
+            }
 
-        // 結果データを設定
-        JsonObject result = new JsonObject();
-        result.addProperty("facing", facing);
-        result.addProperty("yaw", yaw);
+            MinecraftEduMod.LOGGER.debug("Player facing: " + facing + " (yaw: " + yaw + ")");
 
-        return result;
+            // 結果データを設定
+            JsonObject result = new JsonObject();
+            result.addProperty("facing", facing);
+            result.addProperty("yaw", yaw);
+
+            return result;
+        });
     }
 
     private JsonObject executeGetBlockType(JsonObject params) {
@@ -792,6 +822,97 @@ public class CommandExecutor {
 
             return result;
         });
+    }
+
+    /**
+     * プレイヤーの足元のブロックを調べる（チャットには出さない）
+     *
+     * 立っているときは、体を支えているブロック（ブロックのふちに立っても、フェンスや塀の上でも、テレポートの直後でも、
+     * 乗っているブロックになる。ハーフブロックや階段の上ならそのブロック、水の底に立てば底のブロック。footBlockPos を参照）。
+     * ジャンプ中や泳いでいるときは、足の高さのマス（空気や水）になる。
+     * getBlockType と違って毎回チャットにブロック名を出さないので、
+     * Scratch の「ずっと」の中で何度も呼んでもチャットが流れない（忍者屋敷ステージの見張り用）。
+     *
+     * メインスレッドで、列を追い越して読む（いまのプレイヤーの様子を読むだけなので、前の命令を待たない。
+     * 列に並ぶと、大きな「埋める」の途中で答えが遅れ、見張りが止まるため）。
+     * 足元のチャンクがまだ読み込まれていなければ（テレポートの直後など）、読み込まれるのを待ってから読む
+     * （その場で読むと、Minecraft が止まるため）
+     */
+    private JsonObject executeGetBlockUnderPlayer(JsonObject params) {
+        ServerPlayer player = getFirstPlayer();
+        if (player == null) {
+            logInputError("No player found for getBlockUnderPlayer", "No player found for getBlockUnderPlayer");
+            return null;
+        }
+
+        // プレイヤーと足元は、メインスレッドで読むときに引き直す（やられて生き返ると、プレイヤーが作り直されるため）。
+        // ready と読み取りは同じ回の中で続けて動くので、ready で確かめたチャンクのまま読む
+        return callAheadOfQueue("getBlockUnderPlayer", () -> {
+            ServerPlayer current = getFirstPlayer();
+            if (current == null) {
+                return true;  // 読み取りの中で、いないことを知らせる
+            }
+            return footChunksLoaded(current);
+        }, () -> {
+            ServerPlayer current = getFirstPlayer();
+            if (current == null) {
+                logInputError("No player found for getBlockUnderPlayer", "No player found for getBlockUnderPlayer");
+                return null;
+            }
+            BlockPos pos = footBlockPos(current);
+            BlockState blockState = current.serverLevel().getBlockState(pos);
+            ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(blockState.getBlock());
+
+            // "minecraft:" を取って、getBlockType と同じ形の名前にする
+            String blockType = blockId.toString();
+            if (blockType.startsWith("minecraft:")) {
+                blockType = blockType.substring(10);
+            }
+
+            // 何度も呼ばれるので、ログは debug にとどめる
+            MinecraftEduMod.LOGGER.debug("Block under player: " + blockType + " at " + pos.getX() + "," + pos.getY() + "," + pos.getZ());
+
+            JsonObject result = new JsonObject();
+            result.addProperty("blockType", blockType);
+            JsonObject position = new JsonObject();
+            position.addProperty("x", pos.getX());
+            position.addProperty("y", pos.getY());
+            position.addProperty("z", pos.getZ());
+            result.add("position", position);
+
+            return result;
+        });
+    }
+
+    /**
+     * 足元のマスを探すのに要るチャンクが、全部読み込まれているか（メインスレッドで呼ぶ）
+     * 読み込まれていなければ、読み込みを頼んで false を返す（getChunkNow で確かめるだけなので、ここでは待たない）。
+     * footBlockPos が当たりを調べる範囲は、当たりの箱の前後 1 マスまで（Minecraft の BlockCollisions と同じ）なので、
+     * チャンクの境目に立つと、となりのチャンクも要る
+     */
+    private static boolean footChunksLoaded(ServerPlayer player) {
+        AABB box = player.getBoundingBox();
+        return BlockJob.requestLoaded(player.serverLevel(),
+                (Mth.floor(box.minX - 1.0E-7) - 1) >> 4, (Mth.floor(box.maxX + 1.0E-7) + 1) >> 4,
+                (Mth.floor(box.minZ - 1.0E-7) - 1) >> 4, (Mth.floor(box.maxZ + 1.0E-7) + 1) >> 4, false);
+    }
+
+    /**
+     * 足元のマスを決める（メインスレッドで、footChunksLoaded が true を返したのと同じ回の中で呼ぶ）
+     *
+     * まず、体の当たりの箱のすぐ下に触れているブロックを探す（Minecraft が「乗っているブロック」を探すのと同じ関数）。
+     * 触れているブロックが無ければ（ジャンプ中・泳いでいるとき）、体の位置から足の高さのマスを計算する。
+     * Minecraft の getOnPos を使わないのは、テレポートの直後に答えがずれるため。テレポートしてすぐは、
+     * テレポートの前に乗っていたブロックを覚えたままで、そのあと画面側から「まだ地面に着いていない」と知らせが来ると空になり、
+     * 次に「着いた」と知らせが来る（約 1 秒後）まで、フェンスの上では上の空気、ブロックの端では体のまん中の下のマスになる。
+     * 当たりを調べる関数は、読み込みの途中のチャンクに触れると、読み込み終わるまで待ってしまう（Minecraft が止まる）ので、
+     * 先に footChunksLoaded で要るチャンクが全部そろっていることを確かめてから呼ぶ
+     */
+    private static BlockPos footBlockPos(ServerPlayer player) {
+        AABB box = player.getBoundingBox();
+        AABB below = new AABB(box.minX, box.minY - 1.0E-6, box.minZ, box.maxX, box.minY, box.maxZ);
+        return player.level().findSupportingBlock(player, below)
+                .orElseGet(() -> BlockPos.containing(player.getX(), player.getY() - 1.0E-5, player.getZ()));
     }
 
     private JsonObject executeSummonEntity(JsonObject params) {
@@ -1495,6 +1616,56 @@ public class CommandExecutor {
     }
 
     /**
+     * プレイヤーの持ち物を空にする（バニラの /clear と同じく、手・防具・左手も消す）
+     *
+     * クリエイティブで手に入れた物（エンダーパール・コーラスフルーツなど）を、
+     * アドベンチャーに変えたあとに使えないようにするため（忍者屋敷ステージの忍び込み用）。
+     * サバイバルの持ち物をうっかり消して戻せなくならないように、アドベンチャーのときだけ消す。
+     * 消すかどうかはメインスレッドで決めるので、直前に送った「モードをアドベンチャーにする」のあとで調べる。
+     * 消したかどうかはメインスレッドで決まるので、返事は「受け付けた」だけを返し、結果はチャットで知らせる。
+     * 「ずっと」の中で送られても流れないよう、アドベンチャーでないときの知らせは失敗の知らせ（同じ種類は 3 秒に 1 回）にし、
+     * 「空にしました」は、本当に何かを消したときだけ出す。
+     */
+    private JsonObject executeClearInventory(JsonObject params) {
+        if (getFirstPlayer() == null) {
+            logInputError("No player found for clearInventory", "No player found for clearInventory");
+            return null;
+        }
+
+        // プレイヤーは順番が来たときに引き直す（列で待つ間にやられて生き返ると、プレイヤーが新しく作り直されるため。
+        // 古いプレイヤーを使うと、古い持ち物を消して、いまの持ち物が残る）
+        boolean queued = safeExecute(() -> {
+            ServerPlayer current = getFirstPlayer();
+            if (current == null) {
+                logInputError("No player found for clearInventory", "No player found for clearInventory");
+                return;
+            }
+            if (current.gameMode.getGameModeForPlayer() != GameType.ADVENTURE) {
+                logInputError("clearInventory not adventure", "clearInventory skipped: not in adventure mode");
+                sendErrorChat("もちものを からっぽに できるのは、アドベンチャーの ときだけです");
+                return;
+            }
+            // バニラの /clear（ClearInventoryCommands）と同じ消し方と、画面への知らせ方
+            int removed = current.getInventory().clearOrCountMatchingItems(stack -> true, -1, current.inventoryMenu.getCraftSlots());
+            MinecraftEduMod.LOGGER.debug("Inventory cleared: " + removed + " items");
+            // 消した物があったときだけ、画面に知らせる（「ずっと」で呼ばれても、空のたびにレシピを調べ直して送らないように）
+            if (removed > 0) {
+                current.containerMenu.broadcastChanges();
+                current.inventoryMenu.slotsChanged(current.getInventory());
+                sendChatMessage("持ち物を空にしました");
+            }
+        });
+        if (!queued) {
+            return null;  // 列がいっぱい・サーバーが止まりかけている（知らせは safeExecute が出す）
+        }
+
+        JsonObject result = new JsonObject();
+        result.addProperty("accepted", true);
+
+        return result;
+    }
+
+    /**
      * 飛行速度の設定（クリエイティブモード用）
      * @param params multiplier: 速度倍率（例: 1.0=標準、2.0=2倍）
      */
@@ -1696,7 +1867,11 @@ public class CommandExecutor {
      */
     private JsonObject callInQueue(String what, BooleanSupplier ready, Supplier<JsonObject> task) {
         if (server.isSameThread()) {
-            // メインスレッドで待つと、列が進まず止まってしまうので、その場で動かす（いまは呼ばれない）
+            // メインスレッドで待つと、列が進まず止まってしまうので、その場で動かす（いまは呼ばれない）。
+            // ready が false なら読まずに答えなしにする（読み込みの途中のチャンクを読むと、Minecraft が止まるため）
+            if (!ready.getAsBoolean()) {
+                return null;
+            }
             return withQueued(task.get(), false);
         }
         // 列を追い越して読むときに待つ時間（列に並ばなかったときは、列で待つはずだった時間も、読み込みを待つのに使う）
@@ -1722,6 +1897,37 @@ public class CommandExecutor {
                 return null;
             }
         }
+        return readAheadOfQueue(what, ready, task, nowWaitMillis, queued);
+    }
+
+    /**
+     * 読む命令を、列に並ばずにメインスレッドで動かして答えを待つ（いまの様子を読むだけで、前の命令を待たなくてよいもの）
+     * ready・task と待つ時間の上限は callInQueue と同じ（列で待つはずだった時間も、読み込みを待つのに使う）
+     *
+     * @param what ログに出す命令の名前
+     * @param ready メインスレッドで、読む用意ができたか（読み込みを待つなら false）
+     * @param task メインスレッドで動かす読み取り（答えが無ければ null）
+     * @return 答え（失敗したら null）
+     */
+    private JsonObject callAheadOfQueue(String what, BooleanSupplier ready, Supplier<JsonObject> task) {
+        if (server.isSameThread()) {
+            // メインスレッドで待つと止まってしまうので、その場で動かす（いまは呼ばれない）。
+            // ready が false なら読まずに答えなしにする（読み込みの途中のチャンクを読むと、Minecraft が止まるため）
+            if (!ready.getAsBoolean()) {
+                return null;
+            }
+            return withQueued(task.get(), false);
+        }
+        return readAheadOfQueue(what, ready, task, READ_QUEUE_WAIT_MILLIS + READ_NOW_WAIT_MILLIS, null);
+    }
+
+    /**
+     * 列を追い越して読む（READ_POLL_MILLIS ごとにメインスレッドに聞き直し、nowWaitMillis まで待つ）
+     *
+     * @param queued 先に列に並べて、やめた読み取り（読み込みを待っていたかを知らせに使う。並べなかったら null）
+     */
+    private JsonObject readAheadOfQueue(String what, BooleanSupplier ready, Supplier<JsonObject> task,
+                                        long nowWaitMillis, PendingRead queued) {
         PendingRead now = new PendingRead(ready, task);
         long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(nowWaitMillis);
         JsonObject answer = null;

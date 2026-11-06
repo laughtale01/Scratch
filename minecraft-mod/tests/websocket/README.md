@@ -239,6 +239,112 @@ print('断られた命令: %d 件（0 件のはず）。「周りをきれいに
 EOF
 ```
 
+## 持ち物を空にする・足元のブロックを確かめる手順（手で確かめる）
+
+忍者屋敷ステージで使う 2 つの命令を、試し用のスーパーフラットのワールド（クリエイティブ、チートはオン）で確かめる。命令は、`minecraft-mod` フォルダで次のように 1 つずつ送る（`ACTION` を `clearInventory` か `getBlockUnderPlayer` にする）。
+
+```bash
+python3 -I - <<'EOF'
+exec(open('tests/websocket/probe_fill.py', encoding='utf-8').read().split('CASES = [')[0])
+ACTION = 'getBlockUnderPlayer'
+print(request(connect(), 'command', {'action': ACTION, 'params': {}}))
+EOF
+```
+
+**持ち物を空にする**（アドベンチャーのときだけ消す。消すのは手・防具・左手も含めて持ち物の全部なので、大事な物は持たずに確かめる）
+
+1. `/give @s minecraft:stone 1` と `/give @s minecraft:iron_helmet 1` で持ち物を入れ、ヘルメットをかぶる。`/gamemode survival` にして `clearInventory` を送る → 持ち物は残り、チャットに「もちものを からっぽに できるのは、アドベンチャーの ときだけです」が出る
+2. `/gamemode adventure` にして `clearInventory` を送る → 石もヘルメットも消え、チャットに「持ち物を空にしました」が出る
+3. もう一度送る → 何も出ない（消す物が無いときは知らせない）。`/gamemode creative` に戻す
+
+**足元のブロック**（返事の `blockType` と `position` を見る。`position` は Minecraft の座標）
+
+1. ふつうのブロックの上に立つ → そのブロック（例: スーパーフラットの地面なら `grass_block`、y=-61）
+2. `/setblock ~ ~ ~2 minecraft:oak_fence` で 2 マス南（+Z）にフェンスを置き、クリエイティブで飛んで、その上に降りる（フェンスは高さ 1.5 なので、ジャンプでは乗れない）→ `oak_fence`（前の MOD は、上の空気を答えた）
+3. ブロックの角に、体が半分はみ出すように立つ（スニークで端まで寄る）→ 乗っているブロック（前の MOD は、体のまん中の下のマスを答えた）
+4. クリエイティブで飛んで、空中に止まっている間に送る → `air`（命令は別の端末から送るので、ジャンプの間に送るのはむずかしい）。水に入って泳ぐ → `water`
+5. `/tp @s 50000 -60 50000` で遠くの地面の上へテレポートした直後に送る → 少し待ってから、着いた所の足元（`grass_block`）が返る（Minecraft は止まらない。`latest.log` に `Can't keep up` が出ない）。テレポートする前に F3 で今の座標を見ておき、終わったら `/tp` でそこへ戻る
+
+**命令を続けて送ったときの順番**（返事を待たずに続けて送る。Scratch のブロックも返事を待たずに送るため）
+
+この手順も、試し用のスーパーフラットのワールドで流す（空の高い所 x・z -150〜-87、y 200〜263 を石で埋めてから空気で消すので、そこに建てた物は消える。probe_fill.py の箱とは重ならない）。`/give @s minecraft:stone 1` で石を 1 つ持ち（持ち物は全部消えるので、大事な物は持たない）、クリエイティブで地面に立ってから（空を飛んでいると、アドベンチャーにしたときに落ちる）、`minecraft-mod` フォルダで次を流す。終わると（Ctrl+C で止めても）、つなぎ直して、置いた石を消し、クリエイティブに戻して、はじめの場所へ戻る。片づけが終わらなかったときは、手で打つ命令が出る。端末のウィンドウを閉じたときは片づけが動かず、受け付けた「埋める」は MOD の中で最後まで動くので、石が増えなくなってから、上の箱を `/fill -150 200 -150 -87 207 -87 minecraft:air` のように高さ 8 段ずつ（y 200〜263 を 8 回。`/fill` は 1 回 32,768 ブロックまで）空気で埋め、`/gamemode creative` に戻す。
+
+```bash
+python3 -I - <<'EOF'
+import time
+exec(open('tests/websocket/probe_fill.py', encoding='utf-8').read().split('CASES = [')[0])
+
+
+def result(reply):
+    """返事の result（失敗の返事には無いので None）"""
+    return (reply.get('payload') or {}).get('result')
+
+
+s = connect()
+start = get_position(s)
+x, y, z = int(start['x']), int(start['y']), int(start['z'])
+(X1, Y1, Z1), (X2, Y2, Z2) = BOX = ((-150, 200, -150), (-87, 263, -87))  # 64×64×64 の石
+try:
+    # 1. テレポートの直後に 1 回だけ今いる場所を聞く → 列に並ぶので、新しい場所と queued: True
+    ids = [send_only(s, 'command', {'action': 'teleport', 'params': {'x': x + 5.5, 'y': y, 'z': z + 0.5}}),
+           send_only(s, 'command', {'action': 'getPosition', 'params': {}})]
+    print('1. 今いる場所:', result(collect(s, ids)[1]), '（x が', x + 5.5, 'で queued が True なら よい）')
+    # 2a. 列が空のときに足元を聞く → 列を追い越して読むので queued: False（列に並ぶ読み方なら、空の列では True になる）
+    #     列が空かないと、列に並ぶ読み方でも混んでいて追い越すので False になり、確かめにならない。そのときは止める
+    if not wait_queue(s, 60):
+        raise SystemExit('2a. 列が 60 秒で空かなかったので、確かめにならない（ほかの命令を止めてから、やり直す）')
+    print('2a. 足元（列が空）:', result(request(s, 'command', {'action': 'getBlockUnderPlayer', 'params': {}})),
+          '（queued が False なら よい）')
+    # 2b. 大きく埋めてすぐ足元を聞く → 埋め終わりを待たずに queued: False
+    #     （「埋める」が断られると確かめにならないので、両方の返事を受け取って、埋めるが受け付けられたかも見る）
+    t = time.time()
+    ids = [send_only(s, 'command', {'action': 'fillBlocks', 'params': {'from': {'x': X1, 'y': Y1, 'z': Z1},
+               'to': {'x': X2, 'y': Y2, 'z': Z2}, 'blockType': 'stone'}}),
+           send_only(s, 'command', {'action': 'getBlockUnderPlayer', 'params': {}})]
+    got = {}
+    while len(got) < 2:
+        op, data = read_text(s)
+        reply = json.loads(data.decode('utf-8')) if op == 1 else {}
+        if reply.get('requestId') in ids:
+            got[reply['requestId']] = (reply, time.time() - t)
+    filled = (got[ids[0]][0].get('payload') or {}).get('success') is True
+    under, seconds = got[ids[1]]
+    print('2b. 埋める:', '受け付けた' if filled else '断られた（確かめにならないので、やり直す）',
+          ' 足元:', result(under), '%.2f 秒' % seconds, '（queued が False で 1 秒より短ければ よい）')
+    wait_queue(s, 120)
+    # 3. 「アドベンチャーにする → 持ち物を空にする」を続けて送る → 列の順に動くので、石が消えて「持ち物を空にしました」
+    #    「サバイバルにする → 持ち物を空にする」を続けて送る → 消さずに「…アドベンチャーの ときだけです」
+    for mode in ('adventure', 'survival'):
+        ids = [send_only(s, 'command', {'action': 'setGameMode', 'params': {'mode': mode}}),
+               send_only(s, 'command', {'action': 'clearInventory', 'params': {}})]
+        collect(s, ids)
+        time.sleep(1)
+    print('3. チャットを見る（上から「持ち物を空にしました」「…アドベンチャーの ときだけです」なら よい）')
+finally:
+    # Ctrl+C などで止めても、石を消し、クリエイティブに戻し、はじめの場所へ戻す。
+    # 前の接続は読みかけの返事が残っていることがあるので、つなぎ直して片づける
+    done = False
+    try:
+        c = connect()
+        c.settimeout(120)
+        cleared = (fill(c, X1, Y1, Z1, X2, Y2, Z2, 'air').get('payload') or {}).get('success') is True
+        request(c, 'command', {'action': 'setGameMode', 'params': {'mode': 'creative'}})
+        done = cleared and wait_queue(c, 120) and return_to_start(c, start)
+    except BaseException as e:
+        # 片づけの間の 2 回目の Ctrl+C も受け止めて、下の案内を出す
+        print('あとかたづけが とちゅうで止まった:', repr(e))
+    if done:
+        print('あとかたづけ: 石を消し、クリエイティブに戻し、はじめの場所へ戻した')
+    else:
+        print('あとかたづけが終わっていないかもしれない。石が増えなくなってから、チャットで次を打つ:')
+        for y0 in range(Y1, Y2 + 1, 8):
+            # /fill は 1 回 32,768 ブロックまでなので、高さ 8 段（64×64×8）ずつ消す
+            print('  /fill %d %d %d %d %d %d minecraft:air' % (X1, y0, Z1, X2, y0 + 7, Z2))
+        print('  /gamemode creative')
+        print('  /tp @s %.2f %.2f %.2f' % (start['x'], start['y'], start['z']))
+EOF
+```
+
 ## ポートが使われているときの知らせを確かめる手順
 
 MOD の受け口（ポート 14711）をほかのアプリが使っていると、MOD は Scratch とつなげません。そのとき、ワールドに入った人のチャットに知らせが出るかを確かめます。
