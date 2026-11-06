@@ -64499,7 +64499,9 @@ class Scratch3MinecraftBlocks {
             menu: 'bossEntities',
             defaultValue: 'ender_dragon'
           }
-        }
+        },
+        // ボスは MOD が出さないので、ブロックの一覧には出さない（前に作った作品が開けるように、ブロックは残す）
+        hideFromPalette: true
       }, {
         opcode: 'entityAquatic',
         blockType: 'reporter',
@@ -64874,11 +64876,7 @@ class Scratch3MinecraftBlocks {
       text: '━━ 敵対的 ━━',
       value: ''
     }, ...HOSTILE_ENTITIES,
-    // ボス
-    {
-      text: '━━ ボス ━━',
-      value: ''
-    }, ...BOSS_ENTITIES,
+    // ボス（ウィザー・エンダードラゴン）は MOD が出さないので、メニューに入れない
     // 水棲生物
     {
       text: '━━ 水棲生物 ━━',

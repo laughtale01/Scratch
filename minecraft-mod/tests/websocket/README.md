@@ -147,6 +147,9 @@ Scratch（gui.js）は体積を先に確かめて断るので、Scratch のブ�
 | チェストを消す（空気を置く） | 成功 | なし |
 | ブロックで埋める、ブロックの名前の打ちまちがい | 断られる | 「その ブロックの なまえが ちがいます: minecraft:no_such_block」 |
 | 生き物を出す、生き物の名前の打ちまちがい | 断られる | 「その いきものの なまえが ちがいます: minecraft:no_such_mob」 |
+| 生き物を出す、出さない一覧のもの（ドラゴンの火の玉。断る決まりがこわれても、ダメージの雲が出るだけ） | 断られる | 「その いきものは ここでは だせません: minecraft:dragon_fireball」 |
+| 生き物を出す、Minecraft でも出せないもの（プレイヤー） | 断られる | 「その いきものは ここでは だせません: minecraft:player」 |
+| 生き物を出す、弾そのもの（雪玉。断る決まりがこわれても、雪玉が 1 つ落ちるだけ） | 成功（弾かどうかは、作ってみてから分かるため。雪玉は出ない） | 「その いきものは ここでは だせません: minecraft:snowball」 |
 | 入れ物にアイテムを入れる、アイテムの名前の打ちまちがい | 断られる | 「その アイテムの なまえが ちがいます: minecraft:no_such_item」 |
 | ゲームモード、ない名前 | 断られる | 「その ゲームモードは ありません: no_such_mode」 |
 | MOD が知らない命令 | 断られる | 「その めいれいは この MOD では つかえません（MOD が ふるいかもしれません）」 |
@@ -179,7 +182,7 @@ Scratch（gui.js）は体積を先に確かめて断るので、Scratch のブ�
 | ブロックを置く、ブロックの名前が無い | 断られる | 「うまく できませんでした（いれた あたいを たしかめてね）」 |
 | 空の上（x −43〜−37, y 257〜264, z −43〜−37）に石の箱を作って中を空気にし、プレイヤーを (−40, 258, −40) へテレポートして、見ているブロックを届く長さ 8 と 1 で調べる。前の場所へ戻してから箱を消す（はじめに、箱のすみの 8 マスと立たせるマスが空気か確かめる） | 成功（届く長さ 8 では箱の石の壁に当たり、その場所はプレイヤーの向きから計算したマスと 1 マスまでしかずれない。届く長さ 1 では当たらない） | ブロックの名前が出る（空気） |
 
-- 「成功」の命令は、空の上（y=200 以上）に空気を置く、一番下の岩盤に岩盤を置く、空の上にチェストを置いて消す、空の上を石で 20 万ブロック埋めて消す（2 回）、空の上に金ブロック（2 か所）、x=1000 の地面の 5 マス上にエメラルドブロックを 1 つ置いて消す（まちがった MOD では、はじめの場所の 5 マス上に置かれることがあり、そこがエメラルドブロックなら空気に戻す）、x −18〜−14・y 206〜210・z −2〜2 を石で埋めて消す、空の上（x −43〜−37・y 257〜264・z −43〜−37）に石の箱を作ってプレイヤーを中へテレポートし、前の場所へ戻してから消す、入れ物にアイテムを入れる（入れ物が無い所か、範囲の外のスロットなので何も入らない）、プレイヤーをテレポートする、時刻を正午にする、チャットに文を出す、今いる位置・見ているブロック・ブロックの種類を調べる、だけです。スーパーフラットのワールドなら見た目は変わらず、プレイヤーも最後に元の場所へ戻ります。チェストは、消したあとにその場所が空気になったかを調べて確かめます。途中で止まったときも消します（消せなかったときは、`/setblock 2 300 2 air` と打つように表示します）。ほかに消せなかったものも、手で消す命令を表示します（埋めた石は `/fill … air` を 3 段ずつ、区画の境の石は `/fill -18 206 -2 -14 210 2 air`、石の箱は `/fill -43 257 -43 -37 264 -37 air`、置いたブロックは `/setblock x y z air`、エメラルドブロックが置かれたかもしれないマスは、エメラルドブロックなら `/setblock x y z air`）。
+- 「成功」の命令は、空の上（y=200 以上）に空気を置く、一番下の岩盤に岩盤を置く、空の上にチェストを置いて消す、空の上を石で 20 万ブロック埋めて消す（2 回）、空の上に金ブロック（2 か所）、x=1000 の地面の 5 マス上にエメラルドブロックを 1 つ置いて消す（まちがった MOD では、はじめの場所の 5 マス上に置かれることがあり、そこがエメラルドブロックなら空気に戻す）、x −18〜−14・y 206〜210・z −2〜2 を石で埋めて消す、空の上（x −43〜−37・y 257〜264・z −43〜−37）に石の箱を作ってプレイヤーを中へテレポートし、前の場所へ戻してから消す、入れ物にアイテムを入れる（入れ物が無い所か、範囲の外のスロットなので何も入らない）、生き物を出す（雪玉。MOD が作ってから弾と分かって断るので、ワールドには出ない）、プレイヤーをテレポートする、時刻を正午にする、チャットに文を出す、今いる位置・見ているブロック・ブロックの種類を調べる、だけです。スーパーフラットのワールドなら見た目は変わらず、プレイヤーも最後に元の場所へ戻ります。チェストは、消したあとにその場所が空気になったかを調べて確かめます。途中で止まったときも消します（消せなかったときは、`/setblock 2 300 2 air` と打つように表示します）。ほかに消せなかったものも、手で消す命令を表示します（埋めた石は `/fill … air` を 3 段ずつ、区画の境の石は `/fill -18 206 -2 -14 210 2 air`、石の箱は `/fill -43 257 -43 -37 264 -37 air`、置いたブロックは `/setblock x y z air`、エメラルドブロックが置かれたかもしれないマスは、エメラルドブロックなら `/setblock x y z air`）。
 - 「周りをきれいにする」「生き物を全部消す」のふつうの動き（中心から 200 マスを平らにする・生き物を消す）は、このスクリプトでは試しません。試すときも試し用のワールドで行ってください。
 
 
@@ -192,6 +195,7 @@ Scratch（gui.js）は体積を先に確かめて断るので、Scratch のブ�
 - 「params が無い」の件が `Command without params: clearArea` の WARN 1 行であること。「中心のキーが無い」の件が `Bad command parameters: clearArea (MissingParameterException: …)` の WARN 1 行であること。「x が無い」の件が `Bad command parameters: teleport (MissingParameterException: missing parameter)` の WARN 1 行であること
 - 「知らないプロパティが 2 つ」の件が、`Unknown property '…' for block air (2 unknown properties)` の 1 行にまとまっていること（DEBUG も含めて、1 回の命令で 1 行）
 - 「座標が数でない」と「ブロックの名前が無い」の件が、`Bad command parameters: setBlock (UnsupportedOperationException: …)` と `Bad command parameters: setBlock (NullPointerException: …)` の WARN 1 行ずつで、スタックトレース（`at com.github…` の行）が付いていないこと（同じ命令でも、例外の種類ごとに 1 行）
+- 「出さない一覧のもの」「Minecraft でも出せないもの」「弾そのもの（雪玉）」の 3 件が、`Blocked entity type: minecraft:dragon_fireball` の WARN 1 行であること（3 件は同じ間引きに入る。ただし前の WARN から 60 秒より長くたってから答えたときは、`Blocked entity type: minecraft:player` や `Blocked entity type: minecraft:snowball` の行が出てよい。多くて 2 行）
 - 子どもが打った名前（改行・§ など）が、ログでは `?` に置きかわっていること
 
 ## 遠くのチャンクで Minecraft が止まらないことを確かめる手順（手で確かめる）
@@ -345,6 +349,38 @@ finally:
         print('  /tp @s %.2f %.2f %.2f' % (start['x'], start['y'], start['z']))
 EOF
 ```
+
+## Scratch で出した生き物が作品を壊さないことを確かめる手順（手で確かめる）
+
+summonEntity で出した生き物には印（`minecraftedu_summoned`）が付く。その生き物と、それが撃った弾・生んだ子ども・変身した先は、ブロックを壊さず火もつけず、爆発や弾で額縁・絵・防具立て・TNT 付きトロッコを壊さない（`SummonedEntityGuard`）。プレイヤーや生き物へのダメージはそのまま。アレイ・ピグリン・村人は、物を拾う・物々交換・畑仕事ができるように外している（村人は畑の育った作物を刈って植え直す。畑の土を踏み荒らすのは止める）。弾そのもの（矢・雪玉・火の玉など）は出さない。この版より前の MOD で出した生き物には印が無く、自然の生き物と同じく壊す。
+
+試し用のスーパーフラットのワールド（クリエイティブ、チートはオン、難易度はピースフル以外、`/entityspawn allow`）で、地面に立って東（+X）を向いて確かめる。「学習準備」を押すと生き物を出せない設定になるので、押したら `/entityspawn allow` で戻す。石の壁は `/fill ~10 ~ ~-4 ~10 ~4 ~4 minecraft:stone` で 10 マス東に作る。生き物は、`minecraft-mod` フォルダで次のように出す（`NAME` と、今いる場所から東・上・南へのずれ `DX`・`DY`・`DZ`）。
+
+```bash
+python3 -I - <<'EOF'
+import math
+exec(open('tests/websocket/probe_fill.py', encoding='utf-8').read().split('CASES = [')[0])
+NAME, DX, DY, DZ = 'creeper', 9, 0, 0
+s = connect()
+p = get_position(s)
+print(summon(s, math.floor(p['x']) + DX + 0.5, round(p['y']) + DY, math.floor(p['z']) + DZ + 0.5, 'minecraft:' + NAME))
+EOF
+```
+
+1. **クリーパー**: 壁を作り、そばに飾りを置く（`/summon armor_stand ~9 ~ ~-2`、`/summon tnt_minecart ~9 ~ ~2`、壁に額縁 `/summon item_frame ~9 ~1 ~ {Facing:4b}`）。`creeper`・`9`・`0`・`0` で出し、`/give @s minecraft:flint_and_steel` の火打ち石を持ってクリーパーを右クリックし（Mac のトラックパッドは 2 本指でクリックか、control を押しながらクリック）、離れる → 爆発しても、壁にも地面にも穴があかず、防具立て・TNT 付きトロッコ・額縁が残る（トロッコに火もつかない）。くらべに `/summon creeper ~9 ~ ~3` で出したクリーパーに火をつける → 穴があく（これはふつうの動き。飾りも壊れ、トロッコも爆発する）。穴は、壁を作ったときと同じ場所に立って `/fill ~4 ~-3 ~-6 ~14 ~-2 ~6 minecraft:dirt replace minecraft:air` と `/fill ~4 ~-1 ~-6 ~14 ~-1 ~6 minecraft:grass_block replace minecraft:air` で埋める
+2. **ガスト（撃たせる）**: ガストは高さの差が 4 マス以内で、見えているプレイヤーしかねらわないので、`ghast`・`12`・`3`・`10` で壁の横に出す。`/effect give @s resistance 600 4 true` と `/effect give @s fire_resistance 600 0 true` でダメージを受けないようにしてから `/gamemode survival` にする → 火の玉が当たっても、穴があかず火もつかない。終わったら `/gamemode creative` に戻し、`/kill @e[type=minecraft:ghast]` で消す
+3. **打ち返された・撃ったものがいない火の玉**（手で打ち返すのはむずかしいので、持ち主のいない印付きの火の玉を落として確かめる。`power` は 1.20.1 の書き方で、1.20.5 からは名前が変わる。壁を作ったときと同じ場所に立って打つ）
+   - `/setblock ~6 ~ ~ minecraft:tnt` で TNT を置き、`/summon fireball ~6 ~6 ~ {Tags:["minecraftedu_summoned"],power:[0.0,-0.1,0.0]}` で真上から落とす → TNT に火がつかず、穴も火もない
+   - `/summon armor_stand ~6 ~ ~-3` で防具立てを置き、`/summon fireball ~6 ~6 ~-3 {Tags:["minecraftedu_summoned"],power:[0.0,-0.1,0.0]}` → 防具立てが残る（火の玉は当たって消える）
+   - `/summon small_fireball ~6 ~6 ~3 {Tags:["minecraftedu_summoned"],power:[0.0,-0.1,0.0]}` → 火がつかない
+   - 生き物へのダメージは残る: `/summon iron_golem ~6 ~ ~-6 {NoAI:1b}` で動かないアイアンゴーレムを置き、`/data get entity @e[type=minecraft:iron_golem,limit=1,sort=nearest] Health` で体力を見る（100.0）。`/summon fireball ~6 ~6 ~-6 {Tags:["minecraftedu_summoned"],power:[0.0,-0.1,0.0]}` を落としてから、もう一度体力を見る → 減っている。終わったら `/kill @e[type=minecraft:iron_golem]`
+   - くらべの前に、1 つ目の TNT を `/setblock ~6 ~ ~ minecraft:air` で消す（くらべの爆発で火が移らないように）。くらべに `/setblock ~6 ~ ~6 minecraft:tnt` と `/summon fireball ~6 ~6 ~6 {power:[0.0,-0.1,0.0]}`（印なし）→ TNT に火がついて爆発し、穴があく（ふつうの動き）。穴は、同じ場所に立って `/fill ~1 ~-3 ~1 ~12 ~-2 ~12 minecraft:dirt replace minecraft:air` と `/fill ~1 ~-1 ~1 ~12 ~-1 ~12 minecraft:grass_block replace minecraft:air` で埋める
+4. **変身した先**: `zombie`・`4`・`0`・`0` で出し、`/data merge entity @e[type=minecraft:zombie,limit=1,sort=nearest] {DrownedConversionTime:1}` でドラウンドに変える。`/data get entity @e[type=minecraft:drowned,limit=1,sort=nearest] Tags` → `["minecraftedu_summoned"]` が出る。終わったら `/kill @e[type=minecraft:drowned]`
+5. **生まれた子ども**: `sheep`・`4`・`0`・`-1` と `sheep`・`4`・`0`・`1` で 2 匹出し、`/give @s minecraft:wheat 2` の小麦を 1 匹ずつにあげる（右クリック）→ 子ヒツジが生まれる。`/execute as @e[type=minecraft:sheep,distance=..10] run data get entity @s Tags` → 3 匹とも `["minecraftedu_summoned"]` が出る。終わったら `/kill @e[type=minecraft:sheep]`
+6. **入り直したあと**: `creeper`・`9`・`0`・`0` で出し、`/data get entity @e[type=minecraft:creeper,limit=1,sort=nearest] Tags` → `["minecraftedu_summoned"]` が出る。ワールドを保存して入り直し、もう一度同じ命令 → 同じく出る。壁を作り直して火をつける → 穴があかない
+7. 片づけ: 先に `/kill @e[type=minecraft:armor_stand]`・`/kill @e[type=minecraft:tnt_minecart]`・`/kill @e[type=minecraft:item_frame]` で飾りを消す（壁を先に消すと、額縁がアイテムになって落ちる）。それから `/fill ~4 ~ ~-6 ~14 ~6 ~6 minecraft:air` で壁を空気にし（壁を作ったときと同じ場所に立って打つ）、落ちたアイテムを `/kill @e[type=minecraft:item,distance=..20]` で消す。穴は 1 の命令で埋める
+
+**印では止められないもの**（Minecraft が Forge に聞かずに決めるので、この MOD では止めない。どれも起きにくい）: 出したボートがスイレンの葉を壊す、ラヴェジャーがウツボカズラの作物を壊す、燃えている生き物が粉雪を溶かす、スケルトンが粉雪でストレイに変わったときに印が写らない（ストレイはブロックを壊さない）。
 
 ## ポートが使われているときの知らせを確かめる手順
 

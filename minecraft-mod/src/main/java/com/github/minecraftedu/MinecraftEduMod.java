@@ -1,6 +1,7 @@
 package com.github.minecraftedu;
 
 import com.github.minecraftedu.commands.CommandExecutor;
+import com.github.minecraftedu.commands.SummonedEntityGuard;
 import com.github.minecraftedu.init.ModBlocks;
 import com.github.minecraftedu.init.ModItems;
 import com.github.minecraftedu.network.SimpleWebSocketServer;
@@ -56,6 +57,8 @@ public class MinecraftEduMod {
 
         // サーバーの起動・停止などのイベントを受け取るため、Forge のイベントバスにこのクラスをつなぐ
         MinecraftForge.EVENT_BUS.register(this);
+        // Scratch から出した生き物に、作品を壊させない見張り（static のメソッドなので、クラスをつなぐ）
+        MinecraftForge.EVENT_BUS.register(SummonedEntityGuard.class);
 
         LOGGER.info("MinecraftEdu Mod initializing...");
         LOGGER.info("Registered custom blocks: " + ModBlocks.BLOCKS.getEntries().size() + " vertical slabs");
