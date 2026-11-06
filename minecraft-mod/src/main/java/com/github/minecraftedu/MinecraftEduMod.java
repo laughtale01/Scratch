@@ -1,6 +1,7 @@
 package com.github.minecraftedu;
 
 import com.github.minecraftedu.commands.CommandExecutor;
+import com.github.minecraftedu.commands.PauseWatch;
 import com.github.minecraftedu.commands.SummonedEntityGuard;
 import com.github.minecraftedu.init.ModBlocks;
 import com.github.minecraftedu.init.ModItems;
@@ -59,6 +60,9 @@ public class MinecraftEduMod {
         MinecraftForge.EVENT_BUS.register(this);
         // Scratch から出した生き物に、作品を壊させない見張り（static のメソッドなので、クラスをつなぐ）
         MinecraftForge.EVENT_BUS.register(SummonedEntityGuard.class);
+        // 1 人用のワールドが止まっている（ポーズ中）かを見て、止まっている間に読み込むチャンクを抑えるため、
+        // tick が終わった時刻・数・チャンクの数を覚え、ワールドを閉じたら覚えたものを忘れる
+        MinecraftForge.EVENT_BUS.register(PauseWatch.class);
 
         LOGGER.info("MinecraftEdu Mod initializing...");
         LOGGER.info("Registered custom blocks: " + ModBlocks.BLOCKS.getEntries().size() + " vertical slabs");

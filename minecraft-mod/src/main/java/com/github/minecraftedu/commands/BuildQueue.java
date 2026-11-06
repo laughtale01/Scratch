@@ -248,7 +248,9 @@ public class BuildQueue {
         long sliceMillis = Math.max(MIN_SLICE_MILLIS, Math.min(MAX_SLICE_MILLIS, untilNextTick));
         long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(sliceMillis);
         Job job;
-        while ((job = jobs.peek()) != null) {
+        // 1 人用のワールドが止まっている（ポーズ中の）間に、Minecraft が持つチャンクが増えすぎたら、動き出すまで進めない
+        // （ピストンなど、Minecraft が置いたブロックの周りを読むときは、PauseWatch の予算を通らずにチャンクを読み込むため。1 つ進めるごとに見る）
+        while ((job = jobs.peek()) != null && !PauseWatch.overLimit(server)) {
             boolean done;
             try {
                 done = job.step(deadline);
