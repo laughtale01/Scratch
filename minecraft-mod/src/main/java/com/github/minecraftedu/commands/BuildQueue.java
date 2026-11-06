@@ -1,9 +1,12 @@
 package com.github.minecraftedu.commands;
 
 import com.github.minecraftedu.MinecraftEduMod;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.Util;
 import net.minecraft.server.MinecraftServer;
 
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -49,6 +52,30 @@ public class BuildQueue {
         default long weight() {
             return 1;
         }
+
+        /**
+         * チャンクの読み込みを待っているか（先頭の仕事が待っていれば、後ろの仕事のチャンクも先に読み込みを頼む。
+         * いまは BlockJob だけ。「埋める」などが先頭のときは先読みしない）
+         */
+        default boolean waitingForLoad() {
+            return false;
+        }
+
+        /**
+         * 前もって読み込みを頼めるチャンク（ChunkPos.asLong の値）。場所が前もって分からない仕事は NO_PREFETCH
+         * （同じチャンクに何度も頼まないよう、BuildQueue が見分けるのに使う。ここでは読み込みを頼まない）
+         */
+        default long prefetchChunk() {
+            return NO_PREFETCH;
+        }
+
+        /**
+         * 前もって読み込みを頼む（メインスレッド）。見るチャンク（となりも見る置き方なら、となりも）にチケットを付ける。
+         * 読み込み済みでも付け直す（先頭が待つ間に、先に読み込んだチャンクが下ろされて、読み直しにならないように。
+         * 頼む数は、BuildQueue が PREFETCH_CHUNKS で抑える）
+         */
+        default void prefetch() {
+        }
     }
 
     /**
@@ -77,6 +104,16 @@ public class BuildQueue {
     public static final long MAX_PENDING_SMALL_WEIGHT = 2_000_000L;
     // どんな仕事も断る、列にたまった仕事の数（メモリを使いすぎないため。ふつうは届かない）
     public static final int MAX_PENDING_JOBS = 100_000;
+    // 先頭の仕事がチャンクの読み込みを待っている間に、後ろの仕事のために先に読み込みを頼む範囲
+    // （遠くに並べるとき、Minecraft がチャンクを 1 つずつ順に作るのではなく、まとめて作れるように）。
+    // 先頭も入れて、別々の（仕事の場所の）チャンク PREFETCH_CHUNKS 個までと、見る仕事 PREFETCH_SCAN_JOBS 件まで
+    // （先頭が相対座標で、場所が前もって分からないときは、後ろだけで PREFETCH_CHUNKS 個）。
+    // 読み込み済みのチャンクも数に入れる（先へ先へと作り続けないように。数に入れたチャンクは、先頭が待つ間は読み込んだままにする）。
+    // となりのチャンクも待つ置き方では、となりも含めて、その 4 倍まで頼むことがある。8 と 32 で速さが変わらなかったので、少しだけ先まで
+    private static final int PREFETCH_CHUNKS = 8;
+    private static final int PREFETCH_SCAN_JOBS = 1024;
+    // 前もって読み込みを頼めるチャンクが無いときの、prefetchChunk の値
+    public static final long NO_PREFETCH = Long.MIN_VALUE;
 
     private final MinecraftServer server;
     // サーバーが止まりかけているか（CommandExecutor の serverStopping）
@@ -221,7 +258,12 @@ public class BuildQueue {
                 done = true;
             }
             if (!done) {
-                break;  // 時間が来たか、チャンクの読み込みを待っている。この回はここまで
+                // 時間が来たか、チャンクの読み込みを待っている。この回はここまで
+                // 読み込みを待っているなら、後ろの仕事のチャンクも先に頼んでおく（置く順番は変えない）
+                if (job.waitingForLoad()) {
+                    prefetchAhead(job);
+                }
+                break;
             }
             jobs.poll();
             long weight = job.weight();
@@ -251,6 +293,35 @@ public class BuildQueue {
         } catch (RejectedExecutionException e) {
             // サーバーが止まって、タイマーも止めたあと
             pumpRequested.set(false);
+        }
+    }
+
+    /**
+     * 先頭の仕事のすぐ後ろから、別々のチャンクを（先頭のチャンクも入れて）PREFETCH_CHUNKS 個まで見て、
+     * 先に読み込みを頼む（読み込み済みなら付け直す。メインスレッド）。見るのは PREFETCH_SCAN_JOBS 件まで
+     */
+    private void prefetchAhead(Job head) {
+        try {
+            LongSet seen = new LongOpenHashSet();
+            long headChunk = head.prefetchChunk();
+            if (headChunk != NO_PREFETCH) {
+                seen.add(headChunk);
+            }
+            int scanned = 0;
+            Iterator<Job> it = jobs.iterator();
+            if (it.hasNext()) {
+                it.next();  // 先頭（いま待っている仕事）は、自分で頼んでいる
+            }
+            while (it.hasNext() && scanned++ < PREFETCH_SCAN_JOBS && seen.size() < PREFETCH_CHUNKS) {
+                Job job = it.next();
+                long chunk = job.prefetchChunk();
+                if (chunk != NO_PREFETCH && seen.add(chunk)) {
+                    job.prefetch();
+                }
+            }
+        } catch (Exception e) {
+            // 先読みは速くするためだけなので、失敗しても先読みをやめるだけにする（列を止めない）
+            MinecraftEduMod.LOGGER.error("BuildQueue prefetch error", e);
         }
     }
 }

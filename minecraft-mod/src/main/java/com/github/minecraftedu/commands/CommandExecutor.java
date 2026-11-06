@@ -379,7 +379,7 @@ public class CommandExecutor {
                 return null;
             }
             return new BlockPos((int) sumX, (int) sumY, (int) sumZ);
-        }, true, (world, target) -> world.setBlock(target, blockState, 3), () -> {
+        }, relative ? null : pos, true, (world, target) -> world.setBlock(target, blockState, 3), () -> {
             logInputError("setBlock chunk not loaded", "setBlock: gave up waiting for the chunk to load");
             sendErrorChat(LOAD_GAVE_UP_CHAT_PREFIX + "ブロックを おけませんでした");
         }));
@@ -2746,7 +2746,7 @@ public class CommandExecutor {
 
         // まだ読み込まれていないチャンクなら、読み込まれるのを待ってから入れる（BlockJob。その場で入れると Minecraft が止まるため。
         // 中身を変えると、入れ物は比較器へ知らせるために 2 マス先まで読むので、端の近くならとなりのチャンクも待つ）
-        boolean queued = enqueue(new BlockJob(server, world -> pos, true, (world, target) -> {
+        boolean queued = enqueue(new BlockJob(server, world -> pos, pos, true, (world, target) -> {
             BlockEntity blockEntity = world.getBlockEntity(target);
 
             if (blockEntity instanceof Container container) {
