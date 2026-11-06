@@ -64021,6 +64021,11 @@ class Scratch3MinecraftBlocks {
     this._recordingErrorNoticeBurst = 0;
     this._recordingErrorNoticeQuietUntil = 0;
     this._lastRecordingWarningAt = 0;
+    // 「足元のブロック」で最後に調べたマスの座標（Scratch 座標）。
+    // 「足元のブロックの [x/y/z]」はこれを返す。すぐ前に「足元のブロック」を調べていれば、ブロック名と同じ瞬間の座標になる
+    // （先に座標を読んだり、ほかのスプライトも調べていたりすると、別のときの座標になる。ほかのスプライトが調べるのに
+    //   失敗すると空になる。拡張機能の中で 1 つだけ）
+    this._lastUnderPos = null;
   }
   getInfo() {
     return {
@@ -64316,6 +64321,10 @@ class Scratch3MinecraftBlocks {
           }
         }
       }, {
+        opcode: 'clearInventory',
+        blockType: 'command',
+        text: formatMessage({ id: 'minecraft.clearInventory', default: 'clear inventory', description: 'remove all items from the player inventory' })
+      }, {
         opcode: 'setFlySpeed',
         blockType: 'command',
         text: formatMessage({ id: 'minecraft.setFlySpeed', default: 'set fly speed to [SPEED] x', description: 'set creative mode flying speed multiplier' }),
@@ -64568,6 +64577,23 @@ class Scratch3MinecraftBlocks {
             defaultValue: 0
           }
         }
+      }, {
+        opcode: 'getBlockUnderPlayer',
+        blockType: 'reporter',
+        // チェックボックス（ステージの表示）を出さない（表示すると毎フレーム調べ直して、「足元のブロックの [x/y/z]」の座標を書きかえるため）
+        disableMonitor: true,
+        text: formatMessage({ id: 'minecraft.getBlockUnderPlayer', default: 'block under player', description: 'get the block under the player (no chat message)' })
+      }, {
+        opcode: 'getBlockUnderPlayerPos',
+        blockType: 'reporter',
+        text: formatMessage({ id: 'minecraft.getBlockUnderPlayerPos', default: '[COORD] of block under player', description: 'coordinate of the block last checked by "block under player"' }),
+        arguments: {
+          COORD: {
+            type: 'string',
+            menu: 'coordinates',
+            defaultValue: 'x'
+          }
+        }
       }, '---', {
         opcode: 'isConnected',
         blockType: 'Boolean',
@@ -64813,50 +64839,23 @@ class Scratch3MinecraftBlocks {
 
   /**
    * 全カテゴリのブロックを統合して返す
-   * 各カテゴリの前にラベル付き区切り線を追加
+   * 各カテゴリの前にラベル付き区切り線を追加。見出しは選べても意味を持たないので value は空にしてある
+   * 方向性ブロック（階段・ハーフ・ドア等）は建築・機能カテゴリに全て含まれているため、ここでは重ねて並べない
    */
   _getAllBlocks() {
+    const heading = (id, defaultText) => ({
+      text: { id: 'minecraft.menu.' + id, default: '━━ ' + defaultText + ' ━━' },
+      value: ''
+    });
     return [
-    // 建築ブロック
-    {
-      text: '━━ 建築ブロック ━━',
-      value: ''
-    }, ...this._getBuildingBlocks(),
-    // 照明ブロック
-    {
-      text: '━━ 照明ブロック ━━',
-      value: ''
-    }, ...this._getLightingBlocks(),
-    // 装飾ブロック
-    {
-      text: '━━ 装飾ブロック ━━',
-      value: ''
-    }, ...this._getDecorationBlocks(),
-    // 自然ブロック
-    {
-      text: '━━ 自然ブロック ━━',
-      value: ''
-    }, ...this._getNatureBlocks(),
-    // 機能ブロック
-    {
-      text: '━━ 機能ブロック ━━',
-      value: ''
-    }, ...this._getFunctionalBlocks(),
-    // 鉱石ブロック
-    {
-      text: '━━ 鉱石ブロック ━━',
-      value: ''
-    }, ...this._getOreBlocks(),
-    // 特殊ブロック
-    {
-      text: '━━ 特殊ブロック ━━',
-      value: ''
-    }, ...this._getSpecialBlocks(),
-    // 方向性ブロック
-    {
-      text: '━━ 方向性ブロック ━━',
-      value: ''
-    }, ...this._getDirectionalBlocks()];
+      heading('categoryBuilding', 'Building Blocks'), ...this._getBuildingBlocks(),
+      heading('categoryLighting', 'Lighting Blocks'), ...this._getLightingBlocks(),
+      heading('categoryDecoration', 'Decoration Blocks'), ...this._getDecorationBlocks(),
+      heading('categoryNature', 'Nature Blocks'), ...this._getNatureBlocks(),
+      heading('categoryFunctional', 'Functional Blocks'), ...this._getFunctionalBlocks(),
+      heading('categoryOre', 'Ore Blocks'), ...this._getOreBlocks(),
+      heading('categorySpecial', 'Special Blocks'), ...this._getSpecialBlocks()
+    ];
   }
   _getAllEntities() {
     return [
@@ -64977,6 +64976,8 @@ class Scratch3MinecraftBlocks {
     }
     this.connected = false;
     this.sessionId = null;
+    // 前の接続（前のワールド）で調べた足元の座標を残さない
+    this._lastUnderPos = null;
     this.pendingRequests.forEach((pending) => {
       pending.reject(this._createCodedError('CONNECTION_CLOSED', 'Connection closed'));
     });
@@ -65464,6 +65465,17 @@ class Scratch3MinecraftBlocks {
       console.log('暗視設定完了: ' + (enabled ? 'ON' : 'OFF'));
     }).catch(error => {
       console.error('暗視設定エラー:', error);
+      throw error;
+    });
+  }
+
+  /**
+   * プレイヤーの持ち物を空にする（手・防具・左手も）
+   * MOD はアドベンチャーのときだけ消す（ほかのモードでは消さずに、チャットで知らせる）
+   */
+  clearInventory() {
+    return this.sendCommand('clearInventory', {}).catch(error => {
+      console.error('持ち物を空にできませんでした:', error);
       throw error;
     });
   }
@@ -66054,6 +66066,50 @@ class Scratch3MinecraftBlocks {
       console.warn('Failed to get block type:', error);
       return 'air';
     });
+  }
+
+  /**
+   * プレイヤーの足元のブロックを調べる（チャットには出さない）
+   * 立っているときは乗っているブロック（ブロックのふちやフェンスの上でも、乗っているブロック）、
+   * ジャンプ中や泳いでいるときは足の高さのマス（空気や水）。「ずっと」の中で何度も呼んでもチャットが流れない
+   * @returns {Promise<string>} ブロック名（例: birch_planks）。調べられないときは空の文字
+   */
+  getBlockUnderPlayer() {
+    return this.sendCommandWithResponse('getBlockUnderPlayer', {}).then(response => {
+      const result = response && response.payload && response.payload.result;
+      if (result && result.blockType && result.position) {
+        // 同じ返事の座標を覚えておく（Minecraft の Y から Scratch の Y へ +60）
+        this._lastUnderPos = {
+          x: result.position.x,
+          y: result.position.y + 60,
+          z: result.position.z
+        };
+        return result.blockType;
+      }
+      this._lastUnderPos = null;
+      return '';
+    }).catch(error => {
+      console.warn('Failed to get block under player:', error);
+      this._lastUnderPos = null;
+      return '';
+    });
+  }
+
+  /**
+   * 「足元のブロック」で最後に調べたマスの座標（通信はしない）
+   * 最後に調べた返事の座標なので、調べたあとに歩いても、踏んでいたマスがわかる
+   * （すぐ前に「足元のブロック」を調べていれば、そのブロック名と同じマス）
+   * @param {object} args - COORD: x / y / z
+   * @returns {number|string} 座標。まだ調べていない・調べられなかった・つなぎ直したときは空の文字
+   *   （数を入れる所にそのまま入れると 0 になるので、先にブロック名が空でないかを確かめて使う）
+   */
+  getBlockUnderPlayerPos(args) {
+    if (!this._lastUnderPos) return '';
+    const coord = args.COORD || 'x';
+    if (coord === 'x' || coord === 'y' || coord === 'z') {
+      return this._lastUnderPos[coord];
+    }
+    return '';
   }
 
   /**
@@ -342565,6 +342621,13 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.getPosition": "[COORD]",
     "minecraft.getTargetBlock": "見ているブロックの [INFO]",
     "minecraft.menu.blockType": "ブロックの種類",
+    "minecraft.menu.categoryBuilding": "━━ 建築ブロック ━━",
+    "minecraft.menu.categoryLighting": "━━ 照明ブロック ━━",
+    "minecraft.menu.categoryDecoration": "━━ 装飾ブロック ━━",
+    "minecraft.menu.categoryNature": "━━ 自然ブロック ━━",
+    "minecraft.menu.categoryFunctional": "━━ 機能ブロック ━━",
+    "minecraft.menu.categoryOre": "━━ 鉱石ブロック ━━",
+    "minecraft.menu.categorySpecial": "━━ 特殊ブロック ━━",
     "minecraft.setBlock": "X:[X] Y:[Y] Z:[Z] [BLOCK] 配置:[PLACEMENT] 向き:[FACING] open:[OPEN]",
     "minecraft.setBlockRelative": "~[X] ~[Y] ~[Z] [BLOCK] 配置:[PLACEMENT] 向き:[FACING] open:[OPEN]",
     "minecraft.setBlockRange": "X:[X1] Y:[Y1] Z:[Z1] からX:[X2] Y:[Y2] Z:[Z2] [BLOCK] 配置:[PLACEMENT] 向き:[FACING] open:[OPEN]",
@@ -342598,6 +342661,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.prepareForLearning": "学習準備",
     "minecraft.setMoveSpeed": "移動速度を [SPEED] 倍にする",
     "minecraft.setNightVision": "暗視を [ENABLED] にする",
+    "minecraft.clearInventory": "持ち物を空にする",
     "minecraft.setFlySpeed": "飛行速度を [SPEED] 倍にする",
     "minecraft.startRecording": "録画を開始する",
     "minecraft.recording.startFailed": "録画を開始できませんでした。",
@@ -342637,6 +342701,8 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.setTime": "時刻を [TIME] にする",
     "minecraft.getPlayerFacing": "プレーヤーの向き",
     "minecraft.getBlockType": "[X] [Y] [Z] のブロック種類",
+    "minecraft.getBlockUnderPlayer": "足元のブロック",
+    "minecraft.getBlockUnderPlayerPos": "足元のブロックの [COORD]",
     "minecraft.isConnected": "接続中？",
 
     "gui.alerts.lostPeripheralConnection": " {extensionName}への接続が失われました。",
@@ -343496,6 +343562,13 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.getPosition": "[COORD]",
     "minecraft.getTargetBlock": "みている ブロックの [INFO]",
     "minecraft.menu.blockType": "ブロックの しゅるい",
+    "minecraft.menu.categoryBuilding": "━━ たてもの ぶろっく ━━",
+    "minecraft.menu.categoryLighting": "━━ ひかり ぶろっく ━━",
+    "minecraft.menu.categoryDecoration": "━━ かざり ぶろっく ━━",
+    "minecraft.menu.categoryNature": "━━ しぜん ぶろっく ━━",
+    "minecraft.menu.categoryFunctional": "━━ きのう ぶろっく ━━",
+    "minecraft.menu.categoryOre": "━━ こうせき ぶろっく ━━",
+    "minecraft.menu.categorySpecial": "━━ とくしゅ ぶろっく ━━",
     "minecraft.setBlock": "X:[X] Y:[Y] Z:[Z] [BLOCK] おきかた:[PLACEMENT] むき:[FACING] open:[OPEN]",
     "minecraft.setBlockRelative": "~[X] ~[Y] ~[Z] [BLOCK] おきかた:[PLACEMENT] むき:[FACING] open:[OPEN]",
     "minecraft.setBlockRange": "X:[X1] Y:[Y1] Z:[Z1] から X:[X2] Y:[Y2] Z:[Z2] まで [BLOCK] おきかた:[PLACEMENT] むき:[FACING] open:[OPEN]",
@@ -343529,6 +343602,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.prepareForLearning": "がくしゅう じゅんび",
     "minecraft.setMoveSpeed": "いどう そくど を [SPEED] ばい に する",
     "minecraft.setNightVision": "あんし を [ENABLED] に する",
+    "minecraft.clearInventory": "もちもの を からっぽ に する",
     "minecraft.setFlySpeed": "ひこう そくど を [SPEED] ばい に する",
     "minecraft.startRecording": "ろくが を かいし する",
     "minecraft.recording.startFailed": "ろくが を かいし できません でした。",
@@ -343577,6 +343651,8 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.setTime": "じかん を [TIME] に する",
     "minecraft.getPlayerFacing": "ぷれいやー の むき",
     "minecraft.getBlockType": "[X] [Y] [Z] の ぶろっく",
+    "minecraft.getBlockUnderPlayer": "あしもと の ぶろっく",
+    "minecraft.getBlockUnderPlayerPos": "あしもと の ぶろっく の [COORD]",
     "minecraft.isConnected": "つながってる?",
     "minecraft.blockBuilding": "たてもの ぶろっく [BLOCK]",
     "minecraft.blockLighting": "ひかり ぶろっく [BLOCK]",
