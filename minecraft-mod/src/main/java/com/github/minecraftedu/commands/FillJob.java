@@ -46,7 +46,8 @@ class FillJob implements BuildQueue.Job {
 
     // 時間を確かめる間隔（ブロックの数）
     private static final int CHECK_EVERY = 256;
-    // 1 つのチャンクの読み込みを待つ長さの上限（初めて待ったときから数える。これを過ぎたら、あきらめて仕事をやめる。
+    // 1 つのチャンクの読み込みを待つ長さの上限（初めて待ったときから数える。1 人用のワールドが止まっている（ポーズ中の）間は
+    // 数えず、動き出してから数え直す。これを過ぎたら、あきらめて仕事をやめる。
     // 前は 5 秒で待つのをやめて置いていたが、そのときはメインスレッドが読み込み・地形の生成を待ち、そのあいだ止まっていた）
     // 1 つのマスを触る仕事（BlockJob）も、この長さまで待つ
     static final long MAX_LOAD_WAIT_NANOS = TimeUnit.SECONDS.toNanos(30);
@@ -81,6 +82,8 @@ class FillJob implements BuildQueue.Job {
     // 読み込みがそろったと分かっているチャンク（Long.MIN_VALUE はまだ無い）と、読み込みを待ち始めた時刻（0 は待っていない）
     private long readyChunk = Long.MIN_VALUE;
     private long loadWaitStart;
+    // 読み込みを待っているかを最後に見たときの PauseWatch.holds（変わっていたら、あきらめるまでの時間を数え直す）
+    private long seenHolds;
     // いまの区画が入っているチャンクの段（置く前に、そのマスにいまあるブロックを見て、同じなら置かないため。
     // 区画に入るときに取り、区画を出たら null にする。チャンクが読み込まれていないときも null）
     private LevelChunkSection cellSection;
@@ -123,6 +126,11 @@ class FillJob implements BuildQueue.Job {
         }
         try {
             prepare(world);
+            if (ticketLevel == null && !finished) {
+                // チケットを付けられなかった（止まっていて、範囲のまだ読み込まれていないチャンクが PauseWatch の数に収まらない）。動き出すまで置かない
+                // （チケット無しで置き始めると、動き出した直後にチャンクが下ろされて、メインスレッドで読み直すことがあるため）
+                return false;
+            }
             int count = 0;
             while (!finished) {
                 if (!inCell) {
@@ -183,6 +191,13 @@ class FillJob implements BuildQueue.Job {
         if (ticketLevel != null || finished) {
             return;
         }
+        // 1 人用のワールドが止まっている（ポーズ中）間は、範囲のまだ読み込まれていないチャンクが PauseWatch の数に収まるときだけ付ける
+        // （止まっている間はチャンクが下ろされないので、たまってメモリを使い切らないように。収まらなければ、動き出してから付ける）。
+        // 全部読み込まれていれば、いつも付ける（新しく読み込むものは無いのでたまらない。近くを埋める命令は、止まっている間も進む）
+        if (PauseWatch.paused()
+            && !PauseWatch.withinBudget(world, ticketMinX, ticketMaxX, ticketMinZ, ticketMaxZ)) {
+            return;
+        }
         ticketLevel = world;
         for (int tx = ticketMinX; tx <= ticketMaxX; tx++) {
             for (int tz = ticketMinZ; tz <= ticketMaxZ; tz++) {
@@ -225,6 +240,7 @@ class FillJob implements BuildQueue.Job {
     /**
      * これから置くチャンクと、待つ範囲の中のそのとなりのチャンクが読み込まれたか
      * 読み込み中なら false。そのチャンクを初めて待ってから MAX_LOAD_WAIT_NANOS を過ぎたら、gaveUp を立てて false
+     * （止まっている間は数えない）
      * （待たずに置くと、メインスレッドが読み込み・地形の生成を待って Minecraft が止まるため）
      * 1 つでも読み込まれていなければ、見たチャンク全部に、時間で切れるチケット（BlockJob）も付けて読み込みを頼む。
      * となりを読まない置き方は、となりに BUILD_TICKET が無いので、区画に入るたびに時間で切れるチケットを付け直す
@@ -239,6 +255,16 @@ class FillJob implements BuildQueue.Job {
             Math.max(waitMinZ, cz - 1), Math.min(waitMaxZ, cz + 1), !notifies);
         if (!ready) {
             long now = System.nanoTime();
+            // 止まっている間と、前に見たあとで列がまるごと待たされていた（PauseWatch.overLimit）ときは、
+            // あきらめるまでの時間に数えない（動き出してから数え直す。止まっていた時間を数えて、動き出してすぐあきらめないように）
+            boolean held = PauseWatch.holds() != seenHolds;
+            seenHolds = PauseWatch.holds();
+            if (PauseWatch.paused() || held) {
+                loadWaitStart = 0;
+            }
+            if (PauseWatch.paused()) {
+                return false;
+            }
             if (loadWaitStart == 0) {
                 loadWaitStart = now;
             }

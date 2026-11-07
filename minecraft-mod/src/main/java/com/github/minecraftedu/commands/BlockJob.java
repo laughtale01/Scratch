@@ -18,6 +18,7 @@ import java.util.function.Function;
  * 読み込まれるまで次の回へ回す（その場で触ると、メインスレッドが読み込み・地形の生成を待ち、そのあいだ Minecraft が止まるため。
  * ふつうの地形のワールドで、まだ作られていないチャンク 1 つにつき 0.1 秒ほど止まった）。
  * FillJob.MAX_LOAD_WAIT_NANOS 待っても読み込まれなければ、あきらめて onGiveUp を呼ぶ
+ * （1 人用のワールドが止まっている（ポーズ中の）間は数えない。動き出してから数え直す）
  */
 class BlockJob implements BuildQueue.Job {
 
@@ -25,7 +26,8 @@ class BlockJob implements BuildQueue.Job {
     // 同じあたりに続けて置くとき、1 つごとに読み込み直さないように。読み込みを待っている間は回ごとに付け直す
     // （付け直すと、切れるまでの時間が初めに戻る）。
     // 短めにする（「ずっと、x を増やしながら置く」で、通ったチャンクをたくさん読み込んだままにしないように）
-    // tick で数えるので、1 人用のワールドが止まっている（ポーズ中の）間は切れない（止まっている間に読み込んだチャンクは、
+    // tick で数えるので、1 人用のワールドが止まっている（ポーズ中の）間は切れない（チャンクも下ろされない。
+    // そのため止まっている間は、新しく頼むチャンクの数を PauseWatch で抑えている。止まっている間に読み込んだチャンクは、
     // 動き出してから LINGER_TICKS で外れる。Minecraft がその場で読み込むときのチケットも、同じ数え方）
     // FillJob のチケットとは別の種類にする（FillJob のチケットは 1 回外すと無くなるので、
     // 同じ種類を付け外しすると、「周りをきれいにする」が先に付けたチケットまで外してしまうため）
@@ -39,7 +41,8 @@ class BlockJob implements BuildQueue.Job {
     // （レッドストーンの粉・ピストン・トリップワイヤー・スポンジ（水を 6 マス先までたどる）・パワードレール（8 本先までたどる）
     //   などは、もっと先まで読む。信号はどこまでも伝わるので、決まった幅では
     //   ふさぎきれない。まだ読み込まれていない遠くのチャンクの端の近くに置いたときだけ、チャンク 1 つ分ほど止まることがある。
-    //   まれで短いので受け入れた。広くすると、遠くに建てるたびに地形を作る量が何倍にもなるため）
+    //   まれで短いので受け入れた。広くすると、遠くに建てるたびに地形を作る量が何倍にもなるため。
+    //   1 人用のワールドが止まっている間は、そうして読み込んだチャンクも下ろされないので、増えすぎたら PauseWatch.overLimit で列を止める）
     static final int NEIGHBOR_MARGIN = 2;
 
     private final MinecraftServer server;
@@ -58,8 +61,12 @@ class BlockJob implements BuildQueue.Job {
 
     // 決めた場所（まだ決めていなければ null）
     private BlockPos pos;
-    // 読み込みを待ち始めた時刻（0 は待っていない）
+    // 読み込みを待ち始めた時刻（あきらめるまでの時間を数えるため。0 はまだ数えていない。止まっている間は 0 にする）
     private long loadWaitStart;
+    // 読み込みを待っているか（止まっている間も、後ろの仕事のチャンクを先に頼むため、loadWaitStart とは別に持つ）
+    private boolean waitingLoad;
+    // 読み込みを待っているかを最後に見たときの PauseWatch.holds（変わっていたら、あきらめるまでの時間を数え直す）
+    private long seenHolds;
 
     BlockJob(MinecraftServer server, Function<ServerLevel, BlockPos> target, BlockPos prefetchPos, boolean neighbors,
              BiConsumer<ServerLevel, BlockPos> action, Runnable onGiveUp) {
@@ -85,7 +92,18 @@ class BlockJob implements BuildQueue.Job {
         }
         // 建てられる高さの外は、Minecraft がチャンクを読まずに断るので、待たない
         if (!world.isOutsideBuildHeight(pos) && !requestLoaded(world, pos, neighbors)) {
+            waitingLoad = true;
             long now = System.nanoTime();
+            // 止まっている間と、前に見たあとで列がまるごと待たされていた（PauseWatch.overLimit）ときは、あきらめるまでの時間に数えない
+            // （動き出してから数え直す）
+            boolean held = PauseWatch.holds() != seenHolds;
+            seenHolds = PauseWatch.holds();
+            if (PauseWatch.paused() || held) {
+                loadWaitStart = 0;
+            }
+            if (PauseWatch.paused()) {
+                return false;
+            }
             if (loadWaitStart == 0) {
                 loadWaitStart = now;
             }
@@ -130,6 +148,9 @@ class BlockJob implements BuildQueue.Job {
     /**
      * チャンクの x minX〜maxX・z minZ〜maxZ が全部読み込まれているか（メインスレッドで呼ぶ）
      * 読み込まれていないものがあれば、全部にこの種類のチケット（時間で切れる）を付けて読み込みを頼む。
+     * ただし 1 人用のワールドが止まっている（ポーズ中）間は、新しく頼むチャンクが PauseWatch の数に収まらなければ、
+     * 頼まずに false を返す（止まっている間は、チケットが切れず、チャンクも下ろされないので、遠くへ置き続けると、
+     * 読み込んだチャンクがたまってメモリを使い切るため。動き出してから、続きを頼む）。
      * refreshLoaded なら、全部読み込まれていても付け直す
      * （FillJob も、これから置くチャンクとそのとなりを待つのに使う。となりを読まない置き方では、
      *   BUILD_TICKET を付けないとなりを、このチケットで読み込んだままにする）
@@ -144,11 +165,16 @@ class BlockJob implements BuildQueue.Job {
                 }
             }
         }
+        if (!ready && PauseWatch.paused() && !PauseWatch.withinBudget(world, minX, maxX, minZ, maxZ)) {
+            return false;
+        }
         if (!ready || refreshLoaded) {
             for (int tx = minX; tx <= maxX; tx++) {
                 for (int tz = minZ; tz <= maxZ; tz++) {
                     ChunkPos chunk = new ChunkPos(tx, tz);
                     world.getChunkSource().addRegionTicket(LINGER_TICKET, chunk, 0, chunk);
+                    // チケットが切れるまでの時間が初めに戻るので、止まっている間に頼んだものとして数えているなら、数える時間も延ばす
+                    PauseWatch.ticketRefreshed(chunk.toLong());
                 }
             }
         }
@@ -184,7 +210,7 @@ class BlockJob implements BuildQueue.Job {
 
     @Override
     public boolean waitingForLoad() {
-        return loadWaitStart != 0;
+        return waitingLoad;
     }
 
     /**

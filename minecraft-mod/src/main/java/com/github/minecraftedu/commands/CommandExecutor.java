@@ -1007,14 +1007,28 @@ public class CommandExecutor {
         }
 
         // プレイヤーは順番が来たときに引き直す（列で待つ間にやられて生き返ると、プレイヤーが新しく作り直されるため）
-        boolean queued = safeExecute(() -> {
+        // 1 人用のワールドが止まっている（ポーズ中）間は、止まるたびに 1 回まで通し、それより先は動き出すまで列で待つ
+        // （止まっている間にテレポートすると、画面側の返事でサーバーがプレイヤーを動かし、行き先の見える範囲のチャンクを読み込むが、
+        //   止まっている間は下ろされないので、くり返すとたまってメモリを使い切るため。ふつうの地形で、1 回で 1500 チャンク・
+        //   190 MB ほど増えた。1 回は通すので、Scratch のブラウザを触っている間も「テレポートしてから建てる」は動き、
+        //   そのあとの「今いる場所」もテレポートした先を答える。
+        //   同じ一時停止の中の 2 回目からは待つので、そのあとの「今いる場所」は、2.5 秒待ってから前の場所を答える。
+        //   前に通してから 7 秒ほど動かないうちに止まり直したときと、メモリにテレポート 2 回分と予算の分の余白が無いときは、
+        //   1 回目も待つ（PauseWatch.takeTeleport）。
+        //   止まる直前に動いていたテレポートは、画面側の返事が止まったあとに届くので、その行き先も止まっている間に読み込まれる
+        //   （1 回の一時停止でテレポート 2 回分まで。メモリの余白はその 2 回分と予算の分で見て、チャンクの数は PauseWatch.overLimit で数える））
+        boolean queued = enqueue(deadlineNanos -> {
+            if (PauseWatch.paused() && !PauseWatch.takeTeleport(server)) {
+                return false;
+            }
             ServerPlayer current = getFirstPlayer();
             if (current != null) {
                 current.teleportTo(x, y, z);
             }
+            return true;
         });
         if (!queued) {
-            return null;  // 列が混んでいて並べられなかった（知らせは safeExecute が出す）
+            return null;  // 列が混んでいて並べられなかった（知らせは enqueue が出す）
         }
 
         MinecraftEduMod.LOGGER.debug("Player teleported to " + x + "," + y + "," + z);
