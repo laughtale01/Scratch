@@ -118,6 +118,18 @@ public class BuildQueue {
          */
         default void release() {
         }
+
+        /**
+         * 一時停止から再開した（BuildQueue が、再開した列の先頭のこの仕事を、再開してから初めて進める前に、メインスレッドで呼ぶ。
+         * ただし、メインスレッドがその列を止めた状態で見ていたときだけ。止めると再開がメインスレッドの 1 回の間に両方届いたときは、
+         * 仕事は止まっていないので呼ばない。そのときは時間を数え直すことも、チャンクを確かめ直すことも要らない）。
+         * 止めていた間を、チャンクの読み込みをあきらめるまでの時間に数えないよう、待ち始めた時刻を忘れる。
+         * 止めている間に下ろされたかもしれないチャンクは、進める前に確かめ直す（止めている間も Minecraft は動いているので、
+         * 時間で切れるチケットは切れる）。呼ぶのは、再開した列の仕事だけ（ほかのタブの仕事の時間には触らない）。
+         * まだ一度も進めていない仕事に呼ぶこともある（止めるボタンのあとの古い印などで）ので、何も持っていなければ何もしない
+         */
+        default void resumed() {
+        }
     }
 
     /**
@@ -129,10 +141,13 @@ public class BuildQueue {
         final long seq;
         // 列から外したか（終わったか、取り消した）。重さを 1 回だけ引くため
         final AtomicBoolean removed = new AtomicBoolean(false);
+        // 入っている列（進めている途中の仕事が、止めた列のものかを見るため）
+        final Lane lane;
 
-        Entry(Job job, long seq) {
+        Entry(Job job, long seq, Lane lane) {
             this.job = job;
             this.seq = seq;
+            this.lane = lane;
         }
     }
 
@@ -143,6 +158,29 @@ public class BuildQueue {
      */
     private static final class Lane {
         final ConcurrentLinkedQueue<Entry> entries = new ConcurrentLinkedQueue<>();
+        // 一時停止しているか（pause で立て、resume・cancel で下ろす。立っている間は、この列の仕事を進めない）
+        volatile boolean paused;
+        // この列を一時停止から再開した回数（どのスレッドからでも足す）と、メインスレッドが最後に見た値
+        // （変わっていて、pauseSeen が立っていたら、この列の仕事を進める前に Job.resumed を呼ぶ。メインスレッドだけが seenResumes を触る）
+        final AtomicLong resumes = new AtomicLong();
+        long seenResumes;
+        // メインスレッドが、この列を止めた状態で見たか（nextEntry が止めた列を飛ばした。メインスレッドだけが触る）。
+        // 再開の知らせは、これが立っているときだけ出す（止めると再開が、メインスレッドの 1 回の間に両方届いたときは、
+        // 仕事は止まっていないので、あきらめるまでの時間を数え直させない。くり返し送って時間を戻し続けられないように）
+        boolean pauseSeen;
+
+        /**
+         * まだ外していない仕事の数（一時停止の返事で知らせるため。数えるのは遅いが、受け口のスレッドで止めるとき・再開するときだけ）
+         */
+        int waiting() {
+            int count = 0;
+            for (Entry entry : entries) {
+                if (!entry.removed.get()) {
+                    count++;
+                }
+            }
+            return count;
+        }
 
         /**
          * 先頭の、まだ外していない仕事（終わった・取り消した仕事が先頭に残っていたら、ここで捨てる。メインスレッド）
@@ -358,7 +396,7 @@ public class BuildQueue {
         // 同じ接続の仕事は、いつも同じ受け口のスレッドから足すので、その列の中は番号の順に並ぶ
         // （ほかの接続とは、番号を取ってから列に入れるまでの間に前後することがあるが、別のタブどうしなので順番は決まっていない）
         Lane lane = lanes.computeIfAbsent(owner == null ? NO_OWNER : owner, key -> new Lane());
-        lane.entries.add(new Entry(job, nextSeq.getAndIncrement()));
+        lane.entries.add(new Entry(job, nextSeq.getAndIncrement(), lane));
         requestPump();
         return true;
     }
@@ -374,7 +412,56 @@ public class BuildQueue {
         if (owner == null) {
             return 0;
         }
-        return cancelLane(lanes.get(owner));
+        Lane lane = lanes.get(owner);
+        int cancelled = cancelLane(lane);
+        // 一時停止していたら、やめる（止めるボタン・緑の旗のあとに届いた仕事は、すぐ進める。
+        // 列にあった仕事は全部外したので、あきらめるまでの時間を数え直させる仕事は無い）
+        if (lane != null) {
+            lane.paused = false;
+        }
+        return cancelled;
+    }
+
+    /**
+     * owner の列を一時停止する（Scratch の一時停止ボタン）。止めている間は、その接続の仕事を進めない
+     * （進めている途中の大きな「埋める」などもそこで止まり、再開したら続きから進める）。止めている間に届いた仕事は列に並ぶ。
+     * ほかの接続の仕事は進む。止めている列の仕事も、重さ・仕事の数の上限や「周りをきれいにする」の途中の印には数えたまま。
+     * 列がまだ無ければ作る（止めてから届いた仕事も止めるため）。止めている印は resume・cancel で下ろし、forget で列ごと外す。
+     * その接続の offer と同じスレッド（受け口のスレッド）から呼ぶこと（別のスレッドから呼ぶと、forget で外したあとに列を作り直して、
+     * 誰にも外されない列が残ることがある）
+     *
+     * @return その列に並んでいる仕事の数（null なら 0）
+     */
+    public int pause(Object owner) {
+        if (owner == null) {
+            return 0;
+        }
+        Lane lane = lanes.computeIfAbsent(owner, key -> new Lane());
+        lane.paused = true;
+        return lane.waiting();
+    }
+
+    /**
+     * owner の列の一時停止をやめ、続きを進める（どのスレッドから呼んでもよい。止めていなければ何もしない）
+     * その列の再開した数を先に足してから印を下ろす（メインスレッドは、印が下りたのを見たら、再開した数の変わりも必ず見える。
+     * その列の仕事を進める前にそれを見て、その列を止めた状態で見ていたら Job.resumed を呼ぶ）。そのあと、進める処理を頼む
+     *
+     * @return その列に並んでいる仕事の数（列が無ければ 0）
+     */
+    public int resume(Object owner) {
+        if (owner == null) {
+            return 0;
+        }
+        Lane lane = lanes.get(owner);
+        if (lane == null) {
+            return 0;
+        }
+        if (lane.paused) {
+            lane.resumes.incrementAndGet();
+            lane.paused = false;
+            requestPump();
+        }
+        return lane.waiting();
     }
 
     /**
@@ -574,6 +661,10 @@ public class BuildQueue {
         // 1 人用のワールドが止まっている（ポーズ中の）間に、Minecraft が持つチャンクが増えすぎたら、動き出すまで進めない
         // （ピストンなど、Minecraft が置いたブロックの周りを読むときは、PauseWatch の予算を通らずにチャンクを読み込むため。1 つ進めるごとに見る）
         while ((entry = nextEntry()) != null && !PauseWatch.overLimit(server)) {
+            // この仕事の列を一時停止から再開していて、止めた状態を見ていたら、進める前に知らせる（あきらめるまでの時間を数え直させる。
+            // nextEntry が、この列の印が下りたのを見たあとに読むので、再開した数は必ず見える。同じ回のうちに、
+            // ほかの列の仕事を進めている間に再開した列も、ここで見る）
+            noteResumed(entry);
             Job job = entry.job;
             boolean done;
             try {
@@ -660,22 +751,63 @@ public class BuildQueue {
     }
 
     /**
+     * entry の列を、前に見たあとで一時停止から再開していて、メインスレッドがその列を止めた状態で見ていたら、
+     * その仕事の Job.resumed を呼ぶ（メインスレッド。止めた状態を見ていなければ、仕事は止まっていないので呼ばない）
+     * （再開した列で、次に進めるのはいつもその列の先頭なので、止める前に読み込みを待ち始めていた仕事に届く。
+     *   ほかの列の仕事の、あきらめるまでの時間には触らない）。
+     * 知られた限り: 止めるが、メインスレッドが仕事を進めている最中にちょうど届き、その回の終わりの nextEntry が止めた状態を見て、
+     * 次の回の前に再開すると、仕事は 1 回も飛ばされていないのに知らせる。これを狙って送り続けると、読み込めない仕事の
+     * あきらめるまでの時間を戻し続けられる（ほんの短い間を狙って送り続ける必要があり、一時停止ボタンを押すだけでは起きない。
+     * 本当に飛ばした回があったかを数える作りは、列が空いて休んでいる間の一時停止と見分けにくいので、入れていない）
+     */
+    private void noteResumed(Entry entry) {
+        Lane lane = entry.lane;
+        long now = lane.resumes.get();
+        if (now == lane.seenResumes) {
+            // 再開していないのに、この列の仕事を進める（止めるボタンで止めた状態が終わったときなど）。止めた状態を見た印は、もう古い
+            // （止めるボタンのあと、一度も進めていない仕事が先頭のうちに止めて再開すると、古い印のまま知らせることがあるが、
+            //   その仕事はまだ何も持っていないので、知らせても何も変わらない）
+            lane.pauseSeen = false;
+            return;
+        }
+        lane.seenResumes = now;
+        if (!lane.pauseSeen) {
+            // 止めた状態を一度も見ないうちに再開した（仕事は止まっていないので、知らせない）
+            return;
+        }
+        lane.pauseSeen = false;
+        try {
+            entry.job.resumed();
+        } catch (Exception e) {
+            // 知らせの失敗で列を止めない（進めると、止めていた間を数えて、あきらめることがあるだけ）
+            MinecraftEduMod.LOGGER.error("BuildQueue resumed error", e);
+        }
+    }
+
+    /**
      * 次に進める仕事（無ければ null。メインスレッド）
      * 進めている途中の仕事があれば、終わるか取り消すまでそれを続ける（前の 1 本の列と同じ。
      * 番号を取ってから列に入れるまでの間に、ほかの接続の番号の小さい仕事が入っても、途中の仕事を追い越させない）。
      * 無ければ、各接続の列の先頭のうち、番号がいちばん小さいもの（いちばん先に届いたもの）。
-     * 接続の数は MAX_CLIENTS（8）と接続が無い分の 1 つまでなので、毎回すべての列の先頭を比べる
+     * 接続の数は MAX_CLIENTS（8）と接続が無い分の 1 つまでなので、毎回すべての列の先頭を比べる。
+     * 一時停止している列は見ない。進めている途中の仕事が一時停止した列のものなら、外さずにそこで止める
+     * （列の先頭に残るので、再開したら続きから進める。止めている間は、ほかの接続の仕事を進める）
      */
     private Entry nextEntry() {
         Entry running = current;
         if (running != null) {
-            if (!running.removed.get()) {
+            if (!running.removed.get() && !running.lane.paused) {
                 return running;
             }
             current = null;
         }
         Entry best = null;
         for (Lane lane : lanes.values()) {
+            if (lane.paused) {
+                // 止めた状態を見た（止めた列の途中の仕事を上で手放したときも、ここを通る）。再開したら、続きを進める前に知らせる
+                lane.pauseSeen = true;
+                continue;
+            }
             Entry head = lane.head();
             if (head != null && (best == null || head.seq < best.seq)) {
                 best = head;
@@ -698,8 +830,9 @@ public class BuildQueue {
             if (headChunk != NO_PREFETCH) {
                 seen.add(headChunk);
             }
-            // 接続ごとの列を、番号の小さい順にまぜて見る（列の中は番号の順に並んでいる）
-            Lane[] laneArray = lanes.values().toArray(new Lane[0]);
+            // 接続ごとの列を、番号の小さい順にまぜて見る（列の中は番号の順に並んでいる）。
+            // 一時停止している列は見ない（進めない仕事のために、チャンクの読み込みと PauseWatch の予算を使わないように）
+            Lane[] laneArray = lanes.values().stream().filter(lane -> !lane.paused).toArray(Lane[]::new);
             Iterator<Entry>[] iterators = new Iterator[laneArray.length];
             Entry[] nexts = new Entry[laneArray.length];
             for (int i = 0; i < laneArray.length; i++) {

@@ -238,4 +238,14 @@ class BlockJob implements BuildQueue.Job {
         }
         requestLoaded(world, prefetchPos, neighbors, true);
     }
+
+    /**
+     * 一時停止から再開した（BuildQueue がメインスレッドで、再開してから初めて進める前に呼ぶ。止めた状態をメインスレッドが見ていたときだけ）。
+     * 止めていた間を、チャンクの読み込みをあきらめるまでの時間に数えないよう、待ち始めた時刻を忘れる
+     * （チャンクは step が置く前に毎回確かめるので、確かめ直すものは無い）
+     */
+    @Override
+    public void resumed() {
+        loadWaitStart = 0;
+    }
 }
