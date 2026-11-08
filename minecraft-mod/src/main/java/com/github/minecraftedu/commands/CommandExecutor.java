@@ -272,6 +272,12 @@ public class CommandExecutor {
                 case "stopAll":
                     return executeStopAll(params);
 
+                case "pauseQueue":
+                    return executePauseQueue(params);
+
+                case "resumeQueue":
+                    return executeResumeQueue(params);
+
                 default:
                     // Scratch（gui.js）の方が新しく、この MOD が知らない命令を送ってきたとき
                     logInputError("Unknown command", "Unknown command: " + sanitizeForLog(action));
@@ -594,6 +600,12 @@ public class CommandExecutor {
             @Override
             public long weight() {
                 return fill.weight();
+            }
+
+            @Override
+            public void resumed() {
+                // 一時停止から再開した。止めていた間をあきらめるまでの時間に数えず、区画の途中なら読み込みを確かめ直す
+                fill.resumed();
             }
         }, commandOwner.get());
         if (!queued) {
@@ -1492,6 +1504,15 @@ public class CommandExecutor {
         }
 
         @Override
+        public void resumed() {
+            // 一時停止から再開した。いまの列の、あきらめるまでの時間を数え直し、区画の途中なら読み込みを確かめ直す
+            // （先の列のチケットは、step が回ごとに付け直す）
+            if (index < columns.size()) {
+                columns.get(index).resumed();
+            }
+        }
+
+        @Override
         public boolean step(long deadlineNanos) {
             // 始めたことは、列で順番が来たときに知らせる（列に足せなかったときに「開始」だけ出ないように。
             // メインスレッドの上なので、チャットはその場で出る）
@@ -1866,6 +1887,30 @@ public class CommandExecutor {
         }
         JsonObject result = new JsonObject();
         result.addProperty("cancelled", cancelled);
+        return result;
+    }
+
+    /**
+     * Scratch の一時停止ボタン。この接続から来て、まだ置いていない命令を、再開するまで置かない
+     * （途中の大きな「埋める」もそこで止まり、再開したら続きから置く。止めている間に届いた命令は、再開してから置く。
+     *   ほかのタブの命令は置き続ける）。列に並ばず、その場で止める。チャットには出さない（Scratch の画面で分かるため）
+     */
+    private JsonObject executePauseQueue(JsonObject params) {
+        int waiting = buildQueue.pause(commandOwner.get());
+        JsonObject result = new JsonObject();
+        result.addProperty("paused", true);
+        result.addProperty("waiting", waiting);
+        return result;
+    }
+
+    /**
+     * Scratch の一時停止から再開した。この接続の命令を、止めたところから続けて置く（止めていなければ何もしない）
+     */
+    private JsonObject executeResumeQueue(JsonObject params) {
+        int waiting = buildQueue.resume(commandOwner.get());
+        JsonObject result = new JsonObject();
+        result.addProperty("paused", false);
+        result.addProperty("waiting", waiting);
         return result;
     }
 

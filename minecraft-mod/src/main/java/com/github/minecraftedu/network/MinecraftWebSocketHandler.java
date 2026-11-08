@@ -130,6 +130,8 @@ public class MinecraftWebSocketHandler {
         // 古い MOD に送ると「MOD が ふるいかも」のチャットが、止めるボタンを押すたびに出るため）
         JsonArray features = new JsonArray();
         features.add("stopAll");
+        // 一時停止（pauseQueue・resumeQueue）。無い MOD では、Scratch だけを止める
+        features.add("pauseQueue");
         serverInfo.add("features", features);
 
         responsePayload.add("serverInfo", serverInfo);

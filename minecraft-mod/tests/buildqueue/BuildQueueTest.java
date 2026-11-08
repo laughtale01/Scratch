@@ -25,7 +25,8 @@ public class BuildQueueTest {
     private static int failed;
 
     // 起きたこと（step:名前・release:名前・cancel:名前・prefetch:名前）を順に書く
-    private static final List<String> log = Collections.synchronizedList(new ArrayList<>());
+    // 仕事が呼ばれた順のログ
+    static final List<String> log = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * 試験用の仕事（steps 回目の step で終わる。それまでは false を返す）
@@ -50,6 +51,7 @@ public class BuildQueueTest {
         volatile long footprint = 1;
         volatile int stepped;
         volatile int released;
+        volatile int resumedCount;
 
         TestJob(String name) {
             this(name, 1, 1);
@@ -116,6 +118,12 @@ public class BuildQueueTest {
             if (throwOnCancel != null) {
                 throw throwOnCancel;
             }
+        }
+
+        @Override
+        public void resumed() {
+            resumedCount++;
+            log.add("resumed:" + name);
         }
 
         @Override
@@ -933,6 +941,290 @@ public class BuildQueueTest {
             check("BAD をやめたら、すぐ NEXT へ進む（全部で 1.8 秒より短い）", bad.stepped == 2 && next.stepped == 1 && seconds < 1.8,
                 bad.stepped + "," + next.stepped + " " + seconds);
             check("重さ・片づけ待ちは 0", empty(queue), counts(queue));
+        }
+
+        System.out.println("--- 28. 一時停止した列は、途中の仕事もそこで止まり、ほかの接続は進む。再開したら続きから進む");
+        {
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob big = new TestJob("BIG", 5, 1);
+            TestJob after = new TestJob("AFTER");
+            queue.offer(big, a);
+            queue.offer(after, a);
+            server.runOne(100);
+            check("BIG を 1 回進めた（途中）", big.stepped == 1, big.stepped);
+            int waiting = queue.pause(a);
+            check("止めたときの返事は、並んでいる 2 個（途中の BIG も入れる）", waiting == 2, waiting);
+            TestJob other = new TestJob("OTHER");
+            TestJob late = new TestJob("LATE");
+            queue.offer(other, b);
+            queue.offer(late, a);
+            runUntilIdle(server, queue);
+            check("止めている間、BIG・AFTER・止めてから届いた LATE は進めない", big.stepped == 1 && after.stepped == 0 && late.stepped == 0,
+                big.stepped + "," + after.stepped + "," + late.stepped);
+            check("ほかの接続の OTHER は進む", other.stepped == 1, other.stepped);
+            check("止めている列の仕事だけが残ったら、列の処理は休む", queue.idle(), counts(queue));
+            check("止めている間も、重さと仕事の数には数えたまま（3 個）", !empty(queue) && counts(queue).contains("jobs=3"), counts(queue));
+            check("止めている間は、再開の知らせを出さない", big.resumedCount == 0, big.resumedCount);
+            log.clear();
+            int resumed = queue.resume(a);
+            check("再開したときの返事は、並んでいる 3 個", resumed == 3, resumed);
+            runUntilIdle(server, queue);
+            check("再開したら BIG は続きから最後まで（合わせて 5 回）、そのあと AFTER・LATE", big.stepped == 5 && after.stepped == 1 && late.stepped == 1
+                && only("step:").equals(List.of("BIG", "BIG", "BIG", "BIG", "AFTER", "LATE")), only("step:"));
+            check("再開した列の先頭の BIG に、進める前に 1 回だけ知らせる（AFTER・LATE・ほかの接続の OTHER には知らせない）",
+                big.resumedCount == 1 && after.resumedCount == 0 && late.resumedCount == 0 && other.resumedCount == 0
+                && log.indexOf("resumed:BIG") >= 0 && log.indexOf("resumed:BIG") < log.indexOf("step:BIG"), log);
+            check("片づけは呼ばない、重さ・片づけ待ちは 0", big.released == 0 && empty(queue) && queue.pendingRelease() == 0, counts(queue));
+        }
+
+        System.out.println("--- 29. まだ列の無い接続を止めても、そのあと届いた仕事は止まる。止めていない列の再開は何もしない");
+        {
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            check("止める前に列が無くても、返事は 0 個", queue.pause(a) == 0, "");
+            TestJob x = new TestJob("X");
+            queue.offer(x, a);
+            runUntilIdle(server, queue);
+            check("止めてから届いた X は進めない", x.stepped == 0 && queue.idle(), x.stepped);
+            check("列の無い接続の再開は何もしない（返事は 0 個）", queue.resume(b) == 0, "");
+            queue.resume(a);
+            // 2 回目は止めていないので何もしない（並んでいる数だけ返す。偽物のサーバーは runOne の中でしか進めないので、X はまだ並んでいる）
+            check("2 回目の再開は、並んでいる数（X の 1 個）だけを返す", queue.resume(a) == 1, "");
+            runUntilIdle(server, queue);
+            check("再開したら X は進み、知らせは 1 回だけ（2 回続けて再開しても）", x.stepped == 1 && x.resumedCount == 1 && empty(queue),
+                x.stepped + "," + x.resumedCount + " " + counts(queue));
+            // 止めていない列を、列の処理が一度回ったあとで再開しても、次に並べた仕事には知らせない
+            queue.resume(a);
+            TestJob y = new TestJob("Y");
+            queue.offer(y, a);
+            runUntilIdle(server, queue);
+            check("止めていない列の再開では、知らせない（Y は 0 回）", y.stepped == 1 && y.resumedCount == 0, y.stepped + "," + y.resumedCount);
+            check("null の接続は止めない・再開しない（0 個）", queue.pause(null) == 0 && queue.resume(null) == 0, "");
+        }
+
+        // 30. 止めている列を、止めるボタン（cancel）・切断（forget）で外す
+        for (String how : List.of("cancel", "forget")) {
+            System.out.println("--- 30. 止めている列を " + how + " で外すと、仕事は片づけ、そのあと届いた仕事はすぐ進む");
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob big = new TestJob("BIG", 5, 1);
+            TestJob y = new TestJob("Y");
+            queue.offer(big, a);
+            queue.offer(y, a);
+            server.runOne(100);
+            queue.pause(a);
+            int cancelled = how.equals("cancel") ? queue.cancel(a) : queue.forget(a);
+            check(how + ": 止めている列の 2 個を外す", cancelled == 2, cancelled);
+            runUntilIdle(server, queue);
+            check(how + ": 片づけは BIG・Y とも 1 回、そのあと進めない", big.released == 1 && y.released == 1 && big.stepped == 1 && y.stepped == 0,
+                big.released + "," + y.released + " step=" + big.stepped + "," + y.stepped);
+            TestJob next = new TestJob("NEXT");
+            queue.offer(next, a);
+            runUntilIdle(server, queue);
+            check(how + ": そのあと同じ接続から届いた NEXT は、止めずに進む", next.stepped == 1, next.stepped);
+            check(how + ": 重さ・片づけ待ちは 0", empty(queue) && queue.pendingRelease() == 0, counts(queue));
+        }
+
+        System.out.println("--- 31. 先頭がチャンクの読み込みを待つ間の先読みは、止めている列の仕事のチャンクを頼まない");
+        {
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob a1 = new TestJob("A1");
+            a1.chunk = 100;
+            queue.offer(a1, a);
+            queue.pause(a);
+            TestJob head = new TestJob("HEAD", 3, 1);
+            head.waiting = true;
+            head.chunk = 200;
+            TestJob b2 = new TestJob("B2");
+            b2.chunk = 300;
+            queue.offer(head, b);
+            queue.offer(b2, b);
+            server.runOne(100);
+            check("止めていない列の B2 は先に頼む", only("prefetch:").contains("B2"), only("prefetch:"));
+            check("止めている列の A1 は頼まない", !only("prefetch:").contains("A1"), only("prefetch:"));
+            queue.cancel(a);
+            runUntilIdle(server, queue);
+            check("重さ・片づけ待ちは 0", empty(queue) && queue.pendingRelease() == 0, counts(queue));
+        }
+
+        System.out.println("--- 32. ほかの接続の仕事を進めている途中に再開しても、同じ回のうちに、再開した仕事を進める前に知らせる");
+        {
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob j = new TestJob("J", 3, 1);
+            queue.offer(j, a);
+            server.runOne(100);
+            queue.pause(a);
+            TestJob k = new TestJob("K");
+            // K を進めている間に（受け口のスレッドから届いたつもりで）A を再開する
+            k.duringStep = () -> queue.resume(a);
+            queue.offer(k, b);
+            log.clear();
+            // 1 回だけ回す（K のあと、同じ回のうちに J へ進む）
+            server.runOne(100);
+            check("同じ回のうちに K のあと J へ進み、J を進める前に知らせる", only("step:").equals(List.of("K", "J"))
+                && log.indexOf("resumed:J") > log.indexOf("step:K") && log.indexOf("resumed:J") < log.indexOf("step:J"), log);
+            check("ほかの接続の K には知らせない", k.resumedCount == 0, k.resumedCount);
+            runUntilIdle(server, queue);
+            check("J は最後まで進み、知らせは 1 回、重さは 0", j.stepped == 3 && j.resumedCount == 1 && empty(queue), j.stepped + "," + j.resumedCount + " " + counts(queue));
+        }
+
+        System.out.println("--- 33. 止めている間にほかの接続の仕事が途中になったら、再開しても、その途中の仕事を追い越さない");
+        {
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob first = new TestJob("A", 3, 1);
+            queue.offer(first, a);
+            server.runOne(100);
+            queue.pause(a);
+            TestJob second = new TestJob("B", 3, 1);
+            queue.offer(second, b);
+            server.runOne(100);
+            check("止めている間に B が途中になる", second.stepped == 1 && first.stepped == 1, first.stepped + "," + second.stepped);
+            queue.resume(a);
+            runUntilIdle(server, queue);
+            check("再開しても、途中の B を終えてから A の続き（A B B B A A）", only("step:").equals(List.of("A", "B", "B", "B", "A", "A")), only("step:"));
+            check("知らせは A に 1 回だけ（B には知らせない）", first.resumedCount == 1 && second.resumedCount == 0, first.resumedCount + "," + second.resumedCount);
+            check("重さは 0", empty(queue), counts(queue));
+        }
+
+        // 34. 仕事を進めている最中に止める（その回で終わらないとき・ちょうど終わるとき）
+        for (String how : List.of("途中", "終わる")) {
+            System.out.println("--- 34. 仕事を進めている最中に止めると（" + how + "）、その回が終わったところで止まり、再開したら続きから");
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob first = new TestJob("A", how.equals("途中") ? 3 : 1, 1);
+            first.duringStep = () -> {
+                if (first.stepped == 1) {
+                    queue.pause(a);
+                }
+            };
+            TestJob next = new TestJob("NEXT");
+            queue.offer(first, a);
+            queue.offer(next, a);
+            runUntilIdle(server, queue);
+            check(how + ": 止めた回のあとは進めない（A は 1 回、NEXT は 0 回）、列の処理は休む", first.stepped == 1 && next.stepped == 0 && queue.idle(),
+                first.stepped + "," + next.stepped);
+            queue.resume(a);
+            runUntilIdle(server, queue);
+            boolean finishedFirst = how.equals("途中") ? first.stepped == 3 : first.stepped == 1;
+            check(how + ": 再開したら A の続きと NEXT が進む", finishedFirst && next.stepped == 1 && empty(queue),
+                first.stepped + "," + next.stepped + " " + counts(queue));
+            // 途中で止めたなら A に、ちょうど終わっていたなら、次に先頭になった NEXT に知らせる
+            check(how + ": 知らせは、再開した列で次に進めた仕事に 1 回", how.equals("途中")
+                ? first.resumedCount == 1 && next.resumedCount == 0 : first.resumedCount == 0 && next.resumedCount == 1,
+                first.resumedCount + "," + next.resumedCount);
+        }
+
+        System.out.println("--- 35. 再開の知らせが例外を投げても、列は止まらず、その仕事は進む");
+        {
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob odd = new TestJob("ODD", 2, 1) {
+                @Override
+                public void resumed() {
+                    super.resumed();
+                    throw new IllegalStateException("試験で投げる例外（resumed）");
+                }
+            };
+            queue.offer(odd, a);
+            server.runOne(100);
+            queue.pause(a);
+            // メインスレッドに止めた状態を見せてから再開する（見ないうちの再開では、知らせないため。37 節）
+            runUntilIdle(server, queue);
+            queue.resume(a);
+            com.github.minecraftedu.MinecraftEduMod.withTrace.clear();
+            runUntilIdle(server, queue);
+            check("知らせの例外は、列の処理の守りまで漏れない", count(com.github.minecraftedu.MinecraftEduMod.withTrace, "BuildQueue pump error") == 0,
+                com.github.minecraftedu.MinecraftEduMod.withTrace);
+            check("ODD は最後まで進む（片づけは呼ばない）", odd.stepped == 2 && odd.released == 0 && odd.resumedCount == 1 && empty(queue),
+                odd.stepped + "," + odd.released + "," + odd.resumedCount + " " + counts(queue));
+        }
+
+        System.out.println("--- 36. 同じ途中の仕事を 2 回止めて再開しても、そのたびに、進める前に知らせる");
+        {
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob j = new TestJob("J", 5, 1);
+            queue.offer(j, a);
+            server.runOne(100);
+            for (int round = 1; round <= 2; round++) {
+                queue.pause(a);
+                runUntilIdle(server, queue);
+                int before = j.stepped;
+                queue.resume(a);
+                log.clear();
+                server.runOne(100);
+                check(round + " 回目の再開: J を 1 回進める前に知らせる（知らせは合わせて " + round + " 回）",
+                    j.resumedCount == round && j.stepped == before + 1
+                    && log.indexOf("resumed:J") >= 0 && log.indexOf("resumed:J") < log.indexOf("step:J"), log + " " + j.resumedCount);
+            }
+            runUntilIdle(server, queue);
+            check("J は最後まで進み、重さは 0", j.stepped == 5 && empty(queue), j.stepped + " " + counts(queue));
+        }
+
+        System.out.println("--- 37. メインスレッドが止めた状態を見ないうちに再開しても、仕事は止まっていないので知らせない（くり返して時間を戻し続けられない）");
+        {
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob j = new TestJob("J", 10, 1);
+            queue.offer(j, a);
+            server.runOne(100);
+            // 止めると再開が、メインスレッドの 1 回の間に両方届く（を 3 回くり返す）
+            for (int round = 0; round < 3; round++) {
+                queue.pause(a);
+                queue.resume(a);
+                server.runOne(100);
+            }
+            check("止めた状態を見ないうちの再開では、J に知らせない", j.resumedCount == 0 && j.stepped == 4, j.resumedCount + "," + j.stepped);
+            // 止めた状態を見たあとの再開では、知らせる
+            queue.pause(a);
+            runUntilIdle(server, queue);
+            queue.resume(a);
+            server.runOne(100);
+            check("止めた状態を見たあとの再開では、J に 1 回知らせる", j.resumedCount == 1, j.resumedCount);
+            // 知らせたあとは印を下ろす（下ろさないと、そのあとの見ないうちの止めると再開でも、知らせ続けてしまう）
+            for (int round = 0; round < 3; round++) {
+                queue.pause(a);
+                queue.resume(a);
+                server.runOne(100);
+            }
+            check("知らせたあとの、見ないうちの止めると再開では、もう知らせない（1 回のまま）", j.resumedCount == 1, j.resumedCount);
+            runUntilIdle(server, queue);
+            check("J は最後まで進み、重さは 0", j.stepped == 10 && empty(queue), j.stepped + " " + counts(queue));
+        }
+        {
+            // 止めた状態を見たあと、止めるボタン（cancel）で終わったら、その印は古いので、次の仕事の「見ないうちの再開」で知らせない
+            log.clear();
+            MinecraftServer server = new MinecraftServer();
+            BuildQueue queue = newQueue(server);
+            TestJob old = new TestJob("OLD", 10, 1);
+            queue.offer(old, a);
+            server.runOne(100);
+            queue.pause(a);
+            runUntilIdle(server, queue);
+            queue.cancel(a);
+            TestJob k = new TestJob("K", 5, 1);
+            queue.offer(k, a);
+            server.runOne(100);
+            queue.pause(a);
+            queue.resume(a);
+            server.runOne(100);
+            check("止めるボタンのあとの仕事 K は、見ないうちの再開で知らせない（古い印を使わない）", k.resumedCount == 0 && k.stepped == 2, k.resumedCount + "," + k.stepped);
+            runUntilIdle(server, queue);
+            check("K は最後まで進み、OLD は片づけ 1 回、重さは 0", k.stepped == 5 && old.released == 1 && empty(queue), k.stepped + "," + old.released + " " + counts(queue));
         }
 
         System.out.println("結果: " + passed + " 件成功 / " + failed + " 件失敗");

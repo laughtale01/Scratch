@@ -1,5 +1,6 @@
 package com.github.minecraftedu.commands;
 
+import com.github.minecraftedu.MinecraftEduMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -72,6 +73,8 @@ class FillJob implements BuildQueue.Job {
     private int x, y, z;
     // 区画の途中か
     private boolean inCell;
+    // 一時停止から再開した区画の途中で、次に置く前に、読み込みを確かめ直して区画の段を取り直すか（resumed で立てる）
+    private boolean recheckCell;
     // 全部置いたか
     private boolean finished;
     // チャンクが読み込まれず、あきらめたか
@@ -136,12 +139,19 @@ class FillJob implements BuildQueue.Job {
             }
             int count = 0;
             while (!finished) {
-                if (!inCell) {
+                if (!inCell || recheckCell) {
                     if (!chunkReady(world)) {
                         if (gaveUp) {
                             break;  // 読み込まれなかった。ここでやめる（チケットは下で外す）
                         }
                         return false;  // これから置くチャンクがまだ読み込み中。次の回にまた見る
+                    }
+                    if (recheckCell) {
+                        // 一時停止から再開した区画の途中。となりも入れて読み込みを確かめ直したので、止めたマスから続ける
+                        // （区画のチャンク自身は BUILD_TICKET で持っているので下ろされないが、区画の段は念のため取り直す）
+                        recheckCell = false;
+                        cellSection = sectionNow(world);
+                        continue;
                     }
                     if (canSkipCell(world)) {
                         placed += (long) (cellX1() - cellX0() + 1) * (cellY1() - cellY0() + 1) * (cellZ1() - cellZ0() + 1);
@@ -353,6 +363,26 @@ class FillJob implements BuildQueue.Job {
     @Override
     public long weight() {
         return ((long) maxX - minX + 1) * ((long) maxY - minY + 1) * ((long) maxZ - minZ + 1);
+    }
+
+    /**
+     * 一時停止から再開した（BuildQueue がメインスレッドで、再開してから初めて進める前に呼ぶ。止めた状態をメインスレッドが
+     * 見ていたときだけ。「周りをきれいにする」・「埋める」の包みからも、この FillJob の分を呼ぶ）。
+     * 止めていた間を、チャンクの読み込みをあきらめるまでの時間に数えないよう、待ち始めた時刻を忘れる。
+     * 区画の途中なら、止めたマスから続けるが、次に置く前に、区画に入るときと同じ読み込みの確かめ（となりも）を通し、
+     * 区画の段を取り直す（区画の途中は読み込みを確かめずに置くが、止めている間も Minecraft は動いているので、
+     * となりを読まない置き方では、となりのチャンクの時間で切れるチケットが切れて下ろされていることがある）。
+     * 区画を始めから置き直すことはしない（止めている間に落ちた砂や、子ども・ほかのタブが変えたマスを、置き直して変えないように）
+     */
+    @Override
+    public void resumed() {
+        loadWaitStart = 0;
+        readyChunk = Long.MIN_VALUE;
+        if (inCell) {
+            recheckCell = true;
+            // 区画の途中から続けることを debug に残す（stop_check.py の 10 節が、この道を通ったかを見る）
+            MinecraftEduMod.LOGGER.debug("FillJob resumed mid-cell at " + x + "," + y + "," + z);
+        }
     }
 
     /**
