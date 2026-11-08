@@ -51,8 +51,9 @@ class FillJob implements BuildQueue.Job {
     // 1 つのチャンクの読み込みを待つ長さの上限（初めて待ったときから数える。1 人用のワールドが止まっている（ポーズ中の）間は
     // 数えず、動き出してから数え直す。これを過ぎたら、あきらめて仕事をやめる。
     // 前は 5 秒で待つのをやめて置いていたが、そのときはメインスレッドが読み込み・地形の生成を待ち、そのあいだ止まっていた）
-    // 1 つのマスを触る仕事（BlockJob）も、この長さまで待つ
-    static final long MAX_LOAD_WAIT_NANOS = TimeUnit.SECONDS.toNanos(30);
+    // 1 つのマスを触る仕事（BlockJob）も、この長さまで待つ。
+    // 本番はいつも 30 秒（試験 tests/jobs が、あきらめる道を短い時間で通すために書きかえる。パッケージの中だけ）
+    static volatile long maxLoadWaitNanos = TimeUnit.SECONDS.toNanos(30);
 
     private final MinecraftServer server;
     private final int minX, minY, minZ, maxX, maxY, maxZ;
@@ -252,7 +253,7 @@ class FillJob implements BuildQueue.Job {
 
     /**
      * これから置くチャンクと、待つ範囲の中のそのとなりのチャンクが読み込まれたか
-     * 読み込み中なら false。そのチャンクを初めて待ってから MAX_LOAD_WAIT_NANOS を過ぎたら、gaveUp を立てて false
+     * 読み込み中なら false。そのチャンクを初めて待ってから maxLoadWaitNanos を過ぎたら、gaveUp を立てて false
      * （止まっている間は数えない）
      * （待たずに置くと、メインスレッドが読み込み・地形の生成を待って Minecraft が止まるため）
      * 1 つでも読み込まれていなければ、見たチャンク全部に、時間で切れるチケット（BlockJob）も付けて読み込みを頼む。
@@ -281,7 +282,7 @@ class FillJob implements BuildQueue.Job {
             if (loadWaitStart == 0) {
                 loadWaitStart = now;
             }
-            if (now - loadWaitStart >= MAX_LOAD_WAIT_NANOS) {
+            if (now - loadWaitStart >= maxLoadWaitNanos) {
                 gaveUp = true;
             }
             return false;
