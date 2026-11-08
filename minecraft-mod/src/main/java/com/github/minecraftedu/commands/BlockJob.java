@@ -9,6 +9,7 @@ import net.minecraft.world.level.ChunkPos;
 
 import java.util.Comparator;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
@@ -17,7 +18,7 @@ import java.util.function.Function;
  * そのマスのチャンクが読み込まれていれば、すぐ触る。まだなら、チケットを付けて読み込みを頼み、
  * 読み込まれるまで次の回へ回す（その場で触ると、メインスレッドが読み込み・地形の生成を待ち、そのあいだ Minecraft が止まるため。
  * ふつうの地形のワールドで、まだ作られていないチャンク 1 つにつき 0.1 秒ほど止まった）。
- * FillJob.MAX_LOAD_WAIT_NANOS 待っても読み込まれなければ、あきらめて onGiveUp を呼ぶ
+ * FillJob.maxLoadWaitNanos（30 秒）待っても読み込まれなければ、あきらめて onGiveUp を呼ぶ
  * （1 人用のワールドが止まっている（ポーズ中の）間は数えない。動き出してから数え直す）
  */
 class BlockJob implements BuildQueue.Job {
@@ -58,6 +59,9 @@ class BlockJob implements BuildQueue.Job {
     // 前もって分かっている場所（前の仕事が読み込みを待っている間に、先に読み込みを頼むのに使う）。
     // 相対座標は、順番が来たときのプレイヤーの位置で決まるので、前もっては分からない（null）
     private final BlockPos prefetchPos;
+    // 前もって分かっている場所を、いま先読みしてよいか（メインスレッドで、先読みする直前に聞く。null ならいつもよい）。
+    // 順番が来たときに断る場所（遠すぎる場所）のチャンクを、先に読み込まないため
+    private final BiPredicate<ServerLevel, BlockPos> prefetchAllowed;
 
     // 決めた場所（まだ決めていなければ null）
     private BlockPos pos;
@@ -68,11 +72,13 @@ class BlockJob implements BuildQueue.Job {
     // 読み込みを待っているかを最後に見たときの PauseWatch.holds（変わっていたら、あきらめるまでの時間を数え直す）
     private long seenHolds;
 
-    BlockJob(MinecraftServer server, Function<ServerLevel, BlockPos> target, BlockPos prefetchPos, boolean neighbors,
+    BlockJob(MinecraftServer server, Function<ServerLevel, BlockPos> target, BlockPos prefetchPos,
+             BiPredicate<ServerLevel, BlockPos> prefetchAllowed, boolean neighbors,
              BiConsumer<ServerLevel, BlockPos> action, Runnable onGiveUp) {
         this.server = server;
         this.target = target;
         this.prefetchPos = prefetchPos;
+        this.prefetchAllowed = prefetchAllowed;
         this.neighbors = neighbors;
         this.action = action;
         this.onGiveUp = onGiveUp;
@@ -107,7 +113,7 @@ class BlockJob implements BuildQueue.Job {
             if (loadWaitStart == 0) {
                 loadWaitStart = now;
             }
-            if (now - loadWaitStart >= FillJob.MAX_LOAD_WAIT_NANOS) {
+            if (now - loadWaitStart >= FillJob.maxLoadWaitNanos) {
                 onGiveUp.run();
                 return true;
             }
@@ -214,12 +220,14 @@ class BlockJob implements BuildQueue.Job {
     }
 
     /**
-     * 前もって分かっている場所のチャンク（建てられる高さの外は、順番が来ても読み込まないので無し）
+     * 前もって分かっている場所のチャンク（建てられる高さの外と、いま先読みしてよくない場所（遠すぎる場所）は、
+     * 順番が来ても読み込まないので無し。メインスレッドで呼ぶ）
      */
     @Override
     public long prefetchChunk() {
         ServerLevel world = server.overworld();
-        if (prefetchPos == null || world == null || world.isOutsideBuildHeight(prefetchPos)) {
+        if (prefetchPos == null || world == null || world.isOutsideBuildHeight(prefetchPos)
+            || (prefetchAllowed != null && !prefetchAllowed.test(world, prefetchPos))) {
             return BuildQueue.NO_PREFETCH;
         }
         return ChunkPos.asLong(prefetchPos.getX() >> 4, prefetchPos.getZ() >> 4);

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # MOD の WebSocket の受け口（SimpleWebSocketServer.java）の試験を流す
 # Minecraft の部品は stubs/ の偽物に差し替え、本物の SimpleWebSocketServer.java をそのままコンパイルして動かす
-# はじめに、縦スラブの名前が ModBlocks・ModItems・loot table・タグでそろっているかと、命令の列（tests/buildqueue）、
+# はじめに、縦スラブの名前が ModBlocks・ModItems・loot table・タグでそろっているかと、命令の列（tests/buildqueue）、「埋める」・「周りをきれいにする」の仕事（tests/jobs）、
 # Scratch のバンドルの拡張機能（tests/extension）も確かめる
 # 使い方（minecraft-mod で）: mise exec -- bash tests/websocket/run.sh
 set -euo pipefail
@@ -15,6 +15,8 @@ if python3 -I "$HERE/stop_check.py" --self-check >/dev/null 2>&1; then
 fi
 # 命令の列（BuildQueue）の試験も先に流す
 bash "$HERE/../buildqueue/run.sh"
+# 「埋める」・「周りをきれいにする」の本物の仕事（FillJob・ClearAreaJob）の試験も流す
+bash "$HERE/../jobs/run.sh"
 # Scratch のバンドルの拡張機能（［接続］と止めるボタン）の試験も流す
 # （node が無いときと、バンドルが無いとき＝main ブランチでは飛ばす。バンドルは gh-pages だけで管理している）
 if ! command -v node >/dev/null 2>&1; then

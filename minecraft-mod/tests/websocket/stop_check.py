@@ -1,17 +1,25 @@
 # 止めるボタン（stopAll）と、接続が切れたときに、その接続のまだ置いていない命令が列から外れるかと、
 # 一時停止（pauseQueue・resumeQueue）でその接続の命令が止まり、再開したら続きから置くかを、本物の MOD で確かめる
-# 試し用の、ふつうの地形のワールドで、F3+P で「フォーカスを失ったら止める」を切ってから流す（授業で使うワールドでは流さない）。
+# 試し用の、ふつうの地形のワールドで、オーバーワールドにいて、クリエイティブにして、F3+P で「フォーカスを失ったら止める」を切ってから流す
+# （授業で使うワールドでは流さない。空の上へテレポートするので、サバイバルでは落ちてやられ、はじめの場所で生き返って、
+#   そのあとの命令が「遠すぎる」で断られる。やられても「リスポーン」を押すまでは同じ x・z にいるので、台本では気づけないことがある。
+#   クリエイティブは必ず。大事な持ち物は持たずに流す）。描画距離は 22 チャンクまで（options.txt を見て、超えていれば止まる）。
 # 空の上（y=200〜）の、まだ作られていない遠くの場所を使う（「埋める」で置いた石は最後に空気に戻す。
 # 「周りをきれいにする」は遠くの場所を平らにする。8 節は最後まで平らにする）
 # 7 節は、2 つのタブの命令が届いた順に置かれるか。8 節は、「周りをきれいにする」を止めてすぐ流し直して最後まで終わるか。
 # 9 節は、一時停止（pauseQueue・resumeQueue）。10 節は、大きな「埋める」を区画の途中で、「周りをきれいにする」を途中で一時停止して再開する。
+# 11 節は、遠すぎる場所（プレイヤーからもワールドのはじめの場所からも 2,000 マスより遠い）への命令を断るか。
+# MOD は 2,000 マスより遠い命令を断るので、はじめにプレイヤーを遠くの試し用の場所（H）へテレポートさせ、各節は H から 2,000 マスの中の
+# 別々の場所（H から 400 マスより遠い、まだ読み込まれていないチャンク。Minecraft は描画距離 +2 チャンクまで読み込むので、
+# 描画距離は 22 まで）を使う。最後にはじめの場所へ戻す
+# （途中で失敗・例外・Ctrl+C で終わっても戻す。戻せなかったときは、/tp の打ち方を出す）
 # 35 秒止めるところが 2 つあるので、全部で 5〜7 分かかる
 # 使い方（minecraft-mod で）: python3 -I tests/websocket/stop_check.py --test-world
 # （--test-world は「試し用のワールドを開いている」の確かめ。開いたときのログにはワールドの名前が出ず、Esc のあとに出る表示名も
 #   ほかのワールドと同じことがあるので、ログでは見分けられない。流す人に付けてもらう。付けなければ、何も送らずに止まる）
 # --self-check を足すと、引数を読んで、共通の部品（probe_fill.py の前半）を読み込めるかだけ確かめて止まる（何も送らない。
 #   Minecraft の設定も読まない。tests/websocket/run.sh が流す）
-import os, sys, time
+import atexit, os, sys, time
 args = sys.argv[1:]
 if '--test-world' not in args:
     sys.exit('試し用のワールド（授業で使うワールドではない）を開いてから、--test-world を付けて流す'
@@ -30,11 +38,19 @@ if not marker:
     sys.exit('probe_fill.py の行の頭に目印の「CASES = [」が無いので止める（前半だけを読めないため）')
 exec(probe_head, ns)
 connect, request, send_only, collect, wait_queue = (ns[k] for k in ('connect', 'request', 'send_only', 'collect', 'wait_queue'))
+get_position, teleport, return_to_start = (ns[k] for k in ('get_position', 'teleport', 'return_to_start'))
 if SELF_CHECK:
     print('stop_check.py: 引数と共通の部品の読み込み OK（ポート %d）' % ns['PORT'])
     sys.exit(0)
-if 'pauseOnLostFocus:true' in open(os.path.expanduser('~/Library/Application Support/minecraft/options.txt'), encoding='utf-8').read():
+OPTIONS = open(os.path.expanduser('~/Library/Application Support/minecraft/options.txt'), encoding='utf-8').read()
+if 'pauseOnLostFocus:true' in OPTIONS:
     sys.exit('F3+P で「フォーカスを失ったら止める」を切ってから流す（options.txt が pauseOnLostFocus:true）')
+# 各節は H から 400 マス（25 チャンク）より遠い、まだ読み込まれていないチャンクを使う。Minecraft はプレイヤーのまわり
+# 描画距離 +2 チャンクまでを読み込むので、描画距離は 22 チャンクまで
+render = [int(l.split(':', 1)[1]) for l in OPTIONS.splitlines() if l.startswith('renderDistance:') and l.split(':', 1)[1].isdigit()]
+if render and render[0] > 22:
+    sys.exit('描画距離を 22 チャンク以下にしてから流す（options.txt の renderDistance が %d。H から 400 マスの場所が読み込まれてしまうため）'
+             % render[0])
 results = []
 
 
@@ -70,8 +86,13 @@ def wait_log(start, text, limit):
         time.sleep(0.5)
 
 
+# 台本で開いた接続（はじめの場所へ戻す前に全部閉じて、まだ置いていない命令をやめにする。戻すテレポートがそのうしろに並ばないように）
+OPEN = []
+
+
 def open_conn(name):
     s = connect()
+    OPEN.append(s)
     hello = request(s, 'connect', {'clientId': name})
     return s, ((hello.get('payload') or {}).get('serverInfo') or {})
 
@@ -124,8 +145,25 @@ def gave_up_since(log_pos, debug_pos):
     return lines + [l for l in debug_since(debug_pos).splitlines() if 'gave up' in l]
 
 
+def arrive(s, x, z, limit=10):
+    """プレイヤーの x・z が、x・z に着くまで limit 秒まで待つ（着いたら True。落ちても x・z は変わらない）"""
+    deadline = time.monotonic() + limit
+    while True:
+        at = get_position(s) or {}
+        if abs(at.get('x', 1e18) - x) < 1 and abs(at.get('z', 1e18) - z) < 1:
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.1)
+
+
 def far_line(x0, z0, n):
-    return [{'action': 'setBlock', 'params': {'x': x0 + i * 16, 'y': 200, 'z': z0, 'blockType': 'air'}} for i in range(n)]
+    """
+    x0・z0 から、16 マスおき（別々のチャンク）に n 個の「空気を置く」命令。1 列 100 個（1,600 マス）で折り返し、次の列は z を 16 マス先にする
+    （MOD が 2,000 マスより遠い命令を断るので、H から 2,000 マスの中に収める）
+    """
+    return [{'action': 'setBlock', 'params': {'x': x0 + (i % 100) * 16, 'y': 200, 'z': z0 + (i // 100) * 16, 'blockType': 'air'}}
+            for i in range(n)]
 
 
 def send_all(s, commands):
@@ -135,6 +173,7 @@ def send_all(s, commands):
 
 log_start = os.path.getsize(LOG)
 debug_start = debug_size()
+# 試し用の場所 H（x・z。流すたびに変える）。各節の場所は H からのずらし（どれも 2,000 マスの中で、ほかの節と重ならない）
 base = 3_000_000 + int(time.time()) % 1000 * 20000
 
 print('--- 1. 接続の返事')
@@ -142,9 +181,59 @@ s1, info = open_conn('g1_a')
 check('serverInfo.features に stopAll がある', 'stopAll' in (info.get('features') or []), info)
 check('serverInfo.features に pauseQueue がある', 'pauseQueue' in (info.get('features') or []), info)
 assert wait_queue(s1, 120), '列が空かなかった'
+# はじめの場所を覚えて（表示もする）、プレイヤーを H の空の上へテレポートさせる（着くまで待つ。x・z だけ見る）
+home = get_position(s1)
+assert home, 'はじめの場所を読めなかった'
+print('    （はじめの場所: x=%.1f y=%.1f z=%.1f。台本が終わるときに戻す）' % (home['x'], home['y'], home['z']))
+went_home = False
+
+
+def go_home():
+    """
+    はじめの場所へ戻す（台本がどう終わっても、終わるときに 1 回呼ぶ）。先に台本の接続を全部閉じ（まだ置いていない命令をやめにする）、
+    新しくつないで戻す。戻せなければ /tp の打ち方を出す（つなげずに止められた（sys.exit）・もう一度 Ctrl+C を押したときも出す）
+    """
+    if went_home:
+        return
+    ok = False
+    try:
+        print('はじめの場所へ戻しています…', flush=True)
+        for conn in OPEN:
+            try:
+                conn.close()
+            except Exception:
+                pass
+        time.sleep(1)
+        back = connect()
+        back.settimeout(10)  # MOD が固まっていても、黙って長く待たない（戻せなければ下で /tp の打ち方を出す）
+        request(back, 'connect', {'clientId': 'stop_check_home'})
+        ok = return_to_start(back, home)
+    except BaseException:
+        ok = False
+    finally:
+        if not ok:
+            print('はじめの場所へ戻せなかった。Minecraft で /tp @s %.1f %.1f %.1f と打って戻る' % (home['x'], home['y'], home['z']),
+                  flush=True)
+
+
+atexit.register(go_home)
+# H の場所も表示する（サバイバルでやられたときに、落とした持ち物を取りに行けるように）
+print('    （試し用の場所 H: x=%.1f y=250 z=%.1f）' % (base + 0.5, base + 0.5))
+# マスのまん中（+0.5）へ行く（MOD はいるマスを切り下げで数えるので、整数の所だと少しずれただけで、いるマスが 1 つずれるため）
+r = teleport(s1, base + 0.5, 250, base + 0.5)
+check('H へテレポートする', (r.get('payload') or {}).get('success') is True, r)
+arrived = arrive(s1, base + 0.5, base + 0.5)
+check('H に着いた（10 秒まで待つ）', arrived, get_position(s1))
+# まわりの地形づくりが落ち着くのを待ってから、まだ H にいるかを見る（サバイバルで落ちてやられると、はじめの場所で生き返る）
+time.sleep(10)
+stayed = arrived and arrive(s1, base + 0.5, base + 0.5, 1)
+check('10 秒たっても H にいる（クリエイティブで流しているか）', stayed, get_position(s1))
+if not stayed:
+    print('H にいないので、ここで止める（クリエイティブにして流し直す）')
+    sys.exit(1)
 
 print('--- 2. 遠くへ 600 個送ってすぐ止める')
-send_all(s1, far_line(base, base, 600))
+send_all(s1, far_line(base + 400, base + 400, 600))
 t0 = time.monotonic()
 r = cmd(s1, 'stopAll', {})
 cancelled = (r.get('result') or {}).get('cancelled', -1)
@@ -153,7 +242,7 @@ check('止めたあと、列は 5 秒以内に空く', emptied_within(s1, t0, 5)
 
 print('--- 3. ほかのタブの命令は残り、そのタブを閉じたら空く')
 s2, _ = open_conn('g1_b')
-send_all(s1, far_line(base, base + 2000, 300))
+send_all(s1, far_line(base + 400, base + 600, 300))
 r = cmd(s2, 'stopAll', {})
 check('別の接続の stopAll は、ほかの接続の命令をやめない（0 個）',
       r.get('success') is True and (r.get('result') or {}).get('cancelled') == 0, r)
@@ -164,7 +253,7 @@ s1.close()
 check('命令を送ったタブを閉じたら、列は 5 秒以内に空く', emptied_within(s2, t0, 5), time.monotonic() - t0)
 
 print('--- 4. 大きな「埋める」を途中でやめる')
-fx, fz = base + 40000, base + 40000
+fx, fz = base - 1900, base - 1900
 box = {'from': {'x': fx, 'y': 200, 'z': fz}, 'to': {'x': fx + 255, 'y': 229, 'z': fz + 255}}
 r = cmd(s2, 'fillBlocks', dict(box, blockType='stone'))
 check('大きな「埋める」を受け付ける', r.get('success') is True, r)
@@ -188,7 +277,7 @@ r = cmd(s2, 'getBlockType', {'x': fx, 'y': 200, 'z': fz})
 check('片づけで、最初のマスは空気に戻った', (r.get('result') or {}).get('blockType') in ('air', 'minecraft:air'), r)
 
 print('--- 5. 「周りをきれいにする」をやめたら、すぐ次を受け付ける')
-cx, cz = base + 80000, base + 80000
+cx, cz = base - 1500, base + 1500
 r = cmd(s2, 'clearArea', {'centerX': cx, 'centerZ': cz})
 check('「周りをきれいにする」を受け付ける', r.get('success') is True, r)
 r = cmd(s2, 'stopAll', {})
@@ -211,7 +300,7 @@ check('0 個のときは、チャットに知らせを出さない', not wait_lo
 
 print('--- 7. 2 つのタブの命令は、届いた順に置かれる（接続ごとの列にしても、順番は 1 本の列と同じ）')
 a, _ = open_conn('g1_c')
-lx, lz = base + 120000, base + 120000
+lx, lz = base + 400, base + 800
 first = {'x': lx, 'y': 200, 'z': lz}
 last = {'x': lx + 59 * 16, 'y': 200, 'z': lz}
 beyond = {'x': lx + 60 * 16, 'y': 200, 'z': lz}
@@ -238,7 +327,7 @@ time.sleep(1)
 
 print('--- 8. 「周りをきれいにする」を途中で止め、すぐ流し直すと、最後まで終わる')
 c, _ = open_conn('stop_check_clear')
-qx, qz = base + 160000, base + 160000
+qx, qz = base + 1500, base - 1500
 r = cmd(c, 'clearArea', {'centerX': qx, 'centerZ': qz})
 check('「周りをきれいにする」を受け付ける', r.get('success') is True, r)
 time.sleep(3)
@@ -259,7 +348,7 @@ time.sleep(1)
 print('--- 9. 一時停止（pauseQueue・resumeQueue）: 止めている間は置かず、ほかのタブは進む。30 秒より長く止めても、再開したら最後まで置く')
 p, _ = open_conn('pause_a')
 q, _ = open_conn('pause_b')
-px, pz = base + 200000, base + 200000
+px, pz = base + 400, base + 1000
 pause_log = os.path.getsize(LOG)
 pause_debug = debug_size()
 # 最後の 1 個だけ石にする（再開したあと、最後まで本当に置いたかを見るため。終わったら空気に戻す）
@@ -304,7 +393,7 @@ last_block = block_type(p, last_pos)
 check('片づけで、最後の 1 個は空気に戻った', is_air(last_block), last_block)
 
 print('--- 9. 止めている間に止めるボタン（stopAll）を押すと、並んでいた命令はやめ、そのあとはすぐ進む')
-send_all(p, far_line(px, pz + 2000, 300))
+send_all(p, far_line(px, pz + 200, 300))
 r = cmd(p, 'pauseQueue', {})
 check('止める（止めた印の返事）', r.get('success') is True and (r.get('result') or {}).get('paused') is True, r)
 r = cmd(p, 'stopAll', {})
@@ -314,7 +403,7 @@ check('そのあと届いた命令は、止めずに進む（5 秒以内）', wa
 print('--- 9. 止めている間にタブを閉じると、並んでいた命令はやめる')
 time.sleep(3.5)  # 知らせの間引き（3 秒）をあける
 close_log = os.path.getsize(LOG)
-send_all(p, far_line(px, pz + 4000, 300))
+send_all(p, far_line(px, pz + 400, 300))
 r = cmd(p, 'pauseQueue', {})
 check('止める（止めた印の返事）', r.get('success') is True and (r.get('result') or {}).get('paused') is True, r)
 p.close()
@@ -334,7 +423,7 @@ if not debug_ok:
     sys.exit(1)
 f10, _ = open_conn('pause_fill')
 w10, _ = open_conn('pause_watch')  # 止めている間に、メインスレッドが一回りしたかを見る別の接続
-gx, gz = base + 240000, base + 240000
+gx, gz = base - 1900, base + 400
 gbox = {'from': {'x': gx, 'y': 200, 'z': gz}, 'to': {'x': gx + 127, 'y': 229, 'z': gz + 127}}
 gvolume = 128 * 30 * 128
 g_first = {'x': gx, 'y': 200, 'z': gz}
@@ -397,7 +486,7 @@ print('--- 10. 「周りをきれいにする」を途中で一時停止し、35
 # 「周りをきれいにする」は、となりのチャンクに時間で切れるチケットしか付けないので、止めている間に下ろされることがある。
 # 再開したとき、となりを読み直して続け、読み込みをあきらめないかを見る（止めていた間をあきらめの 30 秒に数えない直しが
 # 効いているかは、止めたのがチャンクの読み込みを待っている最中だったときにしか分からない。それは 9 節で、1 秒置いてから止めて見る）
-cx10, cz10 = base + 280000, base + 280000
+cx10, cz10 = base, base - 1500
 clear_log, clear_debug = os.path.getsize(LOG), debug_size()
 r = cmd(f10, 'clearArea', {'centerX': cx10, 'centerZ': cz10})
 check('「周りをきれいにする」を受け付ける', r.get('success') is True, r)
@@ -425,6 +514,123 @@ gave_up = gave_up_since(clear_log, clear_debug)
 check('止めていた間を数えて、読み込みをあきらめていない', not gave_up, gave_up[:3])
 f10.close()
 w10.close()
+time.sleep(1)
+
+print('--- 11. 遠すぎる場所（プレイヤーからもワールドのはじめの場所からも 2,000 マスより遠い）への命令は断る')
+# 断ったかは、debug.log の「…: too far」で見る（命令の種類ごとに、はじめの 1 回は WARN、60 秒の間の 2 回目からは DEBUG。
+# debug.log には WARN も DEBUG も出る）。置く・読む・埋める・きれいにする・生き物を出す・入れ物に入れるは、順番が来たときの
+# プレイヤーの位置で決める（受け取ったときではない。それを、列を止めてテレポートしてから再開して見る）。
+# H のまわりは、x の向き（H+2,000・H+2,001）と z の向き（H+2,000・H+2,001）を使う（ほかの節は 2,000 マスの中なので重ならない）
+g2, _ = open_conn('reach')
+far_log = os.path.getsize(LOG)
+# H のマスのまん中へ戻り直す（ここまでの 5〜7 分の間に流されていると、2,000・2,001 の境の確かめが逆になるため）
+r = teleport(g2, base + 0.5, 250, base + 0.5)
+check('11 節の前に H へ戻り直す', (r.get('payload') or {}).get('success') is True and arrive(g2, base + 0.5, base + 0.5), r)
+
+
+def too_far(action, since):
+    """debug.log の since から先に、action を断った行が出たか（列で順番が来てから出るので、10 秒まで待つ）"""
+    deadline = time.monotonic() + 10
+    while True:
+        if (action + ': too far') in debug_since(since):
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.5)
+
+
+edge = {'x': base + 2000, 'y': 200, 'z': base}
+r = cmd(g2, 'setBlock', dict(edge, blockType='gold_block'))
+check('H からちょうど 2,000 マスには置ける（受け付ける）', r.get('success') is True, r)
+check('置いた列が 60 秒以内に空く', wait_queue(g2, 60))
+edge_block = block_type(g2, edge)
+check('H からちょうど 2,000 マスの金は置かれた', edge_block.endswith('gold_block'), edge_block)
+r = cmd(g2, 'setBlock', dict(edge, blockType='air'))
+check('片づけ（空気に戻す）を受け付ける', r.get('success') is True, r)
+check('片づけの列が 30 秒以内に空く', wait_queue(g2, 30))
+edge_block = block_type(g2, edge)
+check('片づけで、金は空気に戻った', is_air(edge_block), edge_block)
+far_x = base + 2001
+since = debug_size()
+r = cmd(g2, 'setBlock', {'x': far_x, 'y': 200, 'z': base, 'blockType': 'gold_block'})
+check('H から 2,001 マスに置く命令は、受け取りはする（断るのは順番が来たとき）', r.get('success') is True, r)
+check('H から 2,001 マスに置く命令は断る（setBlock: too far）', too_far('setBlock', since))
+far_chat = wait_log(far_log, 'とおすぎます', 10)
+check('チャットに「ばしょが とおすぎます」が出た（10 秒まで待つ）', far_chat,
+      [l.split('[CHAT] ', 1)[1] for l in log_since(far_log).splitlines() if '[CHAT] ' in l][-3:])
+since = debug_size()
+r = cmd(g2, 'setBlock', {'relativeX': 2001, 'relativeY': 0, 'relativeZ': 0, 'blockType': 'gold_block'})
+check('相対座標で 2,001 マス先も断る', r.get('success') is True and too_far('setBlock', since), r)
+since = debug_size()
+z_edge = block_type(g2, {'x': base, 'y': 200, 'z': base + 2000})
+r = cmd(g2, 'getBlockType', {'x': base, 'y': 200, 'z': base + 2001})
+check('z の向きも、ちょうど 2,000 マスは読めて、2,001 マスは断る', not z_edge.startswith('None') and r.get('success') is not True
+      and too_far('getBlockType', since), [z_edge, r])
+since = debug_size()
+r = cmd(g2, 'fillBlocks', {'from': {'x': base + 1997, 'y': 200, 'z': base}, 'to': {'x': base + 2003, 'y': 203, 'z': base + 3},
+                           'blockType': 'stone'})
+check('すみの一部だけが 2,000 マスを出る「埋める」も断る（fillBlocks: too far）', r.get('success') is True and too_far('fillBlocks', since), r)
+since = debug_size()
+r = cmd(g2, 'fillBlocks', {'from': {'x': base - 2003, 'y': 200, 'z': base}, 'to': {'x': base - 1997, 'y': 203, 'z': base + 3},
+                           'blockType': 'stone'})
+check('反対の側（-x）のすみだけが出る「埋める」も断る', r.get('success') is True and too_far('fillBlocks', since), r)
+since = debug_size()
+r = cmd(g2, 'summonEntity', {'entityType': 'minecraft:pig', 'x': far_x, 'y': 200, 'z': base})
+check('2,001 マス先に生き物を出すのは断る（summonEntity: too far）', r.get('success') is True and too_far('summonEntity', since), r)
+since = debug_size()
+r = cmd(g2, 'setContainerItem', {'x': far_x, 'y': 200, 'z': base, 'slot': 0, 'itemType': 'minecraft:stone', 'count': 1})
+check('2,001 マス先の入れ物に入れるのは断る（setContainerItem: too far）', r.get('success') is True and too_far('setContainerItem', since), r)
+since = debug_size()
+r = cmd(g2, 'clearArea', {'centerX': base + 1900, 'centerZ': base})
+check('まん中は 1,900 マスでも、端が 2,100 マスの「周りをきれいにする」は断る（clearArea: too far）',
+      r.get('success') is True and too_far('clearArea', since), r)
+check('断ったあとは、列がすぐ空く（5 秒以内）', wait_queue(g2, 5))
+busy_debug = debug_size()
+r = cmd(g2, 'clearArea', {'centerX': base + 1900, 'centerZ': base})
+check('断ったあと、次の「周りをきれいにする」を「実行中」で断らない（印が下りている）',
+      r.get('success') is True and wait_queue(g2, 5) and '既に実行中' not in debug_since(busy_debug), r)
+
+print('--- 11. 断るかは、受け取ったときではなく、列で順番が来たときのプレイヤーの位置で決める')
+a11, _ = open_conn('reach_paused')
+east = base + 3000
+far_cell = {'x': east + 8, 'y': 200, 'z': base + 8}
+r = cmd(a11, 'pauseQueue', {})
+check('列を止める', r.get('success') is True, r)
+r = cmd(a11, 'setBlock', dict(far_cell, blockType='gold_block'))
+check('受け取ったときは H から 3,000 マス（遠い）の命令を、止めた列に並べる', r.get('success') is True, r)
+r = teleport(g2, east + 0.5, 250, base + 0.5)
+check('別の接続から、その近くへテレポートする', (r.get('payload') or {}).get('success') is True and arrive(g2, east + 0.5, base + 0.5), r)
+r = cmd(a11, 'resumeQueue', {})
+check('再開する', r.get('success') is True, r)
+check('再開した列が 60 秒以内に空く', wait_queue(a11, 60))
+cell_block = block_type(g2, far_cell)
+check('順番が来たときは近いので置いた（受け取ったときの位置で断っていない）', cell_block.endswith('gold_block'), cell_block)
+r = cmd(g2, 'setBlock', dict(far_cell, blockType='air'))
+check('片づけ（空気に戻す）を受け付ける', r.get('success') is True and wait_queue(g2, 30), r)
+near_cell = {'x': east + 24, 'y': 200, 'z': base + 8}
+# はじめに空気にしておく（山などで、もとから何かあると、正しく断っても「置かれていない」を見分けられないため）
+r = cmd(g2, 'setBlock', dict(near_cell, blockType='air'))
+check('断るかを見るマスを、はじめに空気にする', r.get('success') is True and wait_queue(g2, 30) and is_air(block_type(g2, near_cell)), r)
+r = cmd(a11, 'pauseQueue', {})
+check('もう一度、列を止める', r.get('success') is True, r)
+r = cmd(a11, 'setBlock', dict(near_cell, blockType='gold_block'))
+check('受け取ったときは近い命令を、止めた列に並べる', r.get('success') is True, r)
+# 行き先は H（置く場所から 3,024 マス。もう作ってあるので、新しく地形を作らない）
+r = teleport(g2, base + 0.5, 250, base + 0.5)
+check('別の接続から、3,000 マスほど離れた H へテレポートする', (r.get('payload') or {}).get('success') is True
+      and arrive(g2, base + 0.5, base + 0.5), r)
+since = debug_size()
+r = cmd(a11, 'resumeQueue', {})
+check('再開すると、順番が来たときは遠いので断る（setBlock: too far）', r.get('success') is True and too_far('setBlock', since), r)
+r = teleport(g2, east + 0.5, 250, base + 0.5)
+check('置くはずだった場所の近くへ戻る', (r.get('payload') or {}).get('success') is True and arrive(g2, east + 0.5, base + 0.5), r)
+near_block = block_type(g2, near_cell)
+check('断ったので、金は置かれていない', is_air(near_block), near_block)
+a11.close()
+# 戻せたときだけ印を立てる（戻せなければ、終わるときに go_home がつなぎ直してやり直し、だめなら /tp の打ち方を出す）
+went_home = return_to_start(g2, home)
+check('はじめの場所へ戻る', went_home, home)
+g2.close()
 time.sleep(1)
 
 text = open(LOG, 'rb').read()[log_start:].decode('utf-8', 'replace')
