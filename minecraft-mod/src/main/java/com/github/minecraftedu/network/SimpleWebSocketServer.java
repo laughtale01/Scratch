@@ -342,6 +342,8 @@ public class SimpleWebSocketServer {
         boolean slotAcquired = false;
         // ハンドシェイクの前の一覧から、自分で外したか（外していないのに一覧に無ければ、押し出されて切られた）
         boolean leftPending = false;
+        // この接続のハンドラー（切れたときに、この接続から来た、まだ置いていない命令を列から外すため）
+        MinecraftWebSocketHandler handler = null;
 
         // ヘッダーとフレームは同じストリームから読む（先読みしたバイトを取りこぼさないため）
         // （下の finally で必ず一覧から外し、取った枠を返すため、ここから先は全部 try の中に置く）
@@ -356,7 +358,7 @@ public class SimpleWebSocketServer {
             }
             // クライアントごとにハンドラーを作成してセッション状態を維持
             // CommandExecutorは全クライアントで共有
-            MinecraftWebSocketHandler handler = new MinecraftWebSocketHandler(minecraftServer, commandExecutor);
+            handler = new MinecraftWebSocketHandler(minecraftServer, commandExecutor);
 
             // HTTP のヘッダーを読む（行の長さと行数に上限を付けて、名前は小文字にそろえる）
             Map<String, String> headers = new HashMap<>();
@@ -528,6 +530,14 @@ public class SimpleWebSocketServer {
                 MinecraftEduMod.LOGGER.debug("Client connection closed during shutdown: " + e.getMessage());
             }
         } finally {
+            // つないだあとに切れたら、この接続の、まだ置いていない命令をやめる（受け口を止めるときは、列ごと捨てるので何もしない）
+            if (handshakeDone && handler != null && running) {
+                try {
+                    handler.connectionClosed();
+                } catch (Exception e) {
+                    MinecraftEduMod.LOGGER.error("Error cancelling queued commands", e);
+                }
+            }
             activeClients.remove(client);
             removePending(client);
             if (slotAcquired) {

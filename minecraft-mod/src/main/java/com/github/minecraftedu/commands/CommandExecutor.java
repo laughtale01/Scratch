@@ -135,6 +135,10 @@ public class CommandExecutor {
     // 列が混んでいること・「周りをきれいにする」の途中であることを最後に知らせた時刻（System.nanoTime。0 はまだ知らせていない）
     private final AtomicLong lastBusyNoticeNanos = new AtomicLong();
     private final AtomicLong lastClearAreaBusyNoticeNanos = new AtomicLong();
+    // いま命令を受け取っている接続（execute の間だけ。列に並べる仕事に、送った接続の印として付ける）
+    private final ThreadLocal<Object> commandOwner = new ThreadLocal<>();
+    // 止めた・切れたときに、まだ置いていない命令をやめたことを最後に知らせた時刻（3 秒に 1 回まで）
+    private final AtomicLong lastCancelNoticeNanos = new AtomicLong();
     // 「周りをきれいにする」の途中に、もう一度頼まれたときの知らせ
     private static final String CLEAR_AREA_BUSY_CHAT = "いま まわりを きれいにしている とちゅうです。おわるまで まってね";
     // チャンクの読み込みを待ちきれずにやめたときの知らせの始まり（後ろに、やめたことを足す）
@@ -159,6 +163,23 @@ public class CommandExecutor {
      *         success:false と errorCode を持つ結果（失敗理由を Scratch 側へ伝える場合）
      */
     public JsonObject execute(String action, JsonObject params) {
+        return execute(action, params, null);
+    }
+
+    /**
+     * コマンドを実行し、結果をJsonObjectで返す（列に並べる仕事に、送った接続の印を付ける）
+     * @param owner 送った接続（MinecraftWebSocketHandler）。止めるボタン・接続が切れたときに、この接続の仕事だけを列から外す
+     */
+    public JsonObject execute(String action, JsonObject params, Object owner) {
+        commandOwner.set(owner);
+        try {
+            return executeAs(action, params);
+        } finally {
+            commandOwner.remove();
+        }
+    }
+
+    private JsonObject executeAs(String action, JsonObject params) {
         // サーバ停止中は何も実行しない（ハンドラスレッド入口チェック）
         if (serverStopping || !server.isRunning()) {
             logInputError("Command rejected (server stopping)", "Command rejected (server stopping): " + sanitizeForLog(action));
@@ -247,6 +268,9 @@ public class CommandExecutor {
 
                 case "setContainerItem":
                     return executeSetContainerItem(params);
+
+                case "stopAll":
+                    return executeStopAll(params);
 
                 default:
                     // Scratch（gui.js）の方が新しく、この MOD が知らない命令を送ってきたとき
@@ -547,6 +571,13 @@ public class CommandExecutor {
         String loggedType = sanitizeForLog(blockType);
         boolean queued = buildQueue.offer(new BuildQueue.Job() {
             @Override
+            public void release() {
+                // 途中でやめたので、付けたチケットを外す（メインスレッドで BuildQueue が呼ぶ。外すのはこの仕事のチケットだけなので、
+                // 次の仕事が始まったあとでもよい。まだ始まっていない・終わったあとなら何もしない）
+                fill.removeTickets();
+            }
+
+            @Override
             public boolean step(long deadlineNanos) {
                 boolean done = fill.step(deadlineNanos);
                 if (done && fill.gaveUp()) {
@@ -564,7 +595,7 @@ public class CommandExecutor {
             public long weight() {
                 return fill.weight();
             }
-        });
+        }, commandOwner.get());
         if (!queued) {
             logInputError("Build queue full", "Build queue full: fillBlocks (" + volume + " blocks)");
             notifyBusy();
@@ -1386,7 +1417,7 @@ public class CommandExecutor {
             notifyAheadOfQueue(CLEAR_AREA_BUSY_CHAT, lastClearAreaBusyNoticeNanos);
             return null;
         }
-        if (!buildQueue.offer(job)) {
+        if (!buildQueue.offer(job, commandOwner.get())) {
             clearAreaInProgress.set(false);
             logInputError("Build queue full", "Build queue full: clearArea");
             notifyBusy();
@@ -1419,6 +1450,9 @@ public class CommandExecutor {
         private int index = 0;
         // 始めたことをチャットで知らせたか
         private boolean announced = false;
+        // まだ終わっていないか（終わる・やめる・取り消すのうち、最初の 1 つだけが「周りをきれいにする」の途中の印を下ろす。
+        // 取り消しは受け口のスレッドで起きるので、取り消したあとに別の接続が始めた印を、こちらが下ろさないように）
+        private final AtomicBoolean active = new AtomicBoolean(true);
 
         ClearAreaJob(List<FillJob> columns, int centerX, int centerZ) {
             this.columns = columns;
@@ -1434,6 +1468,27 @@ public class CommandExecutor {
         @Override
         public long weight() {
             return weight;
+        }
+
+        @Override
+        public void cancel() {
+            // 止めた・切れたので、そこでやめる。印はすぐ下ろす（緑の旗で始め直した「周りをきれいにする」を断らないように）
+            if (active.compareAndSet(true, false)) {
+                clearAreaInProgress.set(false);
+            }
+        }
+
+        @Override
+        public void release() {
+            // 先に付けたチケットを、全部の列から外す（メインスレッドで BuildQueue が呼ぶ。外すのは自分の列のチケットだけなので、
+            // 次の仕事が始まったあとでもよい。もう外した列は何もしない）
+            columns.forEach(FillJob::removeTickets);
+        }
+
+        @Override
+        public long footprint() {
+            // 片づけを待つ間も、列（FillJob）を全部持っている
+            return columns.size();
         }
 
         @Override
@@ -1482,6 +1537,9 @@ public class CommandExecutor {
                     return false;
                 }
             }
+            if (!active.compareAndSet(true, false)) {
+                return true;  // 進めている間に取り消された（止めた・切れた）。完了とは知らせない
+            }
             clearAreaInProgress.set(false);
             sendChatMessage("§a周囲クリア完了: 中心(" + centerX + ", " + centerZ + ")");
             MinecraftEduMod.LOGGER.info("チャンク分割タスク完了: " + columns.size() + "チャンク処理済み");
@@ -1492,6 +1550,9 @@ public class CommandExecutor {
          * 途中でやめる（先に付けた、この先の列のチケットを外し、終わりの印を下ろして知らせる）
          */
         private void giveUp() {
+            if (!active.compareAndSet(true, false)) {
+                return;  // 進めている間に取り消された。チケットは取り消しの側が外す
+            }
             // 印は先に下ろす（チケットを外す途中で例外が起きても、次の「周りをきれいにする」を受け付けられるように）
             clearAreaInProgress.set(false);
             for (int rest = index + 1; rest < columns.size(); rest++) {
@@ -1792,6 +1853,52 @@ public class CommandExecutor {
     }
 
     /**
+     * Scratch の止めるボタン（緑の旗を押したときも、始める前に止める）
+     * この接続から来て、まだ置いていない命令を列から外す（途中の「埋める」もそこでやめる。ほかのタブの命令は残す。
+     * 遠くに置き続けて列がたまったとき、止めたあとも何分も置き続けないように）。録画は止めない
+     */
+    private JsonObject executeStopAll(JsonObject params) {
+        int cancelled = buildQueue.cancel(commandOwner.get());
+        if (cancelled > 0) {
+            MinecraftEduMod.LOGGER.debug("stopAll: cancelled " + cancelled + " queued commands");
+            // 止めるボタンでも緑の旗（始める前に止める）でも合う言い方にする
+            notifyCancelled("まだ おいていない めいれい " + cancelled + " こを やめました");
+        }
+        JsonObject result = new JsonObject();
+        result.addProperty("cancelled", cancelled);
+        return result;
+    }
+
+    /**
+     * 接続が切れた（タブを閉じた・Scratch が切った）。その接続から来て、まだ置いていない命令と、その接続の列を外す（受け口のスレッドで呼ぶ）
+     */
+    public void connectionClosed(Object owner) {
+        if (serverStopping) {
+            return;
+        }
+        int cancelled = buildQueue.forget(owner);
+        if (cancelled > 0) {
+            MinecraftEduMod.LOGGER.debug("Connection closed: cancelled " + cancelled + " queued commands");
+            notifyCancelled("Scratch との つながりが きれたので、まだ おいていない めいれい " + cancelled + " こを やめました");
+        }
+    }
+
+    /**
+     * まだ置いていない命令をやめたことを、列に並ばずにすぐ知らせる（3 秒に 1 回まで。止めるボタンを続けて押されても流れないように）
+     */
+    private void notifyCancelled(String message) {
+        long now = System.nanoTime();
+        long last = lastCancelNoticeNanos.get();
+        if (last != 0 && now - last < ERROR_CHAT_INTERVAL_NANOS) {
+            return;
+        }
+        if (lastCancelNoticeNanos.compareAndSet(last, now)) {
+            net.minecraft.network.chat.Component text = net.minecraft.network.chat.Component.literal("[MinecraftEdu] " + message);
+            executeAheadOfQueue(() -> sendToAllPlayers(text));
+        }
+    }
+
+    /**
      * サーバ停止中かどうかを返す（MinecraftWebSocketHandler から参照される）
      */
     public boolean isServerStopping() {
@@ -1853,7 +1960,7 @@ public class CommandExecutor {
         if (serverStopping || !server.isRunning()) {
             return false;
         }
-        boolean queued = buildQueue.offer(job);
+        boolean queued = buildQueue.offer(job, commandOwner.get());
         if (!queued && !serverStopping) {
             // 列にたまった仕事の数が上限に届いた（「ずっと」の中で送り続けたときなど）
             logInputError("Build queue full", "Build queue full: too many queued commands");
