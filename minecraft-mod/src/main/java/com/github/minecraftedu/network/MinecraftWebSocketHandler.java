@@ -3,6 +3,7 @@ package com.github.minecraftedu.network;
 import com.github.minecraftedu.MinecraftEduMod;
 import com.github.minecraftedu.commands.CommandExecutor;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.server.MinecraftServer;
@@ -20,6 +21,16 @@ public class MinecraftWebSocketHandler {
         this.minecraftServer = minecraftServer;
         this.gson = new Gson();
         this.commandExecutor = commandExecutor;  // 外部から受け取る（全クライアントで共有）
+    }
+
+    /**
+     * 接続が切れた（SimpleWebSocketServer が、つないだあとの接続を閉じるときに呼ぶ）。
+     * この接続から来て、まだ置いていない命令を列から外す（タブを閉じたあとも、何分も置き続けないように）
+     */
+    public void connectionClosed() {
+        if (commandExecutor != null) {
+            commandExecutor.connectionClosed(this);
+        }
     }
 
     public String handleMessage(String request) {
@@ -115,6 +126,11 @@ public class MinecraftWebSocketHandler {
         serverInfo.addProperty("minecraftVersion", "1.20.1");
         serverInfo.addProperty("maxClients", SimpleWebSocketServer.MAX_CLIENTS);
         serverInfo.addProperty("currentClients", 1);
+        // この MOD が受け付ける、前の版には無い命令（Scratch は、ここに無ければ送らない。
+        // 古い MOD に送ると「MOD が ふるいかも」のチャットが、止めるボタンを押すたびに出るため）
+        JsonArray features = new JsonArray();
+        features.add("stopAll");
+        serverInfo.add("features", features);
 
         responsePayload.add("serverInfo", serverInfo);
         response.add("payload", responsePayload);
@@ -162,7 +178,8 @@ public class MinecraftWebSocketHandler {
             MinecraftEduMod.LOGGER.debug("Executing command: " + SimpleWebSocketServer.sanitizeForLog(action));
 
             // コマンド実行（結果はJsonObjectで直接返される）
-            JsonObject result = commandExecutor.execute(action, params);
+            // この接続（ハンドラー）を送った接続の印として渡す（止めるボタン・切れたときに、この接続の命令だけを列から外すため）
+            JsonObject result = commandExecutor.execute(action, params, this);
             boolean success = (result != null);
 
             // コマンド側が「理由付きの失敗」を返した場合はエラーとして扱う

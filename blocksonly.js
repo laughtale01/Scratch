@@ -66275,6 +66275,40 @@ class Scratch3MinecraftBlocks {
     this.sessionId = null;
     this.pendingRequests = new Map();
     this.requestTimeout = 5000;
+    // つないだ MOD が「stopAll」（まだ置いていない命令をやめる）を受け付けるか（接続の返事の serverInfo.features で知る）
+    // true: 受け付ける。false: 受け付けない・つないでいない。null: つないだが、まだ返事が来ていない（そのあいだに止めたら送る）
+    this._canStopAll = false;
+    // いまつないでいる場所（ws://…。同じ場所への［接続］で、つなぎ直さないため）
+    this._socketUrl = null;
+    // つながる途中の［接続］の Promise（つながる途中に同じ場所への［接続］が来たら、これを返して一緒に待つ）と、それを失敗で終わらせる関数
+    this._connectPromise = null;
+    this._connectReject = null;
+    // 止めるボタン（緑の旗を押したときも、始める前に止まる）で、MOD にまだ置いていない命令をやめてもらう
+    // （遠くに置き続けると MOD の列がたまり、止めたあとも何分も置き続けるため）
+    this._onStopAll = this._onStopAll.bind(this);
+    this.runtime.on('PROJECT_STOP_ALL', this._onStopAll);
+  }
+
+  /**
+   * 止めるボタンが押されたら、MOD に「stopAll」を送る（このタブから送って、まだ置いていない命令だけがやめになる）
+   * 古い MOD は知らない命令としてチャットで知らせるので、受け付けないと答えた MOD には送らない
+   * （つないですぐ、返事が来る前に止めたときは送る。送らないと、その前に送ったブロックが止まらないため。
+   *   古い MOD でそこに当たったときだけ、知らない命令のチャットが 1 回出る）。
+   * 「すべてを止める」ブロック（スクリプトの中から止めたとき）は送らない（命令は返事を待たずに送るので、
+   *   作り終わりに「すべてを止める」を置いた作品で、送ったばかりのブロックがやめにならないように）。
+   * ただし、スクリプトエリアやブロックの一覧で「すべてを止める」ブロックだけをクリックしたときは、止めるボタンと同じに送る
+   * （gui.js と同じ。このバンドルの拡張機能は gui.js より古いので、この部分だけを入れてある）
+   */
+  _onStopAll() {
+    if (this._canStopAll === false || !this.connected || !this.socket) {
+      return;
+    }
+    const thread = this.runtime.sequencer ? this.runtime.sequencer.activeThread : null;
+    // クリックで動かしたスクリプトの、いちばん上のブロックが「すべてを止める」そのものなら、子どもが止めるために押した
+    if (thread && !(thread.stackClick && thread.topBlock === thread.peekStack())) {
+      return;
+    }
+    this.sendCommand('stopAll', {}).catch(() => {});
   }
   getInfo() {
     return {
@@ -66990,12 +67024,30 @@ class Scratch3MinecraftBlocks {
     const port = args.PORT || 14711;
     const url = "ws://".concat(host, ":").concat(port, "/minecraft");
 
+    // もう同じ場所につながっていれば、つなぎ直さない
+    // （つなぎ直すと前の接続が閉じ、MOD はその接続から来て、まだ置いていない命令をやめるため。
+    //   スクリプトの途中に［接続］があっても、その前に送ったブロックが抜けないように）
+    if (this.connected && this.socket && this.socket.readyState === WebSocket.OPEN && this._socketUrl === url) {
+      // Promise を返さない（返すと、Scratch はそのスクリプトを次のフレームまで待たせる。「ずっと」の中の［接続］で、置く速さが落ちないように）
+      return;
+    }
+    // 同じ場所へつながる途中なら、その［接続］が終わるのを一緒に待つ
+    // （ここでつなぎ直すと、前の［接続］の Promise が終わらず、そのスクリプトが止まったままになるため。
+    //   ステージとスプライトの両方が、緑の旗で［接続］する作品など）
+    if (this.socket && this.socket.readyState === WebSocket.CONNECTING && this._socketUrl === url && this._connectPromise) {
+      return this._connectPromise;
+    }
+
     // 既存の接続をクリーンアップ（再接続対応）
     this._cleanupSocket();
 
-    return new Promise((resolve, reject) => {
+    this._connectPromise = new Promise((resolve, reject) => {
+      // 別の場所への［接続］や［切断］で、つながる前にこのソケットを閉じたときに、この［接続］を終わらせるため
+      this._connectReject = reject;
       try {
         this.socket = new WebSocket(url);
+        // つないだ場所（同じ場所への［接続］で、つなぎ直さないため）
+        this._socketUrl = url;
         this.socket.onopen = () => {
           console.log('Connected to Minecraft server');
 
@@ -67011,7 +67063,10 @@ class Scratch3MinecraftBlocks {
               }
             }
           });
+          // stopAll を受け付けるかは、接続の返事が来るまで分からない（そのあいだに止めたら送る）
+          this._canStopAll = null;
           this.connected = true;
+          this._connectReject = null;
           resolve();
         };
         this.socket.onmessage = event => {
@@ -67025,6 +67080,7 @@ class Scratch3MinecraftBlocks {
         this.socket.onerror = error => {
           console.error('WebSocket error:', error);
           this.connected = false;
+          this._connectReject = null;
           reject(error);
         };
         this.socket.onclose = (event) => {
@@ -67038,9 +67094,11 @@ class Scratch3MinecraftBlocks {
       } catch (error) {
         console.error('Connection error:', error);
         this.connected = false;
+        this._connectReject = null;
         reject(error);
       }
     });
+    return this._connectPromise;
   }
 
   /**
@@ -67062,6 +67120,19 @@ class Scratch3MinecraftBlocks {
     }
     this.connected = false;
     this.sessionId = null;
+    // つないだ場所も忘れる（ソケットが無いのに同じ場所と見て、つなぎ直しを飛ばすことが無いように）
+    this._socketUrl = null;
+    // つながる途中の［接続］は、この接続のもの（次の［接続］では一緒に待たない）。
+    // まだ終わっていなければ、失敗で終わらせる（別の場所への［接続］や［切断］で前のソケットを閉じたとき、
+    // 前の［接続］が終わらず、そのスクリプトが止まったままにならないように）
+    this._connectPromise = null;
+    if (this._connectReject) {
+      const rejectConnect = this._connectReject;
+      this._connectReject = null;
+      rejectConnect(new Error('Connection superseded'));
+    }
+    // 次につなぐ MOD が受け付けるかは、その接続の返事で知る
+    this._canStopAll = false;
     this.pendingRequests.forEach((pending) => {
       pending.reject(new Error('Connection closed'));
     });
@@ -67647,8 +67718,11 @@ class Scratch3MinecraftBlocks {
         if (message.payload && message.payload.success) {
           this.sessionId = message.payload.sessionId;
           console.log('Connected with session:', this.sessionId);
+          const serverInfo = message.payload.serverInfo || {};
+          this._canStopAll = Array.isArray(serverInfo.features) && serverInfo.features.indexOf('stopAll') !== -1;
         } else if (message.payload) {
           console.error('Connection failed:', message.payload.errorMessage);
+          this._canStopAll = false;
         }
 
         // 保留中のリクエストを解決
@@ -67692,6 +67766,11 @@ class Scratch3MinecraftBlocks {
         break;
       case 'error':
         console.error('Server error:', message.payload);
+        // 接続の返事の代わりにエラーが来た（MOD が止まりかけている・つなぐ知らせの形がちがうなど）ときは、stopAll を受け付けないと見る
+        // （「わからない」のままだと、止めるたびに送り、古い MOD では知らない命令のチャットが出続けるため）
+        if (this._canStopAll === null) {
+          this._canStopAll = false;
+        }
 
         // 保留中のリクエストを解決（エラーとして）
         if (message.requestId && this.pendingRequests.has(message.requestId)) {

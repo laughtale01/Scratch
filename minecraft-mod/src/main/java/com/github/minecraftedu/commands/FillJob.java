@@ -9,8 +9,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
-import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 
 /**
@@ -30,19 +30,20 @@ import java.util.function.IntFunction;
  *   チェストなどは、比較器へ知らせるときに 2 マス先まで読む。消すときは、どのフラグでも読む）。
  * となりを読む置き方（となりに知らせるフラグ 1 か、となりの形を直すとき＝フラグ 16 が無いとき）は、となりにも同じチケットを付ける。
  * そうでない置き方（「周りをきれいにする」のフラグ 2|16）は、となりには時間で切れる別のチケット（BlockJob と同じ）を付けて待つ
- * （となりは、となりの列の範囲でもあるので、同じチケットを付けると、先に終わった列が外すときに消してしまうため）。
+ * （となりは、となりの列の範囲でもあり、その列が置くときに読み込んだままにするので、ここではずっと持たなくてよいため）。
  * チャンクの読み込みは待たずに次の回へ回す（メインスレッドで読み込みを待つと、そのあいだ止まるため）。
  * 待つのは、これから置くチャンクとそのとなりだけ。
  */
 class FillJob implements BuildQueue.Job {
 
     // 置いている間、チャンクを読み込んだままにするチケット（時間で切れない。終わったら外す）
-    // 同じチャンクに同じチケットを 2 回付けても 1 つにまとまり、1 回外すと無くなる。
-    // いまチケットを同時に持つのは「周りをきれいにする」の列（先の 16 列にも付ける）だけで、どの列もチャンクの境にそろい、
-    // となりのチャンクにはこのチケットを付けない置き方（フラグ 2|16。となりは時間で切れる別のチケットで待つ）なので、重ならない
-    // （となりにも付ける置き方にしたり、仕事を並べて進めるようにしたりするときは注意）
-    private static final TicketType<ChunkPos> BUILD_TICKET =
-        TicketType.create("minecraftedu_build", Comparator.comparingLong(ChunkPos::toLong));
+    // チケットの値は仕事ごとの番号（ticketKey）。同じチャンクに同じ値のチケットを 2 回付けると 1 つにまとまり、1 回外すと無くなるので、
+    // 仕事ごとに値を変えて、ほかの仕事が同じチャンクに付けたチケットを外さないようにする
+    // （止めるボタンですぐ同じ所を埋め直したとき、古い仕事の片づけが新しい仕事のチケットを外していた）
+    private static final TicketType<Long> BUILD_TICKET =
+        TicketType.create("minecraftedu_build", Long::compare);
+    // 次に作る仕事のチケットの番号
+    private static final AtomicLong NEXT_TICKET_KEY = new AtomicLong();
 
     // 時間を確かめる間隔（ブロックの数）
     private static final int CHECK_EVERY = 256;
@@ -79,6 +80,8 @@ class FillJob implements BuildQueue.Job {
     private long placed;
     // チケットを付けたワールド（付けていなければ null）
     private ServerLevel ticketLevel;
+    // この仕事のチケットの値（ほかの仕事と同じにならない）
+    private final Long ticketKey = NEXT_TICKET_KEY.getAndIncrement();
     // 読み込みがそろったと分かっているチャンク（Long.MIN_VALUE はまだ無い）と、読み込みを待ち始めた時刻（0 は待っていない）
     private long readyChunk = Long.MIN_VALUE;
     private long loadWaitStart;
@@ -202,7 +205,7 @@ class FillJob implements BuildQueue.Job {
         for (int tx = ticketMinX; tx <= ticketMaxX; tx++) {
             for (int tz = ticketMinZ; tz <= ticketMaxZ; tz++) {
                 ChunkPos pos = new ChunkPos(tx, tz);
-                world.getChunkSource().addRegionTicket(BUILD_TICKET, pos, 0, pos);
+                world.getChunkSource().addRegionTicket(BUILD_TICKET, pos, 0, ticketKey);
             }
         }
     }
@@ -231,7 +234,7 @@ class FillJob implements BuildQueue.Job {
         for (int tx = ticketMinX; tx <= ticketMaxX; tx++) {
             for (int tz = ticketMinZ; tz <= ticketMaxZ; tz++) {
                 ChunkPos pos = new ChunkPos(tx, tz);
-                ticketLevel.getChunkSource().removeRegionTicket(BUILD_TICKET, pos, 0, pos);
+                ticketLevel.getChunkSource().removeRegionTicket(BUILD_TICKET, pos, 0, ticketKey);
             }
         }
         ticketLevel = null;

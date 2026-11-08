@@ -120,8 +120,9 @@ def pump(proc):
             ready.set()
 
 
+# 標準入力は、最後の節で受け口を止める（STOP を送る）ために開けておく
 srv = subprocess.Popen(['java', '-cp', os.environ['CLASSES_DIR'], 'TestMain', str(PORT)],
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                       stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 try:
     threading.Thread(target=pump, args=(srv,), daemon=True).start()
     # READY を待つ（サーバーが先に終わったら、すぐあきらめる）
@@ -222,6 +223,10 @@ try:
     s.close(); time.sleep(0.3)
     check('つながった接続が切れたら、info で知らせる', any(l.startswith('INFO') and 'Client disconnected' in l for l in logs[log_start:]),
           [l for l in logs[log_start:] if 'disconnected' in l][:3])
+    # 切れた接続の、まだ置いていない命令をやめてもらう（断った接続では呼ばない。上の節の断った接続を含めて 1 回だけ）
+    check('つながった接続が切れたら、命令をやめる知らせ（connectionClosed）を 1 回だけ呼ぶ',
+          sum(1 for l in logs[log_start:] if 'stub connectionClosed' in l) == 1,
+          [l for l in logs[log_start:] if 'connectionClosed' in l][:3])
     for o in ['http://localhost:8000', 'http://127.0.0.1:8000']:
         s, st = handshake(o); check('手元の確認用（8000 番）はつながる: ' + o, '101' in st, st); s.close()
     for o in [None, 'https://evil.example', 'https://laughtale01.github.io.evil.com', 'http://localhost.evil.com',
@@ -382,6 +387,24 @@ try:
     s, st = handshake('https://evil.example'); s.close(); time.sleep(0.3)
     check('  そのすぐ後に断っても、また 60 秒は出ない（数はまた 0 から）', len(rejected_lines('origin')) == before + 1,
           rejected_lines('origin')[-2:])
+
+    # 受け口を止めたあとはつながらないので、いちばん最後に流す
+    print('--- 受け口を止めるとき（Minecraft を止めるとき）は、つないでいた接続に命令をやめる知らせ（connectionClosed）を呼ばない')
+    held = [handshake() for _ in range(2)]
+    check('止める前に 2 本つながる', all('101' in st for _, st in held), [st for _, st in held])
+    n = len(logs)
+    srv.stdin.write('STOP\n'); srv.stdin.flush()
+    deadline = time.monotonic() + 15
+    # 2 本とも、切れたときの片づけ（finally）を終えるまで待つ（「Client disconnected」は connectionClosed を呼ぶか決めたあとに出る）
+    while time.monotonic() < deadline and not (any('STOPPED' in l for l in logs[n:])
+                                               and sum(1 for l in logs[n:] if 'Client disconnected' in l) >= 2):
+        time.sleep(0.1)
+    check('受け口が止まった', any('STOPPED' in l for l in logs[n:]), logs[n:][-5:])
+    check('つないでいた 2 本とも切れて、片づけを終えた', sum(1 for l in logs[n:] if 'Client disconnected' in l) == 2
+          and all(is_closed(s, wait=1) for s, _ in held), [l for l in logs[n:] if 'disconnected' in l])
+    check('止めるときは connectionClosed を呼ばない（列ごと捨てるため）', not any('stub connectionClosed' in l for l in logs[n:]),
+          [l for l in logs[n:] if 'connectionClosed' in l][:3])
+    for s, _ in held: s.close()
 finally:
     srv.kill()
 
