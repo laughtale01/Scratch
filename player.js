@@ -48368,6 +48368,13 @@ class Scratch3LooksBlocks {
 
     // Enable other blocks to use bubbles like ask/answer
     this.runtime.on(Scratch3LooksBlocks.SAY_OR_THINK, this._updateBubble);
+
+    // 「〜と N 秒言う／考える」の吹き出しを消す予約（一時停止ボタンで止めている間は数えず、再開したら残りの時間だけ待つ）
+    this._bubbleTimers = new Set();
+    this._onRuntimePausedForBubbles = this._onRuntimePausedForBubbles.bind(this);
+    this._onRuntimeResumedForBubbles = this._onRuntimeResumedForBubbles.bind(this);
+    this.runtime.on('RUNTIME_PAUSED', this._onRuntimePausedForBubbles);
+    this.runtime.on('RUNTIME_RESUMED', this._onRuntimeResumedForBubbles);
   }
 
   /**
@@ -48486,7 +48493,86 @@ class Scratch3LooksBlocks {
       bubbleState.text = '';
       this._onTargetWillExit(this.runtime.targets[n]);
     }
-    clearTimeout(this._bubbleTimeout);
+    this._cancelBubbleTimer(this._bubbleTimeout);
+  }
+
+  /**
+   * 吹き出しを消す予約をする（一時停止ボタンで止めている間は数えず、再開したら残りの時間だけ待つ）。
+   * スクリプトが止められても、時間がたてば呼ぶ（元の setTimeout と同じ）
+   * @param {function} callback - 時間がたったら呼ぶ
+   * @param {number} delay - 待つ時間（ミリ秒）
+   * @returns {object} 予約（_cancelBubbleTimer に渡すとやめる）
+   * @private
+   */
+  _startBubbleTimer(callback, delay) {
+    const timer = {
+      remaining: Math.max(0, Cast.toNumber(delay)),
+      startedAt: 0,
+      handle: null,
+      callback: null
+    };
+    timer.callback = () => {
+      timer.handle = null;
+      this._bubbleTimers.delete(timer);
+      callback();
+    };
+    this._bubbleTimers.add(timer);
+    if (!(this.runtime.isPaused && this.runtime.isPaused())) {
+      this._armBubbleTimer(timer);
+    }
+    return timer;
+  }
+
+  /**
+   * 予約の残りの時間で setTimeout を張る
+   * @param {object} timer - _startBubbleTimer の予約
+   * @private
+   */
+  _armBubbleTimer(timer) {
+    timer.startedAt = Date.now();
+    timer.handle = setTimeout(timer.callback, timer.remaining);
+  }
+
+  /**
+   * 予約をやめる（もう呼ばれた・やめた予約でも、何もしないだけ）
+   * @param {?object} timer - _startBubbleTimer の予約
+   * @private
+   */
+  _cancelBubbleTimer(timer) {
+    if (!timer) {
+      return;
+    }
+    if (timer.handle !== null) {
+      clearTimeout(timer.handle);
+      timer.handle = null;
+    }
+    this._bubbleTimers.delete(timer);
+  }
+
+  /**
+   * 一時停止ボタンで止めた。予約の setTimeout を外し、残りの時間を覚える
+   * @private
+   */
+  _onRuntimePausedForBubbles() {
+    this._bubbleTimers.forEach(timer => {
+      if (timer.handle !== null) {
+        clearTimeout(timer.handle);
+        timer.handle = null;
+        timer.remaining = Math.max(0, timer.remaining - (Date.now() - timer.startedAt));
+      }
+    });
+  }
+
+  /**
+   * 再開した（止めるボタン・緑の旗で解けたときも）。残りの時間で張り直す
+   * @private
+   */
+  _onRuntimeResumedForBubbles() {
+    this._bubbleTimers.forEach(timer => {
+      if (timer.handle === null) {
+        this._armBubbleTimer(timer);
+      }
+    });
   }
 
   /**
@@ -48666,14 +48752,15 @@ class Scratch3LooksBlocks {
     const target = util.target;
     const usageId = this._getBubbleState(target).usageId;
     return new Promise(resolve => {
-      this._bubbleTimeout = setTimeout(() => {
+      // 一時停止ボタンで止めている間は数えない（ふきだしも残す。再開したら残りの時間だけ待つ）
+      this._bubbleTimeout = this._startBubbleTimer(() => {
         this._bubbleTimeout = null;
         // Clear say bubble if it hasn't been changed and proceed.
         if (this._getBubbleState(target).usageId === usageId) {
           this._updateBubble(target, 'say', '');
         }
         resolve();
-      }, 1000 * args.SECS);
+      }, 1000 * Cast.toNumber(args.SECS));
     });
   }
   think(args, util) {
@@ -48684,14 +48771,15 @@ class Scratch3LooksBlocks {
     const target = util.target;
     const usageId = this._getBubbleState(target).usageId;
     return new Promise(resolve => {
-      this._bubbleTimeout = setTimeout(() => {
+      // 一時停止ボタンで止めている間は数えない（ふきだしも残す。再開したら残りの時間だけ待つ）
+      this._bubbleTimeout = this._startBubbleTimer(() => {
         this._bubbleTimeout = null;
         // Clear think bubble if it hasn't been changed and proceed.
         if (this._getBubbleState(target).usageId === usageId) {
           this._updateBubble(target, 'think', '');
         }
         resolve();
-      }, 1000 * args.SECS);
+      }, 1000 * Cast.toNumber(args.SECS));
     });
   }
   show(args, util) {
@@ -53437,6 +53525,7 @@ const BlocksRuntimeCache = __webpack_require__(/*! ./blocks-runtime-cache */ "..
 const BlockType = __webpack_require__(/*! ../extension-support/block-type */ "../scratch-vm-official/src/extension-support/block-type.js");
 const Profiler = __webpack_require__(/*! ./profiler */ "../scratch-vm-official/src/engine/profiler.js");
 const Sequencer = __webpack_require__(/*! ./sequencer */ "../scratch-vm-official/src/engine/sequencer.js");
+const Timer = __webpack_require__(/*! ../util/timer */ "../scratch-vm-official/src/util/timer.js");
 const execute = __webpack_require__(/*! ./execute.js */ "../scratch-vm-official/src/engine/execute.js");
 const ScratchBlocksConstants = __webpack_require__(/*! ./scratch-blocks-constants */ "../scratch-vm-official/src/engine/scratch-blocks-constants.js");
 const TargetType = __webpack_require__(/*! ../extension-support/target-type */ "../scratch-vm-official/src/extension-support/target-type.js");
@@ -53740,6 +53829,14 @@ class Runtime extends EventEmitter {
      */
     this.currentStepTime = null;
 
+    // 一時停止しているか（Scratch の一時停止ボタン）と、止めた時刻（Date.now）
+    this._paused = false;
+    this._pausedAt = 0;
+    // 止めている間だけ使う: statechange を聞いている AudioContext と聞き手、作品の音を音量 0 にする前の音量
+    this._pausedAudioContext = null;
+    this._onPausedAudioStateChange = null;
+    this._pausedGain = null;
+
     // Set an intial value for this.currentMSecs
     this.updateCurrentMSecs();
 
@@ -53932,6 +54029,27 @@ class Runtime extends EventEmitter {
    */
   static get PROJECT_STOP_ALL() {
     return 'PROJECT_STOP_ALL';
+  }
+
+  /**
+   * 一時停止した（スクリプトを止めたあと。Minecraft の拡張機能は、ここで MOD に pauseQueue を送る）
+   */
+  static get RUNTIME_PAUSED() {
+    return 'RUNTIME_PAUSED';
+  }
+
+  /**
+   * これから再開する（スクリプトを動かす前。Minecraft の拡張機能は、ここで MOD に resumeQueue を送る）
+   */
+  static get RUNTIME_RESUMING() {
+    return 'RUNTIME_RESUMING';
+  }
+
+  /**
+   * 再開した・止めている状態を解いた（ボタンの見た目を戻す）
+   */
+  static get RUNTIME_RESUMED() {
+    return 'RUNTIME_RESUMED';
   }
 
   /**
@@ -55394,6 +55512,11 @@ class Runtime extends EventEmitter {
    * Stop "everything."
    */
   stopAll() {
+    // 一時停止していたら解く（止めるボタン・緑の旗・作品の読み込み。MOD の側は、拡張機能が送る stopAll で止めた印も消えるので、
+    // resumeQueue は送らない）
+    if (this._paused) {
+      this._endPause();
+    }
     // Emit stop event to allow blocks to clean up any state.
     this.emit(Runtime.PROJECT_STOP_ALL);
 
@@ -55422,6 +55545,33 @@ class Runtime extends EventEmitter {
    * inactive threads after each iteration.
    */
   _step() {
+    if (this._paused) {
+      // 一時停止している間は、スクリプト・「〜とき」の見張り・モニターの値の読み直しを進めない。
+      // ステージの絵は描く（止めている間も、スプライトをドラッグして動かせるように）。
+      // スクリプトの光り方と、モニターの表示・非表示の切りかえも画面に出す（止めている間にクリックで止めたスクリプトの光が残らないように）。
+      // クリックで並んだスクリプトは、まだ一度も動いていなくても光らせる（光らないと、子どもがもう一度押して、やめてしまうため）
+      this.threads = this.threads.filter(thread => !thread.isKilled);
+      for (const thread of this.threads) {
+        if (thread.stackClick && thread.blockGlowInFrame === null) {
+          thread.blockGlowInFrame = thread.topBlock;
+        }
+      }
+      this._updateGlows();
+      // 緑の旗の光り方も合わせる（止めている間にクリックで全部止めたら消え、クリックで並べたら光る）
+      this._emitProjectRunStatus(this.threads.length - this._getMonitorThreadCount(this.threads));
+      if (this.renderer) {
+        this.renderer.draw();
+      }
+      if (this._refreshTargets) {
+        this.emit(Runtime.TARGETS_UPDATE, false /* Don't emit project changed */);
+        this._refreshTargets = false;
+      }
+      if (!this._prevMonitorState.equals(this._monitorState)) {
+        this.emit(Runtime.MONITORS_UPDATE, this._monitorState);
+        this._prevMonitorState = this._monitorState;
+      }
+      return;
+    }
     if (this.profiler !== null) {
       if (stepProfilerId === -1) {
         stepProfilerId = this.profiler.idByName('Runtime._step');
@@ -55977,6 +56127,10 @@ class Runtime extends EventEmitter {
    * Do not use the runtime after calling this method. This method is meant for test shutdown.
    */
   quit() {
+    // 一時停止したまま終わらせても、止めた時計（Timer.pausedSince）・音の聞き手・音量 0 を残さない
+    if (this._paused) {
+      this._endPause();
+    }
     clearInterval(this._steppingInterval);
     this._steppingInterval = null;
   }
@@ -56005,7 +56159,98 @@ class Runtime extends EventEmitter {
    * which sometimes uses a `currentMSecs` timestamp value in Interpreter.as
    */
   updateCurrentMSecs() {
-    this.currentMSecs = Date.now();
+    // 一時停止していた間を引く（「〜秒待つ」・タイマーが、止めていた間を数えないように）
+    this.currentMSecs = Timer.PAUSABLE_DATE.now();
+  }
+
+  /**
+   * 一時停止しているか
+   * @return {boolean} 止めていれば true
+   */
+  isPaused() {
+    return this._paused;
+  }
+
+  /**
+   * 一時停止する（Scratch の一時停止ボタン）。スクリプトを進めず、時刻を止め、音も止める。
+   * 止めてから RUNTIME_PAUSED を出す（Minecraft の拡張機能は、それを聞いて MOD に pauseQueue を送る）。止めていれば何もしない
+   */
+  pause() {
+    if (this._paused) {
+      return;
+    }
+    this._paused = true;
+    this._pausedAt = Date.now();
+    Timer.pausedSince = this._pausedAt;
+    const audioContext = this.audioEngine && this.audioEngine.audioContext;
+    if (audioContext && typeof audioContext.suspend === 'function') {
+      // 作品の音を、いま鳴っている所で止める（再開したら続きから鳴る）
+      audioContext.suspend().catch(() => {});
+      // 止めている間に、ほかの所（効果音の一覧を開いたときの StartAudioContext など。同じ AudioContext を使う）が動かしたら、
+      // 止め直さずに、作品の音だけ音量 0 にする（止め直すと、StartAudioContext が毎フレーム動かし直すのとぶつかり続けるため。
+      // 一覧の試し聞きは鳴る。止まっていた作品の音は、音量 0 のまま先へ進む）
+      if (typeof audioContext.addEventListener === 'function') {
+        this._pausedAudioContext = audioContext;
+        this._onPausedAudioStateChange = () => {
+          if (this._paused && audioContext.state === 'running') {
+            this._mutePausedAudio();
+          }
+        };
+        audioContext.addEventListener('statechange', this._onPausedAudioStateChange);
+      }
+    }
+    this.emit(Runtime.RUNTIME_PAUSED);
+  }
+
+  /**
+   * 一時停止から再開する。RUNTIME_RESUMING を出してから（Minecraft の拡張機能は、それを聞いて MOD に resumeQueue を送る）
+   * スクリプトを動かす。止めていなければ何もしない
+   */
+  resume() {
+    if (!this._paused) {
+      return;
+    }
+    this.emit(Runtime.RUNTIME_RESUMING);
+    this._endPause();
+  }
+
+  /**
+   * 止めている間に、ほかの所が AudioContext を動かした。作品の音（audioEngine.inputNode）だけ音量 0 にする（1 回だけ。再開で戻す）
+   */
+  _mutePausedAudio() {
+    const inputNode = this.audioEngine && this.audioEngine.inputNode;
+    if (this._pausedGain !== null || !inputNode || !inputNode.gain) {
+      return;
+    }
+    this._pausedGain = inputNode.gain.value;
+    inputNode.gain.value = 0;
+  }
+
+  /**
+   * 止めている状態を解く（止めていた時間を Timer.pausedTotal に足し、音を戻し、RUNTIME_RESUMED を出す）
+   */
+  _endPause() {
+    Timer.pausedTotal += Math.max(0, Date.now() - this._pausedAt);
+    Timer.pausedSince = null;
+    this._paused = false;
+    if (this._pausedAudioContext) {
+      this._pausedAudioContext.removeEventListener('statechange', this._onPausedAudioStateChange);
+      this._pausedAudioContext = null;
+      this._onPausedAudioStateChange = null;
+    }
+    // 止めている間に音量 0 にしていたら、もとの音量に戻す
+    if (this._pausedGain !== null) {
+      const inputNode = this.audioEngine && this.audioEngine.inputNode;
+      if (inputNode && inputNode.gain) {
+        inputNode.gain.value = this._pausedGain;
+      }
+      this._pausedGain = null;
+    }
+    const audioContext = this.audioEngine && this.audioEngine.audioContext;
+    if (audioContext && typeof audioContext.resume === 'function') {
+      audioContext.resume().catch(() => {});
+    }
+    this.emit(Runtime.RUNTIME_RESUMED);
   }
 }
 
@@ -66278,6 +66523,11 @@ class Scratch3MinecraftBlocks {
     // つないだ MOD が「stopAll」（まだ置いていない命令をやめる）を受け付けるか（接続の返事の serverInfo.features で知る）
     // true: 受け付ける。false: 受け付けない・つないでいない。null: つないだが、まだ返事が来ていない（そのあいだに止めたら送る）
     this._canStopAll = false;
+    // つないだ MOD が「pauseQueue」（一時停止）を受け付けるか（_canStopAll と同じ。features に pauseQueue があれば true）
+    this._canPause = false;
+    // 古い MOD のとき、一時停止で出す帯（「Minecraft は とまりません」）
+    this._pauseNoticeElement = null;
+    this._pauseNoticeTimer = null;
     // いまつないでいる場所（ws://…。同じ場所への［接続］で、つなぎ直さないため）
     this._socketUrl = null;
     // つながる途中の［接続］の Promise（つながる途中に同じ場所への［接続］が来たら、これを返して一緒に待つ）と、それを失敗で終わらせる関数
@@ -66287,6 +66537,102 @@ class Scratch3MinecraftBlocks {
     // （遠くに置き続けると MOD の列がたまり、止めたあとも何分も置き続けるため）
     this._onStopAll = this._onStopAll.bind(this);
     this.runtime.on('PROJECT_STOP_ALL', this._onStopAll);
+    // 一時停止ボタンで、MOD のこの接続の列も止める（止めたあとに pauseQueue、動かす前に resumeQueue。MOD は届いた順に処理する）
+    this._onRuntimePaused = this._onRuntimePaused.bind(this);
+    this._onRuntimeResuming = this._onRuntimeResuming.bind(this);
+    this.runtime.on('RUNTIME_PAUSED', this._onRuntimePaused);
+    this.runtime.on('RUNTIME_RESUMING', this._onRuntimeResuming);
+    // 再開した・止めている状態が解けたら、帯を消す（4 秒たつのを待たない）
+    this._hidePauseNotice = this._hidePauseNotice.bind(this);
+    this.runtime.on('RUNTIME_RESUMED', this._hidePauseNotice);
+  }
+
+  /**
+   * 一時停止の帯を消す（出ていなければ何もしない）
+   */
+  _hidePauseNotice() {
+    if (this._pauseNoticeTimer) {
+      clearTimeout(this._pauseNoticeTimer);
+      this._pauseNoticeTimer = null;
+    }
+    const element = this._pauseNoticeElement;
+    if (element && element.parentNode) {
+      element.parentNode.removeChild(element);
+    }
+  }
+
+  /**
+   * 一時停止ボタンで Scratch を止めた。MOD に pauseQueue を送り、まだ置いていない命令を再開まで置かないでもらう。
+   * 受け付けない（古い）MOD なら、Minecraft は止まらないことを帯で知らせる（つないでいなければ何もしない）。
+   * 返事が来る前（_canPause が null）なら送る（止めるボタンと同じ）
+   */
+  _onRuntimePaused() {
+    if (!this.connected || !this.socket) {
+      return;
+    }
+    if (this._canPause === false) {
+      // このバンドルの拡張機能は、文を日本語でそのまま書いている
+      this._showPauseNotice('Minecraft は 止まりません（MOD が 古いため）');
+      return;
+    }
+    this.sendCommand('pauseQueue', {}).catch(() => {});
+  }
+
+  /**
+   * 一時停止から再開する（Scratch がスクリプトを動かす前）。MOD に resumeQueue を送り、止めたところから続けてもらう
+   */
+  _onRuntimeResuming() {
+    if (this._canPause === false || !this.connected || !this.socket) {
+      return;
+    }
+    this.sendCommand('resumeQueue', {}).catch(() => {});
+  }
+
+  /**
+   * 一時停止を受け付けるか分かる前（つながる途中・接続の返事の前）に止めていて、あとから受け付けない（古い）MOD と分かったら、帯を出す
+   * （止めたときは受け付けるか分からないので、帯を出していない。返事の前なら pauseQueue を送り、つながる途中なら何も送っていない）
+   */
+  _noticeIfPausedWithoutSupport() {
+    if (this._canPause === false && this.runtime.isPaused && this.runtime.isPaused()) {
+      this._onRuntimePaused();
+    }
+  }
+
+  /**
+   * ボタンの並びのすぐ下（ステージの上の端。ブロックだけの画面では、ボタンの近く）に、帯を 4 秒ほど出す
+   */
+  _showPauseNotice(text) {
+    if (typeof document === 'undefined' || !document.body) {
+      return;
+    }
+    let element = this._pauseNoticeElement;
+    if (!element) {
+      element = document.createElement('div');
+      element.setAttribute('role', 'status');
+      element.style.cssText = 'position:fixed;z-index:10000;padding:6px 12px;border-radius:6px;' +
+        'background:rgba(255,140,26,0.95);color:#fff;font-size:14px;font-weight:bold;pointer-events:none;' +
+        'box-shadow:0 2px 6px rgba(0,0,0,0.25);max-width:90vw;';
+      this._pauseNoticeElement = element;
+    }
+    element.textContent = text;
+    const controls = document.querySelector('[class*="controls_controls-container"]');
+    if (controls) {
+      const rect = controls.getBoundingClientRect();
+      element.style.top = Math.round(rect.bottom + 4) + 'px';
+      element.style.left = Math.round(rect.left) + 'px';
+      element.style.transform = '';
+    } else {
+      element.style.top = '8px';
+      element.style.left = '50%';
+      element.style.transform = 'translateX(-50%)';
+    }
+    if (!element.parentNode) {
+      document.body.appendChild(element);
+    }
+    if (this._pauseNoticeTimer) {
+      clearTimeout(this._pauseNoticeTimer);
+    }
+    this._pauseNoticeTimer = setTimeout(this._hidePauseNotice, 4000);
   }
 
   /**
@@ -67065,6 +67411,7 @@ class Scratch3MinecraftBlocks {
           });
           // stopAll を受け付けるかは、接続の返事が来るまで分からない（そのあいだに止めたら送る）
           this._canStopAll = null;
+          this._canPause = null;
           this.connected = true;
           this._connectReject = null;
           resolve();
@@ -67133,6 +67480,7 @@ class Scratch3MinecraftBlocks {
     }
     // 次につなぐ MOD が受け付けるかは、その接続の返事で知る
     this._canStopAll = false;
+    this._canPause = false;
     this.pendingRequests.forEach((pending) => {
       pending.reject(new Error('Connection closed'));
     });
@@ -67720,9 +68068,20 @@ class Scratch3MinecraftBlocks {
           console.log('Connected with session:', this.sessionId);
           const serverInfo = message.payload.serverInfo || {};
           this._canStopAll = Array.isArray(serverInfo.features) && serverInfo.features.indexOf('stopAll') !== -1;
+          // 一時停止を受け付けるかは、この接続の最初の返事で決める（返事をくり返されても、帯を出し直さない・あとから変えない）
+          if (this._canPause === null) {
+            this._canPause = Array.isArray(serverInfo.features) && serverInfo.features.indexOf('pauseQueue') !== -1;
+            this._noticeIfPausedWithoutSupport();
+          }
         } else if (message.payload) {
           console.error('Connection failed:', message.payload.errorMessage);
           this._canStopAll = false;
+          // 返事の前に止めていたら、Minecraft は止まらないことを帯で知らせる
+          const pauseWasUnknown = this._canPause === null;
+          this._canPause = false;
+          if (pauseWasUnknown) {
+            this._noticeIfPausedWithoutSupport();
+          }
         }
 
         // 保留中のリクエストを解決
@@ -67770,6 +68129,10 @@ class Scratch3MinecraftBlocks {
         // （「わからない」のままだと、止めるたびに送り、古い MOD では知らない命令のチャットが出続けるため）
         if (this._canStopAll === null) {
           this._canStopAll = false;
+        }
+        // 帯は出さない（ワールドを閉じる途中などは、新しい MOD でもエラーが来るので「MOD が古い」とは言えない。MOD はもう何も置かない）
+        if (this._canPause === null) {
+          this._canPause = false;
         }
 
         // 保留中のリクエストを解決（エラーとして）
@@ -82240,7 +82603,10 @@ class RateLimiter {
      * @type {number}
      */
     this._count = this._maxTokens;
-    this._timer = new Timer();
+    // 本当の時計を使う（一時停止で止める時計にすると、止めている間も送る拡張機能の数え方がずれるため）
+    this._timer = new Timer({
+      now: () => Date.now()
+    });
     this._timer.start();
 
     /**
@@ -82577,7 +82943,8 @@ class Timer {
     if (Timer.USE_PERFORMANCE && typeof self !== 'undefined' && self.performance && 'now' in self.performance) {
       return self.performance;
     } else if (Date.now) {
-      return Date;
+      // 一時停止していた間を引いた「いま」（「すべる」・音楽の拍などが、止めていた間を数えないように）
+      return Timer.PAUSABLE_DATE;
     }
     return Timer.legacyDateCode;
   }
@@ -82620,6 +82987,15 @@ class Timer {
     __webpack_require__.g.clearTimeout(timeoutId);
   }
 }
+// Scratch の一時停止ボタンで止めていた時間の合計（ミリ秒）。Runtime が再開するときに足す
+Timer.pausedTotal = 0;
+// 一時停止している間は、止めた時刻（Date.now）。止めていなければ null（Runtime が止める・再開するときに書く）
+Timer.pausedSince = null;
+// 「いま」から一時停止していた時間を引いた時刻（VM の時刻 Runtime.currentMSecs と、Timer の既定の時計に使う）。
+// 止めている間は、止めた時刻のまま進まない（再開したときに時計が戻らないように。止めている間も時計を読む部品が困らないように）
+Timer.PAUSABLE_DATE = {
+  now: () => (Timer.pausedSince === null ? Date.now() : Timer.pausedSince) - Timer.pausedTotal
+};
 module.exports = Timer;
 
 /***/ }),
@@ -82975,6 +83351,28 @@ class VirtualMachine extends EventEmitter {
    */
   stopAll() {
     this.runtime.stopAll();
+  }
+
+  /**
+   * 一時停止する（Scratch の一時停止ボタン）
+   */
+  pause() {
+    this.runtime.pause();
+  }
+
+  /**
+   * 一時停止から再開する
+   */
+  resume() {
+    this.runtime.resume();
+  }
+
+  /**
+   * 一時停止しているか
+   * @return {boolean} 止めていれば true
+   */
+  isPaused() {
+    return this.runtime.isPaused();
   }
 
   /**
@@ -276759,6 +277157,8 @@ __webpack_require__.r(__webpack_exports__);
     "gui.connection.updatePeripheral.updateAgainButton": "Try Again",
     "gui.controls.go": "Go",
     "gui.controls.stop": "Stop",
+    "gui.controls.pause": "Pause",
+    "gui.controls.resume": "Resume",
     "gui.crashMessage.label": "Oops! Something went wrong.",
     "gui.crashMessage.description": "We are so sorry, but it looks like Scratch has crashed. This bug has been automatically reported to the Scratch Team. Please refresh your page to try again.",
     "gui.crashMessage.errorNumber": "Your error was logged with id {errorId}",
@@ -306614,6 +307014,8 @@ __webpack_require__.r(__webpack_exports__);
     "gui.connection.updatePeripheral.updateAgainButton": "もう一度やり直してください",
     "gui.controls.go": "実行",
     "gui.controls.stop": "止める",
+    "gui.controls.pause": "一時停止",
+    "gui.controls.resume": "再開",
     "gui.crashMessage.label": "うわっ! 何か問題が発生しました。",
     "gui.crashMessage.description": "申し訳ありません。Scratchがクラッシュしたようです。この問題はScratchチームに自動的に送信されました。ページを再読み込みしてください。",
     "gui.crashMessage.errorNumber": "エラーはID {errorId}として記録されました。",
@@ -307467,6 +307869,8 @@ __webpack_require__.r(__webpack_exports__);
     "gui.connection.updatePeripheral.updateAgainButton": "もういちどためす ",
     "gui.controls.go": "じっこう",
     "gui.controls.stop": "とめる",
+    "gui.controls.pause": "いちじていし",
+    "gui.controls.resume": "さいかい",
     "gui.crashMessage.label": "うわっ! なにかもんだいがはっせいしました。",
     "gui.crashMessage.description": "もうしわけありません。Scratchがクラッシュしたようです。このもんだいはScratchチームにじどうてきにそうしんされました。ページをさいよみこみしてください。",
     "gui.crashMessage.errorNumber": "エラーはID {errorId}としてきろくされました。",
@@ -381512,7 +381916,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _stop_all_stop_all_jsx__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../stop-all/stop-all.jsx */ "./src/components/stop-all/stop-all.jsx");
 /* harmony import */ var _turbo_mode_turbo_mode_jsx__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../turbo-mode/turbo-mode.jsx */ "./src/components/turbo-mode/turbo-mode.jsx");
 /* harmony import */ var _controls_css__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./controls.css */ "./src/components/controls/controls.css");
-const _excluded = ["active", "className", "intl", "onGreenFlagClick", "onStopAllClick", "turbo"];
+const _excluded = ["active", "className", "intl", "onGreenFlagClick", "onPauseClick", "onStopAllClick", "paused", "turbo"];
+// 一時停止ボタンの見た目（緑の旗と同じ大きさ・色付け）と、アイコン（ふだんは「⏸」、止めている間は「▶」）
+const pauseButtonStyles = __webpack_require__(/*! ../green-flag/green-flag.css */ "./src/components/green-flag/green-flag.css")["default"];
+const PAUSE_ICON = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxNiAxNic+PHJlY3QgeD0nMycgeT0nMicgd2lkdGg9JzMuNicgaGVpZ2h0PScxMicgcng9JzEnIGZpbGw9JyM0Qzk3RkYnIHN0cm9rZT0nIzMzNzNDQycgc3Ryb2tlLXdpZHRoPScwLjYnLz48cmVjdCB4PSc5LjQnIHk9JzInIHdpZHRoPSczLjYnIGhlaWdodD0nMTInIHJ4PScxJyBmaWxsPScjNEM5N0ZGJyBzdHJva2U9JyMzMzczQ0MnIHN0cm9rZS13aWR0aD0nMC42Jy8+PC9zdmc+";
+const RESUME_ICON = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxNiAxNic+PHBhdGggZD0nTTQgMi42IEwxMy40IDggTDQgMTMuNCBaJyBmaWxsPScjNEM5N0ZGJyBzdHJva2U9JyMzMzczQ0MnIHN0cm9rZS13aWR0aD0nMC44JyBzdHJva2UtbGluZWpvaW49J3JvdW5kJy8+PC9zdmc+";
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 function _objectWithoutProperties(e, t) { if (null == e) return {}; var o, r, i = _objectWithoutPropertiesLoose(e, t); if (Object.getOwnPropertySymbols) { var n = Object.getOwnPropertySymbols(e); for (r = 0; r < n.length; r++) o = n[r], -1 === t.indexOf(o) && {}.propertyIsEnumerable.call(e, o) && (i[o] = e[o]); } return i; }
 function _objectWithoutPropertiesLoose(r, e) { if (null == r) return {}; var t = {}; for (var n in r) if ({}.hasOwnProperty.call(r, n)) { if (-1 !== e.indexOf(n)) continue; t[n] = r[n]; } return t; }
@@ -381532,6 +381940,14 @@ const messages = (0,react_intl__WEBPACK_IMPORTED_MODULE_3__.defineMessages)({
   stopTitle: {
     "id": "gui.controls.stop",
     "defaultMessage": "Stop"
+  },
+  pauseTitle: {
+    "id": "gui.controls.pause",
+    "defaultMessage": "Pause"
+  },
+  resumeTitle: {
+    "id": "gui.controls.resume",
+    "defaultMessage": "Resume"
   }
 });
 const Controls = function Controls(props) {
@@ -381540,7 +381956,9 @@ const Controls = function Controls(props) {
       className,
       intl,
       onGreenFlagClick,
+      onPauseClick,
       onStopAllClick,
+      paused,
       turbo
     } = props,
     componentProps = _objectWithoutProperties(props, _excluded);
@@ -381550,7 +381968,18 @@ const Controls = function Controls(props) {
     active: active,
     title: intl.formatMessage(messages.goTitle),
     onClick: onGreenFlagClick
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement(_stop_all_stop_all_jsx__WEBPACK_IMPORTED_MODULE_5__["default"], {
+  }), onPauseClick ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement("img", {
+    // 一時停止ボタン（押すと止まり、「▶ 再開」に変わって色が付く。もう一度押すと再開）
+    className: classnames__WEBPACK_IMPORTED_MODULE_0___default()(pauseButtonStyles.greenFlag, {
+      [pauseButtonStyles.isActive]: paused
+    }),
+    draggable: false,
+    src: paused ? RESUME_ICON : PAUSE_ICON,
+    title: intl.formatMessage(paused ? messages.resumeTitle : messages.pauseTitle),
+    alt: intl.formatMessage(paused ? messages.resumeTitle : messages.pauseTitle),
+    role: "button",
+    onClick: onPauseClick
+  }) : null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement(_stop_all_stop_all_jsx__WEBPACK_IMPORTED_MODULE_5__["default"], {
     active: active,
     title: intl.formatMessage(messages.stopTitle),
     onClick: onStopAllClick
@@ -381561,11 +381990,14 @@ Controls.propTypes = {
   className: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().string),
   intl: react_intl__WEBPACK_IMPORTED_MODULE_3__.intlShape.isRequired,
   onGreenFlagClick: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().func).isRequired,
+  onPauseClick: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().func),
   onStopAllClick: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().func).isRequired,
+  paused: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().bool),
   turbo: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().bool)
 };
 Controls.defaultProps = {
   active: false,
+  paused: false,
   turbo: false
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((0,react_intl__WEBPACK_IMPORTED_MODULE_3__.injectIntl)(Controls));
@@ -396908,7 +397340,47 @@ function _objectWithoutPropertiesLoose(r, e) { if (null == r) return {}; var t =
 class Controls extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
   constructor(props) {
     super(props);
-    lodash_bindall__WEBPACK_IMPORTED_MODULE_0___default()(this, ['handleGreenFlagClick', 'handleStopAllClick']);
+    lodash_bindall__WEBPACK_IMPORTED_MODULE_0___default()(this, ['handleGreenFlagClick', 'handleStopAllClick', 'handlePauseClick', 'handlePausedChange']);
+    // 一時停止しているか（VM の RUNTIME_PAUSED・RUNTIME_RESUMED で変わる。全画面とふつうの画面でボタンが 2 つあっても、VM から読むのでずれない）
+    this.state = {
+      paused: this.isVmPaused()
+    };
+  }
+  componentDidMount() {
+    const runtime = this.props.vm && this.props.vm.runtime;
+    if (runtime) {
+      runtime.on('RUNTIME_PAUSED', this.handlePausedChange);
+      runtime.on('RUNTIME_RESUMED', this.handlePausedChange);
+    }
+    // 作られるまでの間に変わっていたら合わせる
+    this.handlePausedChange();
+  }
+  componentWillUnmount() {
+    const runtime = this.props.vm && this.props.vm.runtime;
+    if (runtime) {
+      runtime.removeListener('RUNTIME_PAUSED', this.handlePausedChange);
+      runtime.removeListener('RUNTIME_RESUMED', this.handlePausedChange);
+    }
+  }
+  isVmPaused() {
+    return !!(this.props.vm && typeof this.props.vm.isPaused === 'function' && this.props.vm.isPaused());
+  }
+  handlePausedChange() {
+    const paused = this.isVmPaused();
+    if (paused !== this.state.paused) {
+      this.setState({
+        paused
+      });
+    }
+  }
+  handlePauseClick(e) {
+    e.preventDefault();
+    // 止めていれば再開、動いていれば止める（何も動いていないときも止められる。Minecraft がまだ置き続けていることがあるため）
+    if (this.isVmPaused()) {
+      this.props.vm.resume();
+    } else {
+      this.props.vm.pause();
+    }
   }
   handleGreenFlagClick(e) {
     e.preventDefault();
@@ -396940,7 +397412,9 @@ class Controls extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
       active: projectRunning,
       turbo: turbo,
       onGreenFlagClick: this.handleGreenFlagClick,
-      onStopAllClick: this.handleStopAllClick
+      onPauseClick: this.handlePauseClick,
+      onStopAllClick: this.handleStopAllClick,
+      paused: this.state.paused
     }));
   }
 }
