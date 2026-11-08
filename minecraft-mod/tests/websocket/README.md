@@ -11,7 +11,7 @@ cd minecraft-mod
 mise exec -- bash tests/websocket/run.sh
 ```
 
-- Java 17（`mise.toml` の temurin-17）と python3 が要ります。拡張機能の試験には node も要ります（無ければその試験だけ飛ばします）。
+- Java 17（`mise.toml` の temurin-17）と python3 が要ります。拡張機能の試験には node も要ります（node が無いときと、gui.js などのバンドルが無いとき＝main ブランチでは、その試験だけ飛ばします）。
 - 試験用のポートは 24711 です（本物の MOD の 14711 とぶつからないように）。変えるときは `WS_TEST_PORT=24800` を付けます。
 - 2 分ほどかかります（時間切れの確かめで数秒ずつ待つのと、ログの間引きの確かめで 60 秒待つため。下の命令の列と拡張機能の試験は、合わせて十数秒）。
 - MOD のビルド（`./gradlew build`）には含まれません。

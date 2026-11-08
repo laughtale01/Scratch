@@ -15,11 +15,14 @@ if python3 -I "$HERE/stop_check.py" --self-check >/dev/null 2>&1; then
 fi
 # 命令の列（BuildQueue）の試験も先に流す
 bash "$HERE/../buildqueue/run.sh"
-# Scratch のバンドルの拡張機能（［接続］と止めるボタン）の試験も流す（node が無ければ飛ばす）
-if command -v node >/dev/null 2>&1; then
-  bash "$HERE/../extension/run.sh"
-else
+# Scratch のバンドルの拡張機能（［接続］と止めるボタン）の試験も流す
+# （node が無いときと、バンドルが無いとき＝main ブランチでは飛ばす。バンドルは gh-pages だけで管理している）
+if ! command -v node >/dev/null 2>&1; then
   echo "node が無いので tests/extension を飛ばします"
+elif [ ! -f "$HERE/../../../gui.js" ]; then
+  echo "gui.js が無い（main ブランチなど）ので tests/extension を飛ばします"
+else
+  bash "$HERE/../extension/run.sh"
 fi
 SRC="$HERE/../../src/main/java/com/github/minecraftedu/network/SimpleWebSocketServer.java"
 OUT="$(mktemp -d)"
