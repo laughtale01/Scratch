@@ -121,17 +121,38 @@ const EXPECTED_ERRORS = [
   'WebSocket error: {"type":"error"}',
   // 接続の返事が success:false（今の MOD は返さないが、返したときの道）
   'Connection failed: 試験の失敗',
+  // 一時停止を受け付ける MOD の、命令の処理の中のエラー（一時停止の節）
+  'Server error: {"errorCode":"INTERNAL_ERROR","errorMessage":"failed"}',
+  // 返事の前に止めたあと、接続の返事の代わりに来たエラー（一時停止の節）
+  'Server error: {"errorCode":"SERVER_STOPPING","errorMessage":"stopping"}',
+  // 返事の前に止めたあと、接続の失敗の返事（一時停止の節）
+  'Connection failed: 試験の失敗 2',
   // 場所の書き方がおかしく、ソケットを作れない
   'Connection error: SyntaxError: invalid url: ws://local host:14711/minecraft'
 ];
 
+// 偽物の document（古い MOD のときに一時停止で出す帯を、body に足したか・消したかを見る）
+const fakeBody = {
+  children: [],
+  appendChild(el) { el.parentNode = fakeBody; this.children.push(el); },
+  removeChild(el) { this.children = this.children.filter(c => c !== el); el.parentNode = null; }
+};
+const fakeDocument = {
+  body: fakeBody,
+  createElement: () => ({ style: {}, textContent: '', parentNode: null, setAttribute() {} }),
+  querySelector: () => null
+};
+
 const listeners = {};
+// VM が一時停止しているか（pausedEvent で true、resumedEvent で false。本物と同じく、RESUMING の間はまだ止まっている）
+let runtimePaused = false;
 const runtime = {
   on: (ev, fn) => { (listeners[ev] = listeners[ev] || []).push(fn); },
+  isPaused: () => runtimePaused,
   sequencer: { activeThread: null }
 };
 const ctx = {
-  WebSocket: FakeWebSocket, console: { log() {}, warn() {}, error: (...a) => errorLogs.push({ section: currentSection, text: a.map(describe).join(' ') }) }, setTimeout, clearTimeout, Map, Promise, JSON, Date, Math,
+  WebSocket: FakeWebSocket, document: fakeDocument, console: { log() {}, warn() {}, error: (...a) => errorLogs.push({ section: currentSection, text: a.map(describe).join(' ') }) }, setTimeout, clearTimeout, Map, Promise, JSON, Date, Math,
   Array, Error, Object, Number, String,
   _objectSpread: (a, b) => Object.assign({}, a, b), formatMessage: m => m.default
 };
@@ -151,6 +172,19 @@ const check = (name, ok, detail) => {
 };
 const stopAllSent = s => s.sent.filter(m => m.payload && m.payload.action === 'stopAll').length;
 const stop = () => (listeners.PROJECT_STOP_ALL || []).forEach(fn => fn());
+// 一時停止ボタン（VM が止めたあとに RUNTIME_PAUSED、動かす前に RUNTIME_RESUMING を出す）
+const pausedEvent = () => { runtimePaused = true; (listeners.RUNTIME_PAUSED || []).forEach(fn => fn()); };
+const resumingEvent = () => (listeners.RUNTIME_RESUMING || []).forEach(fn => fn());
+const resumedEvent = () => { runtimePaused = false; (listeners.RUNTIME_RESUMED || []).forEach(fn => fn()); };
+// 再開ボタン（本物と同じく RESUMING、そのあと RESUMED）
+const resumeButton = () => { resumingEvent(); resumedEvent(); };
+// 止めたまま止めるボタン・緑の旗（本物の stopAll と同じく、RESUMING は出さずに RESUMED、そのあと PROJECT_STOP_ALL）
+const stopWhilePaused = () => { resumedEvent(); stop(); };
+const queueActions = (s, from) => s.sent.slice(from || 0).map(m => m.payload && m.payload.action)
+  .filter(a => a === 'pauseQueue' || a === 'resumeQueue');
+// 一時停止と stopAll の送った順
+const pauseAndStopActions = (s, from) => s.sent.slice(from || 0).map(m => m.payload && m.payload.action)
+  .filter(a => a === 'pauseQueue' || a === 'resumeQueue' || a === 'stopAll');
 // Promise が決着したか（200 ms 待つ。Promise でない値は、すぐ決着したと見る。壊れた［接続］で試験ごと止まらないように）
 const settled = p => Promise.race([
   Promise.resolve(p).then(() => 'resolved', () => 'rejected'),
@@ -276,6 +310,7 @@ const featureReply = features => ({ type: 'connect_response', payload: { success
   s4.reply({ type: 'error', payload: { errorCode: 'SERVER_STOPPING', errorMessage: 'stopping' } });
   stop();
   check('エラーのあとは送らない', ext._canStopAll === false && stopAllSent(s4) === 0, [ext._canStopAll, stopAllSent(s4)]);
+  check('エラーのあとは、一時停止も受け付けないと見る（_canPause は false）', ext._canPause === false, ext._canPause);
 
   console.log('--- 受け付ける MOD とつないでいて、切れたら送らない');
   const r2 = ext.connect({ HOST: '127.0.0.3', PORT: 14711 });
@@ -331,7 +366,160 @@ const featureReply = features => ({ type: 'connect_response', payload: { success
   s6.reply({ type: 'connect_response', payload: { success: false, errorMessage: '試験の失敗' } });
   stop();
   check('success:false の返事のあとは送らない', ext._canStopAll === false && stopAllSent(s6) === 0, [ext._canStopAll, stopAllSent(s6)]);
+  check('success:false の返事のあとは、一時停止も受け付けないと見る（_canPause は false）', ext._canPause === false, ext._canPause);
   ext.disconnect();
+
+  console.log('--- 一時停止: 止めたら pauseQueue、動かす前に resumeQueue（受け付ける MOD）。古い MOD には送らず帯を出す');
+  let notices = 0;
+  const showNotice = ext._showPauseNotice.bind(ext);
+  ext._showPauseNotice = text => { notices++; showNotice(text); };
+  const pc = ext.connect({ HOST: '127.0.0.5', PORT: 14711 });
+  let sp = sockets[sockets.length - 1];
+  sp.open();
+  await settled(pc);
+  // 接続の返事の前（受け付けるか分からない）は、止めるボタンと同じく送る
+  pausedEvent();
+  resumeButton();
+  check('返事の前に止めて再開すると、pauseQueue・resumeQueue の順に送る', JSON.stringify(queueActions(sp)) === '["pauseQueue","resumeQueue"]',
+    queueActions(sp));
+  sp.reply(featureReply(['stopAll', 'pauseQueue']));
+  let from = sp.sent.length;
+  pausedEvent();
+  resumeButton();
+  check('受け付ける MOD には、止めたら pauseQueue、再開する前に resumeQueue を、この順に送る',
+    JSON.stringify(queueActions(sp, from)) === '["pauseQueue","resumeQueue"]' && notices === 0, [queueActions(sp, from), notices]);
+  // 同じ接続に返事がくり返し来ても、一時停止を受け付けるかは最初の返事のまま（細工した返事で帯を出させ続けない）
+  sp.reply(featureReply(['stopAll']));
+  from = sp.sent.length;
+  pausedEvent();
+  check('同じ接続の 2 回目の返事では、一時停止を受け付けるかを変えない（帯も出さない）',
+    ext._canPause === true && JSON.stringify(queueActions(sp, from)) === '["pauseQueue"]' && notices === 0,
+    [ext._canPause, queueActions(sp, from), notices]);
+  resumeButton();
+  ext.disconnect();
+  // 古い MOD（features に pauseQueue が無い）につなぎ直す
+  const pcOld = ext.connect({ HOST: '127.0.0.9', PORT: 14711 });
+  sp = sockets[sockets.length - 1];
+  sp.open();
+  await settled(pcOld);
+  sp.reply(featureReply(['stopAll']));
+  from = sp.sent.length;
+  pausedEvent();
+  check('古い MOD（features に pauseQueue が無い）には pauseQueue を送らず、帯を出す',
+    queueActions(sp, from).length === 0 && notices === 1 && fakeBody.children.length === 1
+    // gui.js は翻訳の元の文（英語。日本語の画面では翻訳される）、ほかのバンドルの古い拡張機能は日本語をそのまま書いている
+    && fakeBody.children[0].textContent === (isGui ? 'Minecraft does not pause (the MOD is old)' : 'Minecraft は 止まりません（MOD が 古いため）'),
+    [queueActions(sp, from), notices, fakeBody.children.length, fakeBody.children[0] && fakeBody.children[0].textContent]);
+  resumingEvent();
+  check('古い MOD には resumeQueue も送らない', queueActions(sp, from).length === 0, queueActions(sp, from));
+  resumedEvent();
+  check('再開したら、4 秒たつ前でも帯を消す', fakeBody.children.length === 0, fakeBody.children.length);
+  // 4 秒たったら消えることも見る（拡張機能の setTimeout を、時間を呼んだ側が決める偽物に一時的に取りかえる）
+  const timers = [];
+  ctx.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+  ctx.clearTimeout = () => {};
+  try {
+    pausedEvent();
+    const shown = fakeBody.children.length;
+    const delay = timers.length === 1 ? timers[0].ms : null;
+    if (timers.length === 1) timers[0].fn();
+    check('止めたままでも、帯は 4 秒（4000 ms）で消える', shown === 1 && delay === 4000 && fakeBody.children.length === 0,
+      [shown, timers.map(t => t.ms), fakeBody.children.length]);
+  } finally {
+    ctx.setTimeout = setTimeout;
+    ctx.clearTimeout = clearTimeout;
+  }
+  resumeButton();
+  // 古い MOD で、止めたまま止めるボタン: 帯を消し、stopAll は送る（resumeQueue は送らない）
+  from = sp.sent.length;
+  pausedEvent();
+  const shownBeforeStop = fakeBody.children.length;
+  stopWhilePaused();
+  check('古い MOD で止めたまま止めるボタンを押すと、帯を消して stopAll だけ送る',
+    shownBeforeStop === 1 && fakeBody.children.length === 0 && JSON.stringify(pauseAndStopActions(sp, from)) === '["stopAll"]',
+    [shownBeforeStop, fakeBody.children.length, pauseAndStopActions(sp, from)]);
+  ext.disconnect();
+
+  console.log('--- 一時停止: 受け付ける MOD で、止めたまま止めるボタン・命令のエラーのあと');
+  const pc2 = ext.connect({ HOST: '127.0.0.6', PORT: 14711 });
+  const sq = sockets[sockets.length - 1];
+  sq.open();
+  await settled(pc2);
+  sq.reply(featureReply(['stopAll', 'pauseQueue']));
+  from = sq.sent.length;
+  pausedEvent();
+  stopWhilePaused();
+  check('止めたまま止めるボタンを押すと、pauseQueue のあと stopAll を送り、resumeQueue は送らない（MOD は stopAll で止めた印も消す）',
+    JSON.stringify(pauseAndStopActions(sq, from)) === '["pauseQueue","stopAll"]', pauseAndStopActions(sq, from));
+  sq.reply({ type: 'error', requestId: 'r2', payload: { errorCode: 'INTERNAL_ERROR', errorMessage: 'failed' } });
+  from = sq.sent.length;
+  pausedEvent();
+  resumeButton();
+  check('受け付けると分かったあとの、命令の処理の中のエラーでは、一時停止を送るのをやめない',
+    ext._canPause === true && JSON.stringify(queueActions(sq, from)) === '["pauseQueue","resumeQueue"]', [ext._canPause, queueActions(sq, from)]);
+  ext.disconnect();
+
+  console.log('--- 一時停止: 接続の返事の前に止め、あとから古い MOD と分かったら帯を出す');
+  const noticesBeforeLate = notices;
+  const pc3 = ext.connect({ HOST: '127.0.0.7', PORT: 14711 });
+  const sr = sockets[sockets.length - 1];
+  sr.open();
+  await settled(pc3);
+  pausedEvent();
+  const lateQueue = queueActions(sr);
+  sr.reply(featureReply(['stopAll']));
+  check('返事の前に止めて pauseQueue を送り、あとから古い MOD と分かったら、そこで帯を出す',
+    JSON.stringify(lateQueue) === '["pauseQueue"]' && notices === noticesBeforeLate + 1 && fakeBody.children.length === 1,
+    [lateQueue, notices - noticesBeforeLate, fakeBody.children.length]);
+  resumeButton();
+  check('そのあと再開しても resumeQueue は送らず、帯を消す', JSON.stringify(queueActions(sr)) === '["pauseQueue"]' && fakeBody.children.length === 0,
+    [queueActions(sr), fakeBody.children.length]);
+  ext.disconnect();
+  const pc4 = ext.connect({ HOST: '127.0.0.8', PORT: 14711 });
+  const ss = sockets[sockets.length - 1];
+  ss.open();
+  await settled(pc4);
+  pausedEvent();
+  ss.reply({ type: 'error', payload: { errorCode: 'SERVER_STOPPING', errorMessage: 'stopping' } });
+  check('返事の代わりにエラー（ワールドを閉じる途中など）が来ても、帯は出さない（新しい MOD でも来るため）',
+    ext._canPause === false && notices === noticesBeforeLate + 1 && fakeBody.children.length === 0,
+    [ext._canPause, notices - noticesBeforeLate, fakeBody.children.length]);
+  resumeButton();
+  ext.disconnect();
+  // 接続の失敗の返事（success:false）なら、返事の前に止めていれば帯を出す
+  const pc5 = ext.connect({ HOST: '127.0.0.10', PORT: 14711 });
+  const st = sockets[sockets.length - 1];
+  st.open();
+  await settled(pc5);
+  pausedEvent();
+  st.reply({ type: 'connect_response', payload: { success: false, errorMessage: '試験の失敗 2' } });
+  check('返事の前に止めて、接続の失敗の返事が来たら、帯を出す', notices === noticesBeforeLate + 2 && fakeBody.children.length === 1,
+    [notices - noticesBeforeLate, fakeBody.children.length]);
+  resumeButton();
+  check('そのあと再開すると帯を消し、resumeQueue は送らない', fakeBody.children.length === 0 && JSON.stringify(queueActions(st)) === '["pauseQueue"]',
+    [fakeBody.children.length, queueActions(st)]);
+  ext.disconnect();
+  // つながる途中（onopen の前）に止めた: 何も送らず、あとから古い MOD と分かったら帯を出す
+  const pc6 = ext.connect({ HOST: '127.0.0.11', PORT: 14711 });
+  const su = sockets[sockets.length - 1];
+  pausedEvent();
+  const noticesWhileConnecting = notices;
+  su.open();
+  await settled(pc6);
+  su.reply(featureReply(['stopAll']));
+  check('つながる途中に止めたら何も送らず、あとから古い MOD と分かったら帯を出す',
+    noticesWhileConnecting === noticesBeforeLate + 2 && notices === noticesBeforeLate + 3 && queueActions(su).length === 0
+    && fakeBody.children.length === 1, [noticesWhileConnecting - noticesBeforeLate, notices - noticesBeforeLate, queueActions(su), fakeBody.children.length]);
+  resumeButton();
+  check('そのあと再開しても resumeQueue は送らず、帯を消す', queueActions(su).length === 0 && fakeBody.children.length === 0,
+    [queueActions(su), fakeBody.children.length]);
+  ext.disconnect();
+  const noticesBeforeDisconnected = notices;
+  pausedEvent();
+  resumeButton();
+  check('つないでいないときは、何も送らず、帯も出さない（_canPause は false に戻る）',
+    notices === noticesBeforeDisconnected && fakeBody.children.length === 0 && ext._canPause === false,
+    [notices - noticesBeforeDisconnected, fakeBody.children.length, ext._canPause]);
 
   console.log('--- 場所の書き方がおかしく、ソケットを作れないとき');
   const bad = ext.connect({ HOST: 'local host', PORT: 14711 });
