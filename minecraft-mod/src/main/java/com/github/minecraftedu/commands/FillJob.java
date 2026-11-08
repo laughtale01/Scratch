@@ -6,6 +6,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -167,8 +169,11 @@ class FillJob implements BuildQueue.Job {
                 } else {
                     BlockState state = stateForY.apply(y);
                     // もう同じブロックがあるマスは置かない（置いても Minecraft は何もしないので、結果は同じ）
-                    if (cellSection == null || cellSection.getBlockState(x & 15, y & 15, z & 15) != state) {
-                        world.setBlock(new BlockPos(x, y, z), state, flags);
+                    BlockState before = cellSection == null ? null : cellSection.getBlockState(x & 15, y & 15, z & 15);
+                    if (before == null || before != state) {
+                        BlockPos at = new BlockPos(x, y, z);
+                        forgetLootTableIfRemoved(world, at, before, state);
+                        world.setBlock(at, state, flags);
                     }
                     placed++;
                     // 区画の中の次の場所へ（z → y → x の順にくり上げる）
@@ -290,6 +295,35 @@ class FillJob implements BuildQueue.Job {
         readyChunk = key;
         loadWaitStart = 0;
         return true;
+    }
+
+    /**
+     * まだ開けていない宝箱など（中身の決まり＝loot table が残っている入れ物）を、ちがう種類のブロックに置きかえるなら、その前に中身の決まりを外す。
+     * 外さないと、置きかえるときに Minecraft が中身を作って落とし、その中に「探検家の地図」があると、
+     * 地図に描く遺跡を探すため、まだ作られていない遠くのチャンクをメインスレッドでその場で作り、何秒も止まる
+     * （新しい地形を「周りをきれいにする」と、難破船・海底遺跡の宝箱で 12 秒ほど止まった）。
+     * そのぶん、まだ開けていない宝箱の中身は落ちない（子どもが物を入れた入れ物は、今までどおり中身を落とす）。
+     * 1 マスの setBlock（CommandExecutor）も、replaceBlock を使って置く前にこれを通す
+     */
+    static void forgetLootTableIfRemoved(ServerLevel world, BlockPos at, BlockState before, BlockState after) {
+        // 同じ種類のブロック（向きなどだけ違う）に変えるときは、入れ物は消えず中身も作られないので外さない
+        // （外すと、宝箱は残るのに中身の決まりだけが消えるため）
+        if (before == null || !before.hasBlockEntity() || before.is(after.getBlock())) {
+            return;
+        }
+        BlockEntity entity = world.getBlockEntity(at);
+        if (entity instanceof RandomizableContainerBlockEntity container) {
+            container.setLootTable(null, 0L);
+        }
+    }
+
+    /**
+     * 1 マスを置きかえる（1 マスの setBlock の仕事から、チャンクが読み込まれてから呼ぶ）。
+     * まだ開けていない宝箱をちがうブロックに変えるときは、先に中身の決まりを外す（forgetLootTableIfRemoved と同じ理由）
+     */
+    static void replaceBlock(ServerLevel world, BlockPos at, BlockState state, int flags) {
+        forgetLootTableIfRemoved(world, at, world.getBlockState(at), state);
+        world.setBlock(at, state, flags);
     }
 
     /**

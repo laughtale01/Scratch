@@ -277,6 +277,30 @@ public class JobsTest {
         boolean after = waiting.step(far());
         check("時間を過ぎるまでは待ち（読み込みを待っている印も立つ）、過ぎたら何もせずに終わる",
             !before && waitingFlag && after && acted2[0] == 0 && gaveUp2[0] == 1, before + " / " + waitingFlag + " / " + after + " / " + gaveUp2[0]);
+
+        System.out.println("--- 1 マスの仕事（BlockJob）＋ replaceBlock（1 マスの setBlock と同じ組み合わせ）: まだ開けていない宝箱は、中身の決まりを外してから置きかえる。同じ種類なら外さない");
+        fresh();
+        BlockPos sealedAt = new BlockPos(200, 1, 200);
+        BlockPos turnAt = new BlockPos(232, 1, 200);
+        world.put(sealedAt.getX(), sealedAt.getY(), sealedAt.getZ(), BlockState.of("chest"));
+        world.put(turnAt.getX(), turnAt.getY(), turnAt.getZ(), BlockState.of("chest[facing=north]"));
+        net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity sealedBox =
+            new net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity(new net.minecraft.resources.ResourceLocation("chests/shipwreck_map"));
+        net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity turnBox =
+            new net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity(new net.minecraft.resources.ResourceLocation("chests/shipwreck_map"));
+        world.blockEntities.put(sealedAt, sealedBox);
+        world.blockEntities.put(turnAt, turnBox);
+        BlockState east = BlockState.of("chest[facing=east]");
+        BlockJob toAir = new BlockJob(server, w -> sealedAt, sealedAt, null, false, (w, at) -> FillJob.replaceBlock(w, at, AIR, 3), () -> { });
+        BlockJob turn = new BlockJob(server, w -> turnAt, turnAt, null, false, (w, at) -> FillJob.replaceBlock(w, at, east, 3), () -> { });
+        boolean toAirDone = toAir.step(far());
+        boolean turnDone = turn.step(far());
+        check("宝箱を空気にするときは、中身の決まりを外してから置きかえる（読み込まれていないチャンクは読まない）",
+            toAirDone && world.replacedWithLoot == 0 && sealedBox.lootTable == null && world.get(200, 1, 200) == AIR && world.readOnUnloaded == 0,
+            toAirDone + " / " + world.replacedWithLoot + " / " + sealedBox.lootTable + " / " + world.get(200, 1, 200) + " / " + world.readOnUnloaded);
+        check("向きだけ変えるときは、宝箱も中身の決まりも残し、向きは変える",
+            turnDone && turnBox.lootTable != null && world.blockEntities.get(turnAt) == turnBox && world.get(232, 1, 200) == east,
+            turnDone + " / " + turnBox.lootTable + " / " + world.get(232, 1, 200));
     }
 
     static void fillTests() {
@@ -321,6 +345,56 @@ public class JobsTest {
         check("石のあったマスだけ空気にし、ほかは置かない（置いた数は全部で数える）",
             world.get(5, 20, 5) == AIR && world.setCount.size() == 1 && f3.placed() == 16 * 48 * 16,
             world.get(5, 20, 5) + " / " + world.setCount.size() + " / " + f3.placed());
+
+        System.out.println("--- 埋める: まだ開けていない宝箱は、置きかえる前に中身の決まりを外す（中身を作らせない。探検家の地図で止まらないように）");
+        fresh();
+        BlockState chest = BlockState.of("chest");
+        BlockPos sealed = new BlockPos(2, 1, 2);
+        BlockPos filled = new BlockPos(5, 1, 5);
+        world.put(sealed.getX(), sealed.getY(), sealed.getZ(), chest);
+        world.put(filled.getX(), filled.getY(), filled.getZ(), chest);
+        net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity sealedBox =
+            new net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity(
+                new net.minecraft.resources.ResourceLocation("chests/shipwreck_map"));
+        world.blockEntities.put(sealed, sealedBox);
+        world.blockEntities.put(filled, new net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity(null));
+        FillJob f12 = fill(0, 0, 0, 7, 3, 7, AIR, CLEAR_FLAGS);
+        runToEnd(f12);
+        check("中身の決まりが残ったまま置きかえない（まだ開けていない宝箱の決まりは外してから空気にする）",
+            world.replacedWithLoot == 0 && sealedBox.lootTable == null && world.get(2, 1, 2) == AIR && world.get(5, 1, 5) == AIR,
+            world.replacedWithLoot + " / " + sealedBox.lootTable + " / " + world.get(2, 1, 2));
+
+        System.out.println("--- 埋める: 樽も同じ。同じ種類のブロック（向きだけ違う宝箱）に変えるときは、中身の決まりを外さない");
+        fresh();
+        BlockPos barrelAt = new BlockPos(3, 1, 3);
+        BlockPos turnAt = new BlockPos(4, 1, 4);
+        world.put(barrelAt.getX(), barrelAt.getY(), barrelAt.getZ(), BlockState.of("barrel"));
+        world.put(turnAt.getX(), turnAt.getY(), turnAt.getZ(), BlockState.of("chest[facing=north]"));
+        net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity barrelBox =
+            new net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity(new net.minecraft.resources.ResourceLocation("chests/underwater_ruin_big"));
+        net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity turnBox =
+            new net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity(new net.minecraft.resources.ResourceLocation("chests/shipwreck_map"));
+        world.blockEntities.put(barrelAt, barrelBox);
+        world.blockEntities.put(turnAt, turnBox);
+        FillJob f13 = fill(3, 1, 3, 3, 1, 3, STONE, FILL_FLAGS);
+        runToEnd(f13);
+        FillJob f14 = fill(4, 1, 4, 4, 1, 4, BlockState.of("chest[facing=east]"), FILL_FLAGS);
+        runToEnd(f14);
+        check("樽も、ちがうブロックに変えるときは中身の決まりを外してから置きかえる（石になる）",
+            world.replacedWithLoot == 0 && barrelBox.lootTable == null && world.get(3, 1, 3) == STONE,
+            world.replacedWithLoot + " / " + barrelBox.lootTable + " / " + world.get(3, 1, 3));
+        check("同じ種類（向きだけ違う宝箱）に変えるときは外さない（宝箱も中身の決まりも残り、向きは変わる）",
+            turnBox.lootTable != null && world.blockEntities.get(turnAt) == turnBox && world.get(4, 1, 4) == BlockState.of("chest[facing=east]"),
+            turnBox.lootTable + " / " + world.get(4, 1, 4));
+
+        System.out.println("--- 埋める: 中身の決まりを持たないブロックエンティティ（かまど）も、そのまま置きかえる");
+        fresh();
+        world.put(6, 1, 6, BlockState.of("furnace"));
+        world.blockEntities.put(new BlockPos(6, 1, 6), new net.minecraft.world.level.block.entity.BlockEntity());
+        FillJob f15 = fill(6, 1, 6, 6, 1, 6, AIR, CLEAR_FLAGS);
+        runToEnd(f15);
+        check("かまどは例外を出さずに空気になる", world.get(6, 1, 6) == AIR && world.blockEntities.isEmpty(),
+            world.get(6, 1, 6) + " / " + world.blockEntities);
 
         System.out.println("--- 埋める: 時間が来たら止めて、次は続きから（同じマスを 2 回置かない）");
         fresh();

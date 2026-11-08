@@ -2,6 +2,8 @@ package net.minecraft.server.level;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.storage.LevelData;
@@ -25,6 +27,10 @@ public class ServerLevel {
     public int setOnUnloaded;
     // ここに置こうとしたら例外を投げる（null なら投げない）
     public BlockPos throwAt;
+    // ブロックエンティティ（試験が置く）
+    public final Map<BlockPos, BlockEntity> blockEntities = new HashMap<>();
+    // 中身の決まり（loot table）が残ったままの入れ物を置きかえた回数（本物では、そのとき中身を作り、探検家の地図で止まる）
+    public int replacedWithLoot;
 
     public ServerLevel(MinecraftServer server) {
         this.server = server;
@@ -46,6 +52,21 @@ public class ServerLevel {
         return levelData;
     }
 
+    // 読み込まれていないチャンクのブロックを読んだ回数（本物では、メインスレッドがその場で読み込んで止まる）
+    public int readOnUnloaded;
+
+    public BlockState getBlockState(BlockPos pos) {
+        BlockState now = get(pos.getX(), pos.getY(), pos.getZ());
+        if (now == null) {
+            readOnUnloaded++;
+        }
+        return now;
+    }
+
+    public BlockEntity getBlockEntity(BlockPos pos) {
+        return blockEntities.get(pos);
+    }
+
     public boolean isOutsideBuildHeight(BlockPos pos) {
         return pos.getY() < -64 || pos.getY() >= 320;
     }
@@ -53,6 +74,14 @@ public class ServerLevel {
     public boolean setBlock(BlockPos pos, BlockState state, int flags) {
         if (pos.equals(throwAt)) {
             throw new IllegalStateException("試験で投げる例外（setBlock）");
+        }
+        // 本物と同じく、ちがう種類のブロックに変わるときだけ入れ物を消す（そのとき中身の決まりが残っていれば、中身を作ることになる）
+        BlockState now = get(pos.getX(), pos.getY(), pos.getZ());
+        if (now == null || !now.is(state.getBlock())) {
+            BlockEntity old = blockEntities.remove(pos);
+            if (old instanceof RandomizableContainerBlockEntity c && c.lootTable != null) {
+                replacedWithLoot++;
+            }
         }
         setCount.merge(pos, 1, Integer::sum);
         setOrder.add(pos);
