@@ -418,7 +418,8 @@ public class CommandExecutor {
             }
             return target;
         }, relative ? null : pos, (world, at) -> Reach.within(world, at.getX(), at.getZ()), true,
-            (world, target) -> world.setBlock(target, blockState, 3), () -> {
+            // まだ開けていない宝箱をちがうブロックに変えるときは、中身を作らせない（探検家の地図で止まらないように。FillJob と同じ）
+            (world, target) -> FillJob.replaceBlock(world, target, blockState, 3), () -> {
             logInputError("setBlock chunk not loaded", "setBlock: gave up waiting for the chunk to load");
             sendErrorChat(LOAD_GAVE_UP_CHAT_PREFIX + "ブロックを おけませんでした");
         }));
