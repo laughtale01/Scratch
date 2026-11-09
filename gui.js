@@ -64284,6 +64284,8 @@ class Scratch3MinecraftBlocks {
     this._canStopAll = false;
     // つないだ MOD が「pauseQueue」（一時停止）を受け付けるか（_canStopAll と同じ。features に pauseQueue があれば true）
     this._canPause = false;
+    // 止めるボタン・「すべてを止める」で止めた回数（学習準備が MOD の返事を待っている間に止めたら、あとから送らないため）
+    this._stopCount = 0;
     // 古い MOD のとき、一時停止で出す帯（「Minecraft は とまりません」）
     this._pauseNoticeElement = null;
     this._pauseNoticeTimer = null;
@@ -64409,6 +64411,7 @@ class Scratch3MinecraftBlocks {
    * ただし、スクリプトエリアやブロックの一覧で「すべてを止める」ブロックだけをクリックしたときは、止めるボタンと同じに送る
    */
   _onStopAll() {
+    this._stopCount++;
     if (this._canStopAll === false || !this.connected || !this.socket) {
       return;
     }
@@ -64745,7 +64748,8 @@ class Scratch3MinecraftBlocks {
         arguments: {
           TITLE: {
             type: 'string',
-            defaultValue: ''
+            // 空にすると、入力欄に「undefined」と出て、その題名で送られてしまうため、初めの値を入れる
+            defaultValue: formatMessage({ id: 'minecraft.uploadVideo.defaultTitle', default: 'my video', description: 'default title of an uploaded video' })
           }
         }
       }, '---', {
@@ -64952,6 +64956,8 @@ class Scratch3MinecraftBlocks {
       }, '---', {
         opcode: 'getPlayerFacing',
         blockType: 'reporter',
+        // チェックボックス（ステージの表示）を出さない（表示すると、作品を止めていても 1 秒に何回も MOD に問い合わせるため）
+        disableMonitor: true,
         text: formatMessage({ id: 'minecraft.getPlayerFacing', default: 'player facing direction', description: 'get player facing direction' })
       }, {
         opcode: 'getBlockType',
@@ -65036,20 +65042,22 @@ class Scratch3MinecraftBlocks {
             text: { id: 'minecraft.menu.mobSpawning', default: 'Mob Spawning' },
             value: 'doMobSpawning'
           }, {
-            text: { id: 'minecraft.menu.daylightCycle', default: 'Daylight Cycle' },
+            // MOD はこの 2 つの値を逆にして使う（オン＝止まる）ので、名前は「止める」にする（value は変えない）
+            text: { id: 'minecraft.menu.stopDaylight', default: 'Stop time' },
             value: 'doDaylightCycle'
           }, {
-            text: { id: 'minecraft.menu.weatherCycle', default: 'Weather Cycle' },
+            text: { id: 'minecraft.menu.stopWeather', default: 'Stop weather' },
             value: 'doWeatherCycle'
           }]
         },
         gameRuleValues: {
           acceptReporters: false,
+          // 暗視のメニューと同じ「オン／オフ」の訳を使う（value は変えない）
           items: [{
-            text: 'ON',
+            text: { id: 'minecraft.menu.on', default: 'ON' },
             value: 'true'
           }, {
-            text: 'OFF',
+            text: { id: 'minecraft.menu.off', default: 'OFF' },
             value: 'false'
           }]
         },
@@ -65101,7 +65109,17 @@ class Scratch3MinecraftBlocks {
         },
         weatherTypes: {
           acceptReporters: false,
-          items: ['clear', 'rain', 'thunder']
+          // 表示だけ訳す（value は今までの作品と同じ clear・rain・thunder）
+          items: [{
+            text: { id: 'minecraft.menu.clear', default: 'Clear' },
+            value: 'clear'
+          }, {
+            text: { id: 'minecraft.menu.rain', default: 'Rain' },
+            value: 'rain'
+          }, {
+            text: { id: 'minecraft.menu.thunder', default: 'Thunder' },
+            value: 'thunder'
+          }]
         },
         timeValues: {
           acceptReporters: true,
@@ -65296,10 +65314,90 @@ class Scratch3MinecraftBlocks {
       this._lastFailedAt = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
       this._lastFailedUrl = this._attemptUrl;
     }
-    if (this.runtime.ltMinecraftConnection === state) return;
+    // つながった・［切断］したら、「先につないでね」の知らせを消す（消したときは、同じ状態でもランプに知らせる）
+    const clearedNeed = (state === 'connected' || state === 'idle') && this.runtime.ltMinecraftNeedConnection === true;
+    if (clearedNeed) this.runtime.ltMinecraftNeedConnection = false;
+    if (this.runtime.ltMinecraftConnection === state && !clearedNeed) return;
     this.runtime.ltMinecraftConnection = state;
     // 知らせの仕組みが無い runtime（試験の偽物など）では知らせない
     if (typeof this.runtime.emit === 'function') this.runtime.emit('LT_MINECRAFT_CONNECTION', state);
+  }
+
+  /**
+   * つないでいないのに Minecraft のブロックが動いたことを、ステージの上のランプに知らせる
+   * （ランプが点滅し、押すと「先につないでね」が出る。つなぎかけ〔黄〕のときは知らせない）
+   */
+  _noticeNeedConnection() {
+    // ステージの表示（モニター）からの問い合わせでは知らせない
+    // （前の作品に表示が残っていると、子どもが何もしていないのに点滅し続けるため）
+    const sequencer = this.runtime.sequencer;
+    const thread = sequencer && sequencer.activeThread;
+    if (thread && thread.updateMonitor) return;
+    const state = this.runtime.ltMinecraftConnection;
+    if (state !== 'idle' && state !== 'failed') return;
+    this.runtime.ltMinecraftNeedConnection = true;
+    if (typeof this.runtime.emit === 'function') this.runtime.emit('LT_MINECRAFT_NEED_CONNECTION');
+  }
+
+  /**
+   * つないでいる MOD が、今の守りを持っているか
+   * （大きな範囲を long で数えて断る・「周囲をクリア」の中心が無ければ断る・呼んだ生き物に作品を壊させない）。
+   * 「stopAll」を返す MOD（2026-11-08 以降）には、どれも入っている。
+   * 返事の前（null）や古い MOD（false）のときは、Scratch の側で今までどおり守る
+   * @returns {boolean} 今の守りを持つ MOD なら true
+   */
+  _modHasGuards() {
+    return this._canStopAll === true;
+  }
+
+  /**
+   * つないだ直後で、MOD の返事（新しい MOD か）がまだ来ていなければ、来るまで待つ（長くても timeoutMs まで）。
+   * ［接続］は WebSocket が開いた時点で終わるので、すぐあとのブロックは返事より先に動くことがあるため
+   * @param {number} timeoutMs - 待つ長さの上限（ミリ秒）
+   * @returns {Promise} 返事が来た・つながっていない・接続が変わった・時間が過ぎたら終わる
+   */
+  _waitForModInfo(timeoutMs) {
+    // 戻らない時計で測る（パソコンの時計を合わせ直しても、待つ長さがずれないように）
+    const now = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
+    const start = now();
+    const socket = this.socket;
+    return new Promise(resolve => {
+      const check = () => {
+        if (this._canStopAll !== null || !this.connected || this.socket !== socket || now() - start >= timeoutMs) {
+          resolve();
+        } else {
+          setTimeout(check, 20);
+        }
+      };
+      check();
+    });
+  }
+
+  /**
+   * 「周囲をクリア」などの中心の座標を数にする。数でない・空のときは undefined（送らない＝MOD が断る）。
+   * 小数は切り下げる（置くブロックとそろえる。MOD は 0 の方へ切り捨てるため）
+   * @param {*} value - ブロックの入力
+   * @returns {number|undefined} 中心の座標
+   */
+  _centerCoord(value) {
+    let n;
+    if (typeof value === 'number') {
+      n = value;
+    } else {
+      const text = value === undefined || value === null ? '' : String(value).trim();
+      if (text === '') return undefined;
+      n = Number(text);
+    }
+    return Number.isFinite(n) ? Math.floor(n) : undefined;
+  }
+
+  /**
+   * MOD が返すブロックの名前から、minecraft: / minecraftedu: を外す（メニューの名前と同じ形にする）
+   * @param {*} name - MOD が返した名前（例: minecraft:grass_block、minecraftedu:vertical_oak_slab）
+   * @returns {string} 外した名前（例: grass_block、vertical_oak_slab）
+   */
+  _plainBlockName(name) {
+    return String(name).replace(/^(minecraft|minecraftedu):/, '');
   }
 
   /**
@@ -65475,11 +65573,13 @@ class Scratch3MinecraftBlocks {
    * ブロック配置（絶対座標）
    */
   setBlock(args) {
-    const isVerticalSlab = (args.BLOCK.startsWith('vertical_') || args.BLOCK.startsWith('waxed_vertical_')) && args.BLOCK.includes('_slab');
+    // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
+    const blockName = String(args.BLOCK);
+    const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
     const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
-    let blockType = namespace + ':' + args.BLOCK;
+    let blockType = namespace + ':' + blockName;
     const properties = [];
-    const isSlab = args.BLOCK.includes('_slab') && !isVerticalSlab;
+    const isSlab = blockName.includes('_slab') && !isVerticalSlab;
     if (isVerticalSlab) {
       const verticalSlabFacing = (args.FACING && args.FACING !== 'none') ? args.FACING : 'north';
       properties.push('facing=' + verticalSlabFacing);
@@ -65501,10 +65601,11 @@ class Scratch3MinecraftBlocks {
     if (properties.length > 0) {
       blockType += '[' + properties.join(',') + ']';
     }
+    // 小数は切り下げる（まとめて置くブロックと同じ。MOD に小数のまま送ると 0 の方へ切り捨てるので、マイナスの場所で 1 マスずれる）
     return this.sendCommand('setBlock', {
-      x: Number(args.X),
-      y: Number(args.Y) - 60,
-      z: Number(args.Z),
+      x: Math.floor(Number(args.X)),
+      y: Math.floor(Number(args.Y)) - 60,
+      z: Math.floor(Number(args.Z)),
       blockType: blockType
     });
   }
@@ -65513,11 +65614,13 @@ class Scratch3MinecraftBlocks {
    * ブロック配置（相対座標）
    */
   setBlockRelative(args) {
-    const isVerticalSlab = (args.BLOCK.startsWith('vertical_') || args.BLOCK.startsWith('waxed_vertical_')) && args.BLOCK.includes('_slab');
+    // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
+    const blockName = String(args.BLOCK);
+    const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
     const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
-    let blockType = namespace + ':' + args.BLOCK;
+    let blockType = namespace + ':' + blockName;
     const properties = [];
-    const isSlab = args.BLOCK.includes('_slab') && !isVerticalSlab;
+    const isSlab = blockName.includes('_slab') && !isVerticalSlab;
     if (isVerticalSlab) {
       const verticalSlabFacing = (args.FACING && args.FACING !== 'none') ? args.FACING : 'north';
       properties.push('facing=' + verticalSlabFacing);
@@ -65540,9 +65643,10 @@ class Scratch3MinecraftBlocks {
       blockType += '[' + properties.join(',') + ']';
     }
     return this.sendCommand('setBlock', {
-      relativeX: Number(args.X),
-      relativeY: Number(args.Y),
-      relativeZ: Number(args.Z),
+      // 小数は切り下げる（MOD はプレイヤーのいるマスも切り下げで決めるので、それとそろえる）
+      relativeX: Math.floor(Number(args.X)),
+      relativeY: Math.floor(Number(args.Y)),
+      relativeZ: Math.floor(Number(args.Z)),
       blockType: blockType
     });
   }
@@ -65557,11 +65661,13 @@ class Scratch3MinecraftBlocks {
     const y2 = Math.floor(Number(args.Y2)) - 60; // Scratch座標からMinecraft座標に変換
     const z1 = Math.floor(Number(args.Z1));
     const z2 = Math.floor(Number(args.Z2));
-    const isVerticalSlab = (args.BLOCK.startsWith('vertical_') || args.BLOCK.startsWith('waxed_vertical_')) && args.BLOCK.includes('_slab');
+    // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
+    const blockName = String(args.BLOCK);
+    const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
     const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
-    let blockType = namespace + ':' + args.BLOCK;
+    let blockType = namespace + ':' + blockName;
     const properties = [];
-    const isSlab = args.BLOCK.includes('_slab') && !isVerticalSlab;
+    const isSlab = blockName.includes('_slab') && !isVerticalSlab;
     if (isVerticalSlab) {
       const verticalSlabFacing = (args.FACING && args.FACING !== 'none') ? args.FACING : 'north';
       properties.push('facing=' + verticalSlabFacing);
@@ -65597,7 +65703,10 @@ class Scratch3MinecraftBlocks {
     const rangeY = maxY - minY + 1;
     const rangeZ = maxZ - minZ + 1;
     const volume = rangeX * rangeY * rangeZ;
-    if (volume > 2000000) {
+    // 大きすぎる範囲（1 辺 256・全部で 200 万マスより大きい）は、今の MOD が断り、チャットで理由を知らせる
+    // （ここで断ると、子どもには何も知らせずに、後ろのブロックごと止まってしまうため）。
+    // 古い MOD は数え方があふれて Minecraft が固まることがあるので、今までどおりここで断る
+    if (this.connected && !this._modHasGuards() && volume > 2000000) {
       console.warn('範囲が大きすぎます。最大2,000,000ブロックまでです。');
       return Promise.reject(new Error('範囲が大きすぎます（最大2,000,000ブロック）'));
     }
@@ -65628,17 +65737,20 @@ class Scratch3MinecraftBlocks {
    * ブロック配置（シンプル版：配置・向きパラメータなし）
    */
   setBlockSimple(args) {
-    const isVerticalSlab = (args.BLOCK.startsWith('vertical_') || args.BLOCK.startsWith('waxed_vertical_')) && args.BLOCK.includes('_slab');
+    // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
+    const blockName = String(args.BLOCK);
+    const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
     const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
-    let blockType = namespace + ':' + args.BLOCK;
+    let blockType = namespace + ':' + blockName;
     // 縦スラブの場合はデフォルトの向きを設定
     if (isVerticalSlab) {
       blockType += '[facing=north]';
     }
+    // 小数は切り下げる（まとめて置くブロックと同じ。MOD に小数のまま送ると 0 の方へ切り捨てるので、マイナスの場所で 1 マスずれる）
     return this.sendCommand('setBlock', {
-      x: Number(args.X),
-      y: Number(args.Y) - 60,
-      z: Number(args.Z),
+      x: Math.floor(Number(args.X)),
+      y: Math.floor(Number(args.Y)) - 60,
+      z: Math.floor(Number(args.Z)),
       blockType: blockType
     });
   }
@@ -65653,9 +65765,11 @@ class Scratch3MinecraftBlocks {
     const y2 = Math.floor(Number(args.Y2)) - 60;
     const z1 = Math.floor(Number(args.Z1));
     const z2 = Math.floor(Number(args.Z2));
-    const isVerticalSlab = (args.BLOCK.startsWith('vertical_') || args.BLOCK.startsWith('waxed_vertical_')) && args.BLOCK.includes('_slab');
+    // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
+    const blockName = String(args.BLOCK);
+    const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
     const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
-    let blockType = namespace + ':' + args.BLOCK;
+    let blockType = namespace + ':' + blockName;
     // 縦スラブの場合はデフォルトの向きを設定
     if (isVerticalSlab) {
       blockType += '[facing=north]';
@@ -65668,12 +65782,13 @@ class Scratch3MinecraftBlocks {
     const minZ = Math.min(z1, z2);
     const maxZ = Math.max(z1, z2);
 
+    // 大きすぎる範囲は、今の MOD が断り、チャットで理由を知らせる（ここで断ると、何も知らせずに止まってしまうため）。
+    // 古い MOD は数え方があふれて Minecraft が固まることがあるので、今までどおりここで断る
     const volume = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-    if (volume > 2000000) {
+    if (this.connected && !this._modHasGuards() && volume > 2000000) {
       console.warn('範囲が大きすぎます。最大2,000,000ブロックまでです。');
       return Promise.reject(new Error('範囲が大きすぎます（最大2,000,000ブロック）'));
     }
-
     return this.sendCommand('fillBlocks', {
       from: { x: minX, y: minY, z: minZ },
       to: { x: maxX, y: maxY, z: maxZ },
@@ -65687,10 +65802,11 @@ class Scratch3MinecraftBlocks {
    * @returns {Promise} コマンド実行結果
    */
   setContainerItem(args) {
+    // 小数は切り下げる（置くブロックとそろえる）
     return this.sendCommand('setContainerItem', {
-      x: Number(args.X),
-      y: Number(args.Y) - 60,  // Y座標オフセット（スーパーフラット対応）
-      z: Number(args.Z),
+      x: Math.floor(Number(args.X)),
+      y: Math.floor(Number(args.Y)) - 60,  // Y座標オフセット（スーパーフラット対応）
+      z: Math.floor(Number(args.Z)),
       slot: Math.max(0, Math.floor(Number(args.SLOT))),
       itemType: 'minecraft:' + args.ITEM,
       count: Math.min(64, Math.max(1, Math.floor(Number(args.COUNT))))
@@ -65766,7 +65882,8 @@ class Scratch3MinecraftBlocks {
           case 'z':
             return result.z !== undefined ? result.z : 0;
           case 'blockType':
-            return result.blockType || 'air';
+            // メニューの名前と同じ形（minecraft: を外す）で返す。置くブロックにそのまま入れられるように
+            return result.blockType ? this._plainBlockName(result.blockType) : 'air';
           default:
             return 0;
         }
@@ -65798,22 +65915,36 @@ class Scratch3MinecraftBlocks {
       'night': 13000,
       'midnight': 18000
     };
+    // メニューの名前のほか、0〜23999 の数（ゲームの時刻）も受けつける。知らない値は、今までどおり朝（1000）
+    const key = String(args.TIME).trim();
+    let time = 1000;
+    if (Object.prototype.hasOwnProperty.call(timeMap, key)) {
+      time = timeMap[key];
+    } else if (key !== '' && Number.isFinite(Number(key)) && Number(key) >= 0 && Number(key) < 24000) {
+      time = Math.floor(Number(key));
+    }
     return this.sendCommand('setTime', {
-      time: timeMap[args.TIME] || 1000
+      time: time
     });
   }
 
   /**
    * 周囲クリア
    * 指定座標を中心に空気ブロックでクリア
-   * 範囲: X/Z: 中心から±100 (201x201ブロック), Y: -64~100
+   * 範囲: X/Z: 中心から±200 (401x401ブロック), Y: -64~100（MOD の executeClearArea）
    * @param {object} args - 引数オブジェクト
    * @param {number} args.X - 中心X座標
    * @param {number} args.Z - 中心Z座標
    */
   clearArea(args) {
-    const centerX = Number(args.X) || 0;
-    const centerZ = Number(args.Z) || 0;
+    // 数でない・空の中心は送らない（MOD が「値をたしかめてね」と断る）。0 にすると原点のまわりを消してしまうため
+    const centerX = this._centerCoord(args.X);
+    const centerZ = this._centerCoord(args.Z);
+    // 古い MOD は、中心が無いと原点を中心にしてしまうので、送らずに止める
+    if ((centerX === undefined || centerZ === undefined) && this.connected && !this._modHasGuards()) {
+      console.warn('中心の座標が数ではないので、送りません');
+      return;
+    }
     console.log('周囲クリア開始: 中心(' + centerX + ', ' + centerZ + ')');
     return this.sendCommand('clearArea', {
       centerX: centerX,
@@ -65831,8 +65962,14 @@ class Scratch3MinecraftBlocks {
    * プレイヤー以外の全エンティティを削除
    */
   clearAllEntities(args) {
-    const centerX = Number(args.X) || 0;
-    const centerZ = Number(args.Z) || 0;
+    // 数でない・空の中心は送らない（MOD が「値をたしかめてね」と断る）。0 にすると原点のまわりを消してしまうため
+    const centerX = this._centerCoord(args.X);
+    const centerZ = this._centerCoord(args.Z);
+    // 古い MOD は、中心が無いと原点を中心にしてしまうので、送らずに止める
+    if ((centerX === undefined || centerZ === undefined) && this.connected && !this._modHasGuards()) {
+      console.warn('中心の座標が数ではないので、送りません');
+      return;
+    }
     console.log('全エンティティクリア開始: 中心(' + centerX + ', ' + centerZ + ')');
     return this.sendCommand('clearAllEntities', {
       centerX: centerX,
@@ -65886,23 +66023,56 @@ class Scratch3MinecraftBlocks {
    * 時刻を正午に固定、天気をクリア、モブスポーンと昼夜/天気サイクルを無効化
    * 暗視ON、移動速度を標準に戻す
    */
-  prepareForLearning() {
-    console.log('学習準備開始: 時刻固定、天気固定、モブスポーン無効化、エンティティ召喚無効化、暗視ON');
-    return Promise.all([
+  prepareForLearning(args, util) {
+    console.log('学習準備開始: 時刻固定、天気固定、モブスポーン無効化、暗視ON');
+    const send = () => Promise.all([
       this.sendCommand('setTime', { time: 6000 }),
       this.sendCommand('setWeather', { weather: 'clear' }),
       this.sendCommand('setGameRule', { rule: 'doDaylightCycle', value: 'true' }),  // MOD側で反転→時刻固定
       this.sendCommand('setGameRule', { rule: 'doWeatherCycle', value: 'true' }),  // MOD側で反転→天気固定
       this.sendCommand('setGameRule', { rule: 'doMobSpawning', value: 'false' }),
-      this.sendCommand('setEntitySpawning', { enabled: false }),  // エンティティ召喚を禁止
+      // 生き物を呼ぶのは止めない（今の MOD は、呼んだ生き物に作品を壊させない〔SummonedEntityGuard〕）。
+      // 許可にもどす命令も送らない（先生がゲームの中で /entityspawn deny と止めたのを、勝手にもどさないため）。
+      // 古い MOD にはその守りが無いので、今までどおり止める
+      ...(this._modHasGuards() ? [] : [this.sendCommand('setEntitySpawning', { enabled: false })]),
       this.sendCommand('setNightVision', { enabled: true }),
       this.sendCommand('setMoveSpeed', { multiplier: 1.0 })
-    ]).then(() => {
-      console.log('学習準備完了');
+    ]);
+    // 送らずに終えたとき（false）は「完了」を出さない
+    const finish = promise => promise.then(result => {
+      if (result !== false) console.log('学習準備完了');
     }).catch(error => {
       console.error('学習準備エラー:', error);
       throw error;
     });
+    // MOD の返事（新しい MOD か）がもう来ている・つないでいないときは、今までどおりその場で送る
+    if (this._canStopAll !== null || !this.connected) {
+      return finish(send());
+    }
+    // つないだ直後で返事がまだのときは、返事を待ってから決める（分からないまま古い MOD として生き物を止めると、
+    // 新しい MOD でも Minecraft を起動し直すまで生き物を呼べなくなるため）。
+    // 待っている間につなぎ直した・［切断］したときは、何も送らずに終える（前の接続の判定を、次の接続に使わないように）。
+    // 待っている間に止めた（止めるボタン・「すべてを止める」・このスクリプトだけを止めた）ときも送らない
+    // （止めたのにあとから世界が変わらないように）。ただし古い MOD には、守りの命令（生き物を止める）だけは送る
+    const socket = this.socket;
+    const stopCount = this._stopCount;
+    const thread = util && util.thread;
+    return finish(this._waitForModInfo(1000).then(() => {
+      if (this.socket !== socket || !this.connected) {
+        console.log('学習準備: 待っている間につなぎ直した・切断したので、送りません');
+        return false;
+      }
+      const stopped = this._stopCount !== stopCount || !!(thread && !this.runtime.isActiveThread(thread));
+      if (stopped) {
+        if (this._modHasGuards()) {
+          console.log('学習準備: 待っている間に止めたので、送りません');
+          return false;
+        }
+        console.log('学習準備: 待っている間に止めたので、古い MOD に生き物を止める命令だけを送ります');
+        return this.sendCommand('setEntitySpawning', { enabled: false }).then(() => false);
+      }
+      return send();
+    }));
   }
 
   /**
@@ -66271,7 +66441,9 @@ class Scratch3MinecraftBlocks {
    * ファイル選択ダイアログを表示し、選択された動画をアップロード
    */
   uploadVideo(args) {
-    const title = args.TITLE || '無題の録画';
+    // 空・空白だけ・「undefined」（前の作品の空の入力欄）のときは「無題の録画」にする
+    const rawTitle = args.TITLE === undefined || args.TITLE === null ? '' : String(args.TITLE).trim();
+    const title = rawTitle && rawTitle !== 'undefined' ? rawTitle : '無題の録画';
     console.log('動画アップロード開始: ' + title);
 
     return new Promise((resolve, reject) => {
@@ -66521,16 +66693,19 @@ class Scratch3MinecraftBlocks {
    * ブロックの種類取得
    */
   getBlockType(args) {
-    const x = Number(args.X) || 0;
-    const y = Number(args.Y) - 60;  // Scratch座標からMinecraft座標に変換（デフォルト0→-60）
-    const z = Number(args.Z) || 0;
+    // 小数は切り下げる（置くブロックとそろえ、置いたマスを調べられるように）
+    const x = Math.floor(Number(args.X)) || 0;
+    const y = Math.floor(Number(args.Y)) - 60;  // Scratch座標からMinecraft座標に変換（デフォルト0→-60）
+    const z = Math.floor(Number(args.Z)) || 0;
     return this.sendCommandWithResponse('getBlockType', {
       x: x,
       y: y,
       z: z
     }).then(response => {
       if (response && response.payload && response.payload.result) {
-        return response.payload.result.blockType || 'air';
+        // MOD の縦スラブは minecraftedu: が付いて返るので外す（メニューの名前と同じ形にする）
+        const name = response.payload.result.blockType;
+        return name ? this._plainBlockName(name) : 'air';
       }
       return 'air';
     }).catch(error => {
@@ -66555,7 +66730,8 @@ class Scratch3MinecraftBlocks {
           y: result.position.y + 60,
           z: result.position.z
         };
-        return result.blockType;
+        // MOD の縦スラブは minecraftedu: が付いて返るので外す（メニューの名前と同じ形にする）
+        return this._plainBlockName(result.blockType);
       }
       this._lastUnderPos = null;
       return '';
@@ -66589,6 +66765,7 @@ class Scratch3MinecraftBlocks {
   sendCommand(action, params) {
     if (!this.connected || !this.socket) {
       console.warn('Not connected to Minecraft server');
+      this._noticeNeedConnection();
       return Promise.reject(new Error('Not connected'));
     }
     return this.sendMessage({
@@ -66606,6 +66783,7 @@ class Scratch3MinecraftBlocks {
   sendCommandWithResponse(action, params, timeoutMs) {
     if (!this.connected || !this.socket) {
       console.warn('Not connected to Minecraft server');
+      this._noticeNeedConnection();
       return Promise.reject(this._createCodedError('NOT_CONNECTED', 'Not connected'));
     }
     const messageId = this.generateUUID();
@@ -292812,6 +292990,12 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.menu.mobSpawning": "Mob Spawning",
     "minecraft.menu.daylightCycle": "Daylight Cycle",
     "minecraft.menu.weatherCycle": "Weather Cycle",
+    "minecraft.menu.stopDaylight": "Stop time",
+    "minecraft.menu.stopWeather": "Stop weather",
+    "minecraft.menu.clear": "Clear",
+    "minecraft.menu.rain": "Rain",
+    "minecraft.menu.thunder": "Thunder",
+    "minecraft.uploadVideo.defaultTitle": "my video",
     "minecraft.menu.survival": "Survival",
     "minecraft.menu.creative": "Creative",
     "minecraft.menu.adventure": "Adventure",
@@ -293705,6 +293889,7 @@ __webpack_require__.r(__webpack_exports__);
     "gui.minecraftLamp.connected": "Connected",
     "gui.minecraftLamp.failed": "Can't connect",
     "gui.minecraftLamp.idleHint": "Run the [connect to Minecraft] block to connect.",
+    "gui.minecraftLamp.needHint": "Your blocks did not reach Minecraft. Connect to Minecraft first.",
     "gui.minecraftLamp.connectingHint": "Please wait. If it stays yellow, check that Minecraft is running.",
     "gui.minecraftLamp.connectedHint": "Your blocks will reach Minecraft.",
     "gui.minecraftLamp.failedTitle": "Can't connect to Minecraft",
@@ -342376,6 +342561,12 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.menu.mobSpawning": "モブスポーン",
     "minecraft.menu.daylightCycle": "時間固定",
     "minecraft.menu.weatherCycle": "天気固定",
+    "minecraft.menu.stopDaylight": "時間固定",
+    "minecraft.menu.stopWeather": "天気固定",
+    "minecraft.menu.clear": "晴れ",
+    "minecraft.menu.rain": "雨",
+    "minecraft.menu.thunder": "雷雨",
+    "minecraft.uploadVideo.defaultTitle": "わたしの作品",
     "minecraft.menu.survival": "サバイバル",
     "minecraft.menu.creative": "クリエイティブ",
     "minecraft.menu.adventure": "アドベンチャー",
@@ -343334,6 +343525,7 @@ __webpack_require__.r(__webpack_exports__);
     "gui.minecraftLamp.connected": "つながっている",
     "gui.minecraftLamp.failed": "つながらない",
     "gui.minecraftLamp.idleHint": "［Minecraftに接続］ブロックを動かすと、つながります。",
+    "gui.minecraftLamp.needHint": "ブロックが Minecraft に届いていません。先に Minecraft につないでね。",
     "gui.minecraftLamp.connectingHint": "少し待ってください。ずっと黄色のときは、Minecraft が動いているか見てください。",
     "gui.minecraftLamp.connectedHint": "ブロックを動かすと、Minecraft に届きます。",
     "gui.minecraftLamp.failedTitle": "Minecraft につながりません",
@@ -344238,15 +344430,21 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.menu.mobSpawning": "もぶ すぽーん",
     "minecraft.menu.daylightCycle": "ひる と よる",
     "minecraft.menu.weatherCycle": "てんき",
+    "minecraft.menu.stopDaylight": "じかんをとめる",
+    "minecraft.menu.stopWeather": "てんきをとめる",
+    "minecraft.menu.clear": "はれ",
+    "minecraft.menu.rain": "あめ",
+    "minecraft.menu.thunder": "かみなり",
+    "minecraft.uploadVideo.defaultTitle": "わたしのさくひん",
     "minecraft.menu.survival": "さばいばる",
     "minecraft.menu.creative": "くりえいてぃぶ",
     "minecraft.menu.adventure": "ぼうけん",
     "minecraft.menu.spectator": "かんせん",
-    "minecraft.menu.day": "ひる",
-    "minecraft.menu.noon": "しょうご",
+    "minecraft.menu.day": "あさ",
+    "minecraft.menu.noon": "ひる",
     "minecraft.menu.sunset": "ゆうがた",
     "minecraft.menu.night": "よる",
-    "minecraft.menu.midnight": "しんや",
+    "minecraft.menu.midnight": "まよなか",
     "minecraft.menu.bottom": "ふつう (した)",
     "minecraft.menu.top": "さかさま (うえ)",
     "minecraft.menu.double": "にじゅう",
@@ -344338,6 +344536,7 @@ __webpack_require__.r(__webpack_exports__);
     "gui.minecraftLamp.connected": "つながっている",
     "gui.minecraftLamp.failed": "つながらない",
     "gui.minecraftLamp.idleHint": "［Minecraft に つなぐ］ブロックをうごかすと、つながります。",
+    "gui.minecraftLamp.needHint": "ブロックが Minecraft にとどいていません。さきに Minecraft につないでね。",
     "gui.minecraftLamp.connectingHint": "すこしまってください。ずっときいろのときは、Minecraft がうごいているかみてください。",
     "gui.minecraftLamp.connectedHint": "ブロックをうごかすと、Minecraft にとどきます。",
     "gui.minecraftLamp.failedTitle": "Minecraft につながりません",
@@ -445916,7 +446115,7 @@ const LT_LAMP_HINT_ID = 'lt-mc-lamp-hint';
 class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
   constructor(props) {
     super(props);
-    this.state = {loaded: false, status: 'idle', blink: false, hint: false};
+    this.state = {loaded: false, status: 'idle', blink: false, hint: false, need: false};
     this.blinkTimer = 0;
     this.root = null;
     this.handleExtensionAdded = this.handleExtensionAdded.bind(this);
@@ -445926,12 +446125,14 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.setRoot = this.setRoot.bind(this);
     this.handleBlur = this.handleBlur.bind(this);
+    this.handleNeedConnection = this.handleNeedConnection.bind(this);
   }
   componentDidMount() {
     ltInjectLampStyle();
     const runtime = this.props.vm.runtime;
     runtime.on('EXTENSION_ADDED', this.handleExtensionAdded);
     runtime.on('LT_MINECRAFT_CONNECTION', this.handleStatus);
+    runtime.on('LT_MINECRAFT_NEED_CONNECTION', this.handleNeedConnection);
     document.addEventListener('pointerdown', this.handleOutside, true);
     // 捕まえる段階（true）で受ける: ヒントが開いているときの Esc を、全画面を終わらせる処理より必ず先に受けるため
     document.addEventListener('keydown', this.handleKeyDown, true);
@@ -445941,6 +446142,7 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
     const runtime = this.props.vm.runtime;
     runtime.removeListener('EXTENSION_ADDED', this.handleExtensionAdded);
     runtime.removeListener('LT_MINECRAFT_CONNECTION', this.handleStatus);
+    runtime.removeListener('LT_MINECRAFT_NEED_CONNECTION', this.handleNeedConnection);
     document.removeEventListener('pointerdown', this.handleOutside, true);
     document.removeEventListener('keydown', this.handleKeyDown, true);
     clearTimeout(this.blinkTimer);
@@ -445959,7 +446161,8 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
     const left = (vm.runtime.ltMinecraftBlinkUntil || 0) - ltNow();
     clearTimeout(this.blinkTimer);
     if (left > 0) this.blinkTimer = setTimeout(() => this.setState({blink: false}), left);
-    this.setState({loaded, status: LT_LAMP_STATES.indexOf(status) >= 0 ? status : 'idle', blink: left > 0});
+    this.setState({loaded, status: LT_LAMP_STATES.indexOf(status) >= 0 ? status : 'idle', blink: left > 0,
+      need: vm.runtime.ltMinecraftNeedConnection === true});
   }
   handleExtensionAdded() {
     this.sync();
@@ -445971,6 +446174,7 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
   handleStatus(status) {
     if (LT_LAMP_STATES.indexOf(status) < 0) return;
     // つながっていたのに切れたときだけ点滅させる（初めからつながらないときは、赤になるだけ）。
+    // （ほかに、つないでいないのにブロックが動いたときも点滅する。handleNeedConnection を見る）
     // 点滅は、つながった・［切断］したときにだけ止める（「ずっと」の中の［接続］がつなぎ直そうとしても続ける）
     const runtime = this.props.vm.runtime;
     const lost = this.state.status === 'connected' && status === 'failed';
@@ -445982,10 +446186,26 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
     } else if (status === 'connected' || status === 'idle') {
       clearTimeout(this.blinkTimer);
       runtime.ltMinecraftBlinkUntil = 0;
-      this.setState({status, blink: false, loaded: true});
+      this.setState({status, blink: false, loaded: true, need: false});
     } else {
       this.setState({status, loaded: true});
     }
+  }
+  /**
+   * つないでいないのに Minecraft のブロックが動いた（拡張が知らせる）。
+   * ランプを点滅させ、ヒントと読み上げに「先につないでね」を出す（「ずっと」の中で何度も来ても、点滅の時間は数え直さない。
+   * 動かし続けている間は、点滅が終わるたびに点滅し直す）
+   */
+  handleNeedConnection() {
+    const status = this.state.status;
+    if (status !== 'idle' && status !== 'failed') return;
+    if (this.state.blink && this.state.need) return;
+    if (!this.state.blink) {
+      clearTimeout(this.blinkTimer);
+      this.props.vm.runtime.ltMinecraftBlinkUntil = ltNow() + LT_LAMP_BLINK_MS;
+      this.blinkTimer = setTimeout(() => this.setState({blink: false}), LT_LAMP_BLINK_MS);
+    }
+    this.setState({blink: true, need: true, loaded: true});
   }
   handleToggle() {
     this.setState(state => ({hint: !state.hint}));
@@ -446025,6 +446245,9 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
       failed: t('failed', 'Can\'t connect')
     }[status];
     const text = "Minecraft ".concat(label);
+    // つないでいないのにブロックが動いたときの知らせ（灰のときだけ。赤のときは、つなぎ方の手順が出る）
+    const needText = status === 'idle' && this.state.need ?
+      t('needHint', 'Your blocks did not reach Minecraft. Connect to Minecraft first.') : null;
     let hint = null;
     if (this.state.hint) {
       let body;
@@ -446043,6 +446266,8 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
         }[status];
         body = [
           R.createElement("p", {key: 't', className: 'lt-mc-lamp__hint-title', "aria-hidden": true}, text),
+          // つないでいないのにブロックが動いたときは、先につなぐように知らせる
+          needText ? R.createElement("p", {key: 'n'}, needText) : null,
           R.createElement("p", {key: 'b'}, hintText)
         ];
       }
@@ -446064,8 +446289,8 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
       onClick: this.handleToggle
     }, R.createElement("span", {className: "lt-mc-lamp__dot", "aria-hidden": true}),
     R.createElement("span", {className: "lt-mc-lamp__text", "aria-hidden": true}, text)),
-    // 状態が変わったら読み上げる（ボタンの中ではなく、ここに置く）
-    R.createElement("span", {className: "lt-mc-lamp__live", role: "status"}, text),
+    // 状態が変わったら読み上げる（ボタンの中ではなく、ここに置く）。「先につないでね」も読み上げる
+    R.createElement("span", {className: "lt-mc-lamp__live", role: "status"}, needText ? text.concat(' ', needText) : text),
     hint);
   }
 }
