@@ -6,9 +6,11 @@
 //   CHROME_PATH   … Chrome の実行ファイルの場所（既定は Mac の /Applications/Google Chrome.app/Contents/MacOS/Google Chrome）。
 //                   無ければ試験を飛ばし、終わりのコード 77 を返す
 //   BLOCKS_GUI_JS … 試す gui.js（既定はリポジトリの gui.js）
+//   BLOCKS_UPDATE_FIXTURE=1 … 今までの作品を守る記録 tests/fixtures/minecraft-blocks-compat.json を作り直す
+//                   （わざとブロックやメニューの値を変えたときだけ。前の記録から消えるものを出し、ほかの試験が失敗していれば作り直さない）
 import { chromium } from 'playwright-core';
 import { createServer } from 'node:http';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -108,7 +110,8 @@ try {
   // 本物の WebSocket が開いたら記録する（この試験では、ページの WebSocket はすべて偽物なので、開くことは無いはず。別の窓も見張る）
   ctx.on('page', pg => pg.on('websocket', ws => errors.push(`本物の WebSocket が開いた: ${ws.url()}`)));
   const p = await ctx.newPage();
-  p.on('pageerror', e => errors.push(e.message));
+  // ページのエラーは、どこで起きたかが分かるよう、呼び出しの先頭の数行も残す
+  p.on('pageerror', e => errors.push(`${e.message} @ ${String(e.stack || '').split('\n').slice(1, 4).map(x => x.trim()).join(' | ')}`));
   p.on('console', m => { if (m.type() === 'log') logs.push(m.text()); });
   p.on('dialog', d => d.dismiss().catch(() => {})); // 動画のアップロードの知らせ（alert）は閉じる
   await p.goto(`${ORIGIN}/`, { waitUntil: 'networkidle', timeout: 90000 });
@@ -691,6 +694,187 @@ try {
     '待っている間に別の場所へつなぎ直しても、前の学習準備の命令は新しい接続へ送らない', { res, reSent });
   await call('disconnect', {});
   await p.evaluate(() => { window.__features = ['stopAll', 'pauseQueue']; window.__connectHold = false; });
+
+  // 13. パレットの並び順と見出し（まとまりごとに見出し、まとまりの間に区切り）
+  const GROUP_ORDER = [
+    ['connect', ['connect', 'disconnect', 'isConnected', 'prepareForLearning']],
+    ['move', ['teleport', 'chat']],
+    ['place', ['setBlockSimple', 'setBlockRangeSimple', 'setBlock', 'setBlockRange', 'setBlockRelative']],
+    ['blockNames', ['blockBuilding', 'blockLighting', 'blockDecoration', 'blockNature', 'blockFunctional', 'blockOre', 'blockSpecial']],
+    ['mobs', ['summonEntity', 'entityPassive', 'entityNeutral', 'entityHostile', 'entityAquatic', 'entityVillager', 'entityOther', 'entityBoss']],
+    ['world', ['setWeather', 'setTime', 'setGameRule', 'setGameMode', 'setNightVision', 'setMoveSpeed', 'setFlySpeed']],
+    ['items', ['clearInventory', 'setContainerItem']],
+    ['check', ['getPosition', 'getPlayerFacing', 'getTargetBlock', 'getBlockUnderPlayer', 'getBlockUnderPlayerPos', 'getBlockType']],
+    ['clear', ['clearArea', 'clearAllEntities']],
+    ['recording', ['startRecording', 'stopRecording', 'isRecording', 'uploadVideo']]
+  ];
+  const wantOrder = GROUP_ORDER.flatMap(([, ops], i) => [...(i ? ['---'] : []), 'label', ...ops]);
+  const LABELS = {
+    ja: ['つなぐ・じゅんび', '動く・話す', 'ブロックを置く', 'ブロックの名前', '生き物', '天気・時間・ルール', '持ち物・入れ物', '場所やブロックを調べる', 'けす（元にもどせません）', '録画'],
+    'ja-Hira': ['つなぐ・じゅんび', 'うごく・はなす', 'ブロックをおく', 'ブロックのなまえ', 'いきもの', 'てんき・じかん・ルール', 'もちもの・いれもの', 'ばしょやブロックをしらべる', 'けす（もとにもどせません）', 'ろくが'],
+    en: ['Connect & get ready', 'Move & talk', 'Place blocks', 'Block names', 'Mobs', 'Weather, time & rules', 'Items & containers', 'Check places & blocks', 'Clear (cannot be undone)', 'Recording']
+  };
+  // 実際にパレットへ渡す XML（隠すブロックは除かれる）と、パレットに描かれた見出しを読む
+  const palette = () => p.evaluate(() => {
+    const cat = vm.runtime._blockInfo.find(c => c.id === 'minecraft');
+    const entry = vm.runtime.getBlocksXML(vm.editingTarget).find(c => c.id === 'minecraft');
+    const doc = new DOMParser().parseFromString(entry.xml, 'text/xml');
+    const items = Array.from(doc.documentElement.children).map(el => {
+      if (el.tagName === 'block') return el.getAttribute('type').replace(/^minecraft_/, '');
+      if (el.tagName === 'label') return 'label:' + el.getAttribute('text');
+      if (el.tagName === 'sep') return '---';
+      return el.tagName;
+    });
+    const all = Array.from(document.querySelectorAll('.blocklyFlyout .blocklyFlyoutLabelText')).map(t => t.textContent);
+    return {
+      order: cat.blocks.map(b => b.info === '---' ? '---' : (b.info.blockType === 'label' ? 'label' : b.info.opcode)),
+      visible: items,
+      parseError: !!doc.querySelector('parsererror'),
+      // パレットの見出しのうち、Minecraft のカテゴリーの名前より後ろ（Scratch のカテゴリーの名前を除く）
+      shown: all.slice(all.lastIndexOf('Minecraft') + 1)
+    };
+  });
+  // 今までの作品が開けることを守る記録（下の「今までの作品が開ける」と、言語ごとの入力の確かめで使う）
+  const FIXTURE = join(ROOT, 'tests', 'fixtures', 'minecraft-blocks-compat.json');
+  const FIXTURE_DATA = existsSync(FIXTURE) ? JSON.parse(readFileSync(FIXTURE, 'utf8')) : null;
+  // 実際に出るのは、隠しているボスを除いた 46 個
+  const wantVisibleBlocks = GROUP_ORDER.flatMap(([, ops]) => ops).filter(op => op !== 'entityBoss');
+  for (const [loc, title] of [['ja', 'わたしの作品'], ['ja-Hira', 'わたしのさくひん'], ['en', 'my video']]) {
+    await setLocale(loc, title);
+    const pal = await palette();
+    ok(JSON.stringify(pal.order) === JSON.stringify(wantOrder), `${loc}: 拡張の中の並び順（見出し・区切り・ブロック）`, pal.order);
+    const wantVisible = GROUP_ORDER.flatMap(([, ops], i) => [...(i ? ['---'] : []), 'label:' + LABELS[loc][i], ...ops.filter(op => op !== 'entityBoss')]);
+    const visibleBlocks = pal.visible.filter(x => !x.startsWith('label:') && x !== '---');
+    ok(!pal.parseError && JSON.stringify(visibleBlocks) === JSON.stringify(wantVisibleBlocks),
+      `${loc}: パレットに出るブロックは 46 個（隠しているボスは出ない）で、決めた順番`, visibleBlocks.length);
+    ok(JSON.stringify(pal.visible.filter(x => x === '---' || x.startsWith('label:') || wantVisibleBlocks.includes(x))) === JSON.stringify(wantVisible),
+      `${loc}: パレットの XML の見出しの文・区切り・ブロックの並び`, pal.visible);
+    // パレットの描き直しは、ブロックの定義が変わったあと少し遅れて起きるので、描かれた見出しがそろうまで待つ
+    const drawn = await p.waitForFunction(want => {
+      const all = Array.from(document.querySelectorAll('.blocklyFlyout .blocklyFlyoutLabelText')).map(t => t.textContent);
+      return JSON.stringify(all.slice(all.lastIndexOf('Minecraft') + 1)) === JSON.stringify(want);
+    }, LABELS[loc], { timeout: 5000 }).then(() => true, () => false);
+    ok(drawn, `${loc}: Minecraft の所に、見出しが順番どおりに文字で描かれている`, drawn ? undefined : (await palette()).shown);
+    // ブロックの入力は、その言語の訳の文の [X] から作られる。訳の文から [X] が抜けると、その言語でだけ入力が消えるので確かめる
+    const lostInputs = await p.evaluate(fx => {
+      const cat = vm.runtime._blockInfo.find(c => c.id === 'minecraft');
+      const out = [];
+      for (const b of cat.blocks) {
+        if (!b.json) continue;
+        const op = b.json.type.replace(/^minecraft_/, '');
+        const names = new Set();
+        for (const k of Object.keys(b.json)) {
+          if (k.startsWith('args')) for (const a of b.json[k]) if (a && a.name) names.add(a.name);
+        }
+        const want = fx && fx.blocks[op];
+        if (!want) continue;
+        for (const arg of Object.keys(want.arguments)) if (!names.has(arg)) out.push(`${op}.${arg}`);
+      }
+      return out;
+    }, FIXTURE_DATA);
+    ok(FIXTURE_DATA && lostInputs.length === 0, `${loc}: 訳の文に、記録にある入力がすべてある（訳で入力が消えていない）`, lostInputs);
+  }
+  // 見出しはブロックではない: 処理を持つ Minecraft のブロックは、ちょうど 47 個（見出しは入らない）
+  const prims = await p.evaluate(() => Object.keys(vm.runtime._primitives).filter(k => k.startsWith('minecraft_') && !k.startsWith('minecraft_menu_')).sort());
+  ok(JSON.stringify(prims) === JSON.stringify(GROUP_ORDER.flatMap(([, ops]) => ops).map(op => 'minecraft_' + op).sort()),
+    '処理を持つ Minecraft のブロックは 47 個で、見出しは入らない', prims);
+  // 見出しの部品: 訳す前の文（{id, default}）も訳して出す。文が無い見出しは外す（「undefined」と出さない）
+  await setLocale('ja', 'わたしの作品');
+  // 拡張の読み込み（_prepareExtensionInfo）から XML まで通す。よい見出し 2 つだけが残り、訳される
+  const labelPath = await p.evaluate(() => {
+    const info = vm.extensionManager._prepareExtensionInfo('minecraft', { id: 'lttest', name: 'T', blocks: [
+      { blockType: 'label', text: 'もじの見出し' },
+      { blockType: 'label', text: { id: 'minecraft.label.place', default: 'Place blocks' } },
+      { blockType: 'label' },
+      { blockType: 'label', text: '' },
+      { blockType: 'label', text: { default: 'x' } },
+      { blockType: 'label', text: { id: 'minecraft.label.place' } },
+      { blockType: 'label', text: { id: '', default: 'x' } },
+      { blockType: 'label', text: { id: 'x', default: '' } },
+      { blockType: 'label', text: 5 }
+    ] });
+    return info.blocks.map(b => vm.runtime._convertForScratchBlocks(b, { id: 'lttest' }).xml);
+  });
+  ok(JSON.stringify(labelPath) === JSON.stringify(['<label text="もじの見出し"></label>', '<label text="ブロックを置く"></label>']),
+    '見出しは、文字か {id, default} の形だけが残って訳される（文が無い・訳せない形は外れ、「undefined」「[object Object]」と出ない）', labelPath);
+  // 今までの作品が開けること: 記録にあるブロック・入力・メニューの値が、今もすべて同じ形である
+  // （足すのはよい。並び順と文言は比べない。記録を作り直すときは BLOCKS_UPDATE_FIXTURE=1 で流す）
+  const compat = await p.evaluate(() => {
+    const sortObj = o => Object.keys(o).sort().reduce((r, k) => { r[k] = o[k]; return r; }, {});
+    const cat = vm.runtime._blockInfo.find(c => c.id === 'minecraft');
+    const blocks = {};
+    for (const b of cat.blocks) {
+      const i = b.info;
+      if (i === '---' || i.blockType === 'label') continue;
+      const args = {};
+      for (const [k, a] of Object.entries(i.arguments || {})) args[k] = { type: a.type, menu: a.menu || null };
+      // パレットに出すか隠すか（hideFromPalette）は、作品が開けるかに関係しないので入れない
+      blocks[i.opcode] = { blockType: i.blockType, arguments: sortObj(args) };
+    }
+    const menus = {};
+    for (const [name, m] of Object.entries(cat.menuInfo)) {
+      menus[name] = { acceptReporters: !!m.acceptReporters,
+        // items は、項目の並びか、関数（その場で作るメニュー。呼ぶと [文, 値] の並びを返す）
+        values: (Array.isArray(m.items) ? m.items : (typeof m.items === 'function' ? m.items() : []))
+          .map(it => (Array.isArray(it) ? it[1] : (typeof it === 'string' ? it : it.value))) };
+    }
+    return { blocks: sortObj(blocks), menus: sortObj(menus) };
+  });
+  const fixture = FIXTURE_DATA;
+  // 記録にあるものが、今もすべて同じ形であるか（足りない・変わったものを、名前で出す）
+  const broken = [];
+  if (!fixture) {
+    broken.push('記録のファイルが無い');
+  } else {
+    for (const [op, fb] of Object.entries(fixture.blocks)) {
+      const cb = compat.blocks[op];
+      if (!cb) { broken.push(`ブロックが無い: ${op}`); continue; }
+      if (cb.blockType !== fb.blockType) broken.push(`ブロックの形が変わった: ${op}`);
+      for (const [arg, fa] of Object.entries(fb.arguments)) {
+        const ca = cb.arguments[arg];
+        if (!ca) broken.push(`入力が無い: ${op}.${arg}`);
+        else if (ca.type !== fa.type || ca.menu !== fa.menu) broken.push(`入力の種類・メニューが変わった: ${op}.${arg}`);
+      }
+    }
+    for (const [name, fm] of Object.entries(fixture.menus)) {
+      const cm = compat.menus[name];
+      if (!cm) { broken.push(`メニューが無い: ${name}`); continue; }
+      if (cm.acceptReporters !== fm.acceptReporters) broken.push(`メニューの形（ブロックを入れられるか）が変わった: ${name}`);
+      const now = new Set(cm.values);
+      const lost = fm.values.filter(v => !now.has(v));
+      if (lost.length) broken.push(`メニューの値が無い: ${name}（${lost.slice(0, 5).join(', ')}${lost.length > 5 ? ` ほか ${lost.length - 5} 件` : ''}）`);
+    }
+  }
+  if (process.env.BLOCKS_UPDATE_FIXTURE === '1') {
+    // 記録の作り直し: 前の記録から消えるもの（今までの作品が開けなくなるもの）を出してから書く。
+    // ほかの試験が失敗しているときは書かない（こわれた状態を記録しないため）
+    console.log(`記録を作り直すと、前の記録から次のものが消えます（今までの作品が開けなくなります）: ${JSON.stringify(broken)}`);
+    if (GUI_JS !== join(ROOT, 'gui.js')) console.log(`注意: リポジトリの gui.js ではなく ${GUI_JS} から記録を作ります`);
+    if (fails > 0) {
+      ok(false, `ほかの試験が ${fails} 件失敗しているので、記録は作り直しません`);
+    } else {
+      writeFileSync(FIXTURE, JSON.stringify(compat, null, 1) + '\n');
+      console.log(`記録を作り直しました（今回は記録と比べていません）: ${FIXTURE}`);
+    }
+  } else {
+    ok(broken.length === 0,
+      '今までの作品が開ける: 記録（tests/fixtures/minecraft-blocks-compat.json）にあるブロック・入力・メニューの値が、今もすべて同じ形である', broken);
+  }
+  // パレットが滑っている途中に言語を変えても、エラーにならない（scratch-blocks の滑る動きの守り）
+  const errBefore = errors.length;
+  await p.click('.scratchCategoryId-minecraft');
+  // 押した直後、まだ滑っている途中であることを確かめてから、同じ処理の中で言語を変える
+  const sliding = await p.evaluate(() => {
+    const flyout = Blockly.getMainWorkspace().getFlyout();
+    const moving = flyout.scrollTarget !== null && flyout.scrollTarget !== undefined;
+    window.__store.dispatch({ type: 'scratch-gui/locales/SELECT_LOCALE', locale: 'ja-Hira' });
+    return moving;
+  });
+  ok(sliding, '（準備）言語を変えたとき、パレットはまだ滑っている途中');
+  await setLocale('ja-Hira', 'わたしのさくひん');
+  await p.waitForTimeout(1000);
+  ok(errors.length === errBefore, 'パレットが滑っている途中に言語を変えても、エラーにならない', errors.slice(errBefore));
+  await setLocale('ja', 'わたしの作品');
 
   ok(errors.length === 0, 'ページのエラーなし', errors);
 } finally {
