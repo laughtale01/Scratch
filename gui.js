@@ -64253,6 +64253,14 @@ class Scratch3MinecraftBlocks {
     this.runtime = runtime;
     this.socket = null;
     this.connected = false;
+    // 最後につながらなかった時刻と場所（同じ場所へすぐつなぎ直すときは、ランプを黄にしないため）
+    this._lastFailedAt = 0;
+    this._lastFailedUrl = null;
+    this._attemptUrl = null; // 今つなごうとしている場所（_cleanupSocket でも消さない）
+    this._retryQuietMs = 2000; // 「すぐのつなぎ直し」とみなす長さ
+    // ステージの上のランプに出す接続の状態（idle: つないでいない / connecting: つないでいる途中 /
+    // connected: つながっている / failed: つながらない・切れた）。ランプは runtime から読む
+    this._setConnectionState('idle');
     this.sessionId = null;
     this.pendingRequests = new Map();
     this.requestTimeout = 5000;
@@ -65279,6 +65287,22 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
+   * 接続の状態を変えて、ステージの上のランプに知らせる
+   * @param {string} state - idle・connecting・connected・failed のどれか
+   */
+  _setConnectionState(state) {
+    // つながらなかった時刻と場所（同じ場所へすぐにつなぎ直すときは黄にしないため。connect を見る）
+    if (state === 'failed') {
+      this._lastFailedAt = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+      this._lastFailedUrl = this._attemptUrl;
+    }
+    if (this.runtime.ltMinecraftConnection === state) return;
+    this.runtime.ltMinecraftConnection = state;
+    // 知らせの仕組みが無い runtime（試験の偽物など）では知らせない
+    if (typeof this.runtime.emit === 'function') this.runtime.emit('LT_MINECRAFT_CONNECTION', state);
+  }
+
+  /**
    * 接続
    */
   connect(args) {
@@ -65305,8 +65329,20 @@ class Scratch3MinecraftBlocks {
       return this._connectPromise;
     }
 
+    // 前の接続が閉じかけ（MOD が閉じ始めた）なら、つなぎ直す前に「切れた」と知らせる
+    // （_cleanupSocket は前のソケットの onclose を外すので、ここで知らせないとランプが点滅しない）
+    if (this.socket && this.runtime.ltMinecraftConnection === 'connected' &&
+        (this.socket.readyState === WebSocket.CLOSING || this.socket.readyState === WebSocket.CLOSED)) {
+      this._setConnectionState('failed');
+    }
     // 既存の接続をクリーンアップ（再接続対応）
     this._cleanupSocket();
+    // 同じ場所へ、つながらなかったすぐあと（2 秒以内）につなぎ直すときは、赤のままにする
+    // （「ずっと」の中の［接続］で、ランプが黄と赤のあいだでちらつかないように。別の場所なら黄にする）
+    const quickRetry = this.runtime.ltMinecraftConnection === 'failed' && this._lastFailedUrl === url &&
+      (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - this._lastFailedAt < this._retryQuietMs;
+    if (!quickRetry) this._setConnectionState('connecting');
+    this._attemptUrl = url;
 
     this._connectPromise = new Promise((resolve, reject) => {
       // 別の場所への［接続］や［切断］で、つながる前にこのソケットを閉じたときに、この［接続］を終わらせるため
@@ -65335,6 +65371,7 @@ class Scratch3MinecraftBlocks {
           this._canPause = null;
           this.connected = true;
           this._connectReject = null;
+          this._setConnectionState('connected');
           // 録画の状態は、このあと届く接続の返事で聞く（その前に同じ場所への［接続］が来ても、二重に聞かないように）
           this._recordingSyncedAt = Date.now();
           resolve();
@@ -65350,6 +65387,7 @@ class Scratch3MinecraftBlocks {
         this.socket.onerror = error => {
           console.error('WebSocket error:', error);
           this.connected = false;
+          this._setConnectionState('failed');
           this._connectReject = null;
           reject(error);
         };
@@ -65360,10 +65398,13 @@ class Scratch3MinecraftBlocks {
                       'wasClean=' + (event && event.wasClean));
           // 完全クリーンアップ（_cleanupSocket() は最初に onclose=null するため再入しない）
           this._cleanupSocket();
+          // Minecraft を閉じた・ワールドを出た・つながらなかった（ランプを赤にする）
+          this._setConnectionState('failed');
         };
       } catch (error) {
         console.error('Connection error:', error);
         this.connected = false;
+        this._setConnectionState('failed');
         this._connectReject = null;
         reject(error);
       }
@@ -65417,6 +65458,8 @@ class Scratch3MinecraftBlocks {
    */
   disconnect() {
     this._cleanupSocket();
+    // 自分で［切断］したときは「つないでいない」にもどす
+    this._setConnectionState('idle');
   }
 
   /**
@@ -293657,6 +293700,18 @@ __webpack_require__.r(__webpack_exports__);
     "gui.paletteSize.reset": "Reset",
     "gui.paletteSize.resetTitle": "Reset the palette width and block size",
     "gui.paletteSize.handle": "Drag to change the width. Double-click to fit the longest block.",
+    "gui.minecraftLamp.idle": "Not connected",
+    "gui.minecraftLamp.connecting": "Connecting…",
+    "gui.minecraftLamp.connected": "Connected",
+    "gui.minecraftLamp.failed": "Can't connect",
+    "gui.minecraftLamp.idleHint": "Run the [connect to Minecraft] block to connect.",
+    "gui.minecraftLamp.connectingHint": "Please wait. If it stays yellow, check that Minecraft is running.",
+    "gui.minecraftLamp.connectedHint": "Your blocks will reach Minecraft.",
+    "gui.minecraftLamp.failedTitle": "Can't connect to Minecraft",
+    "gui.minecraftLamp.failedStep1": "1. Start Minecraft.",
+    "gui.minecraftLamp.failedStep2": "2. Enter a world.",
+    "gui.minecraftLamp.failedStep3": "3. Click the green flag again (run [connect to Minecraft]).",
+    "gui.minecraftLamp.title": "{status} (click for help)",
     "gui.crashMessage.label": "Oops! Something went wrong.",
     "gui.crashMessage.description": "We are so sorry, but it looks like Scratch has crashed. This bug has been automatically reported to the Scratch Team. Please refresh your page to try again.",
     "gui.crashMessage.errorNumber": "Your error was logged with id {errorId}",
@@ -343274,6 +343329,18 @@ __webpack_require__.r(__webpack_exports__);
     "gui.paletteSize.reset": "元に戻す",
     "gui.paletteSize.resetTitle": "パレットの幅とブロックの大きさを元に戻す",
     "gui.paletteSize.handle": "ドラッグで幅を変える。ダブルクリックでいちばん長いブロックに合わせる",
+    "gui.minecraftLamp.idle": "つないでいない",
+    "gui.minecraftLamp.connecting": "つないでいます…",
+    "gui.minecraftLamp.connected": "つながっている",
+    "gui.minecraftLamp.failed": "つながらない",
+    "gui.minecraftLamp.idleHint": "［Minecraftに接続］ブロックを動かすと、つながります。",
+    "gui.minecraftLamp.connectingHint": "少し待ってください。ずっと黄色のときは、Minecraft が動いているか見てください。",
+    "gui.minecraftLamp.connectedHint": "ブロックを動かすと、Minecraft に届きます。",
+    "gui.minecraftLamp.failedTitle": "Minecraft につながりません",
+    "gui.minecraftLamp.failedStep1": "① Minecraft を起動する",
+    "gui.minecraftLamp.failedStep2": "② ワールドに入る",
+    "gui.minecraftLamp.failedStep3": "③ 緑の旗をもう一度押す（［Minecraftに接続］を動かす）",
+    "gui.minecraftLamp.title": "{status}（押すとヒント）",
     "gui.crashMessage.label": "うわっ! 何か問題が発生しました。",
     "gui.crashMessage.description": "申し訳ありません。Scratchがクラッシュしたようです。この問題はScratchチームに自動的に送信されました。ページを再読み込みしてください。",
     "gui.crashMessage.errorNumber": "エラーはID {errorId}として記録されました。",
@@ -344266,6 +344333,18 @@ __webpack_require__.r(__webpack_exports__);
     "gui.paletteSize.reset": "もとにもどす",
     "gui.paletteSize.resetTitle": "パレットのはばとブロックのおおきさをもとにもどす",
     "gui.paletteSize.handle": "ドラッグではばをかえる。ダブルクリックでいちばんながいブロックにあわせる",
+    "gui.minecraftLamp.idle": "つないでいない",
+    "gui.minecraftLamp.connecting": "つないでいます…",
+    "gui.minecraftLamp.connected": "つながっている",
+    "gui.minecraftLamp.failed": "つながらない",
+    "gui.minecraftLamp.idleHint": "［Minecraft に つなぐ］ブロックをうごかすと、つながります。",
+    "gui.minecraftLamp.connectingHint": "すこしまってください。ずっときいろのときは、Minecraft がうごいているかみてください。",
+    "gui.minecraftLamp.connectedHint": "ブロックをうごかすと、Minecraft にとどきます。",
+    "gui.minecraftLamp.failedTitle": "Minecraft につながりません",
+    "gui.minecraftLamp.failedStep1": "① Minecraft をきどうする",
+    "gui.minecraftLamp.failedStep2": "② ワールドにはいる",
+    "gui.minecraftLamp.failedStep3": "③ みどりのはたをもういちどおす（［Minecraft に つなぐ］をうごかす）",
+    "gui.minecraftLamp.title": "{status}（おすとヒント）",
     "gui.crashMessage.label": "うわっ! なにかもんだいがはっせいしました。",
     "gui.crashMessage.description": "もうしわけありません。Scratchがクラッシュしたようです。このもんだいはScratchチームにじどうてきにそうしんされました。ページをさいよみこみしてください。",
     "gui.crashMessage.errorNumber": "エラーはID {errorId}としてきろくされました。",
@@ -445785,6 +445864,217 @@ const messages = (0,react_intl__WEBPACK_IMPORTED_MODULE_0__.defineMessages)({
     "defaultMessage": "Full Screen Control"
   }
 });
+/**
+ * Minecraft とつながっているかのランプ（laughtale で追加）。
+ * ステージの上（止めるボタンの右）に、Minecraft の拡張を入れているときだけ出す（全画面のときも出す）。
+ * - 灰: つないでいない / 黄: つないでいます… / 緑: つながっている / 赤: つながらない・切れた
+ * - つながっていたのに切れたときは、数秒点滅して気づけるようにする
+ * - 押すと、今の状態に合わせたヒントを小さく出す（もう一度押す・外を押す・Esc で閉じる）
+ * - 小さいステージのときは丸だけを出し（ステージの列を広げないため）、文字はボタンの名前とヒントで伝える
+ * 状態は Minecraft 拡張が runtime.ltMinecraftConnection に書き、LT_MINECRAFT_CONNECTION で知らせる。
+ */
+const LT_LAMP_STYLE_ID = 'lt-mc-lamp-style';
+const LT_LAMP_BLINK_MS = 4000; // 切れたときに点滅する時間（CSS の点滅の回数もここから作る）
+/** 戻らない時計（パソコンの時計を合わせても、点滅の時間がずれないように） */
+const ltNow = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
+const LT_LAMP_STYLE = [
+  '.lt-mc-lamp{position:relative;display:flex;align-items:center;min-width:0;flex:0 1 auto;margin:0 auto 0 .75rem;}',
+  '[dir="rtl"] .lt-mc-lamp{margin:0 .75rem 0 auto;}',
+  '.lt-mc-lamp__button{display:flex;align-items:center;gap:.35rem;min-width:0;max-width:100%;height:2rem;padding:0 .65rem;border:1px solid hsla(0,0%,0%,.15);border-radius:1rem;background:#fff;color:hsla(225,15%,40%,1);font-family:inherit;font-size:.75rem;font-weight:bold;white-space:nowrap;cursor:pointer;touch-action:manipulation;}',
+  '.lt-mc-lamp__button:hover{background:hsla(215,100%,95%,1);}',
+  // 狭いとき（ターボモードの表示が増えたときなど）は、文字を「…」で縮める
+  '.lt-mc-lamp__text{min-width:0;overflow:hidden;text-overflow:ellipsis;}',
+  '.lt-mc-lamp--compact .lt-mc-lamp__button{padding:0 .5rem;}',
+  '.lt-mc-lamp--compact .lt-mc-lamp__text{display:none;}',
+  '.lt-mc-lamp__dot{width:.75rem;height:.75rem;border-radius:50%;flex:none;}',
+  '.lt-mc-lamp--idle .lt-mc-lamp__dot{background:#9aa0a6;box-shadow:0 0 0 3px rgba(154,160,166,.25);}',
+  '.lt-mc-lamp--connecting .lt-mc-lamp__dot{background:#f2b705;box-shadow:0 0 0 3px rgba(242,183,5,.25);}',
+  '.lt-mc-lamp--connected .lt-mc-lamp__dot{background:#2fb344;box-shadow:0 0 0 3px rgba(47,179,68,.25);}',
+  '.lt-mc-lamp--failed .lt-mc-lamp__dot{background:#e5484d;box-shadow:0 0 0 3px rgba(229,72,77,.25);}',
+  '.lt-mc-lamp--blink .lt-mc-lamp__button{animation:lt-mc-lamp-blink .5s ease-in-out 0s ' + (LT_LAMP_BLINK_MS / 500) + ' alternate;}',
+  '@keyframes lt-mc-lamp-blink{from{background:#fff;}to{background:#ffd9da;}}',
+  '@media (prefers-reduced-motion: reduce){.lt-mc-lamp--blink .lt-mc-lamp__button{animation:none;background:#ffd9da;}}',
+  // 読み上げ用の文（見た目には出さない）
+  '.lt-mc-lamp__live{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}',
+  '.lt-mc-lamp__hint{position:absolute;top:calc(100% + .4rem);right:0;z-index:510;width:16rem;max-width:calc(100vw - 1rem);padding:.6rem .75rem;border:1px solid hsla(0,0%,0%,.15);border-radius:.5rem;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15);color:hsla(225,15%,30%,1);font-size:.8rem;line-height:1.5;white-space:normal;}',
+  '[dir="rtl"] .lt-mc-lamp__hint{right:auto;left:0;}',
+  '.lt-mc-lamp__hint p{margin:0;}',
+  '.lt-mc-lamp__hint-title{font-weight:bold;margin-bottom:.25rem !important;}'
+].join('\n');
+
+/** ランプの見た目（CSS）をページに 1 回だけ足す */
+const ltInjectLampStyle = () => {
+  if (typeof document === 'undefined' || !document.head || document.getElementById(LT_LAMP_STYLE_ID)) return;
+  const el = document.createElement('style');
+  el.id = LT_LAMP_STYLE_ID;
+  el.textContent = LT_LAMP_STYLE;
+  document.head.appendChild(el);
+};
+const LT_LAMP_STATES = ['idle', 'connecting', 'connected', 'failed'];
+const LT_LAMP_HINT_ID = 'lt-mc-lamp-hint';
+
+class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
+  constructor(props) {
+    super(props);
+    this.state = {loaded: false, status: 'idle', blink: false, hint: false};
+    this.blinkTimer = 0;
+    this.root = null;
+    this.handleExtensionAdded = this.handleExtensionAdded.bind(this);
+    this.handleStatus = this.handleStatus.bind(this);
+    this.handleToggle = this.handleToggle.bind(this);
+    this.handleOutside = this.handleOutside.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.setRoot = this.setRoot.bind(this);
+    this.handleBlur = this.handleBlur.bind(this);
+  }
+  componentDidMount() {
+    ltInjectLampStyle();
+    const runtime = this.props.vm.runtime;
+    runtime.on('EXTENSION_ADDED', this.handleExtensionAdded);
+    runtime.on('LT_MINECRAFT_CONNECTION', this.handleStatus);
+    document.addEventListener('pointerdown', this.handleOutside, true);
+    // 捕まえる段階（true）で受ける: ヒントが開いているときの Esc を、全画面を終わらせる処理より必ず先に受けるため
+    document.addEventListener('keydown', this.handleKeyDown, true);
+    this.sync();
+  }
+  componentWillUnmount() {
+    const runtime = this.props.vm.runtime;
+    runtime.removeListener('EXTENSION_ADDED', this.handleExtensionAdded);
+    runtime.removeListener('LT_MINECRAFT_CONNECTION', this.handleStatus);
+    document.removeEventListener('pointerdown', this.handleOutside, true);
+    document.removeEventListener('keydown', this.handleKeyDown, true);
+    clearTimeout(this.blinkTimer);
+  }
+  /**
+   * 拡張が入っているかと、今の接続の状態を読み直す。
+   * 拡張は作られたときに runtime.ltMinecraftConnection を書くので、それがあれば入っている
+   * （EXTENSION_ADDED の時点では、まだ isExtensionLoaded が true にならないため）
+   */
+  sync() {
+    const vm = this.props.vm;
+    const status = vm.runtime.ltMinecraftConnection;
+    const loaded = typeof status === 'string' ||
+      !!(vm.extensionManager && vm.extensionManager.isExtensionLoaded('minecraft'));
+    // 点滅の途中で作り直された（言語の切りかえなど）ときは、残りの時間だけ点滅を続ける
+    const left = (vm.runtime.ltMinecraftBlinkUntil || 0) - ltNow();
+    clearTimeout(this.blinkTimer);
+    if (left > 0) this.blinkTimer = setTimeout(() => this.setState({blink: false}), left);
+    this.setState({loaded, status: LT_LAMP_STATES.indexOf(status) >= 0 ? status : 'idle', blink: left > 0});
+  }
+  handleExtensionAdded() {
+    this.sync();
+  }
+  /**
+   * 接続の状態が変わった
+   * @param {string} status - idle・connecting・connected・failed
+   */
+  handleStatus(status) {
+    if (LT_LAMP_STATES.indexOf(status) < 0) return;
+    // つながっていたのに切れたときだけ点滅させる（初めからつながらないときは、赤になるだけ）。
+    // 点滅は、つながった・［切断］したときにだけ止める（「ずっと」の中の［接続］がつなぎ直そうとしても続ける）
+    const runtime = this.props.vm.runtime;
+    const lost = this.state.status === 'connected' && status === 'failed';
+    if (lost) {
+      clearTimeout(this.blinkTimer);
+      runtime.ltMinecraftBlinkUntil = ltNow() + LT_LAMP_BLINK_MS;
+      this.blinkTimer = setTimeout(() => this.setState({blink: false}), LT_LAMP_BLINK_MS);
+      this.setState({status, blink: true, loaded: true});
+    } else if (status === 'connected' || status === 'idle') {
+      clearTimeout(this.blinkTimer);
+      runtime.ltMinecraftBlinkUntil = 0;
+      this.setState({status, blink: false, loaded: true});
+    } else {
+      this.setState({status, loaded: true});
+    }
+  }
+  handleToggle() {
+    this.setState(state => ({hint: !state.hint}));
+  }
+  /** ランプの外を押したらヒントを閉じる */
+  handleOutside(e) {
+    if (this.state.hint && this.root && !this.root.contains(e.target)) this.setState({hint: false});
+  }
+  handleKeyDown(e) {
+    if (this.state.hint && e.key === 'Escape') {
+      // フォーカスがランプの中にあるときだけ止める（ステージの見出しも document の Esc で全画面を終わらせるため。
+      // 捕まえる段階なので必ず先に届く）。ほかの所にフォーカスがあるときは、その画面の Esc にも届くよう止めない
+      // （押してもフォーカスが入らないブラウザでは e.target が body になるので、そのときも止める）
+      const t = e.target;
+      if (this.root && (this.root.contains(t) || t === document.body || t === document.documentElement)) e.stopImmediatePropagation();
+      this.setState({hint: false});
+    }
+  }
+  setRoot(el) {
+    this.root = el;
+  }
+  /** フォーカスがランプの外へ出たらヒントを閉じる（キーボードで別の画面へ移ったとき） */
+  handleBlur(e) {
+    // 行き先が無い（ヒントの文を押した・別の窓へ移った）ときは閉じない。行き先がランプの外のときだけ閉じる
+    if (this.state.hint && e.relatedTarget && this.root && !this.root.contains(e.relatedTarget)) this.setState({hint: false});
+  }
+  render() {
+    if (!this.state.loaded) return null;
+    const intl = this.props.intl;
+    const R = react__WEBPACK_IMPORTED_MODULE_2__;
+    const status = this.state.status;
+    const t = (id, defaultMessage) => intl.formatMessage({id: "gui.minecraftLamp.".concat(id), defaultMessage});
+    const label = {
+      idle: t('idle', 'Not connected'),
+      connecting: t('connecting', 'Connecting…'),
+      connected: t('connected', 'Connected'),
+      failed: t('failed', 'Can\'t connect')
+    }[status];
+    const text = "Minecraft ".concat(label);
+    let hint = null;
+    if (this.state.hint) {
+      let body;
+      if (status === 'failed') {
+        body = [
+          R.createElement("p", {key: 't', className: 'lt-mc-lamp__hint-title'}, t('failedTitle', 'Can\'t connect to Minecraft')),
+          R.createElement("p", {key: '1'}, t('failedStep1', '1. Start Minecraft.')),
+          R.createElement("p", {key: '2'}, t('failedStep2', '2. Enter a world.')),
+          R.createElement("p", {key: '3'}, t('failedStep3', '3. Click the green flag again (run [connect to Minecraft]).'))
+        ];
+      } else {
+        const hintText = {
+          idle: t('idleHint', 'Run the [connect to Minecraft] block to connect.'),
+          connecting: t('connectingHint', 'Please wait. If it stays yellow, check that Minecraft is running.'),
+          connected: t('connectedHint', 'Your blocks will reach Minecraft.')
+        }[status];
+        body = [
+          R.createElement("p", {key: 't', className: 'lt-mc-lamp__hint-title', "aria-hidden": true}, text),
+          R.createElement("p", {key: 'b'}, hintText)
+        ];
+      }
+      hint = R.createElement("div", {id: LT_LAMP_HINT_ID, className: 'lt-mc-lamp__hint', role: 'note'}, body);
+    }
+    return R.createElement("div", {
+      ref: this.setRoot,
+      onBlur: this.handleBlur,
+      className: "lt-mc-lamp lt-mc-lamp--".concat(status)
+        .concat(this.state.blink ? ' lt-mc-lamp--blink' : '')
+        .concat(this.props.compact ? ' lt-mc-lamp--compact' : ''),
+      "data-lt-mc-status": status
+    }, R.createElement("button", {
+      type: "button",
+      className: "lt-mc-lamp__button",
+      title: intl.formatMessage({id: 'gui.minecraftLamp.title', defaultMessage: '{status} (click for help)'}, {status: text}),
+      "aria-expanded": this.state.hint,
+      "aria-controls": this.state.hint ? LT_LAMP_HINT_ID : undefined,
+      onClick: this.handleToggle
+    }, R.createElement("span", {className: "lt-mc-lamp__dot", "aria-hidden": true}),
+    R.createElement("span", {className: "lt-mc-lamp__text", "aria-hidden": true}, text)),
+    // 状態が変わったら読み上げる（ボタンの中ではなく、ここに置く）
+    R.createElement("span", {className: "lt-mc-lamp__live", role: "status"}, text),
+    hint);
+  }
+}
+MinecraftLamp.propTypes = {
+  compact: prop_types__WEBPACK_IMPORTED_MODULE_1___default().bool,
+  intl: react_intl__WEBPACK_IMPORTED_MODULE_0__.intlShape.isRequired,
+  vm: prop_types__WEBPACK_IMPORTED_MODULE_1___default().instanceOf((scratch_vm__WEBPACK_IMPORTED_MODULE_4___default())).isRequired
+};
+
 const StageHeaderComponent = function StageHeaderComponent(props) {
   const {
     isFullScreen,
@@ -445832,6 +446122,10 @@ const StageHeaderComponent = function StageHeaderComponent(props) {
       }
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement(_containers_controls_jsx__WEBPACK_IMPORTED_MODULE_8__["default"], {
       vm: vm
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement(MinecraftLamp, {
+      // 全画面のときも、Minecraft とつながっているかを出す
+      intl: props.intl,
+      vm: vm
     }), stageButton));
   } else {
     const stageControls = isPlayerOnly ? [] : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement("div", {
@@ -445856,6 +446150,12 @@ const StageHeaderComponent = function StageHeaderComponent(props) {
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement(_box_box_jsx__WEBPACK_IMPORTED_MODULE_5__["default"], {
       className: _stage_header_css__WEBPACK_IMPORTED_MODULE_16__["default"].stageMenuWrapper
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement(_containers_controls_jsx__WEBPACK_IMPORTED_MODULE_8__["default"], {
+      vm: vm
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement(MinecraftLamp, {
+      // Minecraft とつながっているかのランプ（Minecraft の拡張を入れているときだけ出る）。
+      // 小さいステージのときは丸だけ（ステージの列を広げないため）
+      compact: stageSizeMode === _lib_layout_constants__WEBPACK_IMPORTED_MODULE_10__.STAGE_SIZE_MODES.small,
+      intl: props.intl,
       vm: vm
     }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement("div", {
       className: _stage_header_css__WEBPACK_IMPORTED_MODULE_16__["default"].stageSizeRow
