@@ -293651,6 +293651,12 @@ __webpack_require__.r(__webpack_exports__);
     "gui.controls.stop": "Stop",
     "gui.controls.pause": "Pause",
     "gui.controls.resume": "Resume",
+    "gui.paletteSize.label": "Block size",
+    "gui.paletteSize.smaller": "Make blocks smaller",
+    "gui.paletteSize.larger": "Make blocks larger",
+    "gui.paletteSize.reset": "Reset",
+    "gui.paletteSize.resetTitle": "Reset the palette width and block size",
+    "gui.paletteSize.handle": "Drag to change the width. Double-click to fit the longest block.",
     "gui.crashMessage.label": "Oops! Something went wrong.",
     "gui.crashMessage.description": "We are so sorry, but it looks like Scratch has crashed. This bug has been automatically reported to the Scratch Team. Please refresh your page to try again.",
     "gui.crashMessage.errorNumber": "Your error was logged with id {errorId}",
@@ -343262,6 +343268,12 @@ __webpack_require__.r(__webpack_exports__);
     "gui.controls.stop": "止める",
     "gui.controls.pause": "一時停止",
     "gui.controls.resume": "再開",
+    "gui.paletteSize.label": "ブロックの大きさ",
+    "gui.paletteSize.smaller": "ブロックを小さくする",
+    "gui.paletteSize.larger": "ブロックを大きくする",
+    "gui.paletteSize.reset": "元に戻す",
+    "gui.paletteSize.resetTitle": "パレットの幅とブロックの大きさを元に戻す",
+    "gui.paletteSize.handle": "ドラッグで幅を変える。ダブルクリックでいちばん長いブロックに合わせる",
     "gui.crashMessage.label": "うわっ! 何か問題が発生しました。",
     "gui.crashMessage.description": "申し訳ありません。Scratchがクラッシュしたようです。この問題はScratchチームに自動的に送信されました。ページを再読み込みしてください。",
     "gui.crashMessage.errorNumber": "エラーはID {errorId}として記録されました。",
@@ -344248,6 +344260,12 @@ __webpack_require__.r(__webpack_exports__);
     "gui.controls.stop": "とめる",
     "gui.controls.pause": "いちじていし",
     "gui.controls.resume": "さいかい",
+    "gui.paletteSize.label": "ブロックのおおきさ",
+    "gui.paletteSize.smaller": "ブロックをちいさくする",
+    "gui.paletteSize.larger": "ブロックをおおきくする",
+    "gui.paletteSize.reset": "もとにもどす",
+    "gui.paletteSize.resetTitle": "パレットのはばとブロックのおおきさをもとにもどす",
+    "gui.paletteSize.handle": "ドラッグではばをかえる。ダブルクリックでいちばんながいブロックにあわせる",
     "gui.crashMessage.label": "うわっ! なにかもんだいがはっせいしました。",
     "gui.crashMessage.description": "もうしわけありません。Scratchがクラッシュしたようです。このもんだいはScratchチームにじどうてきにそうしんされました。ページをさいよみこみしてください。",
     "gui.crashMessage.errorNumber": "エラーはID {errorId}としてきろくされました。",
@@ -437576,8 +437594,16 @@ const GUIComponent = props => {
       selectedTabClassName: tabClassNames.tabSelected,
       selectedTabPanelClassName: tabClassNames.tabPanelSelected,
       onSelect: onActivateTab
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("div", {
+      // タブの列と「ブロックの大きさ」ボタンを横に並べる入れ物（ボタンはタブの列の外に置く）
+      className: "lt-tab-row"
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(react_tabs__WEBPACK_IMPORTED_MODULE_7__.TabList, {
-      className: tabClassNames.tabList
+      className: tabClassNames.tabList,
+      // ボタンを「音」タブのすぐ右に置くため、列の幅をタブの中身に合わせる
+      style: {
+        width: 'max-content',
+        minWidth: '250px'
+      }
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(react_tabs__WEBPACK_IMPORTED_MODULE_7__.Tab, {
       className: tabClassNames.tab
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("img", {
@@ -437607,7 +437633,61 @@ const GUIComponent = props => {
     }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(react_intl__WEBPACK_IMPORTED_MODULE_4__.FormattedMessage, {
       defaultMessage: "Sounds",
       id: "gui.gui.soundsTab"
-    }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(react_tabs__WEBPACK_IMPORTED_MODULE_7__.TabPanel, {
+    }))), blocksTabVisible ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("div", {
+      // 「コード」タブのときだけ、パレットの中のブロックの大きさを変えるボタンを出す
+      className: "lt-palette-size",
+      role: "group",
+      "aria-labelledby": "lt-palette-size-label",
+      ref: _containers_blocks_jsx__WEBPACK_IMPORTED_MODULE_11__.PaletteLayout.bindButtons
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("span", {
+      id: "lt-palette-size-label",
+      className: "lt-palette-size__label"
+    }, intl.formatMessage({
+      id: "gui.paletteSize.label",
+      defaultMessage: "Block size"
+    })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("button", {
+      type: "button",
+      className: "lt-palette-size__button",
+      "data-lt-palette": "smaller",
+      title: intl.formatMessage({
+        id: "gui.paletteSize.smaller",
+        defaultMessage: "Make blocks smaller"
+      }),
+      "aria-label": intl.formatMessage({
+        id: "gui.paletteSize.smaller",
+        defaultMessage: "Make blocks smaller"
+      }),
+      onClick: _containers_blocks_jsx__WEBPACK_IMPORTED_MODULE_11__.PaletteLayout.zoomOut
+    }, "\u2212"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("button", {
+      type: "button",
+      className: "lt-palette-size__button",
+      "data-lt-palette": "larger",
+      title: intl.formatMessage({
+        id: "gui.paletteSize.larger",
+        defaultMessage: "Make blocks larger"
+      }),
+      "aria-label": intl.formatMessage({
+        id: "gui.paletteSize.larger",
+        defaultMessage: "Make blocks larger"
+      }),
+      onClick: _containers_blocks_jsx__WEBPACK_IMPORTED_MODULE_11__.PaletteLayout.zoomIn
+    }, "+"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("button", {
+      type: "button",
+      className: "lt-palette-size__button lt-palette-size__button--text",
+      "data-lt-palette": "reset",
+      title: intl.formatMessage({
+        id: "gui.paletteSize.resetTitle",
+        defaultMessage: "Reset the palette width and block size"
+      }),
+      "aria-label": intl.formatMessage({
+        id: "gui.paletteSize.resetTitle",
+        defaultMessage: "Reset the palette width and block size"
+      }),
+      onClick: _containers_blocks_jsx__WEBPACK_IMPORTED_MODULE_11__.PaletteLayout.reset
+    }, intl.formatMessage({
+      id: "gui.paletteSize.reset",
+      defaultMessage: "Reset"
+    }))) : null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(react_tabs__WEBPACK_IMPORTED_MODULE_7__.TabPanel, {
       className: tabClassNames.tabPanel
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(_box_box_jsx__WEBPACK_IMPORTED_MODULE_17__["default"], {
       className: _gui_css__WEBPACK_IMPORTED_MODULE_33__["default"].blocksWrapper
@@ -448800,6 +448880,7 @@ BalancedText.defaultProps = {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   PaletteLayout: () => (/* binding */ PaletteLayout),
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var lodash_bindall__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lodash.bindall */ "./node_modules/lodash.bindall/index.js");
@@ -448883,6 +448964,627 @@ const addFunctionListener = (object, property, callback) => {
   };
 };
 const DroppableBlocks = (0,_lib_drop_area_hoc_jsx__WEBPACK_IMPORTED_MODULE_16__["default"])([_lib_drag_constants__WEBPACK_IMPORTED_MODULE_17__["default"].BACKPACK_CODE])(_components_blocks_blocks_jsx__WEBPACK_IMPORTED_MODULE_10__["default"]);
+/**
+ * ブロックパレットの幅と、パレットの中のブロックの大きさを変える仕組み（laughtale で追加）。
+ * - パレットとコードエリアの境につまみを置き、ドラッグで幅を変える（マウス・指のどちらでも）
+ * - つまみをダブルクリック（ダブルタップ）すると、今のカテゴリーでいちばん長いブロックに幅を合わせる
+ * - 「コード」「コスチューム」「音」のタブの右の「ブロックの大きさ」ボタン（gui.jsx）で、
+ *   パレットの中だけを大きく・小さくする。「元に戻す」で幅と大きさの両方を元に戻す
+ * - 幅と大きさはブラウザに覚えておく。言語やテーマを変えるとブロックの画面が作り直されるので、
+ *   作り直したとき（componentDidMount）にかけ直す
+ * コードエリアの大きさ（右下のズームボタン）には触らない。
+ */
+const PaletteLayout = (() => {
+  const STORAGE_KEY = 'laughtale.palette.v1';
+  const DEFAULT_WIDTH = 250; // Scratch の元のパレットの幅
+  const MIN_WIDTH = 200; // パレットの幅の下限
+  const MAX_STORED_WIDTH = 4000; // 保存した値をそのまま信じない（手で書きかえられた値などに備える）
+  const MIN_CODE_AREA = 300; // コードエリアは最低これだけ残す
+  const MIN_ZOOM = 0.6; // 大きさの下限（元の大きさに対する割合）
+  const MAX_ZOOM = 1.5; // 大きさの上限
+  const ZOOM_STEP = 0.1; // ボタン 1 回で変わる割合
+  const FIT_MARGIN = 24; // 長いブロックに合わせるとき、右に足す余白（スクロールバーの分も入れる）
+  const DOUBLE_TAP_MS = 400; // 2 回目のタップをダブルタップとみなす時間
+  const DOUBLE_TAP_PX = 12; // 2 回のタップの位置のずれの許し
+  const DRAG_THRESHOLD_PX = 4; // これより動いたらドラッグとみなす
+  const RESIZE_SETTLE_MS = 250; // 窓の大きさが止まってから並べ直すまでの時間
+  const RELAYOUT_DELAY_MS = 200; // 並べ直しを後に回すときの待ち時間（「＋」「−」の連打・ブロックを動かしている途中）
+  const STYLE_ID = 'lt-palette-style';
+  const STYLE = [
+    '.lt-palette-handle{position:absolute;top:0;bottom:0;width:14px;cursor:ew-resize;z-index:30;touch-action:none;-webkit-user-select:none;user-select:none;}',
+    '.lt-palette-handle::after{content:"";position:absolute;top:0;bottom:0;left:1px;width:3px;background:transparent;transition:background-color .15s;}',
+    '.lt-palette-handle--rtl::after{left:auto;right:1px;}',
+    '.lt-palette-handle::before{content:"";position:absolute;top:50%;left:4px;width:6px;height:48px;margin-top:-24px;border-radius:3px;background:hsla(260,60%,60%,.35);}',
+    '.lt-palette-handle--rtl::before{left:auto;right:4px;}',
+    '.lt-palette-handle:hover::after,.lt-palette-handle--active::after{background:hsla(260,60%,60%,.8);}',
+    '.lt-palette-handle:hover::before,.lt-palette-handle--active::before{background:hsla(260,60%,60%,.9);}',
+    '.lt-tab-row{display:flex;flex-shrink:0;}',
+    '.lt-palette-size{display:flex;align-items:center;gap:.25rem;margin-inline-start:.75rem;white-space:nowrap;color:hsla(225,15%,40%,1);font-size:.75rem;}',
+    '.lt-palette-size__label{margin:0 .25rem;font-weight:bold;}',
+    '.lt-palette-size__button{min-width:2rem;height:2rem;padding:0 .5rem;border:1px solid hsla(0,0%,0%,.15);border-radius:1rem;background:#fff;color:hsla(260,60%,60%,1);font-family:inherit;font-size:1rem;font-weight:bold;line-height:1;cursor:pointer;touch-action:manipulation;}',
+    '.lt-palette-size__button--text{font-size:.75rem;}',
+    '.lt-palette-size__button:hover:not(:disabled){background:hsla(260,60%,60%,.12);}',
+    '.lt-palette-size__button:disabled{opacity:.4;cursor:default;}'
+  ].join('\n');
+
+  let comp = null; // 今つながっている Blocks コンポーネント
+  let handle = null; // 境界線のつまみ（div）
+  let buttons = null; // タブの右のボタンの入れ物（div）
+  let baseScale = 0; // パレットの元の倍率（ふつうは 0.675）
+  let catWidth = 0; // カテゴリー一覧の幅
+  let width = DEFAULT_WIDTH; // 子どもが決めた幅（画面に入らないときは、かけるときに縮める）
+  let zoom = 1; // 子どもが決めた大きさ（元の大きさに対する割合）
+  let loaded = false; // 保存した値を読んだか（読むのはページを開いて最初の 1 回だけ）
+  let drag = null; // ドラッグ中の情報
+  let lastTap = null; // ダブルタップを見分けるための、前のタップ
+  let rafId = 0;
+  let resizeRafId = 0;
+  let settleTimer = 0;
+  let zoomTimer = 0;
+  let laidOutWidth = 0; // パレットの中のブロックを並べたときの幅
+  let laidOutScale = 0; // パレットの中のブロックを並べたときの倍率
+
+  const warn = e => {
+    // 失敗してもエディターは止めない（ふつうの幅のまま使える）
+    if (window.console) window.console.warn('[palette]', e);
+  };
+  const clampZoom = z => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(z * 10) / 10));
+
+  /**
+   * 保存した幅と大きさを読む（ページを開いて最初の 1 回だけ）。
+   * あとはこの中の値が正しいので、保存が使えないブラウザでも、言語を変えたときに元に戻らない
+   */
+  const load = () => {
+    if (loaded) return;
+    loaded = true;
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const v = JSON.parse(raw);
+      if (v && typeof v.width === 'number' && isFinite(v.width)) {
+        width = Math.min(MAX_STORED_WIDTH, Math.max(MIN_WIDTH, Math.round(v.width)));
+      }
+      if (v && typeof v.zoom === 'number' && isFinite(v.zoom)) zoom = clampZoom(v.zoom);
+    } catch (e) {
+      // 保存が使えないブラウザ（プライベートモードなど）では、元の幅と大きさで使う
+    }
+  };
+
+  /** 幅と大きさを保存する（元のままなら消す） */
+  const save = () => {
+    try {
+      if (width === DEFAULT_WIDTH && zoom === 1) {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } else {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify({width, zoom}));
+      }
+    } catch (e) {
+      // 保存できなくても、今の画面ではそのまま使える
+    }
+  };
+
+  const injectStyle = () => {
+    if (typeof document === 'undefined' || !document.head || document.getElementById(STYLE_ID)) return;
+    const el = document.createElement('style');
+    el.id = STYLE_ID;
+    el.textContent = STYLE;
+    document.head.appendChild(el);
+  };
+
+  /** 今の言語の文を返す（無ければ英語） */
+  const message = (id, fallback) => {
+    const messages = comp && comp.props && comp.props.messages;
+    return (messages && messages[id]) || fallback;
+  };
+
+  const ready = () => {
+    const ws = comp && comp.workspace;
+    return !!(ws && ws.toolbox_ && ws.getFlyout && ws.getFlyout());
+  };
+
+  /** 開いているメニュー・入力欄を閉じる（パレットを作り直すと、持ち主のブロックが消えるため） */
+  const hideChaff = () => {
+    try {
+      if (comp && comp.ScratchBlocks && comp.ScratchBlocks.hideChaff) comp.ScratchBlocks.hideChaff();
+    } catch (e) {
+      warn(e);
+    }
+  };
+
+  /** 幅の上限（コードエリアを MIN_CODE_AREA 残す）。見えていないときは null */
+  const maxWidth = () => {
+    const w = comp && comp.blocks ? comp.blocks.offsetWidth : 0;
+    if (!w) return null;
+    return Math.max(MIN_WIDTH, w - catWidth - MIN_CODE_AREA);
+  };
+  const clampWidth = w => {
+    const max = maxWidth();
+    return Math.round(Math.min(max === null ? Infinity : max, Math.max(MIN_WIDTH, w)));
+  };
+
+  /** つまみを境界線の位置に置く */
+  const placeHandle = flyoutWidth => {
+    if (!handle) return;
+    const edge = catWidth + flyoutWidth;
+    if (comp.workspace.RTL) {
+      handle.classList.add('lt-palette-handle--rtl');
+      handle.style.left = '';
+      handle.style.right = `${edge - 2}px`;
+    } else {
+      handle.classList.remove('lt-palette-handle--rtl');
+      handle.style.right = '';
+      handle.style.left = `${edge - 2}px`;
+    }
+  };
+
+  /**
+   * 幅をかける。パレットの位置・背景・切り取りと、コードエリアの大きさを描き直す。
+   * 中のブロックの並べ直しはしない（ドラッグ中でもなめらかに動くように）
+   * @return {boolean} 幅が変わったら true
+   */
+  const applyWidth = () => {
+    const ws = comp.workspace;
+    const fl = ws.getFlyout();
+    const tb = ws.toolbox_;
+    const w = clampWidth(width);
+    let changed = false;
+    if (fl.getWidth() !== w || tb.width !== catWidth + w) {
+      fl.DEFAULT_WIDTH = w;
+      tb.width = catWidth + w;
+      ws.resize(); // この中で toolbox と flyout の position() も呼ばれる
+      changed = true;
+    }
+    placeHandle(w);
+    return changed;
+  };
+
+  /**
+   * 幅が変わったとき、中のブロックを並べ直す必要があるか。
+   * 左から右の言語ではブロックの位置は幅に関係しない。関係するのは、右から左の言語と、
+   * 拡張機能の見出しの右はしにある接続のボタン（micro:bit など。作るときの幅で位置が決まる）だけ
+   */
+  const widthNeedsRelayout = () => {
+    const ws = comp.workspace;
+    if (ws.RTL) return true;
+    const Header = comp.ScratchBlocks && comp.ScratchBlocks.FlyoutExtensionCategoryHeader;
+    const list = ws.getFlyout().buttons_ || [];
+    return list.some(b => (Header ? b instanceof Header : b.isCategoryLabel_) && b.imageSrc_);
+  };
+
+  /**
+   * 並べ直しが要るか。並べたときの倍率とちがう、または並べたときの幅とちがい、
+   * その幅で位置が変わるブロックやボタンがあるとき
+   */
+  const needsRelayout = () => {
+    const fl = comp.workspace.getFlyout();
+    if (laidOutScale !== baseScale * zoom) return true;
+    return laidOutWidth !== fl.getWidth() && widthNeedsRelayout();
+  };
+
+  /** Blockly がブロックを動かしている途中か（その間に並べ直すと、つかんだブロックが消える） */
+  const gestureActive = () => {
+    const ws = comp.workspace;
+    const fws = ws.getFlyout().workspace_;
+    return !!(ws.currentGesture_ || (fws && fws.currentGesture_));
+  };
+
+  /**
+   * パレットが中のブロックを並べるたびに、そのときの幅と倍率を覚える
+   * （Scratch 自身がスプライトの切りかえなどで並べ直したときも含む）
+   * @param {object} fl - パレット（flyout）
+   */
+  const watchLayout = fl => {
+    if (!fl.ltShowWatched) {
+      const show = fl.show;
+      fl.show = function () {
+        const result = show.apply(this, arguments);
+        laidOutWidth = this.getWidth();
+        laidOutScale = this.workspace_.scale;
+        return result;
+      };
+      fl.ltShowWatched = true;
+    }
+    laidOutWidth = fl.getWidth();
+    laidOutScale = fl.workspace_.scale;
+  };
+
+  /**
+   * パレットの中のブロックを、今の大きさで並べ直す。見ていた場所はそのまま
+   */
+  const relayout = () => {
+    const ws = comp.workspace;
+    const fl = ws.getFlyout();
+    const tb = ws.toolbox_;
+    const oldScale = fl.workspace_.scale;
+    // カテゴリーへスクロールしている途中なら、行き先（パレットの中の位置）を覚えておく
+    const target = typeof fl.scrollTarget === 'number' && isFinite(fl.scrollTarget) && oldScale ?
+      fl.scrollTarget / oldScale : null;
+    let categoryId = null;
+    let offset = 0;
+    try {
+      categoryId = tb.getSelectedCategoryId();
+      if (categoryId) offset = tb.getCategoryScrollOffset() || 0;
+    } catch (e) {
+      categoryId = null;
+    }
+    hideChaff();
+    fl.scrollTarget = null; // 古い大きさの行き先で、スクロールの続きが動かないように
+    fl.workspace_.scale = baseScale * zoom;
+    tb.refreshSelection();
+    if (target !== null) {
+      tb.setFlyoutScrollPos(target);
+      return;
+    }
+    const pos = categoryId ? tb.getCategoryPositionById(categoryId) : undefined;
+    if (typeof pos === 'number') tb.setFlyoutScrollPos(pos + offset);
+  };
+
+  /** ボタンの押せる・押せないを今の大きさに合わせる */
+  const updateButtons = () => {
+    if (!buttons) return;
+    const smaller = buttons.querySelector('[data-lt-palette="smaller"]');
+    const larger = buttons.querySelector('[data-lt-palette="larger"]');
+    const smallerOff = zoom <= MIN_ZOOM + 1e-9;
+    const largerOff = zoom >= MAX_ZOOM - 1e-9;
+    // 押せなくなるボタンにフォーカスがあると、フォーカスが外れてキーが作品に届いてしまうので、反対側へ移す
+    const active = document.activeElement;
+    if (smallerOff && smaller && active === smaller && larger) larger.focus();
+    if (largerOff && larger && active === larger && smaller) smaller.focus();
+    if (smaller) smaller.disabled = smallerOff;
+    if (larger) larger.disabled = largerOff;
+  };
+
+  /** 幅と大きさをかけ、要るときだけ並べ直し、保存する */
+  const commit = () => {
+    if (zoomTimer) {
+      window.clearTimeout(zoomTimer);
+      zoomTimer = 0;
+    }
+    try {
+      if (ready()) {
+        applyWidth();
+        requestRelayout();
+      }
+    } finally {
+      // 途中で失敗しても、決めた幅と大きさの保存とボタンの表示は必ずする
+      save();
+      updateButtons();
+    }
+  };
+
+  /** 今のカテゴリーでいちばん長いブロックに幅を合わせる */
+  const fitToLongest = () => {
+    if (!ready()) return;
+    const ws = comp.workspace;
+    const fl = ws.getFlyout();
+    const tb = ws.toolbox_;
+    const fws = fl.workspace_;
+    const laidScale = fws.scale; // 今並んでいるときの倍率（ブロックの位置はこの倍率で並べてある）
+    const scale = baseScale * zoom; // これからかける倍率（「＋」「−」の並べ直しを待っている間も、こちらで測る）
+    // 今のカテゴリーの、パレットの中での上下の範囲
+    let top = -Infinity;
+    let bottom = Infinity;
+    let categoryId = null;
+    try {
+      categoryId = tb.getSelectedCategoryId();
+    } catch (e) {
+      categoryId = null; // えらばれたカテゴリーが無いときは、パレット全体で合わせる
+    }
+    (fl.categoryScrollPositions || []).forEach(c => {
+      if (categoryId && c.categoryId === categoryId) {
+        top = c.position;
+        bottom = c.length ? c.position + c.length : Infinity;
+      }
+    });
+    const viewWidth = (laidOutWidth || fl.getWidth()) / laidScale;
+    let need = 0;
+    fws.getTopBlocks(false).forEach(block => {
+      const xy = block.getRelativeToSurfaceXY();
+      if (xy.y < top - 1 || xy.y >= bottom) return;
+      const size = block.getHeightWidth();
+      // 右から左の言語では、ブロックは右寄せで並ぶ
+      const right = ws.RTL ? viewWidth - (xy.x - size.width) : xy.x + size.width;
+      need = Math.max(need, right);
+    });
+    if (!need) return;
+    width = clampWidth(Math.ceil(need * scale + FIT_MARGIN));
+    commit();
+  };
+
+  /** 窓の大きさが止まったら、並べ直しが要るときだけ 1 回並べ直す */
+  const scheduleSettle = () => {
+    if (settleTimer) window.clearTimeout(settleTimer);
+    settleTimer = window.setTimeout(() => {
+      settleTimer = 0;
+      try {
+        if (!ready() || drag || !maxWidth()) return;
+        requestRelayout();
+      } catch (e) {
+        warn(e);
+      }
+    }, RESIZE_SETTLE_MS);
+  };
+
+  /**
+   * 少し待ってから並べ直す（「＋」「−」の連打は最後の 1 回にまとまる）。
+   * そのときもブロックを動かしている途中なら、また待つ
+   */
+  const scheduleRelayout = () => {
+    if (zoomTimer) window.clearTimeout(zoomTimer);
+    zoomTimer = window.setTimeout(() => {
+      zoomTimer = 0;
+      try {
+        if (!ready()) return;
+        if (gestureActive() || drag) {
+          scheduleRelayout();
+          return;
+        }
+        applyWidth();
+        if (needsRelayout()) relayout();
+      } catch (e) {
+        warn(e);
+      }
+    }, RELAYOUT_DELAY_MS);
+  };
+
+  /**
+   * 並べ直しの入口。要るときだけ並べ直す。ほかの道はここか scheduleRelayout を通る
+   * （attach だけは、作り直した直後でブロックを動かしている途中になりえないので直接並べ直す）。
+   * Blockly がブロックを動かしている途中（2 本目の指でつまみやボタンを触ったときなど）に並べ直すと、
+   * つかんでいるパレットのブロックが作り直されて消え、運んだブロックの位置もずれるので、動かし終わるまで後に回す
+   */
+  const requestRelayout = () => {
+    if (!needsRelayout()) return;
+    if (gestureActive() || drag) {
+      scheduleRelayout();
+      return;
+    }
+    if (zoomTimer) {
+      window.clearTimeout(zoomTimer);
+      zoomTimer = 0;
+    }
+    relayout();
+  };
+
+  /** 大きさを変える（表示と保存はすぐ、並べ直しは少し後） */
+  const changeZoom = next => {
+    zoom = clampZoom(next);
+    save();
+    updateButtons();
+    scheduleRelayout();
+  };
+
+  const onPointerDown = e => {
+    if (!ready()) return;
+    if (drag) {
+      // ドラッグ中の 2 本目の指（手のひら）は受け付けない
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const now = Date.now();
+    if (lastTap && now - lastTap.time < DOUBLE_TAP_MS &&
+        Math.abs(e.clientX - lastTap.x) < DOUBLE_TAP_PX && Math.abs(e.clientY - lastTap.y) < DOUBLE_TAP_PX) {
+      // ダブルクリック・ダブルタップ
+      lastTap = null;
+      try {
+        fitToLongest();
+      } catch (err) {
+        warn(err);
+      }
+      return;
+    }
+    lastTap = {time: now, x: e.clientX, y: e.clientY};
+    hideChaff();
+    drag = {id: e.pointerId, startX: e.clientX, startWidth: clampWidth(width), moved: false};
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch (err) {
+      // つかめなくても、つまみの上で動かせば幅は変わる（外で離したら lostpointercapture か次の move で終わる）
+    }
+    handle.classList.add('lt-palette-handle--active');
+  };
+
+  const onPointerEnd = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    e.stopPropagation();
+    const moved = drag.moved;
+    drag = null;
+    // 途中で止められた（pointercancel など）ときは、次の 1 回のタップをダブルタップとみなさない
+    if (e.type !== 'pointerup') lastTap = null;
+    handle.classList.remove('lt-palette-handle--active');
+    try {
+      if (handle.hasPointerCapture && handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+    } catch (err) {
+      // もう離れていれば何もしない
+    }
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    try {
+      if (moved) {
+        commit();
+      } else if (ready()) {
+        // 押している間に窓が縮んだときなど、見送った幅の入れ直しと並べ直しをここでする
+        applyWidth();
+        requestRelayout();
+      }
+    } catch (err) {
+      warn(err);
+    }
+  };
+
+  const onPointerMove = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (e.pointerType === 'mouse' && e.buttons === 0) {
+      // つかむのに失敗して、つまみの外でボタンを離していたとき
+      onPointerEnd(e);
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    let dx = e.clientX - drag.startX;
+    if (comp.workspace.RTL) dx = -dx;
+    if (!drag.moved && Math.abs(dx) < DRAG_THRESHOLD_PX) return;
+    drag.moved = true;
+    lastTap = null; // 動かしたらダブルクリックとみなさない
+    width = clampWidth(drag.startWidth + dx);
+    if (!rafId) {
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        try {
+          if (ready()) applyWidth();
+        } catch (err) {
+          warn(err);
+        }
+      });
+    }
+  };
+
+  // Blockly はマウス・タッチのイベントで操作を始めるので、つまみの上では伝えない
+  const stop = e => e.stopPropagation();
+
+  const ensureHandle = () => {
+    if (!handle) {
+      handle = document.createElement('div');
+      handle.className = 'lt-palette-handle';
+      handle.setAttribute('role', 'separator');
+      handle.setAttribute('aria-orientation', 'vertical');
+      handle.addEventListener('pointerdown', onPointerDown);
+      handle.addEventListener('pointermove', onPointerMove);
+      handle.addEventListener('pointerup', onPointerEnd);
+      handle.addEventListener('pointercancel', onPointerEnd);
+      handle.addEventListener('lostpointercapture', onPointerEnd);
+      ['mousedown', 'touchstart', 'dblclick', 'contextmenu'].forEach(type => handle.addEventListener(type, stop));
+    }
+    handle.title = message('gui.paletteSize.handle',
+      'Drag to change the width. Double-click to fit the longest block.');
+    if (handle.parentNode !== comp.blocks) comp.blocks.appendChild(handle);
+  };
+
+  /**
+   * 窓の大きさ・ステージの大きさが変わったら、幅を画面に入れ直す。
+   * 動いている間は幅だけをかけ、並べ直しは止まってから 1 回だけ
+   */
+  const onResize = () => {
+    if (resizeRafId) return;
+    resizeRafId = window.requestAnimationFrame(() => {
+      resizeRafId = 0;
+      try {
+        if (!ready() || drag || !maxWidth()) return;
+        if (applyWidth()) scheduleSettle();
+      } catch (e) {
+        warn(e);
+      }
+    });
+  };
+
+  injectStyle();
+
+  return {
+    /**
+     * ブロックの画面ができたときに呼ぶ（Blocks.componentDidMount）。保存した幅と大きさをかける
+     * @param {object} component - Blocks コンポーネント
+     */
+    attach (component) {
+      try {
+        const ws = component.workspace;
+        const fl = ws && ws.getFlyout && ws.getFlyout();
+        const tb = ws && ws.toolbox_;
+        if (!fl || !tb || !component.blocks) return;
+        comp = component;
+        // 途中で失敗しても、窓の大きさの変化は受け取れるように先に付ける
+        window.addEventListener('resize', onResize);
+        injectStyle();
+        baseScale = fl.workspace_.scale;
+        catWidth = tb.width - fl.getWidth();
+        watchLayout(fl);
+        load();
+        ensureHandle();
+        applyWidth();
+        if (needsRelayout()) relayout();
+        updateButtons();
+      } catch (e) {
+        warn(e);
+      }
+    },
+    /**
+     * ブロックの画面を消す前に呼ぶ（Blocks.componentWillUnmount）
+     * @param {object} component - Blocks コンポーネント
+     */
+    detach (component) {
+      if (comp !== component) return;
+      window.removeEventListener('resize', onResize);
+      if (rafId) window.cancelAnimationFrame(rafId);
+      if (resizeRafId) window.cancelAnimationFrame(resizeRafId);
+      if (settleTimer) window.clearTimeout(settleTimer);
+      if (zoomTimer) window.clearTimeout(zoomTimer);
+      rafId = 0;
+      resizeRafId = 0;
+      settleTimer = 0;
+      zoomTimer = 0;
+      drag = null;
+      lastTap = null;
+      if (handle && handle.parentNode) handle.parentNode.removeChild(handle);
+      handle = null;
+      comp = null;
+    },
+    /**
+     * タブの右のボタンの入れ物を受け取る（React の ref。消えるときは null）
+     * @param {HTMLElement|null} el - ボタンの入れ物
+     */
+    bindButtons (el) {
+      buttons = el;
+      if (el) {
+        injectStyle();
+        updateButtons();
+      }
+    },
+    /** パレットの中のブロックを小さくする */
+    zoomOut () {
+      try {
+        changeZoom(zoom - ZOOM_STEP);
+      } catch (e) {
+        warn(e);
+      }
+    },
+    /** パレットの中のブロックを大きくする */
+    zoomIn () {
+      try {
+        changeZoom(zoom + ZOOM_STEP);
+      } catch (e) {
+        warn(e);
+      }
+    },
+    /** 幅と大きさの両方を元に戻す */
+    reset () {
+      width = DEFAULT_WIDTH;
+      zoom = 1;
+      try {
+        commit();
+      } catch (e) {
+        warn(e);
+      }
+    },
+    /** 今のカテゴリーでいちばん長いブロックに幅を合わせる（つまみのダブルクリックと同じ） */
+    fit () {
+      try {
+        fitToLongest();
+      } catch (e) {
+        warn(e);
+      }
+    },
+    /** 試験用: 今の値 */
+    getState () {
+      return {width, zoom, appliedWidth: ready() ? comp.workspace.getFlyout().getWidth() : null};
+    }
+  };
+})();
+
 class Blocks extends react__WEBPACK_IMPORTED_MODULE_5__.Component {
   constructor(props) {
     super(props);
@@ -448946,6 +449648,8 @@ class Blocks extends react__WEBPACK_IMPORTED_MODULE_5__.Component {
     if (this.props.isVisible) {
       this.setLocale();
     }
+    // パレットの幅と大きさ（保存した値）をかける。言語・テーマの切りかえで作り直したときも、ここを通る
+    PaletteLayout.attach(this);
   }
   shouldComponentUpdate(nextProps, nextState) {
     return this.state.prompt !== nextState.prompt || this.props.isVisible !== nextProps.isVisible || this._renderedToolboxXML !== nextProps.toolboxXML || this.props.extensionLibraryVisible !== nextProps.extensionLibraryVisible || this.props.customProceduresVisible !== nextProps.customProceduresVisible || this.props.locale !== nextProps.locale || this.props.anyModalVisible !== nextProps.anyModalVisible || this.props.stageSize !== nextProps.stageSize;
@@ -448988,6 +449692,7 @@ class Blocks extends react__WEBPACK_IMPORTED_MODULE_5__.Component {
     }
   }
   componentWillUnmount() {
+    PaletteLayout.detach(this);
     this.detachVM();
     this.workspace.dispose();
     clearTimeout(this.toolboxUpdateTimeout);
