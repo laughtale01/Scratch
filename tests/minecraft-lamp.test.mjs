@@ -1,6 +1,6 @@
 // Minecraft とつながっているかのランプ（gui.js の MinecraftLamp と、Minecraft 拡張の接続の状態）の試験。
 // 本物の Chrome を見えない形で動かし、リポジトリの index.html と gui.js を 127.0.0.1 の小さなサーバーから開く。
-// Minecraft の MOD の代わりに、127.0.0.1 で偽物の WebSocket のサーバーを立て、［Minecraftに接続］ブロックを動かしてつなぐ。
+// Minecraft の MOD の代わりに、127.0.0.1 で偽物の WebSocket のサーバーを立て、［Minecraftにつなぐ］ブロックを動かしてつなぐ。
 // 本番にはつながない: 127.0.0.1 以外への通信と firebase-integration.js は空の中身に差し替え、
 //   偽物の MOD 以外へ WebSocket が開いたら試験をしっぱいにする。
 // 使い方: node tests/minecraft-lamp.test.mjs
@@ -162,7 +162,7 @@ const COLORS = { idle: 'rgb(154, 160, 166)', connecting: 'rgb(242, 183, 5)', con
     return !!(await lamp() || {}).hint;
   };
   /**
-   * ［Minecraftに接続］・［切断］のブロックを置いて動かす（子どもがブロックを押したのと同じ）。
+   * ［Minecraftにつなぐ］・［Minecraftとつなぐのをやめる］のブロックを置いて動かす（子どもがブロックを押したのと同じ）。
    * forever が true なら「ずっと」の中に入れる
    */
   const runBlock = (opcode, port, { host = '127.0.0.1', forever = false } = {}) => p.evaluate(({ opcode, port, host, forever }) => {
@@ -255,12 +255,12 @@ const COLORS = { idle: 'rgb(154, 160, 166)', connecting: 'rgb(242, 183, 5)', con
   await p.waitForTimeout(200);
   ok(escOut && (await lamp() || {}).hint === null, 'ランプの外から来た Esc は、ヒントを閉じつつ、ほかの画面にも届く', escOut);
 
-  // 4. つないでいる途中に［切断］すると灰にもどり、あとで返事が来ても灰のまま
+  // 4. つないでいる途中に［Minecraftとつなぐのをやめる］すると灰にもどり、あとで返事が来ても灰のまま
   await runBlock('minecraft_disconnect');
-  ok(await waitStatus('idle'), 'つないでいる途中に［切断］すると、灰にもどる');
+  ok(await waitStatus('idle'), 'つないでいる途中に［Minecraftとつなぐのをやめる］すると、灰にもどる');
   SLOW.release();
   await p.waitForTimeout(800);
-  ok((await lamp() || {}).status === 'idle', '［切断］したあとに前の返事が来ても、灰のまま');
+  ok((await lamp() || {}).status === 'idle', '［Minecraftとつなぐのをやめる］したあとに前の返事が来ても、灰のまま');
 
   // 5. つないでいる途中に別の場所（MOD）へつなぐと緑になり、前の接続が閉じても緑のまま
   await runBlock('minecraft_connect', SLOW.port);
@@ -274,7 +274,7 @@ const COLORS = { idle: 'rgb(154, 160, 166)', connecting: 'rgb(242, 183, 5)', con
   ok((await lamp() || {}).status === 'connected', '前の接続（返事を待たせていた所）が閉じても、緑のまま');
   ok(await openHint(), '緑のときもヒントが開く');
   l = await lamp();
-  ok(l && l.hint && l.hint.startsWith('Minecraft つながっている') && l.hint.includes('Minecraft に届きます'), '緑のときのヒント（いちばん上に今の状態）', l);
+  ok(l && l.hint && l.hint.startsWith('Minecraft つながっている') && l.hint.includes('Minecraftに届きます'), '緑のときのヒント（いちばん上に今の状態）', l);
   ok(await p.evaluate(() => { const ps = document.querySelectorAll('.lt-mc-lamp__hint p'); return ps[0].getAttribute('aria-hidden') === 'true' && ps[1].getAttribute('aria-hidden') === null; }), 'ヒントの先頭の状態の行は読み上げから外し、説明の行は読み上げる');
   await p.click('.lt-mc-lamp__button', { timeout: 3000 }).catch(() => {});
   ok((await lamp() || {}).hint === null, 'もう一度押すと、ヒントが閉じる');
@@ -305,7 +305,7 @@ const COLORS = { idle: 'rgb(154, 160, 166)', connecting: 'rgb(242, 183, 5)', con
   ok(l && !l.blink, '初めからつながらないときは、点滅しない', l);
   ok(await openHint(), '赤のときもヒントが開く');
   l = await lamp();
-  ok(l && l.hintLines === 4 && l.hint.includes('Minecraft を起動する') && l.hint.includes('ワールドに入る') && l.hint.includes('緑の旗'),
+  ok(l && l.hintLines === 4 && l.hint.includes('Minecraftをはじめる') && l.hint.includes('ワールドに入る') && l.hint.includes('緑の旗'),
      '赤のときは、つながらないときの手順が出る', l);
   await p.mouse.click(600, 500);
   ok((await lamp() || {}).hint === null, 'ランプの外を押すと、ヒントが閉じる');
@@ -339,7 +339,7 @@ const COLORS = { idle: 'rgb(154, 160, 166)', connecting: 'rgb(242, 183, 5)', con
   await runBlock('minecraft_connect', 1, { host: '[' });
   ok(await waitStatus('failed'), 'アドレスが壊れているときも、赤になる');
 
-  // 9. 「ずっと」の中の［接続］が、つながらない所へつなぎ続けても、黄と赤のあいだでちらつかない
+  // 9. 「ずっと」の中の［Minecraftにつなぐ］が、つながらない所へつなぎ続けても、黄と赤のあいだでちらつかない
   await runBlock('minecraft_disconnect');
   await must('idle');
   await p.waitForTimeout(300);
@@ -368,7 +368,7 @@ const COLORS = { idle: 'rgb(154, 160, 166)', connecting: 'rgb(242, 183, 5)', con
   await p.evaluate(() => vm.stopAll());
   ok(l && l.status === 'failed' && l.blink && tries2 >= 5 && ev.join() === 'failed', 'つなぎ直しが何度も起きている間も、赤のまま点滅が続く（黄にならない）', { l, ev, tries2 });
 
-  // 10b. MOD が閉じるあいさつを送り、接続が閉じかけの間に「ずっと」の［接続］がつなぎ直しても、まず「切れた」が知らされる
+  // 10b. MOD が閉じるあいさつを送り、接続が閉じかけの間に「ずっと」の［Minecraftにつなぐ］がつなぎ直しても、まず「切れた」が知らされる
   await runBlock('minecraft_disconnect');
   await must('idle');
   await runBlock('minecraft_connect', MOD3.port, { forever: true });

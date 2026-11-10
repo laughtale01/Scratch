@@ -5,17 +5,42 @@
 // 使い方: node tests/minecraft-blocks.test.mjs
 //   CHROME_PATH   … Chrome の実行ファイルの場所（既定は Mac の /Applications/Google Chrome.app/Contents/MacOS/Google Chrome）。
 //                   無ければ試験を飛ばし、終わりのコード 77 を返す
-//   BLOCKS_GUI_JS … 試す gui.js（既定はリポジトリの gui.js）
+//   BLOCKS_GUI_JS … 試す gui.js（既定はリポジトリの gui.js）。別の gui.js を指しているときは、下の 2 つの記録は作り直さない
+//                   （リポジトリの記録を、試しの gui.js の中身で上書きしないため）
+//   BLOCKS_UPDATE_TEXTS=1 … Minecraft の文（漢字・ひらがな）の記録 tests/fixtures/minecraft-texts.json を作り直す
+//                   （ことばを決めて変えたときだけ。前の記録から変わる所を出す。ページのエラーを含め、ほかの試験が
+//                   1 つでも失敗していれば作り直さない）
 //   BLOCKS_UPDATE_FIXTURE=1 … 今までの作品を守る記録 tests/fixtures/minecraft-blocks-compat.json を作り直す
-//                   （わざとブロックやメニューの値を変えたときだけ。前の記録から消えるものを出し、ほかの試験が失敗していれば作り直さない）
+//                   （わざとブロックやメニューの値を変えたときだけ。前の記録から消えるものを出し、ほかの試験が失敗していれば作り直さない。
+//                   ことばも変えたときは BLOCKS_UPDATE_TEXTS=1 も一緒につける）
 import { chromium } from 'playwright-core';
 import { createServer } from 'node:http';
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { extname, join, normalize, sep } from 'node:path';
+import { existsSync, lstatSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const GUI_JS = process.env.BLOCKS_GUI_JS || join(ROOT, 'gui.js');
+// リポジトリの gui.js を試しているか（記録を作り直してよいのは、このときだけ）。
+// 文字の上の比べ（path.resolve や fs.realpathSync も、先に「..」を文字の上で消す）では、「リンクのフォルダ/../gui.js」などで
+// 別のファイルを読めてしまう。そこで、OS が実際に開くファイルそのもの（デバイスと i ノードの番号）で比べる。
+// 番号は bigint で読む（Windows の 64 ビットの番号は、ふつうの数では丸められて、別のファイルと同じになることがある）。
+// 番号が 0 のファイルシステム（FAT など）では比べられないので「ちがう」とする。
+// 大きさと書いた時刻も入れておき、記録を書く直前にもう一度比べる（試しているあいだに gui.js が変わったら書かない）
+const repoGuiStamp = () => {
+  try {
+    const a = statSync(GUI_JS, { bigint: true });
+    const r = statSync(join(ROOT, 'gui.js'), { bigint: true });
+    if (!a.isFile() || a.ino === 0n || a.dev !== r.dev || a.ino !== r.ino) return null;
+    return `${a.dev}:${a.ino}:${a.size}:${a.mtimeNs}`;
+  } catch (e) {
+    return null; // 無いファイルなどは「リポジトリの gui.js ではない」（作り直さない側）
+  }
+};
+const GUI_STAMP = repoGuiStamp();
+const IS_REPO_GUI = GUI_STAMP !== null;
+// 漢字（々〆〇もふくむ。〆は Unicode では漢字のなかまに入らないので、別に足す）
+const HAN = /[\p{Script=Han}々〆〇]/u;
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 if (!existsSync(CHROME)) {
   console.log(`Chrome が見つからないので、この試験は飛ばします（${CHROME}。CHROME_PATH で指定できます）`);
@@ -159,7 +184,7 @@ try {
       null, { timeout: 5000 }).then(() => true, () => false);
   };
 
-  // 今の MOD に学習準備が送る命令（順番どおり。生き物の命令は無い）
+  // 今の MOD にはじめの準備が送る命令（順番どおり。生き物の命令は無い）
   const PREP_SENT = [
     ['setTime', { time: 6000 }], ['setWeather', { weather: 'clear' }],
     ['setGameRule', { rule: 'doDaylightCycle', value: 'true' }], ['setGameRule', { rule: 'doWeatherCycle', value: 'true' }],
@@ -237,7 +262,7 @@ try {
     ok(r.ok && m && m.params.to.x === 1000, `${op}: 200 万マスより大きくても、何も言わずに止めず MOD に送る`, { r, m: m && m.params });
   }
 
-  // 4. 周囲をクリア・全エンティティをクリア: 数でない・空の中心は送らない（原点のまわりを消さない）
+  // 4. まわりを平らな地面にもどす・まわりの生き物やものを全部消す: 数でない・空の中心は送らない（原点のまわりを消さない）
   for (const op of ['clearArea', 'clearAllEntities']) {
     for (const [x, z, want] of [['', '', {}], ['abc', 5, { centerZ: 5 }], [' ', 0, { centerZ: 0 }], [undefined, 3, { centerZ: 3 }],
       ['12', '-3.5', { centerX: 12, centerZ: -4 }], [2.7, 0, { centerX: 2, centerZ: 0 }], [0, 0, { centerX: 0, centerZ: 0 }]]) {
@@ -257,20 +282,20 @@ try {
     ok(m && m.params.time === want, `時刻 ${JSON.stringify(t)} → ${want}`, m && m.params);
   }
 
-  // 6. 学習準備: 今の MOD には、生き物を呼ぶのを止める命令も、許可にもどす命令も送らない
+  // 6. はじめの準備: 今の MOD には、生き物を呼ぶのを止める命令も、許可にもどす命令も送らない
   await clearSent();
   await call('prepareForLearning', {});
   const prep = (await sent()).filter(x => x.action === 'setEntitySpawning');
-  ok(prep.length === 0, '学習準備は、生き物を呼ぶのを止めない（先生が止めたのを、もどしもしない）', prep);
+  ok(prep.length === 0, 'はじめの準備は、生き物を呼ぶのを止めない（先生が止めたのを、もどしもしない）', prep);
   ok((await sent()).some(x => x.action === 'setGameRule' && x.params.rule === 'doMobSpawning' && x.params.value === 'false'),
-    '学習準備は、今までどおり生き物が自然に出てくるのを止める');
+    'はじめの準備は、今までどおり生き物が自然に出てくるのを止める');
   // 返事がもう来ていれば、その場で（ブロックが動いたその時に）全部送る。ほかのスクリプトより後回しにしない
   const syncSent = await p.evaluate(() => {
     window.__sent = [];
     vm.runtime._primitives.minecraft_prepareForLearning({}, {});
     return window.__sent.map(x => [x.action, x.params]);
   });
-  ok(JSON.stringify(syncSent) === JSON.stringify(PREP_SENT), '返事がもう来ていれば、学習準備はその場で 7 つの命令を送る', syncSent);
+  ok(JSON.stringify(syncSent) === JSON.stringify(PREP_SENT), '返事がもう来ていれば、はじめの準備はその場で 7 つの命令を送る', syncSent);
 
   // 7. 調べるブロックが返すブロックの名前は、メニューと同じ形（minecraft: / minecraftedu: を外す）
   let r = await call('getTargetBlock', { INFO: 'blockType' });
@@ -280,7 +305,7 @@ try {
   r = await call('getBlockType', { X: 0, Y: 0, Z: 0 });
   ok(r.value === 'vertical_oak_slab', 'ブロックの種類: 縦スラブの minecraftedu: を外す', r);
   r = await call('getBlockUnderPlayer', {});
-  ok(r.value === 'vertical_oak_slab', '足元のブロック: 縦スラブの minecraftedu: を外す', r);
+  ok(r.value === 'vertical_oak_slab', '足もとのブロック: 縦スラブの minecraftedu: を外す', r);
   await p.evaluate(() => { window.__results.getBlockType = { blockType: 'stone' }; });
   r = await call('getBlockType', { X: 0, Y: 0, Z: 0 });
   ok(r.value === 'stone', 'ブロックの種類: 何も付いていない名前はそのまま', r);
@@ -295,30 +320,30 @@ try {
 
   // 9. つないでいないのにブロックが動いたら、ランプが点滅し、ヒントに「先につないでね」
   await call('disconnect', {});
-  ok(await p.waitForFunction(() => vm.runtime.ltMinecraftConnection === 'idle', null, { timeout: 5000 }).then(() => true, () => false), '（準備）切断する');
+  ok(await p.waitForFunction(() => vm.runtime.ltMinecraftConnection === 'idle', null, { timeout: 5000 }).then(() => true, () => false), '（準備）Minecraftとつなぐのをやめる');
   let l = await lampState();
-  ok(l && !l.blink, '（準備）切断しただけでは点滅しない', l);
+  ok(l && !l.blink, '（準備）つなぐのをやめただけでは点滅しない', l);
   await call('setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'stone' });
   await p.waitForTimeout(200);
   l = await lampState();
   ok(l && l.status === 'idle' && l.blink, 'つないでいないのに置くブロックを動かすと、ランプが点滅する', l);
   await p.click('.lt-mc-lamp__button');
   l = await lampState();
-  ok(l && l.hint && l.hint.includes('先に Minecraft につないでね') && l.hint.includes('ブロックを動かすと、つながります'),
-    'ランプを押すと「先に Minecraft につないでね」と、つなぎ方が出る', l);
-  ok(await p.evaluate(() => document.querySelector('.lt-mc-lamp__live').textContent.includes('先に Minecraft につないでね')),
-    '「先に Minecraft につないでね」は、読み上げの文（role=status）にも入る');
+  ok(l && l.hint && l.hint.includes('先にMinecraftにつないでね') && l.hint.includes('ブロックを動かすと、つながります'),
+    'ランプを押すと「先にMinecraftにつないでね」と、つなぎ方が出る', l);
+  ok(await p.evaluate(() => document.querySelector('.lt-mc-lamp__live').textContent.includes('先にMinecraftにつないでね')),
+    '「先にMinecraftにつないでね」は、読み上げの文（role=status）にも入る');
   // 言語を変えても（ランプが作り直されても）、「先につないでね」が残る
   await p.evaluate(() => window.__store.dispatch({ type: 'scratch-gui/locales/SELECT_LOCALE', locale: 'ja-Hira' }));
   await p.waitForFunction(() => { const el = document.querySelector('.lt-mc-lamp__live'); return el && el.textContent.includes('さきにMinecraftにつないでね'); }, null, { timeout: 8000 })
     .then(() => ok(true, '言語を変えても、「先につないでね」が残る（ひらがなの文になる）'), () => ok(false, '言語を変えても、「先につないでね」が残る（ひらがなの文になる）'));
   await p.evaluate(() => window.__store.dispatch({ type: 'scratch-gui/locales/SELECT_LOCALE', locale: 'ja' }));
-  await p.waitForFunction(() => { const el = document.querySelector('.lt-mc-lamp__live'); return el && el.textContent.includes('先に Minecraft につないでね'); }, null, { timeout: 8000 }).catch(() => {});
+  await p.waitForFunction(() => { const el = document.querySelector('.lt-mc-lamp__live'); return el && el.textContent.includes('先にMinecraftにつないでね'); }, null, { timeout: 8000 }).catch(() => {});
   await p.click('.lt-mc-lamp__button'); // ヒントを開く（作り直しで閉じている）
   l = await lampState();
-  ok(l && l.hint && l.hint.includes('先に Minecraft につないでね'), '（言語をもどしたあとも、ヒントに「先につないでね」）', l);
+  ok(l && l.hint && l.hint.includes('先にMinecraftにつないでね'), '（言語をもどしたあとも、ヒントに「先につないでね」）', l);
   await p.click('.lt-mc-lamp__button');
-  // つないでいないまま［切断］すると、点滅も「先につないでね」も消える
+  // つないでいないまま［Minecraftとつなぐのをやめる］すると、点滅も「先につないでね」も消える
   await call('setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'stone' });
   await p.waitForTimeout(100);
   ok(((await lampState()) || {}).blink === true, '（準備）もう一度動かして、点滅している');
@@ -327,7 +352,7 @@ try {
   l = await lampState();
   const live = await p.evaluate(() => document.querySelector('.lt-mc-lamp__live').textContent);
   ok(l && !l.blink && !live.includes('先に') && await p.evaluate(() => vm.runtime.ltMinecraftNeedConnection === false),
-    'つないでいないまま［切断］すると、点滅も「先につないでね」も消える', { l, live });
+    'つないでいないまま［Minecraftとつなぐのをやめる］すると、点滅も「先につないでね」も消える', { l, live });
   // 値のブロック（返事を待つブロック）だけを動かしても、知らせる
   await p.evaluate(() => {
     window.__needCount = 0;
@@ -344,7 +369,7 @@ try {
   ok(await p.evaluate(u => vm.runtime.ltMinecraftBlinkUntil === u, until1), '点滅の途中で何度動かしても、点滅の終わりの時刻は延びない');
   ok(await p.waitForFunction(() => !document.querySelector('.lt-mc-lamp--blink'), null, { timeout: 9000, polling: 100 }).then(() => true, () => false),
     '点滅は 4 秒ほどで自然に終わる');
-  ok(await p.evaluate(() => document.querySelector('.lt-mc-lamp__live').textContent.includes('先に Minecraft につないでね')),
+  ok(await p.evaluate(() => document.querySelector('.lt-mc-lamp__live').textContent.includes('先にMinecraftにつないでね')),
     '点滅が終わっても、「先につないでね」は残る');
   await call('getPlayerFacing', {});
   await p.waitForTimeout(200);
@@ -438,8 +463,8 @@ try {
     await p.waitForTimeout(300);
   };
   const EXPECT = {
-    ja: { weather: [['晴れ', 'clear'], ['雨', 'rain'], ['雷雨', 'thunder']],
-      rules: [['モブスポーン', 'doMobSpawning'], ['時間固定', 'doDaylightCycle'], ['天気固定', 'doWeatherCycle']],
+    ja: { weather: [['晴れ', 'clear'], ['雨', 'rain'], ['かみなり', 'thunder']],
+      rules: [['生き物が自然に出てくる', 'doMobSpawning'], ['時間を止める', 'doDaylightCycle'], ['天気を止める', 'doWeatherCycle']],
       values: [['オン', 'true'], ['オフ', 'false']], title: 'わたしの作品',
       time: [['朝', 'day'], ['昼', 'noon'], ['夕方', 'sunset'], ['夜', 'night'], ['真夜中', 'midnight']] },
     'ja-Hira': { weather: [['はれ', 'clear'], ['あめ', 'rain'], ['かみなり', 'thunder']],
@@ -481,6 +506,53 @@ try {
     return out;
   });
   const textsBy = {};
+  // Minecraft の文の記録（言語ごとの「鍵: 文」。下の言語のループで比べ、BLOCKS_UPDATE_TEXTS=1 のときは作り直す）
+  const TEXTS_FILE = join(ROOT, 'tests', 'fixtures', 'minecraft-texts.json');
+  let TEXTS_DATA = null;
+  let textsReadError = null;
+  try {
+    if (existsSync(TEXTS_FILE)) {
+      TEXTS_DATA = JSON.parse(readFileSync(TEXTS_FILE, 'utf8'));
+      // 形の確かめ: { ja: {鍵: 文}, 'ja-Hira': {鍵: 文} }
+      const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
+      if (!isMap(TEXTS_DATA) || !isMap(TEXTS_DATA.ja) || !isMap(TEXTS_DATA['ja-Hira'])) throw new Error('記録の形がちがう（ja と ja-Hira の「鍵: 文」が無い）');
+    }
+  } catch (e) {
+    TEXTS_DATA = null;
+    textsReadError = String(e);
+  }
+  if (textsReadError) console.log(`文の記録 ${TEXTS_FILE} が読めません: ${textsReadError}`);
+  const textSnap = {};
+  // 漢字版・ひらがな版に無いといけない訳の鍵: 英語の訳の表にある Minecraft の鍵と、gui.js の中で
+  // id: 'minecraft.…' と直接書いている鍵（録画のお知らせなど、英語の表に無いものもある）。
+  // 訳があるかは、gui.js のソースの訳の表（"ja": { … } など）を直接見る。ページの中の訳の表は、訳が無いと
+  // format-message が英語の初めの文を書きもどす（gui.js の translate）ので、抜けていても文があるように見えるため。
+  // 記録を作り直すときも確かめる（記録と比べないので、訳が抜けてもほかでは気づけないため）
+  const NEED_KEYS = (() => {
+    const src = readFileSync(GUI_JS, 'utf8');
+    // 言語の訳の表のうち、Minecraft の鍵と文（改行は LF でも CRLF でもよい）。表がちょうど 1 つでなければ null
+    const table = loc => {
+      const head = new RegExp(`\\r?\\n  "${loc}": \\{\\r?\\n`, 'g');
+      const starts = [...src.matchAll(head)];
+      if (starts.length !== 1) return null;
+      const tail = /\r?\n  \},\r?\n/g;
+      tail.lastIndex = starts[0].index + starts[0][0].length;
+      const end = tail.exec(src);
+      if (!end) return null;
+      const map = new Map();
+      for (const m of src.slice(starts[0].index, end.index + 1).matchAll(/\n {4}"((?:minecraft|gui\.minecraftLamp)\.[^"]+)": "((?:[^"\\]|\\.)*)"/g)) map.set(m[1], m[2]);
+      return map;
+    };
+    const tables = { en: table('en'), ja: table('ja'), 'ja-Hira': table('ja-Hira') };
+    const keys = new Set(tables.en ? tables.en.keys() : []);
+    const direct = new Set();
+    for (const m of src.matchAll(/\bid:\s*['"]((?:minecraft|gui\.minecraftLamp)\.[A-Za-z0-9_.]*[A-Za-z0-9_])['"]/g)) direct.add(m[1]);
+    for (const k of direct) keys.add(k);
+    return { keys: [...keys].sort(), tables, enCount: tables.en ? tables.en.size : 0, directCount: direct.size };
+  })();
+  // 2 つの「鍵: 文」の違い（どちらかにしかない鍵も入れる）
+  const textsDiff = (want, now) => [...new Set([...Object.keys(want), ...Object.keys(now)])]
+    .filter(k => want[k] !== now[k]).map(k => `${JSON.stringify(k)}: ${JSON.stringify(want[k])} → ${JSON.stringify(now[k])}`);
   for (const loc of ['ja', 'ja-Hira', 'en']) {
     await setLocale(loc, EXPECT[loc].title);
     const got = await info();
@@ -495,13 +567,130 @@ try {
     const find = (menu, value) => (texts.find(t => t[0] === 'menu' && t[1].endsWith(menu) && t[3] === value) || [])[2];
     if (loc === 'ja-Hira') {
       // ひらがなの画面では、Minecraft のブロックの文・見出し・メニューに、漢字を 1 字も出さない（々〆〇・拡張の漢字もふくむ）
-      const withKanji = texts.filter(t => /\p{Script=Han}/u.test(String(t[2]))).map(t => `${t[1]}: ${t[2]}`);
+      const withKanji = texts.filter(t => HAN.test(String(t[2]))).map(t => `${t[1]}: ${t[2]}`);
       ok(withKanji.length === 0, 'ja-Hira: Minecraft のブロックの文・見出し・メニュー（ブロックの名前・生き物も）に漢字が無い', withKanji.slice(0, 10));
     }
     const NAMES = { ja: ['オークの階段', 'ブタ', '村人'], 'ja-Hira': ['オークのかいだん', 'ブタ', 'むらびと'], en: ['Oak Stairs', 'Pig', 'Villager'] }[loc];
     const gotNames = [find('blockTypes', 'oak_stairs'), find('passiveEntities', 'pig'), find('villagerEntities', 'villager')];
     ok(JSON.stringify(gotNames) === JSON.stringify(NAMES), `${loc}: ブロックの名前と生き物の名前が、その言語で出る`, gotNames);
-    ok(!got.facingCheckbox && !got.underCheckbox, `${loc}: プレーヤーの向き・足元のブロックに、ステージに表示するチェックボックスが無い`, got);
+    // 代表の文が、決めたとおりの漢字版・ひらがな版になっている（今の言語の訳の表を直接見る）
+    const WANT_MSG = {
+      ja: {
+        'minecraft.connect': 'Minecraftにつなぐ [HOST]:[PORT]',
+        'minecraft.setBlockSimple': 'X:[X] Y:[Y] Z:[Z] に [BLOCK] を置く',
+        'minecraft.setBlockRangeSimple': 'X:[X1] Y:[Y1] Z:[Z1] から X:[X2] Y:[Y2] Z:[Z2] まで [BLOCK] でうめる',
+        'minecraft.setBlock': 'X:[X] Y:[Y] Z:[Z] に [BLOCK] を置く、置き方:[PLACEMENT] 向き:[FACING] あけしめ:[OPEN]',
+        'minecraft.summonEntity': '[ENTITY] を X:[X] Y:[Y] Z:[Z] に呼び出す',
+        'minecraft.clearArea': 'X:[X] Z:[Z] のまわりを平らな地面にもどす',
+        'minecraft.entityHostile': '敵の生き物 [ENTITY]',
+        'minecraft.menu.bottom': '下（ふつう）', 'minecraft.menu.top': '上（さかさま）', 'minecraft.menu.double': '2まい重ね',
+        'minecraft.menu.default': 'そのまま', 'minecraft.menu.closed': 'しめる', 'minecraft.menu.open': 'あける',
+        'minecraft.entityGroup.passive': '━━ おとなしい生き物 ━━', 'minecraft.entityGroup.hostile': '━━ 敵の生き物 ━━',
+        'minecraft.entityGroup.neutral': '━━ おこるとこわい生き物 ━━', 'minecraft.getPlayerFacing': 'プレイヤーの向き',
+        'minecraft.prepareForLearning': 'はじめの準備（昼・晴れのまま・生き物が自然に出ない・暗くても見える・歩く速さをふつうに）'
+      },
+      'ja-Hira': {
+        'minecraft.connect': 'Minecraftにつなぐ [HOST]:[PORT]',
+        'minecraft.setBlockSimple': 'X:[X] Y:[Y] Z:[Z] に [BLOCK] をおく',
+        'minecraft.setBlockRangeSimple': 'X:[X1] Y:[Y1] Z:[Z1] から X:[X2] Y:[Y2] Z:[Z2] まで [BLOCK] でうめる',
+        'minecraft.setBlock': 'X:[X] Y:[Y] Z:[Z] に [BLOCK] をおく、おきかた:[PLACEMENT] むき:[FACING] あけしめ:[OPEN]',
+        'minecraft.summonEntity': '[ENTITY] を X:[X] Y:[Y] Z:[Z] によびだす',
+        'minecraft.clearArea': 'X:[X] Z:[Z] のまわりをたいらなじめんにもどす',
+        'minecraft.entityHostile': 'てきのいきもの [ENTITY]',
+        'minecraft.menu.bottom': 'した（ふつう）', 'minecraft.menu.top': 'うえ（さかさま）', 'minecraft.menu.double': '2まいかさね',
+        'minecraft.menu.default': 'そのまま', 'minecraft.menu.closed': 'しめる', 'minecraft.menu.open': 'あける',
+        'minecraft.entityGroup.passive': '━━ おとなしいいきもの ━━', 'minecraft.entityGroup.hostile': '━━ てきのいきもの ━━',
+        'minecraft.entityGroup.neutral': '━━ おこるとこわいいきもの ━━', 'minecraft.getPlayerFacing': 'プレイヤーのむき',
+        'minecraft.prepareForLearning': 'はじめのじゅんび（ひる・はれのまま・いきものがしぜんにでない・くらくてもみえる・あるくはやさをふつうに）'
+      }
+    }[loc];
+    if (WANT_MSG) {
+      // 訳の表の値は、文そのものか { message: 文 } のどちらか（動かすと Minecraft の文は後の形で来る）。文にそろえる
+      const msgs = Object.fromEntries(Object.entries(await p.evaluate(() => window.__store.getState().locales.messages))
+        .map(([k, v]) => [k, typeof v === 'string' ? v : (v && typeof v.message === 'string' ? v.message : null)]));
+      const wrongMsg = Object.entries(WANT_MSG).filter(([k, v]) => msgs[k] !== v).map(([k]) => `${k} = ${msgs[k]}`);
+      ok(wrongMsg.length === 0, `${loc}: 代表のブロックの文・メニュー・見出しが、決めたとおりの文`, wrongMsg);
+      // 案内の文（ランプのヒント・録画のお知らせ）の「」や［］の中のブロックの名前が、パレットにある本当のブロックの文と同じ
+      // （ブロックの文の入力より前の部分か、文そのもの）。名前を書いている文は REF_KEYS に決めておき、
+      // かぎかっこが取れたり、文が無くなったり、ほかの文に名前が増えたりしたら気づくようにする
+      const REF_KEYS = ['minecraft.recording.alreadyStarted', 'minecraft.recording.notStarted', 'minecraft.recording.stopError',
+        'minecraft.recording.notConnected', 'minecraft.recording.serverStopping', 'minecraft.recording.connectionClosed',
+        'gui.minecraftLamp.idleHint', 'gui.minecraftLamp.failedStep3'];
+      // ブロックの名前でないかぎかっこ
+      const NOT_BLOCK = new Set(['ffmpegを入れてください', 'ffmpegをいれてください']);
+      // パレットにある本当のブロックの文（collectTexts で集めたもの。入力は %3 などになっていて、
+      // 頭の「%1 %2」は拡張のアイコンの場所なので外す）
+      const blockTexts = texts.filter(t => t[0] === 'block').map(t => String(t[2]).replace(/^%1 %2/, ''));
+      const badRefs = [];
+      const refKeysFound = [];
+      let refCount = 0;
+      for (const k of REF_KEYS) if (typeof msgs[k] !== 'string') badRefs.push(`${k}: 訳の文が無い（${msgs[k]}）`);
+      for (const [k, v] of Object.entries(msgs)) {
+        if (!/^(minecraft\.recording\.|gui\.minecraftLamp\.)/.test(k) || !v) continue;
+        // 「」どうし・［］どうしの組だけを取る
+        for (const m of v.matchAll(/「([^「」]+)」|［([^［］]+)］/g)) {
+          const name = m[1] ?? m[2];
+          if (NOT_BLOCK.has(name)) continue;
+          refCount++;
+          if (!refKeysFound.includes(k)) refKeysFound.push(k);
+          if (!blockTexts.some(t => t === name || t.split(/%\d/)[0].trim() === name)) badRefs.push(`${k}: ${name}`);
+        }
+      }
+      const missingRef = REF_KEYS.filter(k => !refKeysFound.includes(k));
+      const extraRef = refKeysFound.filter(k => !REF_KEYS.includes(k));
+      ok(blockTexts.length >= 46 && refCount === REF_KEYS.length && missingRef.length === 0 && extraRef.length === 0 && badRefs.length === 0,
+        `${loc}: 案内の文の中のブロックの名前（決めた ${REF_KEYS.length} か所）が、パレットにあるブロックの文と同じ`,
+        { refCount, missingRef, extraRef, badRefs, blockTexts: blockTexts.length });
+      // 漢字版・ひらがな版の Minecraft の文（minecraft.* と gui.minecraftLamp.* の鍵）をぜんぶ、記録（tests/fixtures/minecraft-texts.json）と比べる。
+      // ことばを決めて変えたときは BLOCKS_UPDATE_TEXTS=1 で記録を作り直す
+      // 訳の鍵の取りちがえ（例: 調べるブロックが、テレポートの文の鍵を使う。置き方のメニューの値 bottom に「上（さかさま）」の
+      // 鍵をつける）は、訳の表を見ても分からないので、パレットのブロックごとの文（palette.ブロックの名前.message0 など）・
+      // 見出しの文（palette.label.番号）・メニューの項目（palette.menu.ブロックかメニューの名前.値#出てきた順）も記録に入れて比べる。
+      // メニューは、ブロックの中のメニューと、拡張のメニューのブロック（minecraft_menu_…）の 2 つから取る
+      // （collectTexts の 3 つ目の、その場で作るメニューの元の一覧は、拡張のメニューのブロックと同じものなので入れない）
+      const menuSeen = new Map();
+      const paletteTexts = texts.filter(t => t[0] === 'block' || t[0] === 'label' || (t[0] === 'menu' && t[1].startsWith('minecraft_')))
+        .map(t => {
+          if (t[0] === 'label') return [`palette.label.${t[3]}`, t[2]];
+          if (t[0] === 'block') return [`palette.${t[1]}.${t[3]}`, t[2]];
+          const base = `palette.menu.${t[1]}.${t[3]}`;
+          const n = menuSeen.get(base) || 0;
+          menuSeen.set(base, n + 1);
+          return [`${base}#${n}`, t[2]];
+        });
+      textSnap[loc] = Object.fromEntries([...Object.entries(msgs).filter(([k]) => /^(minecraft\.|gui\.minecraftLamp\.)/.test(k)), ...paletteTexts]
+        .sort(([a], [b]) => (a < b ? -1 : 1)));
+      // gui.js のソースの、この言語の訳の表に、使う鍵がすべて（空でない文で）ある
+      const srcTable = NEED_KEYS.tables[loc];
+      const missingKeys = srcTable ? NEED_KEYS.keys.filter(k => !srcTable.get(k)) : ['（gui.js の中に、この言語の訳の表がちょうど 1 つ見つからない）'];
+      ok(NEED_KEYS.enCount > 100 && NEED_KEYS.directCount > 10 && missingKeys.length === 0,
+        `${loc}: 使う Minecraft の訳の鍵（英語の表の ${NEED_KEYS.enCount} 個と、gui.js に直接書いた ${NEED_KEYS.directCount} 個。あわせて ${NEED_KEYS.keys.length} 個）が、gui.js の訳の表にすべてある`,
+        missingKeys.slice(0, 20));
+      if (loc === 'ja-Hira') {
+        const hiraKanji = Object.entries(textSnap[loc]).filter(([, v]) => typeof v === 'string' && HAN.test(v)).map(([k, v]) => `${k}: ${v}`);
+        ok(hiraKanji.length === 0, 'ja-Hira: Minecraft の文（録画のお知らせ・ランプのヒント・一時停止の帯もふくむ）に漢字が無い', hiraKanji.slice(0, 10));
+      }
+      const textDiff = textsDiff((TEXTS_DATA && TEXTS_DATA[loc]) || {}, textSnap[loc]);
+      if (process.env.BLOCKS_UPDATE_TEXTS === '1') {
+        // 作り直すときは比べずに、前の記録から変わる所を出す（意図しない変化に気づくため）
+        if (!TEXTS_DATA) console.log(`${loc}: 前の文の記録が${textsReadError ? '読めない' : '無い'}ので、全部が新しく入ります`);
+        console.log(`${loc}: 文の記録を作り直すと、${textDiff.length} 件変わります:`);
+        for (const d of textDiff) console.log(`  ${d}`);
+      } else if (TEXTS_DATA) {
+        const want = TEXTS_DATA[loc] || {};
+        ok(Object.keys(want).length > 100 && textDiff.length === 0,
+          `${loc}: Minecraft の文が、記録（tests/fixtures/minecraft-texts.json）と同じ（違い ${textDiff.length} 件）`, textDiff.slice(0, 20));
+      } else {
+        ok(false, `${loc}: 文の記録 tests/fixtures/minecraft-texts.json が${textsReadError ? `読めない（${textsReadError}）` : '無い'}（BLOCKS_UPDATE_TEXTS=1 で作る）`);
+      }
+    }
+    ok(!got.facingCheckbox && !got.underCheckbox, `${loc}: プレイヤーの向き・足もとのブロックに、ステージに表示するチェックボックスが無い`, got);
+  }
+  // 漢字版にある Minecraft の訳の鍵は、ひらがな版にもある（ひらがな版にだけ訳が抜けていないか。gui.js のソースの訳の表で比べる）
+  {
+    const { ja, 'ja-Hira': hira } = NEED_KEYS.tables;
+    const onlyJa = ja && hira ? [...ja.keys()].filter(k => !hira.get(k)) : ['（gui.js の中に、漢字版かひらがな版の訳の表が見つからない）'];
+    ok(!!ja && ja.size > 100 && onlyJa.length === 0, '漢字版にある Minecraft の訳の鍵が、ひらがな版にもすべてある（gui.js の訳の表）', onlyJa.slice(0, 20));
   }
   // 訳の抜け: 漢字やひらがなの文が英語と同じになっていたら、その言語の訳が抜けて英語が出ている（決まった例外を除く）
   {
@@ -578,11 +767,11 @@ try {
   await clearSent();
   await call('prepareForLearning', {});
   const oldPrep = (await sent()).filter(x => x.action === 'setEntitySpawning');
-  ok(oldPrep.length === 1 && oldPrep[0].params.enabled === false, '古い MOD: 学習準備は、今までどおり生き物を呼ぶのを止める（作品を守る仕組みが無いため）', oldPrep);
+  ok(oldPrep.length === 1 && oldPrep[0].params.enabled === false, '古い MOD: はじめの準備は、今までどおり生き物を呼ぶのを止める（作品を守る仕組みが無いため）', oldPrep);
   await call('disconnect', {});
   await p.evaluate(() => { window.__features = ['stopAll', 'pauseQueue']; });
 
-  // 12. つないだ直後、MOD の返事（新しい MOD か）が来る前: 古い MOD と同じに守り、学習準備は返事を待ってから決める
+  // 12. つないだ直後、MOD の返事（新しい MOD か）が来る前: 古い MOD と同じに守り、はじめの準備は返事を待ってから決める
   // 返事を待たせてつなぐ
   const holdConnect = async (features, kind) => {
     await p.evaluate(f => { window.__features = f; window.__connectHold = true; window.__releaseConnect = null; }, features);
@@ -591,7 +780,7 @@ try {
       .then(() => true, () => false), `（準備）${kind}: つながり、返事を待たせている`);
     await clearSent();
   };
-  // 学習準備を始める（終わった時刻と、成功か失敗かを記録する）
+  // はじめの準備を始める（終わった時刻と、成功か失敗かを記録する）
   const startPrep = () => p.evaluate(() => {
     window.__prep = null;
     window.__prepT0 = performance.now();
@@ -608,14 +797,14 @@ try {
   r = await call('setBlockRangeSimple', { X1: 0, Y1: 0, Z1: 0, X2: 1000, Y2: 1000, Z2: 1000, BLOCK: 'stone' });
   ok(!r.ok && !(await last('fillBlocks')), '返事の前は、200 万マスより大きい範囲を送らずに断る', r);
   await call('clearArea', { X: '', Z: 1 });
-  ok(!(await last('clearArea')), '返事の前は、中心が数でない「周囲をクリア」を送らない');
+  ok(!(await last('clearArea')), '返事の前は、中心が数でない「まわりを平らな地面にもどす」を送らない');
   // 新しい MOD（返事が 0.3 秒・0.7 秒遅れる）: 返事を待ち、返事が来たらすぐ、生き物の命令なしで 7 つを送る
   for (const waitMs of [300, 700]) {
     if (waitMs !== 300) await holdConnect(['stopAll', 'pauseQueue'], '新しい MOD');
     await clearSent();
     await startPrep();
     await p.waitForTimeout(waitMs);
-    ok((await prepActions()).length === 0 && await p.evaluate(() => window.__prep === null), `新しい MOD（返事が ${waitMs / 1000} 秒遅れる）: 返事の前は、学習準備はまだ送らずに待つ`);
+    ok((await prepActions()).length === 0 && await p.evaluate(() => window.__prep === null), `新しい MOD（返事が ${waitMs / 1000} 秒遅れる）: 返事の前は、はじめの準備はまだ送らずに待つ`);
     await release();
     const res = await prepResult();
     const took = res ? Math.round(res.t - await p.evaluate(() => window.__releaseT)) : null;
@@ -635,7 +824,7 @@ try {
     '古い MOD: 返事を待ってから、生き物を呼ぶのを止める命令も入れて 8 つ送る', { res, acts });
   await p.evaluate(() => { window.__connectHold = false; });
   await call('disconnect', {});
-  // 返事が来ない MOD: 1 秒待ってから、古い MOD として送る（最初の命令が送られるのは、学習準備を始めてから 1 秒以降）
+  // 返事が来ない MOD: 1 秒待ってから、古い MOD として送る（最初の命令が送られるのは、はじめの準備を始めてから 1 秒以降）
   await holdConnect(['stopAll', 'pauseQueue'], '返事が来ない MOD');
   await startPrep();
   res = await prepResult();
@@ -665,7 +854,7 @@ try {
     for (let i = 0; i < 100 && !stopped; i++) await new Promise(r => setTimeout(r, 20));
     vm.runtime.removeListener('PROJECT_STOP_ALL', onStop);
   });
-  // 待っている間に止める: 返事が来ても、学習準備の命令は送らない。古い MOD には生き物を止める命令だけを送る
+  // 待っている間に止める: 返事が来ても、はじめの準備の命令は送らない。古い MOD には生き物を止める命令だけを送る
   const stopCases = [
     ['止めるボタン', ['stopAll', 'pauseQueue'], () => p.evaluate(() => vm.runtime.stopAll()), []],
     ['止めるボタン（古い MOD）', [], () => p.evaluate(() => vm.runtime.stopAll()), [['setEntitySpawning', { enabled: false }]]],
@@ -690,11 +879,11 @@ try {
       return first ? Math.round(first.t - window.__prepT0) : null;
     });
     ok(res && res.ok && JSON.stringify(acts) === JSON.stringify(want) && !logs.includes('学習準備完了') && (!noReply || firstAt >= 1000),
-      `待っている間に${kind}で止めると、${noReply ? '1 秒たってから' : '返事が来ても'}${want.length ? '生き物を止める命令だけを送る' : '学習準備の命令は送らない'}（「完了」も出さない）`, { res, acts, firstAt });
+      `待っている間に${kind}で止めると、${noReply ? '1 秒たってから' : '返事が来ても'}${want.length ? '生き物を止める命令だけを送る' : 'はじめの準備の命令は送らない'}（「完了」も出さない）`, { res, acts, firstAt });
     await p.evaluate(() => { window.__connectHold = false; });
     await call('disconnect', {});
   }
-  // 本物のスクリプトで学習準備を動かす（「〜を受け取ったとき → 学習準備 → 変数を『おわり』にする」）
+  // 本物のスクリプトではじめの準備を動かす（「〜を受け取ったとき → はじめの準備 → 変数を『おわり』にする」）
   const startPrepScript = () => p.evaluate(() => {
     const stage = vm.runtime.getTargetForStage();
     const v = stage.lookupOrCreateVariable('lt_pdone', 'lt_pdone');
@@ -709,40 +898,46 @@ try {
     }
     window.__prepThreads = vm.runtime.startHats('event_whenbroadcastreceived', { BROADCAST_OPTION: 'lt_prep' });
   });
-  // 学習準備のスクリプトが、MOD の返事を待っている（Promise を待っている）ことを確かめる
+  // はじめの準備のスクリプトが、MOD の返事を待っている（Promise を待っている）ことを確かめる
   const prepScriptWaiting = () => p.waitForFunction(() => {
     const t = window.__prepThreads && window.__prepThreads[0];
     return !!t && t.status === 1 && vm.runtime.isActiveThread(t);
   }, null, { timeout: 3000 }).then(() => true, () => false);
   // 止めない: 返事が来たら 7 つ送り、次のブロックまで進む
   await holdConnect(['stopAll', 'pauseQueue'], '本物のスクリプト');
+  logs.length = 0;
   await startPrepScript();
-  ok(await prepScriptWaiting(), '（準備）本物のスクリプトの学習準備が、返事を待っている');
+  ok(await prepScriptWaiting(), '（準備）本物のスクリプトのはじめの準備が、返事を待っている');
   await release();
   const done = await p.waitForFunction(() => vm.runtime.getTargetForStage().lookupVariableById('lt_pdone').value === 'おわり', null, { timeout: 3000 })
     .then(() => true, () => false);
-  ok(done && JSON.stringify(await prepActions()) === JSON.stringify(PREP_SENT),
-    '本物のスクリプトで止めずにいると、返事が来たら 7 つの命令を送り、次のブロックまで進む', { done, acts: await prepActions() });
+  // 「完了」の記録は、ページの中で書かれてから少し遅れて届くので、少し待つ
+  const doneLog = done && await (async () => {
+    for (let i = 0; i < 20 && !logs.includes('学習準備完了'); i++) await p.waitForTimeout(50);
+    return logs.includes('学習準備完了');
+  })();
+  ok(done && doneLog && JSON.stringify(await prepActions()) === JSON.stringify(PREP_SENT),
+    '本物のスクリプトで止めずにいると、返事が来たら 7 つの命令を送り、次のブロックまで進む（「学習準備完了」も出る）', { done, doneLog, acts: await prepActions() });
   await p.evaluate(() => { window.__connectHold = false; });
   await call('disconnect', {});
-  // 学習準備を動かしたスクリプトだけを止める（もう一度押したとき）: 新しい MOD には送らない。古い MOD には生き物を止める命令だけ
+  // はじめの準備を動かしたスクリプトだけを止める（もう一度押したとき）: 新しい MOD には送らない。古い MOD には生き物を止める命令だけ
   for (const [features, kind, want] of [[['stopAll', 'pauseQueue'], 'スクリプトだけを止める', []],
     [[], 'スクリプトだけを止める（古い MOD）', [['setEntitySpawning', { enabled: false }]]]]) {
     await holdConnect(features, kind);
     logs.length = 0;
     await startPrepScript();
-    ok(await prepScriptWaiting(), `（準備）${kind}: 学習準備が返事を待っている`);
+    ok(await prepScriptWaiting(), `（準備）${kind}: はじめの準備が返事を待っている`);
     await p.evaluate(() => { for (const t of window.__prepThreads) vm.runtime._stopThread(t); });
     await release();
     await p.waitForTimeout(400);
     acts = await prepActions();
     ok(JSON.stringify(acts) === JSON.stringify(want) && !logs.includes('学習準備完了'),
-      `待っている間に、学習準備を動かしたスクリプトだけを止めると、返事が来ても${want.length ? '生き物を止める命令だけを送る' : '送らない'}`, acts);
+      `待っている間に、はじめの準備を動かしたスクリプトだけを止めると、返事が来ても${want.length ? '生き物を止める命令だけを送る' : '送らない'}`, acts);
     await p.evaluate(() => { window.__connectHold = false; });
     await call('disconnect', {});
   }
-  // 待っている間に［切断］: すぐ終わり、何も送らず、ランプも点滅しない
-  await holdConnect(['stopAll', 'pauseQueue'], '［切断］');
+  // 待っている間に［Minecraftとつなぐのをやめる］: すぐ終わり、何も送らず、ランプも点滅しない
+  await holdConnect(['stopAll', 'pauseQueue'], '［Minecraftとつなぐのをやめる］');
   await startPrep();
   await p.waitForTimeout(100);
   const tCut = await p.evaluate(() => performance.now());
@@ -751,8 +946,8 @@ try {
   await p.waitForTimeout(200);
   l = await lampState();
   ok(res && res.ok && res.t - tCut < 300 && (await prepActions()).length === 0 && l && !l.blink && await p.evaluate(() => vm.runtime.ltMinecraftNeedConnection === false),
-    '待っている間に［切断］すると、すぐ終わり、何も送らず、ランプも点滅しない', { took: res && Math.round(res.t - tCut), l });
-  // 待っている間に、［切断］せずに別の場所（番号）へつなぎ直す: 前の学習準備の命令は、新しい接続へ送らない
+    '待っている間に［Minecraftとつなぐのをやめる］すると、すぐ終わり、何も送らず、ランプも点滅しない', { took: res && Math.round(res.t - tCut), l });
+  // 待っている間に、［Minecraftとつなぐのをやめる］せずに別の場所（番号）へつなぎ直す: 前のはじめの準備の命令は、新しい接続へ送らない
   // （新しい接続はすぐ開くので、待っている側は「つながっていない」瞬間を見ない。接続が変わったことで止まるかを確かめる）
   await holdConnect(['stopAll', 'pauseQueue'], 'つなぎ直し');
   await startPrep();
@@ -767,7 +962,7 @@ try {
   await p.evaluate(() => { window.__openSync = false; });
   const reSent = await p.evaluate(() => window.__sent.filter(x => x.action !== 'getRecordingStatus' && x.action !== 'stopAll').map(x => [x.port, x.action]));
   ok(res && res.ok && reSent.length === 0 && await p.evaluate(() => vm.runtime.ltMinecraftConnection === 'connected'),
-    '待っている間に別の場所へつなぎ直しても、前の学習準備の命令は新しい接続へ送らない', { res, reSent });
+    '待っている間に別の場所へつなぎ直しても、前のはじめの準備の命令は新しい接続へ送らない', { res, reSent });
   await call('disconnect', {});
   await p.evaluate(() => { window.__features = ['stopAll', 'pauseQueue']; window.__connectHold = false; });
 
@@ -786,7 +981,7 @@ try {
   ];
   const wantOrder = GROUP_ORDER.flatMap(([, ops], i) => [...(i ? ['---'] : []), 'label', ...ops]);
   const LABELS = {
-    ja: ['つなぐ・じゅんび', '動く・話す', 'ブロックを置く', 'ブロックの名前', '生き物', '天気・時間・ルール', '持ち物・入れ物', '場所やブロックを調べる', 'けす（元にもどせません）', '録画'],
+    ja: ['つなぐ・じゅんび', '動く・話す', 'ブロックを置く', 'ブロックの名前', '生き物', '天気・時間・ルール', '持ち物・入れ物', '場所やブロックを調べる', '消す（元にもどせません）', '録画'],
     'ja-Hira': ['つなぐ・じゅんび', 'うごく・はなす', 'ブロックをおく', 'ブロックのなまえ', 'いきもの', 'てんき・じかん・ルール', 'もちもの・いれもの', 'ばしょやブロックをしらべる', 'けす（もとにもどせません）', 'ろくが'],
     en: ['Connect & get ready', 'Move & talk', 'Place blocks', 'Block names', 'Mobs', 'Weather, time & rules', 'Items & containers', 'Check places & blocks', 'Clear (cannot be undone)', 'Recording']
   };
@@ -812,7 +1007,25 @@ try {
   });
   // 今までの作品が開けることを守る記録（下の「今までの作品が開ける」と、言語ごとの入力の確かめで使う）
   const FIXTURE = join(ROOT, 'tests', 'fixtures', 'minecraft-blocks-compat.json');
-  const FIXTURE_DATA = existsSync(FIXTURE) ? JSON.parse(readFileSync(FIXTURE, 'utf8')) : null;
+  let FIXTURE_DATA = null;
+  let fixtureReadError = null;
+  try {
+    if (existsSync(FIXTURE)) {
+      FIXTURE_DATA = JSON.parse(readFileSync(FIXTURE, 'utf8'));
+      // 形の確かめ: { blocks: {op: {blockType, arguments: {}}}, menus: {名前: {acceptReporters, values: []}} }
+      const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
+      const okShape = isMap(FIXTURE_DATA) && isMap(FIXTURE_DATA.blocks) && isMap(FIXTURE_DATA.menus) &&
+        Object.values(FIXTURE_DATA.blocks).every(b => isMap(b) && isMap(b.arguments) && Object.values(b.arguments).every(isMap)) &&
+        Object.values(FIXTURE_DATA.menus).every(m => isMap(m) && Array.isArray(m.values));
+      if (!okShape) throw new Error('記録の形がちがう（blocks と menus が無いか、中の形がちがう）');
+    }
+  } catch (e) {
+    FIXTURE_DATA = null;
+    fixtureReadError = String(e);
+  }
+  if (fixtureReadError) console.log(`作品の記録 ${FIXTURE} が読めません: ${fixtureReadError}`);
+  // 作り直す記録（最後に、失敗が 0 のときだけ書く）
+  const pendingWrites = [];
   // 実際に出るのは、隠しているボスを除いた 46 個
   const wantVisibleBlocks = GROUP_ORDER.flatMap(([, ops]) => ops).filter(op => op !== 'entityBoss');
   for (const [loc, title] of [['ja', 'わたしの作品'], ['ja-Hira', 'わたしのさくひん'], ['en', 'my video']]) {
@@ -832,9 +1045,10 @@ try {
     }, LABELS[loc], { timeout: 5000 }).then(() => true, () => false);
     ok(drawn, `${loc}: Minecraft の所に、見出しが順番どおりに文字で描かれている`, drawn ? undefined : (await palette()).shown);
     // ブロックの入力は、その言語の訳の文の [X] から作られる。訳の文から [X] が抜けると、その言語でだけ入力が消えるので確かめる
-    const lostInputs = await p.evaluate(fx => {
+    const { lostInputs, lostDefInputs } = await p.evaluate(fx => {
       const cat = vm.runtime._blockInfo.find(c => c.id === 'minecraft');
-      const out = [];
+      const lost = [];
+      const lostDef = [];
       for (const b of cat.blocks) {
         if (!b.json) continue;
         const op = b.json.type.replace(/^minecraft_/, '');
@@ -842,13 +1056,21 @@ try {
         for (const k of Object.keys(b.json)) {
           if (k.startsWith('args')) for (const a of b.json[k]) if (a && a.name) names.add(a.name);
         }
+        // 今のブロックの定義にある入力（作品の記録はこれから作るので、作り直すときもここは確かめる）
+        for (const arg of Object.keys((b.info && b.info.arguments) || {})) if (!names.has(arg)) lostDef.push(`${op}.${arg}`);
         const want = fx && fx.blocks[op];
         if (!want) continue;
-        for (const arg of Object.keys(want.arguments)) if (!names.has(arg)) out.push(`${op}.${arg}`);
+        for (const arg of Object.keys(want.arguments)) if (!names.has(arg)) lost.push(`${op}.${arg}`);
       }
-      return out;
+      return { lostInputs: lost, lostDefInputs: lostDef };
     }, FIXTURE_DATA);
-    ok(FIXTURE_DATA && lostInputs.length === 0, `${loc}: 訳の文に、記録にある入力がすべてある（訳で入力が消えていない）`, lostInputs);
+    ok(lostDefInputs.length === 0, `${loc}: 訳の文に、今のブロックの定義の入力がすべてある（訳で入力が消えていない）`, lostDefInputs);
+    if (process.env.BLOCKS_UPDATE_FIXTURE === '1') {
+      if (lostInputs.length) console.log(`${loc}: 作品の記録を作り直すと、記録にある次の入力が消えます: ${JSON.stringify(lostInputs)}`);
+    } else {
+      ok(FIXTURE_DATA && lostInputs.length === 0, `${loc}: 訳の文に、記録にある入力がすべてある（訳で入力が消えていない）`,
+        FIXTURE_DATA ? lostInputs : `作品の記録が${fixtureReadError ? `読めない（${fixtureReadError}）` : '無い'}`);
+    }
   }
   // 見出しはブロックではない: 処理を持つ Minecraft のブロックは、ちょうど 47 個（見出しは入らない）
   const prims = await p.evaluate(() => Object.keys(vm.runtime._primitives).filter(k => k.startsWith('minecraft_') && !k.startsWith('minecraft_menu_')).sort());
@@ -899,21 +1121,39 @@ try {
   const fixture = FIXTURE_DATA;
   // 記録にあるものが、今もすべて同じ形であるか（足りない・変わったものを、名前で出す）
   const broken = [];
+  // 記録の中身の確かめ（消えるものとは別に出す）。前の記録にも、作り直して書く記録にも使う
+  // 記録は減らさない（減ると、今までの作品が開けなくなる）。中身が空の記録で確かめが空のまま通らないように、
+  // 記録を作ったときの数より少なければ失敗にする。記録を作り直してブロックやメニューが増えたら、この数も上げる
+  const FIXTURE_MIN = { blocks: 47, menus: 29 };
+  const fixtureProblems = fx => {
+    const out = [];
+    if (Object.keys(fx.blocks).length < FIXTURE_MIN.blocks || Object.keys(fx.menus).length < FIXTURE_MIN.menus) {
+      out.push(`記録の中身が少なすぎる（ブロック ${Object.keys(fx.blocks).length}・メニュー ${Object.keys(fx.menus).length}。` +
+        `FIXTURE_MIN の ${FIXTURE_MIN.blocks}・${FIXTURE_MIN.menus} より少ない）`);
+    }
+    // 記録の中の入力が使うメニューは、記録のメニューにもある（記録の中でつじつまが合う）
+    const noMenu = [...new Set(Object.values(fx.blocks).flatMap(fb => Object.values(fb.arguments).map(fa => fa.menu))
+      .filter(m => m && !Object.hasOwn(fx.menus, m)))];
+    if (noMenu.length) out.push(`記録の入力が使うメニューが、記録のメニューに無い: ${noMenu.join(', ')}`);
+    return out;
+  };
+  const badFixture = [];
   if (!fixture) {
-    broken.push('記録のファイルが無い');
+    badFixture.push(fixtureReadError ? `記録が読めない（${fixtureReadError}）` : '記録のファイルが無い');
   } else {
+    badFixture.push(...fixtureProblems(fixture));
     for (const [op, fb] of Object.entries(fixture.blocks)) {
-      const cb = compat.blocks[op];
+      const cb = Object.hasOwn(compat.blocks, op) ? compat.blocks[op] : undefined;
       if (!cb) { broken.push(`ブロックが無い: ${op}`); continue; }
       if (cb.blockType !== fb.blockType) broken.push(`ブロックの形が変わった: ${op}`);
       for (const [arg, fa] of Object.entries(fb.arguments)) {
-        const ca = cb.arguments[arg];
+        const ca = Object.hasOwn(cb.arguments, arg) ? cb.arguments[arg] : undefined;
         if (!ca) broken.push(`入力が無い: ${op}.${arg}`);
         else if (ca.type !== fa.type || ca.menu !== fa.menu) broken.push(`入力の種類・メニューが変わった: ${op}.${arg}`);
       }
     }
     for (const [name, fm] of Object.entries(fixture.menus)) {
-      const cm = compat.menus[name];
+      const cm = Object.hasOwn(compat.menus, name) ? compat.menus[name] : undefined;
       if (!cm) { broken.push(`メニューが無い: ${name}`); continue; }
       if (cm.acceptReporters !== fm.acceptReporters) broken.push(`メニューの形（ブロックを入れられるか）が変わった: ${name}`);
       const now = new Set(cm.values);
@@ -924,17 +1164,36 @@ try {
   if (process.env.BLOCKS_UPDATE_FIXTURE === '1') {
     // 記録の作り直し: 前の記録から消えるもの（今までの作品が開けなくなるもの）を出してから書く。
     // ほかの試験が失敗しているときは書かない（こわれた状態を記録しないため）
-    console.log(`記録を作り直すと、前の記録から次のものが消えます（今までの作品が開けなくなります）: ${JSON.stringify(broken)}`);
-    if (GUI_JS !== join(ROOT, 'gui.js')) console.log(`注意: リポジトリの gui.js ではなく ${GUI_JS} から記録を作ります`);
-    if (fails > 0) {
-      ok(false, `ほかの試験が ${fails} 件失敗しているので、記録は作り直しません`);
+    if (fixture) {
+      console.log(`記録を作り直すと、前の記録から次のものが消えます（今までの作品が開けなくなります）: ${JSON.stringify(broken)}`);
+      if (badFixture.length) console.log(`前の記録の中身の問題（作り直すと直ります）: ${JSON.stringify(badFixture)}`);
     } else {
-      writeFileSync(FIXTURE, JSON.stringify(compat, null, 1) + '\n');
-      console.log(`記録を作り直しました（今回は記録と比べていません）: ${FIXTURE}`);
+      console.log(`前の作品の記録が${fixtureReadError ? '読めない' : '無い'}ので、全部が新しく入ります`);
+    }
+    // これから書く記録も、ふつうに流したときの確かめに通る形にする（通らない記録を書かない）
+    const badNew = fixtureProblems(compat);
+    if (!IS_REPO_GUI) {
+      ok(false, `リポジトリの gui.js ではなく ${GUI_JS} を試しているので、今までの作品を守る記録は作り直しません（BLOCKS_GUI_JS を外して流す）`);
+    } else if (badNew.length) {
+      ok(false, '作り直す作品の記録の中身がそろっていないので、作り直しません', badNew);
+    } else {
+      // 書くのは最後（ページのエラーまで、ぜんぶの確かめが通ったときだけ）
+      pendingWrites.push({ file: FIXTURE, data: compat, name: '今までの作品を守る記録', note: '前の記録から消えるものは、上に出しています' });
     }
   } else {
-    ok(broken.length === 0,
+    ok(badFixture.length === 0, '今までの作品を守る記録（tests/fixtures/minecraft-blocks-compat.json）が読めて、中身がそろっている', badFixture);
+    ok(!!fixture && broken.length === 0,
       '今までの作品が開ける: 記録（tests/fixtures/minecraft-blocks-compat.json）にあるブロック・入力・メニューの値が、今もすべて同じ形である', broken);
+  }
+  // Minecraft の文の記録を作り直す（ことばを決めて変えたときだけ）。書くのは最後
+  if (process.env.BLOCKS_UPDATE_TEXTS === '1') {
+    const counts = { ja: Object.keys(textSnap.ja || {}).length, 'ja-Hira': Object.keys(textSnap['ja-Hira'] || {}).length };
+    ok(counts.ja > 100 && counts['ja-Hira'] > 100, '（作り直し）漢字・ひらがなの文を集められた', counts);
+    if (!IS_REPO_GUI) {
+      ok(false, `リポジトリの gui.js ではなく ${GUI_JS} を試しているので、文の記録は作り直しません（BLOCKS_GUI_JS を外して流す）`);
+    } else {
+      pendingWrites.push({ file: TEXTS_FILE, data: textSnap, name: '文の記録', note: '今回は記録と比べていません。変わる所は、上に出しています' });
+    }
   }
   // パレットが滑っている途中に言語を変えても、エラーにならない（scratch-blocks の滑る動きの守り）
   const errBefore = errors.length;
@@ -953,6 +1212,46 @@ try {
   await setLocale('ja', 'わたしの作品');
 
   ok(errors.length === 0, 'ページのエラーなし', errors);
+  // 記録の作り直し（BLOCKS_UPDATE_FIXTURE=1・BLOCKS_UPDATE_TEXTS=1）は、ぜんぶの確かめのあとで、失敗が 0 のときだけ書く
+  // （こわれた状態を記録しないため）
+  const failsBefore = fails;
+  if (pendingWrites.length) {
+    const names = pendingWrites.map(w => w.name).join('と');
+    // 記録のファイルか、それを入れるフォルダがシンボリックリンクなら書かない（リンク先のファイルを上書きしないため）
+    const linked = [...new Set(pendingWrites.flatMap(w => [w.file, dirname(w.file)]))].filter(path => {
+      try {
+        return lstatSync(path).isSymbolicLink();
+      } catch (e) {
+        return false; // まだ無いファイルはリンクではない
+      }
+    });
+    if (failsBefore > 0) {
+      ok(false, `ほかの試験が ${failsBefore} 件失敗しているので、${names}は作り直しません`);
+    } else if (repoGuiStamp() !== GUI_STAMP) {
+      ok(false, `試しているあいだに gui.js が変わったので、${names}は作り直しません（もう一度流す）`);
+    } else if (linked.length) {
+      ok(false, `記録のファイルかフォルダがシンボリックリンクなので、${names}は作り直しません（リンク先を上書きしないため）`, linked);
+    } else {
+      // まず全部を一時ファイル（同じフォルダ）に書いてから、名前をつけかえる。途中で失敗しても、片方の記録だけが新しくはならない。
+      // 一時ファイルは、前の失敗で残っていたら上書きせずに止める（wx）
+      const tmps = [];
+      try {
+        for (const w of pendingWrites) {
+          const tmp = `${w.file}.tmp-${process.pid}`;
+          writeFileSync(tmp, JSON.stringify(w.data, null, 1) + '\n', { flag: 'wx' });
+          tmps.push(tmp);
+        }
+      } catch (e) {
+        ok(false, `一時ファイルを書けなかったので、${names}は作り直しません（書けた一時ファイル: ${tmps.join(', ') || 'なし'}）`, String(e));
+      }
+      if (tmps.length === pendingWrites.length) {
+        pendingWrites.forEach((w, i) => {
+          renameSync(tmps[i], w.file);
+          console.log(`${w.name}を作り直しました（${w.note}）: ${w.file}`);
+        });
+      }
+    }
+  }
 } finally {
   await b.close();
   server.close();

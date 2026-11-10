@@ -64009,12 +64009,12 @@ const FUNCTIONAL_BLOCKS_DATA = ['crafting_table', 'furnace', 'blast_furnace', 's
 const ORE_BLOCKS_DATA = ['coal_ore', 'iron_ore', 'copper_ore', 'gold_ore', 'lapis_ore', 'redstone_ore', 'diamond_ore', 'emerald_ore', 'deepslate_coal_ore', 'deepslate_iron_ore', 'deepslate_copper_ore', 'deepslate_gold_ore', 'deepslate_lapis_ore', 'deepslate_redstone_ore', 'deepslate_diamond_ore', 'deepslate_emerald_ore', 'nether_gold_ore', 'nether_quartz_ore', 'coal_block', 'iron_block', 'gold_block', 'lapis_block', 'redstone_block', 'diamond_block', 'emerald_block', 'quartz_block', 'amethyst_block', 'netherite_block', 'copper_block', 'cut_copper', 'exposed_copper', 'exposed_cut_copper', 'weathered_copper', 'weathered_cut_copper', 'oxidized_copper', 'oxidized_cut_copper', 'waxed_copper_block', 'waxed_cut_copper', 'waxed_exposed_copper', 'waxed_exposed_cut_copper', 'waxed_weathered_copper', 'waxed_weathered_cut_copper', 'waxed_oxidized_copper', 'waxed_oxidized_cut_copper', 'raw_iron_block', 'raw_copper_block', 'raw_gold_block', 'ancient_debris'];
 const SPECIAL_BLOCKS_DATA = ['air', 'barrier', 'structure_void', 'light', 'bedrock', 'obsidian', 'crying_obsidian', 'sponge', 'wet_sponge', 'lava', 'end_portal', 'end_portal_frame', 'end_gateway', 'end_rod', 'end_stone', 'netherrack', 'magma_block', 'sculk', 'sculk_vein', 'sculk_sensor', 'sculk_catalyst', 'sculk_shrieker', 'blue_ice', 'command_block', 'dragon_egg', 'jigsaw', 'moving_piston', 'reinforced_deepslate', 'spawner', 'structure_block'];
 
-// 方向性ブロック（配置・向きパラメータを持つブロック：階段、スラブ、ドア、トラップドア、ボタン、フェンスゲート）
+// 方向性ブロック（置き方・向きの入力を持つブロック：階段、スラブ、ドア、トラップドア、ボタン、フェンスゲート）
 const DIRECTIONAL_BLOCKS_DATA = ['oak_stairs', 'spruce_stairs', 'birch_stairs', 'jungle_stairs', 'acacia_stairs', 'dark_oak_stairs', 'mangrove_stairs', 'cherry_stairs', 'bamboo_stairs', 'bamboo_mosaic_stairs', 'crimson_stairs', 'warped_stairs', 'stone_stairs', 'cobblestone_stairs', 'andesite_stairs', 'polished_andesite_stairs', 'diorite_stairs', 'polished_diorite_stairs', 'granite_stairs', 'polished_granite_stairs', 'cobbled_deepslate_stairs', 'deepslate_brick_stairs', 'deepslate_tile_stairs', 'polished_deepslate_stairs', 'blackstone_stairs', 'polished_blackstone_brick_stairs', 'polished_blackstone_stairs', 'brick_stairs', 'stone_brick_stairs', 'nether_brick_stairs', 'red_nether_brick_stairs', 'end_stone_brick_stairs', 'prismarine_brick_stairs', 'sandstone_stairs', 'smooth_sandstone_stairs', 'red_sandstone_stairs', 'smooth_red_sandstone_stairs', 'cut_copper_stairs', 'exposed_cut_copper_stairs', 'weathered_cut_copper_stairs', 'oxidized_cut_copper_stairs', 'waxed_cut_copper_stairs', 'waxed_exposed_cut_copper_stairs', 'waxed_weathered_cut_copper_stairs', 'waxed_oxidized_cut_copper_stairs', 'prismarine_stairs', 'dark_prismarine_stairs', 'quartz_stairs', 'smooth_quartz_stairs', 'purpur_stairs', 'oak_slab', 'spruce_slab', 'birch_slab', 'jungle_slab', 'acacia_slab', 'dark_oak_slab', 'mangrove_slab', 'cherry_slab', 'bamboo_slab', 'bamboo_mosaic_slab', 'crimson_slab', 'warped_slab', 'smooth_stone_slab', 'stone_slab', 'cobblestone_slab', 'andesite_slab', 'polished_andesite_slab', 'diorite_slab', 'polished_diorite_slab', 'granite_slab', 'polished_granite_slab', 'cobbled_deepslate_slab', 'deepslate_brick_slab', 'deepslate_tile_slab', 'polished_deepslate_slab', 'blackstone_slab', 'polished_blackstone_brick_slab', 'polished_blackstone_slab', 'brick_slab', 'stone_brick_slab', 'nether_brick_slab', 'end_stone_brick_slab', 'prismarine_brick_slab', 'sandstone_slab', 'cut_sandstone_slab', 'smooth_sandstone_slab', 'red_sandstone_slab', 'cut_red_sandstone_slab', 'smooth_red_sandstone_slab', 'cut_copper_slab', 'exposed_cut_copper_slab', 'weathered_cut_copper_slab', 'oxidized_cut_copper_slab', 'waxed_cut_copper_slab', 'waxed_exposed_cut_copper_slab', 'waxed_weathered_cut_copper_slab', 'waxed_oxidized_cut_copper_slab', 'prismarine_slab', 'dark_prismarine_slab', 'quartz_slab', 'smooth_quartz_slab', 'purpur_slab', 'vertical_oak_slab', 'vertical_spruce_slab', 'vertical_birch_slab', 'vertical_jungle_slab', 'vertical_acacia_slab', 'vertical_dark_oak_slab', 'vertical_mangrove_slab', 'vertical_cherry_slab', 'vertical_crimson_slab', 'vertical_warped_slab', 'vertical_smooth_stone_slab', 'vertical_stone_slab', 'vertical_cobblestone_slab', 'vertical_andesite_slab', 'vertical_diorite_slab', 'vertical_granite_slab', 'vertical_brick_slab', 'vertical_stone_brick_slab', 'vertical_sandstone_slab', 'vertical_copper_block_slab', 'waxed_vertical_copper_block_slab', 'vertical_cut_copper_slab', 'waxed_vertical_cut_copper_slab', 'vertical_exposed_cut_copper_slab', 'waxed_vertical_exposed_cut_copper_slab', 'vertical_weathered_cut_copper_slab', 'waxed_vertical_weathered_cut_copper_slab', 'vertical_oxidized_cut_copper_slab', 'waxed_vertical_oxidized_cut_copper_slab', 'vertical_quartz_slab', 'vertical_amethyst_block_slab', 'vertical_coal_block_slab', 'vertical_diamond_block_slab', 'vertical_emerald_block_slab', 'vertical_gold_block_slab', 'vertical_iron_block_slab', 'vertical_lapis_block_slab', 'vertical_netherite_block_slab', 'vertical_redstone_block_slab', 'oak_fence_gate', 'spruce_fence_gate', 'birch_fence_gate', 'jungle_fence_gate', 'acacia_fence_gate', 'dark_oak_fence_gate', 'mangrove_fence_gate', 'cherry_fence_gate', 'bamboo_fence_gate', 'crimson_fence_gate', 'warped_fence_gate', 'oak_button', 'spruce_button', 'birch_button', 'jungle_button', 'acacia_button', 'dark_oak_button', 'mangrove_button', 'cherry_button', 'bamboo_button', 'crimson_button', 'warped_button', 'stone_button', 'oak_door', 'spruce_door', 'birch_door', 'jungle_door', 'acacia_door', 'dark_oak_door', 'mangrove_door', 'cherry_door', 'bamboo_door', 'crimson_door', 'warped_door', 'iron_door', 'oak_trapdoor', 'spruce_trapdoor', 'birch_trapdoor', 'jungle_trapdoor', 'acacia_trapdoor', 'dark_oak_trapdoor', 'mangrove_trapdoor', 'cherry_trapdoor', 'bamboo_trapdoor', 'crimson_trapdoor', 'warped_trapdoor', 'iron_trapdoor'];
 
 // エンティティカテゴリのデータ定義（モジュールレベル定数）
 const PASSIVE_ENTITIES = [
-// 友好的（Passive）
+// おとなしい生き物（Passive）
 {
   text: { id: 'minecraft.entity.pig', default: 'Pig' },
   value: 'pig'
@@ -64089,7 +64089,7 @@ const PASSIVE_ENTITIES = [
   value: 'sniffer'
 }];
 const NEUTRAL_ENTITIES = [
-// 中立的（Neutral）
+// おこるとこわい生き物（Neutral）
 {
   text: { id: 'minecraft.entity.wolf', default: 'Wolf' },
   value: 'wolf'
@@ -64128,7 +64128,7 @@ const NEUTRAL_ENTITIES = [
   value: 'goat'
 }];
 const HOSTILE_ENTITIES = [
-// 敵対的（Hostile）
+// 敵の生き物（Hostile）
 {
   text: { id: 'minecraft.entity.zombie', default: 'Zombie' },
   value: 'zombie'
@@ -64221,7 +64221,7 @@ const BOSS_ENTITIES = [
   value: 'wither'
 }];
 const AQUATIC_ENTITIES = [
-// 水棲生物（Aquatic）
+// 水の生き物（Aquatic）
 {
   text: { id: 'minecraft.entity.squid', default: 'Squid' },
   value: 'squid'
@@ -64239,7 +64239,7 @@ const AQUATIC_ENTITIES = [
   value: 'pufferfish'
 }];
 const VILLAGER_ENTITIES = [
-// 村人系（Villagers）
+// 村人のなかま（Villagers）
 {
   text: { id: 'minecraft.entity.villager', default: 'Villager' },
   value: 'villager'
@@ -64303,8 +64303,8 @@ class Scratch3MinecraftBlocks {
     this._recordingErrorNoticeBurst = 0;
     this._recordingErrorNoticeQuietUntil = 0;
     this._lastRecordingWarningAt = 0;
-    // 「足元のブロック」で最後に調べたマスの座標（Scratch 座標）。
-    // 「足元のブロックの [x/y/z]」はこれを返す。すぐ前に「足元のブロック」を調べていれば、ブロック名と同じ瞬間の座標になる
+    // 「足もとのブロック」で最後に調べたマスの座標（Scratch 座標）。
+    // 「足もとのブロックの [x/y/z]」はこれを返す。すぐ前に「足もとのブロック」を調べていれば、ブロック名と同じ瞬間の座標になる
     // （先に座標を読んだり、ほかのスプライトも調べていたりすると、別のときの座標になる。ほかのスプライトが調べるのに
     //   失敗すると空になる。拡張機能の中で 1 つだけ）
     this._lastUnderPos = null;
@@ -64313,17 +64313,17 @@ class Scratch3MinecraftBlocks {
     this._canStopAll = false;
     // つないだ MOD が「pauseQueue」（一時停止）を受け付けるか（_canStopAll と同じ。features に pauseQueue があれば true）
     this._canPause = false;
-    // 止めるボタン・「すべてを止める」で止めた回数（学習準備が MOD の返事を待っている間に止めたら、あとから送らないため）
+    // 止めるボタン・「すべてを止める」で止めた回数（はじめの準備が MOD の返事を待っている間に止めたら、あとから送らないため）
     this._stopCount = 0;
-    // 古い MOD のとき、一時停止で出す帯（「Minecraft は とまりません」）
+    // 古い MOD のとき、一時停止で出す帯（「Minecraftは止まりません（MODが古いため）」）
     this._pauseNoticeElement = null;
     this._pauseNoticeTimer = null;
-    // いまつないでいる場所（ws://…。同じ場所への［接続］で、つなぎ直さないため）
+    // いまつないでいる場所（ws://…。同じ場所への［Minecraftにつなぐ］で、つなぎ直さないため）
     this._socketUrl = null;
-    // つながる途中の［接続］の Promise（つながる途中に同じ場所への［接続］が来たら、これを返して一緒に待つ）と、それを失敗で終わらせる関数
+    // つながる途中の［Minecraftにつなぐ］の Promise（つながる途中に同じ場所への［Minecraftにつなぐ］が来たら、これを返して一緒に待つ）と、それを失敗で終わらせる関数
     this._connectPromise = null;
     this._connectReject = null;
-    // 録画の状態を最後に MOD に聞いた時刻（同じ場所への［接続］で聞き直すのを 5 秒に 1 回までにするため）
+    // 録画の状態を最後に MOD に聞いた時刻（同じ場所への［Minecraftにつなぐ］で聞き直すのを 5 秒に 1 回までにするため）
     this._recordingSyncedAt = 0;
     // 止めるボタン（緑の旗を押したときも、始める前に止まる）で、MOD にまだ置いていない命令をやめてもらう
     // （遠くに置き続けると MOD の列がたまり、止めたあとも何分も置き続けるため）
@@ -65000,7 +65000,7 @@ class Scratch3MinecraftBlocks {
       }, {
         opcode: 'getBlockUnderPlayer',
         blockType: 'reporter',
-        // チェックボックス（ステージの表示）を出さない（表示すると毎フレーム調べ直して、「足元のブロックの [x/y/z]」の座標を書きかえるため）
+        // チェックボックス（ステージの表示）を出さない（表示すると毎フレーム調べ直して、「足もとのブロックの [x/y/z]」の座標を書きかえるため）
         disableMonitor: true,
         text: formatMessage({ id: 'minecraft.getBlockUnderPlayer', default: 'block under player', description: 'get the block under the player (no chat message)' })
       }, {
@@ -65340,28 +65340,28 @@ class Scratch3MinecraftBlocks {
   }
   _getAllEntities() {
     return [
-    // 友好的
+    // おとなしい生き物
     {
       text: { id: 'minecraft.entityGroup.passive', default: '━━ Passive mobs ━━' },
       value: ''
     }, ...PASSIVE_ENTITIES,
-    // 中立的
+    // おこるとこわい生き物
     {
       text: { id: 'minecraft.entityGroup.neutral', default: '━━ Neutral mobs ━━' },
       value: ''
     }, ...NEUTRAL_ENTITIES,
-    // 敵対的
+    // 敵の生き物
     {
       text: { id: 'minecraft.entityGroup.hostile', default: '━━ Hostile mobs ━━' },
       value: ''
     }, ...HOSTILE_ENTITIES,
     // ボス（ウィザー・エンダードラゴン）は MOD が出さないので、メニューに入れない
-    // 水棲生物
+    // 水の生き物
     {
       text: { id: 'minecraft.entityGroup.aquatic', default: '━━ Water mobs ━━' },
       value: ''
     }, ...AQUATIC_ENTITIES,
-    // 村人系
+    // 村人のなかま
     {
       text: { id: 'minecraft.entityGroup.villager', default: '━━ Villagers ━━' },
       value: ''
@@ -65383,7 +65383,7 @@ class Scratch3MinecraftBlocks {
       this._lastFailedAt = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
       this._lastFailedUrl = this._attemptUrl;
     }
-    // つながった・［切断］したら、「先につないでね」の知らせを消す（消したときは、同じ状態でもランプに知らせる）
+    // つながった・［Minecraftとつなぐのをやめる］したら、「先につないでね」の知らせを消す（消したときは、同じ状態でもランプに知らせる）
     const clearedNeed = (state === 'connected' || state === 'idle') && this.runtime.ltMinecraftNeedConnection === true;
     if (clearedNeed) this.runtime.ltMinecraftNeedConnection = false;
     if (this.runtime.ltMinecraftConnection === state && !clearedNeed) return;
@@ -65410,7 +65410,7 @@ class Scratch3MinecraftBlocks {
 
   /**
    * つないでいる MOD が、今の守りを持っているか
-   * （大きな範囲を long で数えて断る・「周囲をクリア」の中心が無ければ断る・呼んだ生き物に作品を壊させない）。
+   * （大きな範囲を long で数えて断る・「まわりを平らな地面にもどす」の中心が無ければ断る・呼んだ生き物に作品を壊させない）。
    * 「stopAll」を返す MOD（2026-11-08 以降）には、どれも入っている。
    * 返事の前（null）や古い MOD（false）のときは、Scratch の側で今までどおり守る
    * @returns {boolean} 今の守りを持つ MOD なら true
@@ -65421,7 +65421,7 @@ class Scratch3MinecraftBlocks {
 
   /**
    * つないだ直後で、MOD の返事（新しい MOD か）がまだ来ていなければ、来るまで待つ（長くても timeoutMs まで）。
-   * ［接続］は WebSocket が開いた時点で終わるので、すぐあとのブロックは返事より先に動くことがあるため
+   * ［Minecraftにつなぐ］は WebSocket が開いた時点で終わるので、すぐあとのブロックは返事より先に動くことがあるため
    * @param {number} timeoutMs - 待つ長さの上限（ミリ秒）
    * @returns {Promise} 返事が来た・つながっていない・接続が変わった・時間が過ぎたら終わる
    */
@@ -65443,7 +65443,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 「周囲をクリア」などの中心の座標を数にする。数でない・空のときは undefined（送らない＝MOD が断る）。
+   * 「まわりを平らな地面にもどす」などの中心の座標を数にする。数でない・空のときは undefined（送らない＝MOD が断る）。
    * 小数は切り下げる（置くブロックとそろえる。MOD は 0 の方へ切り捨てるため）
    * @param {*} value - ブロックの入力
    * @returns {number|undefined} 中心の座標
@@ -65470,7 +65470,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 接続
+   * 「Minecraftにつなぐ」ブロック
    */
   connect(args) {
     const host = args.HOST || 'localhost';
@@ -65479,19 +65479,19 @@ class Scratch3MinecraftBlocks {
 
     // もう同じ場所につながっていれば、つなぎ直さない
     // （つなぎ直すと前の接続が閉じ、MOD はその接続から来て、まだ置いていない命令をやめるため。
-    //   スクリプトの途中に［接続］があっても、その前に送ったブロックが抜けないように）
+    //   スクリプトの途中に［Minecraftにつなぐ］があっても、その前に送ったブロックが抜けないように）
     if (this.connected && this.socket && this.socket.readyState === WebSocket.OPEN && this._socketUrl === url) {
-      // つなぎ直さない代わりに、録画の状態だけは聞き直す（ほかのタブが録画を止めたときなど。続けて［接続］しても 5 秒に 1 回まで）
+      // つなぎ直さない代わりに、録画の状態だけは聞き直す（ほかのタブが録画を止めたときなど。続けて［Minecraftにつなぐ］しても 5 秒に 1 回まで）
       if (Date.now() - this._recordingSyncedAt > 5000) {
         this._recordingSyncedAt = Date.now();
         this._syncRecordingStatus();
       }
-      // Promise を返さない（返すと、Scratch はそのスクリプトを次のフレームまで待たせる。「ずっと」の中の［接続］で、置く速さが落ちないように）
+      // Promise を返さない（返すと、Scratch はそのスクリプトを次のフレームまで待たせる。「ずっと」の中の［Minecraftにつなぐ］で、置く速さが落ちないように）
       return;
     }
-    // 同じ場所へつながる途中なら、その［接続］が終わるのを一緒に待つ
-    // （ここでつなぎ直すと、前の［接続］の Promise が終わらず、そのスクリプトが止まったままになるため。
-    //   ステージとスプライトの両方が、緑の旗で［接続］する作品など）
+    // 同じ場所へつながる途中なら、その［Minecraftにつなぐ］が終わるのを一緒に待つ
+    // （ここでつなぎ直すと、前の［Minecraftにつなぐ］の Promise が終わらず、そのスクリプトが止まったままになるため。
+    //   ステージとスプライトの両方が、緑の旗で［Minecraftにつなぐ］する作品など）
     if (this.socket && this.socket.readyState === WebSocket.CONNECTING && this._socketUrl === url && this._connectPromise) {
       return this._connectPromise;
     }
@@ -65505,18 +65505,18 @@ class Scratch3MinecraftBlocks {
     // 既存の接続をクリーンアップ（再接続対応）
     this._cleanupSocket();
     // 同じ場所へ、つながらなかったすぐあと（2 秒以内）につなぎ直すときは、赤のままにする
-    // （「ずっと」の中の［接続］で、ランプが黄と赤のあいだでちらつかないように。別の場所なら黄にする）
+    // （「ずっと」の中の［Minecraftにつなぐ］で、ランプが黄と赤のあいだでちらつかないように。別の場所なら黄にする）
     const quickRetry = this.runtime.ltMinecraftConnection === 'failed' && this._lastFailedUrl === url &&
       (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - this._lastFailedAt < this._retryQuietMs;
     if (!quickRetry) this._setConnectionState('connecting');
     this._attemptUrl = url;
 
     this._connectPromise = new Promise((resolve, reject) => {
-      // 別の場所への［接続］や［切断］で、つながる前にこのソケットを閉じたときに、この［接続］を終わらせるため
+      // 別の場所への［Minecraftにつなぐ］や［Minecraftとつなぐのをやめる］で、つながる前にこのソケットを閉じたときに、この［Minecraftにつなぐ］を終わらせるため
       this._connectReject = reject;
       try {
         this.socket = new WebSocket(url);
-        // つないだ場所（同じ場所への［接続］で、つなぎ直さないため）
+        // つないだ場所（同じ場所への［Minecraftにつなぐ］で、つなぎ直さないため）
         this._socketUrl = url;
         this.socket.onopen = () => {
           console.log('Connected to Minecraft server');
@@ -65539,7 +65539,7 @@ class Scratch3MinecraftBlocks {
           this.connected = true;
           this._connectReject = null;
           this._setConnectionState('connected');
-          // 録画の状態は、このあと届く接続の返事で聞く（その前に同じ場所への［接続］が来ても、二重に聞かないように）
+          // 録画の状態は、このあと届く接続の返事で聞く（その前に同じ場所への［Minecraftにつなぐ］が来ても、二重に聞かないように）
           this._recordingSyncedAt = Date.now();
           resolve();
         };
@@ -65600,16 +65600,16 @@ class Scratch3MinecraftBlocks {
     this.sessionId = null;
     // つないだ場所も忘れる（ソケットが無いのに同じ場所と見て、つなぎ直しを飛ばすことが無いように）
     this._socketUrl = null;
-    // つながる途中の［接続］は、この接続のもの（次の［接続］では一緒に待たない）。
-    // まだ終わっていなければ、失敗で終わらせる（別の場所への［接続］や［切断］で前のソケットを閉じたとき、
-    // 前の［接続］が終わらず、そのスクリプトが止まったままにならないように）
+    // つながる途中の［Minecraftにつなぐ］は、この接続のもの（次の［Minecraftにつなぐ］では一緒に待たない）。
+    // まだ終わっていなければ、失敗で終わらせる（別の場所への［Minecraftにつなぐ］や［Minecraftとつなぐのをやめる］で前のソケットを閉じたとき、
+    // 前の［Minecraftにつなぐ］が終わらず、そのスクリプトが止まったままにならないように）
     this._connectPromise = null;
     if (this._connectReject) {
       const rejectConnect = this._connectReject;
       this._connectReject = null;
       rejectConnect(new Error('Connection superseded'));
     }
-    // 前の接続（前のワールド）で調べた足元の座標を残さない
+    // 前の接続（前のワールド）で調べた足もとの座標を残さない
     this._lastUnderPos = null;
     // 次につなぐ MOD が受け付けるかは、その接続の返事で知る
     this._canStopAll = false;
@@ -65621,11 +65621,11 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 切断
+   * 「Minecraftとつなぐのをやめる」ブロック
    */
   disconnect() {
     this._cleanupSocket();
-    // 自分で［切断］したときは「つないでいない」にもどす
+    // 自分で［Minecraftとつなぐのをやめる］したときは「つないでいない」にもどす
     this._setConnectionState('idle');
   }
 
@@ -65639,7 +65639,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * ブロック配置（絶対座標）
+   * 「X: Y: Z: に置く、置き方・向き・あけしめ」ブロック（決まった座標）
    */
   setBlock(args) {
     // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
@@ -65680,7 +65680,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * ブロック配置（相対座標）
+   * 「プレイヤーから X: Y: Z: ずれたところに置く」ブロック（プレイヤーからの座標）
    */
   setBlockRelative(args) {
     // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
@@ -65803,7 +65803,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * ブロック配置（シンプル版：配置・向きパラメータなし）
+   * 「X: Y: Z: に置く」ブロック（かんたん版：置き方・向きの入力なし）
    */
   setBlockSimple(args) {
     // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
@@ -65825,7 +65825,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * ブロック範囲設置（シンプル版：配置・向きパラメータなし）
+   * 「から〜まで でうめる」ブロック（かんたん版：置き方・向きの入力なし）
    */
   setBlockRangeSimple(args) {
     const x1 = Math.floor(Number(args.X1));
@@ -65883,7 +65883,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * エンティティ召喚
+   * 「呼び出す」ブロック（生き物を呼び出す）
    */
   summonEntity(args) {
     return this.sendCommand('summonEntity', {
@@ -65998,8 +65998,8 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 周囲クリア
-   * 指定座標を中心に空気ブロックでクリア
+   * 「まわりを平らな地面にもどす」ブロック
+   * 指定座標のまわりを、MOD が平らな地面（岩盤・土・草、その上は空気）にもどす
    * 範囲: X/Z: 中心から±200 (401x401ブロック), Y: -64~100（MOD の executeClearArea）
    * @param {object} args - 引数オブジェクト
    * @param {number} args.X - 中心X座標
@@ -66027,8 +66027,8 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 全エンティティをクリア
-   * プレイヤー以外の全エンティティを削除
+   * 「まわりの生き物や、ボートなどのものを全部消す」ブロック
+   * 中心のまわり（MOD が決めた範囲）の、プレイヤー以外の生き物やものを消す
    */
   clearAllEntities(args) {
     // 数でない・空の中心は送らない（MOD が「値をたしかめてね」と断る）。0 にすると原点のまわりを消してしまうため
@@ -66088,8 +66088,8 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 学習準備
-   * 時刻を正午に固定、天気をクリア、モブスポーンと昼夜/天気サイクルを無効化
+   * はじめの準備（ブロック）
+   * 時刻を昼に、天気を晴れにして止める。生き物が自然に出てくるのを止める
    * 暗視ON、移動速度を標準に戻す
    */
   prepareForLearning(args, util) {
@@ -66097,8 +66097,8 @@ class Scratch3MinecraftBlocks {
     const send = () => Promise.all([
       this.sendCommand('setTime', { time: 6000 }),
       this.sendCommand('setWeather', { weather: 'clear' }),
-      this.sendCommand('setGameRule', { rule: 'doDaylightCycle', value: 'true' }),  // MOD側で反転→時刻固定
-      this.sendCommand('setGameRule', { rule: 'doWeatherCycle', value: 'true' }),  // MOD側で反転→天気固定
+      this.sendCommand('setGameRule', { rule: 'doDaylightCycle', value: 'true' }),  // MOD側で反転→時間を止める
+      this.sendCommand('setGameRule', { rule: 'doWeatherCycle', value: 'true' }),  // MOD側で反転→天気を止める
       this.sendCommand('setGameRule', { rule: 'doMobSpawning', value: 'false' }),
       // 生き物を呼ぶのは止めない（今の MOD は、呼んだ生き物に作品を壊させない〔SummonedEntityGuard〕）。
       // 許可にもどす命令も送らない（先生がゲームの中で /entityspawn deny と止めたのを、勝手にもどさないため）。
@@ -66120,7 +66120,7 @@ class Scratch3MinecraftBlocks {
     }
     // つないだ直後で返事がまだのときは、返事を待ってから決める（分からないまま古い MOD として生き物を止めると、
     // 新しい MOD でも Minecraft を起動し直すまで生き物を呼べなくなるため）。
-    // 待っている間につなぎ直した・［切断］したときは、何も送らずに終える（前の接続の判定を、次の接続に使わないように）。
+    // 待っている間につなぎ直した・［Minecraftとつなぐのをやめる］したときは、何も送らずに終える（前の接続の判定を、次の接続に使わないように）。
     // 待っている間に止めた（止めるボタン・「すべてを止める」・このスクリプトだけを止めた）ときも送らない
     // （止めたのにあとから世界が変わらないように）。ただし古い MOD には、守りの命令（生き物を止める）だけは送る
     const socket = this.socket;
@@ -66213,7 +66213,7 @@ class Scratch3MinecraftBlocks {
   // ========================================
 
   /**
-   * 録画を開始する
+   * 「録画をはじめる」ブロック
    * FFmpegを使用してMinecraftウィンドウを録画
    */
   startRecording() {
@@ -66244,7 +66244,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 録画を停止する
+   * 「録画をやめる」ブロック
    */
   stopRecording() {
     console.log('録画停止');
@@ -66615,7 +66615,7 @@ class Scratch3MinecraftBlocks {
 
           if (metaResult.data.success) {
             console.log('動画保存完了:', metaResult.data.publicUrl);
-            alert('動画をアップロードしました！\n\nタイトル: ' + title);
+            alert('動画をアップロードしました！\n\n名前: ' + title);
           } else {
             throw new Error('メタデータ保存失敗');
           }
@@ -66639,112 +66639,112 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 建築ブロック選択
+   * 「建物のブロック」のメニュー
    */
   blockBuilding(args) {
     return args.BLOCK;
   }
 
   /**
-   * 照明ブロック選択
+   * 「明かりのブロック」のメニュー
    */
   blockLighting(args) {
     return args.BLOCK;
   }
 
   /**
-   * 装飾ブロック選択
+   * 「かざりのブロック」のメニュー
    */
   blockDecoration(args) {
     return args.BLOCK;
   }
 
   /**
-   * 自然ブロック選択
+   * 「自然のブロック」のメニュー
    */
   blockNature(args) {
     return args.BLOCK;
   }
 
   /**
-   * 機能ブロック選択
+   * 「しかけのブロック」のメニュー
    */
   blockFunctional(args) {
     return args.BLOCK;
   }
 
   /**
-   * 鉱石ブロック選択
+   * 「鉱石と金属のブロック」のメニュー
    */
   blockOre(args) {
     return args.BLOCK;
   }
 
   /**
-   * 特殊ブロック選択
+   * 「とくべつなブロック」のメニュー
    */
   blockSpecial(args) {
     return args.BLOCK;
   }
 
   /**
-   * 友好的エンティティ選択
+   * 「おとなしい生き物」のメニュー
    */
   entityPassive(args) {
     return args.ENTITY;
   }
 
   /**
-   * 中立的エンティティ選択
+   * 「おこるとこわい生き物」のメニュー
    */
   entityNeutral(args) {
     return args.ENTITY;
   }
 
   /**
-   * 敵対的エンティティ選択
+   * 「敵の生き物」のメニュー
    */
   entityHostile(args) {
     return args.ENTITY;
   }
 
   /**
-   * ボスエンティティ選択
+   * 「ボスの生き物」のメニュー
    */
   entityBoss(args) {
     return args.ENTITY;
   }
 
   /**
-   * 水棲エンティティ選択
+   * 「水の生き物」のメニュー
    */
   entityAquatic(args) {
     return args.ENTITY;
   }
 
   /**
-   * 村人系エンティティ選択
+   * 「村人のなかま」のメニュー
    */
   entityVillager(args) {
     return args.ENTITY;
   }
 
   /**
-   * その他エンティティ選択
+   * 「そのほかのもの」のメニュー
    */
   entityOther(args) {
     return args.ENTITY;
   }
 
   /**
-   * 接続状態確認
+   * 「Minecraftとつながっている？」ブロック
    */
   isConnected() {
     return this.connected;
   }
 
   /**
-   * プレーヤーの向き取得
+   * 「プレイヤーの向き」ブロック
    */
   getPlayerFacing() {
     return this.sendCommandWithResponse('getPlayerFacing', {}).then(response => {
@@ -66784,7 +66784,7 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * プレイヤーの足元のブロックを調べる（チャットには出さない）
+   * プレイヤーの足もとのブロックを調べる（チャットには出さない）
    * 立っているときは乗っているブロック（ブロックのふちやフェンスの上でも、乗っているブロック）、
    * ジャンプ中や泳いでいるときは足の高さのマス（空気や水）。「ずっと」の中で何度も呼んでもチャットが流れない
    * @returns {Promise<string>} ブロック名（例: birch_planks）。調べられないときは空の文字
@@ -66812,9 +66812,9 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
-   * 「足元のブロック」で最後に調べたマスの座標（通信はしない）
+   * 「足もとのブロック」で最後に調べたマスの座標（通信はしない）
    * 最後に調べた返事の座標なので、調べたあとに歩いても、踏んでいたマスがわかる
-   * （すぐ前に「足元のブロック」を調べていれば、そのブロック名と同じマス）
+   * （すぐ前に「足もとのブロック」を調べていれば、そのブロック名と同じマス）
    * @param {object} args - COORD: x / y / z
    * @returns {number|string} 座標。まだ調べていない・調べられなかった・つなぎ直したときは空の文字
    *   （数を入れる所にそのまま入れると 0 になるので、先にブロック名が空でないかを確かめて使う）
@@ -342732,17 +342732,17 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.entity.item_frame": "額縁",
     "minecraft.entity.armor_stand": "防具立て",
     "minecraft.entity.snow_golem": "スノウゴーレム",
-    "minecraft.entityGroup.other": "━━ その他 ━━",
+    "minecraft.entityGroup.other": "━━ そのほかのもの ━━",
     "minecraft.entity.illusioner": "イリュージョナー",
     "minecraft.entity.wandering_trader": "行商人",
     "minecraft.entity.villager": "村人",
-    "minecraft.entityGroup.villager": "━━ 村人系 ━━",
+    "minecraft.entityGroup.villager": "━━ 村人のなかま ━━",
     "minecraft.entity.pufferfish": "フグ",
     "minecraft.entity.tropical_fish": "熱帯魚",
     "minecraft.entity.salmon": "サケ",
     "minecraft.entity.cod": "タラ",
     "minecraft.entity.squid": "イカ",
-    "minecraft.entityGroup.aquatic": "━━ 水棲生物 ━━",
+    "minecraft.entityGroup.aquatic": "━━ 水の生き物 ━━",
     "minecraft.entity.wither": "ウィザー",
     "minecraft.entity.ender_dragon": "エンダードラゴン",
     "minecraft.entity.warden": "ウォーデン",
@@ -342772,7 +342772,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.entity.creeper": "クリーパー",
     "minecraft.entity.skeleton": "スケルトン",
     "minecraft.entity.zombie": "ゾンビ",
-    "minecraft.entityGroup.hostile": "━━ 敵対的 ━━",
+    "minecraft.entityGroup.hostile": "━━ 敵の生き物 ━━",
     "minecraft.entity.goat": "ヤギ",
     "minecraft.entity.dolphin": "イルカ",
     "minecraft.entity.trader_llama": "行商人のラマ",
@@ -342785,7 +342785,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.entity.bee": "ミツバチ",
     "minecraft.entity.polar_bear": "シロクマ",
     "minecraft.entity.wolf": "オオカミ",
-    "minecraft.entityGroup.neutral": "━━ 中立的 ━━",
+    "minecraft.entityGroup.neutral": "━━ おこるとこわい生き物 ━━",
     "minecraft.entity.sniffer": "スニファー",
     "minecraft.entity.camel": "ラクダ",
     "minecraft.entity.allay": "アレイ",
@@ -342810,8 +342810,8 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.entity.sheep": "ヒツジ",
     "minecraft.entity.cow": "ウシ",
     "minecraft.entity.pig": "ブタ",
-    "minecraft.entityGroup.passive": "━━ 友好的 ━━",
-    "minecraft.menu.mobSpawning": "モブスポーン",
+    "minecraft.entityGroup.passive": "━━ おとなしい生き物 ━━",
+    "minecraft.menu.mobSpawning": "生き物が自然に出てくる",
     "minecraft.menu.daylightCycle": "時間固定",
     "minecraft.menu.weatherCycle": "天気固定",
     "minecraft.label.connect": "つなぐ・じゅんび",
@@ -342822,13 +342822,13 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.label.world": "天気・時間・ルール",
     "minecraft.label.items": "持ち物・入れ物",
     "minecraft.label.check": "場所やブロックを調べる",
-    "minecraft.label.clear": "けす（元にもどせません）",
+    "minecraft.label.clear": "消す（元にもどせません）",
     "minecraft.label.recording": "録画",
-    "minecraft.menu.stopDaylight": "時間固定",
-    "minecraft.menu.stopWeather": "天気固定",
+    "minecraft.menu.stopDaylight": "時間を止める",
+    "minecraft.menu.stopWeather": "天気を止める",
     "minecraft.menu.clear": "晴れ",
     "minecraft.menu.rain": "雨",
-    "minecraft.menu.thunder": "雷雨",
+    "minecraft.menu.thunder": "かみなり",
     "minecraft.uploadVideo.defaultTitle": "わたしの作品",
     "minecraft.menu.survival": "サバイバル",
     "minecraft.menu.creative": "クリエイティブ",
@@ -342839,16 +342839,16 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.menu.sunset": "夕方",
     "minecraft.menu.night": "夜",
     "minecraft.menu.midnight": "真夜中",
-    "minecraft.menu.bottom": "通常（下）",
-    "minecraft.menu.top": "上下反転（上）",
-    "minecraft.menu.double": "ダブル",
-    "minecraft.menu.default": "デフォルト",
+    "minecraft.menu.bottom": "下（ふつう）",
+    "minecraft.menu.top": "上（さかさま）",
+    "minecraft.menu.double": "2まい重ね",
+    "minecraft.menu.default": "そのまま",
     "minecraft.menu.north": "北",
     "minecraft.menu.south": "南",
     "minecraft.menu.east": "東",
     "minecraft.menu.west": "西",
-    "minecraft.menu.closed": "閉じる",
-    "minecraft.menu.open": "開く",
+    "minecraft.menu.closed": "しめる",
+    "minecraft.menu.open": "あける",
     "minecraft.menu.on": "オン",
     "minecraft.menu.off": "オフ",
 
@@ -343619,27 +343619,27 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.reinforced_deepslate": "強化ディープスレート",
     "minecraft.block.spawner": "スポナー",
     "minecraft.block.structure_block": "ストラクチャーブロック",
-    "minecraft.connect": "Minecraftに接続 ホスト [HOST] ポート [PORT]",
-    "minecraft.pauseNotSupported": "Minecraft は 止まりません（MOD が 古いため）",
-    "minecraft.disconnect": "切断",
-    "minecraft.chat": "[MESSAGE] と言う",
-    "minecraft.teleport": "テレポート X:[X] Y:[Y] Z:[Z]",
-    "minecraft.getPosition": "[COORD]",
+    "minecraft.connect": "Minecraftにつなぐ [HOST]:[PORT]",
+    "minecraft.pauseNotSupported": "Minecraftは止まりません（MODが古いため）",
+    "minecraft.disconnect": "Minecraftとつなぐのをやめる",
+    "minecraft.chat": "チャットで [MESSAGE] と言う",
+    "minecraft.teleport": "X:[X] Y:[Y] Z:[Z] にテレポートする",
+    "minecraft.getPosition": "プレイヤーの [COORD] 座標",
     "minecraft.getTargetBlock": "見ているブロックの [INFO]",
-    "minecraft.menu.blockType": "ブロックの種類",
-    "minecraft.menu.categoryBuilding": "━━ 建築ブロック ━━",
-    "minecraft.menu.categoryLighting": "━━ 照明ブロック ━━",
-    "minecraft.menu.categoryDecoration": "━━ 装飾ブロック ━━",
-    "minecraft.menu.categoryNature": "━━ 自然ブロック ━━",
-    "minecraft.menu.categoryFunctional": "━━ 機能ブロック ━━",
-    "minecraft.menu.categoryOre": "━━ 鉱石ブロック ━━",
-    "minecraft.menu.categorySpecial": "━━ 特殊ブロック ━━",
-    "minecraft.setBlock": "X:[X] Y:[Y] Z:[Z] [BLOCK] 配置:[PLACEMENT] 向き:[FACING] open:[OPEN]",
-    "minecraft.setBlockRelative": "~[X] ~[Y] ~[Z] [BLOCK] 配置:[PLACEMENT] 向き:[FACING] open:[OPEN]",
-    "minecraft.setBlockRange": "X:[X1] Y:[Y1] Z:[Z1] からX:[X2] Y:[Y2] Z:[Z2] [BLOCK] 配置:[PLACEMENT] 向き:[FACING] open:[OPEN]",
-    "minecraft.setBlockSimple": "X:[X] Y:[Y] Z:[Z] [BLOCK]",
-    "minecraft.setBlockRangeSimple": "X:[X1] Y:[Y1] Z:[Z1] からX:[X2] Y:[Y2] Z:[Z2] [BLOCK]",
-    "minecraft.setContainerItem": "X:[X] Y:[Y] Z:[Z] のコンテナのスロット [SLOT] に [ITEM] を [COUNT] 個入れる",
+    "minecraft.menu.blockType": "種類",
+    "minecraft.menu.categoryBuilding": "━━ 建物のブロック ━━",
+    "minecraft.menu.categoryLighting": "━━ 明かりのブロック ━━",
+    "minecraft.menu.categoryDecoration": "━━ かざりのブロック ━━",
+    "minecraft.menu.categoryNature": "━━ 自然のブロック ━━",
+    "minecraft.menu.categoryFunctional": "━━ しかけのブロック ━━",
+    "minecraft.menu.categoryOre": "━━ 鉱石と金属のブロック ━━",
+    "minecraft.menu.categorySpecial": "━━ とくべつなブロック ━━",
+    "minecraft.setBlock": "X:[X] Y:[Y] Z:[Z] に [BLOCK] を置く、置き方:[PLACEMENT] 向き:[FACING] あけしめ:[OPEN]",
+    "minecraft.setBlockRelative": "プレイヤーから X:[X] Y:[Y] Z:[Z] ずれたところに [BLOCK] を置く、置き方:[PLACEMENT] 向き:[FACING] あけしめ:[OPEN]",
+    "minecraft.setBlockRange": "X:[X1] Y:[Y1] Z:[Z1] から X:[X2] Y:[Y2] Z:[Z2] まで [BLOCK] でうめる、置き方:[PLACEMENT] 向き:[FACING] あけしめ:[OPEN]",
+    "minecraft.setBlockSimple": "X:[X] Y:[Y] Z:[Z] に [BLOCK] を置く",
+    "minecraft.setBlockRangeSimple": "X:[X1] Y:[Y1] Z:[Z1] から X:[X2] Y:[Y2] Z:[Z2] まで [BLOCK] でうめる",
+    "minecraft.setContainerItem": "X:[X] Y:[Y] Z:[Z] の入れ物のスロット [SLOT] に [ITEM] を [COUNT] こ入れる",
     "minecraft.item.arrow": "矢",
     "minecraft.item.spectral_arrow": "光の矢",
     "minecraft.item.tipped_arrow": "効果付きの矢",
@@ -343660,56 +343660,56 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.item.redstone": "レッドストーン",
     "minecraft.item.redstone_torch": "レッドストーントーチ",
     "minecraft.item.tnt": "TNT",
-    "minecraft.clearArea": "周囲をクリア X:[X] Z:[Z]",
-    "minecraft.clearAllEntities": "全エンティティをクリア X:[X] Z:[Z]",
-    "minecraft.setGameRule": "ルール [RULE] を [VALUE] にする",
-    "minecraft.setGameMode": "モードを [MODE] にする",
-    "minecraft.prepareForLearning": "学習準備",
-    "minecraft.setMoveSpeed": "移動速度を [SPEED] 倍にする",
-    "minecraft.setNightVision": "暗視を [ENABLED] にする",
-    "minecraft.clearInventory": "持ち物を空にする",
-    "minecraft.setFlySpeed": "飛行速度を [SPEED] 倍にする",
-    "minecraft.startRecording": "録画を開始する",
-    "minecraft.recording.startFailed": "録画を開始できませんでした。",
-    "minecraft.recording.stopFailed": "録画を停止できませんでした。",
-    "minecraft.recording.alreadyStarted": "すでに録画しています。「録画を停止する」ブロックを使ってください。",
+    "minecraft.clearArea": "X:[X] Z:[Z] のまわりを平らな地面にもどす",
+    "minecraft.clearAllEntities": "X:[X] Z:[Z] のまわりの生き物や、ボートなどのものを全部消す",
+    "minecraft.setGameRule": "ゲームのルール [RULE] を [VALUE] にする",
+    "minecraft.setGameMode": "ゲームモードを [MODE] にする",
+    "minecraft.prepareForLearning": "はじめの準備（昼・晴れのまま・生き物が自然に出ない・暗くても見える・歩く速さをふつうに）",
+    "minecraft.setMoveSpeed": "歩く速さを [SPEED] 倍にする",
+    "minecraft.setNightVision": "暗視（暗くても見える）を [ENABLED] にする",
+    "minecraft.clearInventory": "持ち物をからにする",
+    "minecraft.setFlySpeed": "飛ぶ速さを [SPEED] 倍にする",
+    "minecraft.startRecording": "録画をはじめる",
+    "minecraft.recording.startFailed": "録画をはじめられませんでした。",
+    "minecraft.recording.stopFailed": "録画をやめられませんでした。",
+    "minecraft.recording.alreadyStarted": "すでに録画しています。「録画をやめる」ブロックを使ってください。",
     "minecraft.recording.windowsOnly": "録画はWindowsのパソコンだけで使えます。",
     "minecraft.recording.ffmpegMissing": "録画の準備ができていません。おうちの人か先生に「ffmpegを入れてください」とつたえてください。",
-    "minecraft.recording.startError": "Minecraftの画面が開いているかたしかめてください。",
-    "minecraft.recording.notStarted": "まだ録画していません。先に「録画を開始する」ブロックを使ってください。",
-    "minecraft.recording.stopError": "もう一度「録画を開始する」からやりなおしてください。",
+    "minecraft.recording.startError": "Minecraftの画面が開いているか、確かめてください。",
+    "minecraft.recording.notStarted": "まだ録画していません。先に「録画をはじめる」ブロックを使ってください。",
+    "minecraft.recording.stopError": "もう一度「録画をはじめる」からやりなおしてください。",
     "minecraft.recording.interrupted": "とちゅうで止まってしまいました。もう一度ためしてください。",
-    "minecraft.recording.notConnected": "Minecraftにつながっていません。先に「Minecraftに接続」ブロックを使ってください。",
+    "minecraft.recording.notConnected": "Minecraftにつながっていません。先に「Minecraftにつなぐ」ブロックを使ってください。",
     "minecraft.recording.timeout": "Minecraftからの返事がありませんでした。もう一度ためしてください。",
-    "minecraft.recording.serverStopping": "Minecraftのワールドが閉じられました。もう一度「Minecraftに接続」からやりなおしてください。",
-    "minecraft.recording.connectionClosed": "Minecraftとのつながりが切れました。もう一度「Minecraftに接続」からやりなおしてください。",
+    "minecraft.recording.serverStopping": "Minecraftのワールドが閉じられました。もう一度「Minecraftにつなぐ」からやりなおしてください。",
+    "minecraft.recording.connectionClosed": "Minecraftとのつながりが切れました。もう一度「Minecraftにつなぐ」からやりなおしてください。",
     "minecraft.recording.unknown": "うまくいきませんでした。もう一度ためしてください。",
     "minecraft.recording.noFile": "録画は止まりましたが、動画が保存されていません。録画の時間が短すぎたのかもしれません。",
-    "minecraft.stopRecording": "録画を停止する",
+    "minecraft.stopRecording": "録画をやめる",
     "minecraft.isRecording": "録画中？",
-    "minecraft.uploadVideo": "タイトル [TITLE] で動画をアップロード",
-    "minecraft.blockBuilding": "建築ブロック [BLOCK]",
-    "minecraft.blockLighting": "照明ブロック [BLOCK]",
-    "minecraft.blockDecoration": "装飾ブロック [BLOCK]",
-    "minecraft.blockNature": "自然ブロック [BLOCK]",
-    "minecraft.blockFunctional": "機能ブロック [BLOCK]",
-    "minecraft.blockOre": "鉱石ブロック [BLOCK]",
-    "minecraft.blockSpecial": "特殊ブロック [BLOCK]",
-    "minecraft.summonEntity": "エンティティを召喚 [ENTITY] X:[X] Y:[Y] Z:[Z]",
-    "minecraft.entityPassive": "友好的エンティティ [ENTITY]",
-    "minecraft.entityNeutral": "中立的エンティティ [ENTITY]",
-    "minecraft.entityHostile": "敵対的エンティティ [ENTITY]",
-    "minecraft.entityBoss": "ボスエンティティ [ENTITY]",
-    "minecraft.entityAquatic": "水棲エンティティ [ENTITY]",
-    "minecraft.entityVillager": "村人系エンティティ [ENTITY]",
-    "minecraft.entityOther": "その他エンティティ [ENTITY]",
+    "minecraft.uploadVideo": "名前 [TITLE] で動画をアップロードする",
+    "minecraft.blockBuilding": "建物のブロック [BLOCK]",
+    "minecraft.blockLighting": "明かりのブロック [BLOCK]",
+    "minecraft.blockDecoration": "かざりのブロック [BLOCK]",
+    "minecraft.blockNature": "自然のブロック [BLOCK]",
+    "minecraft.blockFunctional": "しかけのブロック [BLOCK]",
+    "minecraft.blockOre": "鉱石と金属のブロック [BLOCK]",
+    "minecraft.blockSpecial": "とくべつなブロック [BLOCK]",
+    "minecraft.summonEntity": "[ENTITY] を X:[X] Y:[Y] Z:[Z] に呼び出す",
+    "minecraft.entityPassive": "おとなしい生き物 [ENTITY]",
+    "minecraft.entityNeutral": "おこるとこわい生き物 [ENTITY]",
+    "minecraft.entityHostile": "敵の生き物 [ENTITY]",
+    "minecraft.entityBoss": "ボスの生き物 [ENTITY]",
+    "minecraft.entityAquatic": "水の生き物 [ENTITY]",
+    "minecraft.entityVillager": "村人のなかま [ENTITY]",
+    "minecraft.entityOther": "そのほかのもの [ENTITY]",
     "minecraft.setWeather": "天気を [WEATHER] にする",
-    "minecraft.setTime": "時刻を [TIME] にする",
-    "minecraft.getPlayerFacing": "プレーヤーの向き",
-    "minecraft.getBlockType": "[X] [Y] [Z] のブロック種類",
-    "minecraft.getBlockUnderPlayer": "足元のブロック",
-    "minecraft.getBlockUnderPlayerPos": "足元のブロックの [COORD]",
-    "minecraft.isConnected": "接続中？",
+    "minecraft.setTime": "時間を [TIME] にする",
+    "minecraft.getPlayerFacing": "プレイヤーの向き",
+    "minecraft.getBlockType": "X:[X] Y:[Y] Z:[Z] のブロック",
+    "minecraft.getBlockUnderPlayer": "足もとのブロック",
+    "minecraft.getBlockUnderPlayerPos": "足もとのブロックの [COORD] 座標",
+    "minecraft.isConnected": "Minecraftとつながっている？",
 
     "gui.alerts.lostPeripheralConnection": " {extensionName}への接続が失われました。",
     "gui.alerts.tryAgain": "もう一度試す ",
@@ -343787,14 +343787,14 @@ __webpack_require__.r(__webpack_exports__);
     "gui.minecraftLamp.connecting": "つないでいます…",
     "gui.minecraftLamp.connected": "つながっている",
     "gui.minecraftLamp.failed": "つながらない",
-    "gui.minecraftLamp.idleHint": "［Minecraftに接続］ブロックを動かすと、つながります。",
-    "gui.minecraftLamp.needHint": "ブロックが Minecraft に届いていません。先に Minecraft につないでね。",
-    "gui.minecraftLamp.connectingHint": "少し待ってください。ずっと黄色のときは、Minecraft が動いているか見てください。",
-    "gui.minecraftLamp.connectedHint": "ブロックを動かすと、Minecraft に届きます。",
-    "gui.minecraftLamp.failedTitle": "Minecraft につながりません",
-    "gui.minecraftLamp.failedStep1": "① Minecraft を起動する",
+    "gui.minecraftLamp.idleHint": "［Minecraftにつなぐ］ブロックを動かすと、つながります。",
+    "gui.minecraftLamp.needHint": "ブロックがMinecraftに届いていません。先にMinecraftにつないでね。",
+    "gui.minecraftLamp.connectingHint": "少し待ってください。ずっと黄色のときは、Minecraftが動いているか見てください。",
+    "gui.minecraftLamp.connectedHint": "ブロックを動かすと、Minecraftに届きます。",
+    "gui.minecraftLamp.failedTitle": "Minecraftにつながりません",
+    "gui.minecraftLamp.failedStep1": "① Minecraftをはじめる",
     "gui.minecraftLamp.failedStep2": "② ワールドに入る",
-    "gui.minecraftLamp.failedStep3": "③ 緑の旗をもう一度押す（［Minecraftに接続］を動かす）",
+    "gui.minecraftLamp.failedStep3": "③ 緑の旗をもう一度押す（［Minecraftにつなぐ］を動かす）",
     "gui.minecraftLamp.title": "{status}（押すとヒント）",
     "gui.crashMessage.label": "うわっ! 何か問題が発生しました。",
     "gui.crashMessage.description": "申し訳ありません。Scratchがクラッシュしたようです。この問題はScratchチームに自動的に送信されました。ページを再読み込みしてください。",
@@ -345480,7 +345480,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.clearAllEntities": "X:[X] Z:[Z] のまわりのいきものや、ボートなどのものをぜんぶけす",
     "minecraft.setGameRule": "ゲームのルール [RULE] を [VALUE] にする",
     "minecraft.setGameMode": "ゲームモードを [MODE] にする",
-    "minecraft.prepareForLearning": "はじめのじゅんび（ひる・はれのままにする）",
+    "minecraft.prepareForLearning": "はじめのじゅんび（ひる・はれのまま・いきものがしぜんにでない・くらくてもみえる・あるくはやさをふつうに）",
     "minecraft.setMoveSpeed": "あるくはやさを [SPEED] ばいにする",
     "minecraft.setNightVision": "あんし（くらくてもみえる）を [ENABLED] にする",
     "minecraft.clearInventory": "もちものをからにする",
@@ -447302,7 +447302,7 @@ class MinecraftLamp extends react__WEBPACK_IMPORTED_MODULE_2__.Component {
     if (LT_LAMP_STATES.indexOf(status) < 0) return;
     // つながっていたのに切れたときだけ点滅させる（初めからつながらないときは、赤になるだけ）。
     // （ほかに、つないでいないのにブロックが動いたときも点滅する。handleNeedConnection を見る）
-    // 点滅は、つながった・［切断］したときにだけ止める（「ずっと」の中の［接続］がつなぎ直そうとしても続ける）
+    // 点滅は、つながった・［Minecraftとつなぐのをやめる］したときにだけ止める（「ずっと」の中の［Minecraftにつなぐ］がつなぎ直そうとしても続ける）
     const runtime = this.props.vm.runtime;
     const lost = this.state.status === 'connected' && status === 'failed';
     if (lost) {
