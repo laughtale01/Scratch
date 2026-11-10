@@ -46,19 +46,53 @@ service firebase.storage {
         canAccessProject(ownerUid, fileName.split('[.]')[0]);
     }
 
+    // 作品IDとして使える名前か確認（Firestore が作る ID は英数字 20 文字）
+    function isProjectIdName(projectId) {
+      return projectId.matches('[A-Za-z0-9]{1,128}');
+    }
+
+    // 作品のファイル（.sb3）として置いてよいか確認
+    // - 大きさは 20MB 未満（2026-11 の本番でいちばん大きい作品は 0.32MB）
+    // - 種類は Scratch の .sb3 か、種類なし（octet-stream）だけ。
+    //   text/html などで置き直して、先生がダウンロードのリンクを開いたときに画面として出されないようにする
+    // （update は中身の上書きと、種類などの書き換え（updateMetadata）の両方に効く）
+    function isSb3Upload() {
+      return request.resource.size < 20 * 1024 * 1024 &&
+        request.resource.contentType in ['application/x.scratch.sb3', 'application/octet-stream'];
+    }
+
+    // サムネイルとして置いてよいか確認（1MB 未満の PNG だけ）
+    function isThumbnailUpload() {
+      return request.resource.size < 1024 * 1024 &&
+        request.resource.contentType == 'image/png';
+    }
+
     // Scratchプロジェクト本体・履歴
     // - 読み取り・削除: 持ち主、管理者、その作品の教室の講師
-    // - 作成・上書き: 持ち主のみ（講師がファイルを書き換えることはない）
+    //   （決まった名前でない古いファイルも消せるよう、読み取り・削除は場所の下すべてに効かせる）
+    // - 作成・上書き: 持ち主のみ（講師がファイルを書き換えることはない）。
+    //   置けるのはアプリが作る current.sb3 と versions/v<番号>.sb3 だけ（下の 2 つの match）
     match /projects/{ownerUid}/{projectId}/{allPaths=**} {
       allow read, delete: if isOwner(ownerUid) || canAccessProject(ownerUid, projectId);
-      allow create, update: if isOwner(ownerUid);
+    }
+
+    // 作品の本体
+    match /projects/{ownerUid}/{projectId}/current.sb3 {
+      allow create, update: if isOwner(ownerUid) && isProjectIdName(projectId) && isSb3Upload();
+    }
+
+    // 作品の履歴（versions/v<番号>.sb3）
+    match /projects/{ownerUid}/{projectId}/versions/{fileName} {
+      allow create, update: if isOwner(ownerUid) && isProjectIdName(projectId) &&
+        fileName.matches('v[0-9]{1,9}[.]sb3') && isSb3Upload();
     }
 
     // サムネイル
     match /thumbnails/{ownerUid}/{fileName} {
       // fileNameは "{projectId}.png" 形式
       allow read, delete: if isOwner(ownerUid) || canAccessThumbnail(ownerUid, fileName);
-      allow create, update: if isOwner(ownerUid);
+      allow create, update: if isOwner(ownerUid) &&
+        fileName.matches('[A-Za-z0-9]{1,128}[.]png') && isThumbnailUpload();
     }
 
     // 録画（インターネットには公開しない。講師・管理者には Cloud Functions が 15 分の署名付き URL を渡す）

@@ -64492,6 +64492,14 @@ class Scratch3MinecraftBlocks {
       }, '---', {
         // 見出し（まとまりの名前）
         blockType: 'label',
+        text: formatMessage({ id: 'minecraft.label.clear', default: 'Clear (cannot be undone)', description: 'palette heading' })
+      }, {
+        opcode: 'clearArea', blockType: 'command', text: formatMessage({ id: 'minecraft.clearArea', default: 'clear area X:[X] Z:[Z]', description: 'clear blocks in area' }), arguments: { X: { type: 'number', defaultValue: 0 }, Z: { type: 'number', defaultValue: 0 } }
+      }, {
+        opcode: 'clearAllEntities', blockType: 'command', text: formatMessage({ id: 'minecraft.clearAllEntities', default: 'clear all entities X:[X] Z:[Z]', description: 'remove all entities in area' }), arguments: { X: { type: 'number', defaultValue: 0 }, Z: { type: 'number', defaultValue: 0 } }
+      }, '---', {
+        // 見出し（まとまりの名前）
+        blockType: 'label',
         text: formatMessage({ id: 'minecraft.label.move', default: 'Move & talk', description: 'palette heading' })
       }, {
         opcode: 'teleport',
@@ -65032,14 +65040,6 @@ class Scratch3MinecraftBlocks {
             defaultValue: 0
           }
         }
-      }, '---', {
-        // 見出し（まとまりの名前）
-        blockType: 'label',
-        text: formatMessage({ id: 'minecraft.label.clear', default: 'Clear (cannot be undone)', description: 'palette heading' })
-      }, {
-        opcode: 'clearArea', blockType: 'command', text: formatMessage({ id: 'minecraft.clearArea', default: 'clear area X:[X] Z:[Z]', description: 'clear blocks in area' }), arguments: { X: { type: 'number', defaultValue: 0 }, Z: { type: 'number', defaultValue: 0 } }
-      }, {
-        opcode: 'clearAllEntities', blockType: 'command', text: formatMessage({ id: 'minecraft.clearAllEntities', default: 'clear all entities X:[X] Z:[Z]', description: 'remove all entities in area' }), arguments: { X: { type: 'number', defaultValue: 0 }, Z: { type: 'number', defaultValue: 0 } }
       }, '---', {
         // 見出し（まとまりの名前）
         blockType: 'label',

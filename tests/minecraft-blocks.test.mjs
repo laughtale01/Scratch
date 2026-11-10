@@ -969,6 +969,8 @@ try {
   // 13. パレットの並び順と見出し（まとまりごとに見出し、まとまりの間に区切り）
   const GROUP_ORDER = [
     ['connect', ['connect', 'disconnect', 'isConnected', 'prepareForLearning']],
+    // けす（元にもどせません）は、つなぐ・じゅんびのすぐ下（2026-11-10 ユーザーの指示）
+    ['clear', ['clearArea', 'clearAllEntities']],
     ['move', ['teleport', 'chat']],
     ['place', ['setBlockSimple', 'setBlockRangeSimple', 'setBlock', 'setBlockRange', 'setBlockRelative']],
     ['blockNames', ['blockBuilding', 'blockLighting', 'blockDecoration', 'blockNature', 'blockFunctional', 'blockOre', 'blockSpecial']],
@@ -976,14 +978,13 @@ try {
     ['world', ['setWeather', 'setTime', 'setGameRule', 'setGameMode', 'setNightVision', 'setMoveSpeed', 'setFlySpeed']],
     ['items', ['clearInventory', 'setContainerItem']],
     ['check', ['getPosition', 'getPlayerFacing', 'getTargetBlock', 'getBlockUnderPlayer', 'getBlockUnderPlayerPos', 'getBlockType']],
-    ['clear', ['clearArea', 'clearAllEntities']],
     ['recording', ['startRecording', 'stopRecording', 'isRecording', 'uploadVideo']]
   ];
   const wantOrder = GROUP_ORDER.flatMap(([, ops], i) => [...(i ? ['---'] : []), 'label', ...ops]);
   const LABELS = {
-    ja: ['つなぐ・じゅんび', '動く・話す', 'ブロックを置く', 'ブロックの名前', '生き物', '天気・時間・ルール', '持ち物・入れ物', '場所やブロックを調べる', '消す（元にもどせません）', '録画'],
-    'ja-Hira': ['つなぐ・じゅんび', 'うごく・はなす', 'ブロックをおく', 'ブロックのなまえ', 'いきもの', 'てんき・じかん・ルール', 'もちもの・いれもの', 'ばしょやブロックをしらべる', 'けす（もとにもどせません）', 'ろくが'],
-    en: ['Connect & get ready', 'Move & talk', 'Place blocks', 'Block names', 'Mobs', 'Weather, time & rules', 'Items & containers', 'Check places & blocks', 'Clear (cannot be undone)', 'Recording']
+    ja: ['つなぐ・じゅんび', '消す（元にもどせません）', '動く・話す', 'ブロックを置く', 'ブロックの名前', '生き物', '天気・時間・ルール', '持ち物・入れ物', '場所やブロックを調べる', '録画'],
+    'ja-Hira': ['つなぐ・じゅんび', 'けす（もとにもどせません）', 'うごく・はなす', 'ブロックをおく', 'ブロックのなまえ', 'いきもの', 'てんき・じかん・ルール', 'もちもの・いれもの', 'ばしょやブロックをしらべる', 'ろくが'],
+    en: ['Connect & get ready', 'Clear (cannot be undone)', 'Move & talk', 'Place blocks', 'Block names', 'Mobs', 'Weather, time & rules', 'Items & containers', 'Check places & blocks', 'Recording']
   };
   // 実際にパレットへ渡す XML（隠すブロックは除かれる）と、パレットに描かれた見出しを読む
   const palette = () => p.evaluate(() => {
