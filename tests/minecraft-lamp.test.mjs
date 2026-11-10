@@ -417,7 +417,8 @@ const COLORS = { idle: 'rgb(154, 160, 166)', connecting: 'rgb(242, 183, 5)', con
   await p.click('text=にほんご'); await p.waitForSelector('.lt-mc-lamp', { timeout: 5000 }); await p.waitForTimeout(500);
   ok(await openHint(), 'ひらがなでもヒントが開く');
   l = await lamp();
-  ok(l && l.hint && l.hint.includes('ワールドにはいる') && l.hint.includes('Minecraft に つなぐ'), 'ひらがなのヒント', l);
+  // ヒントの中のブロックの名前は、ひらがな版のブロックの文と同じ（すきまを入れない書き方）
+  ok(l && l.hint && l.hint.includes('ワールドにはいる') && l.hint.includes('［Minecraftにつなぐ］'), 'ひらがなのヒント', l);
   await p.keyboard.press('Escape');
 
   // 12. 全画面のときも、ランプが出る

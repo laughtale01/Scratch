@@ -310,7 +310,7 @@ try {
     '「先に Minecraft につないでね」は、読み上げの文（role=status）にも入る');
   // 言語を変えても（ランプが作り直されても）、「先につないでね」が残る
   await p.evaluate(() => window.__store.dispatch({ type: 'scratch-gui/locales/SELECT_LOCALE', locale: 'ja-Hira' }));
-  await p.waitForFunction(() => { const el = document.querySelector('.lt-mc-lamp__live'); return el && el.textContent.includes('さきに Minecraft につないでね'); }, null, { timeout: 8000 })
+  await p.waitForFunction(() => { const el = document.querySelector('.lt-mc-lamp__live'); return el && el.textContent.includes('さきにMinecraftにつないでね'); }, null, { timeout: 8000 })
     .then(() => ok(true, '言語を変えても、「先につないでね」が残る（ひらがなの文になる）'), () => ok(false, '言語を変えても、「先につないでね」が残る（ひらがなの文になる）'));
   await p.evaluate(() => window.__store.dispatch({ type: 'scratch-gui/locales/SELECT_LOCALE', locale: 'ja' }));
   await p.waitForFunction(() => { const el = document.querySelector('.lt-mc-lamp__live'); return el && el.textContent.includes('先に Minecraft につないでね'); }, null, { timeout: 8000 }).catch(() => {});
@@ -443,14 +443,44 @@ try {
       values: [['オン', 'true'], ['オフ', 'false']], title: 'わたしの作品',
       time: [['朝', 'day'], ['昼', 'noon'], ['夕方', 'sunset'], ['夜', 'night'], ['真夜中', 'midnight']] },
     'ja-Hira': { weather: [['はれ', 'clear'], ['あめ', 'rain'], ['かみなり', 'thunder']],
-      rules: [['もぶ すぽーん', 'doMobSpawning'], ['じかんをとめる', 'doDaylightCycle'], ['てんきをとめる', 'doWeatherCycle']],
-      values: [['おん', 'true'], ['おふ', 'false']], title: 'わたしのさくひん',
+      rules: [['いきものがしぜんにでてくる', 'doMobSpawning'], ['じかんをとめる', 'doDaylightCycle'], ['てんきをとめる', 'doWeatherCycle']],
+      values: [['オン', 'true'], ['オフ', 'false']], title: 'わたしのさくひん',
       time: [['あさ', 'day'], ['ひる', 'noon'], ['ゆうがた', 'sunset'], ['よる', 'night'], ['まよなか', 'midnight']] },
     en: { weather: [['Clear', 'clear'], ['Rain', 'rain'], ['Thunder', 'thunder']],
       rules: [['Mob Spawning', 'doMobSpawning'], ['Stop time', 'doDaylightCycle'], ['Stop weather', 'doWeatherCycle']],
       values: [['ON', 'true'], ['OFF', 'false']], title: 'my video',
       time: [['Day', 'day'], ['Noon', 'noon'], ['Sunset', 'sunset'], ['Night', 'night'], ['Midnight', 'midnight']] }
   };
+  // Minecraft のブロックの文・見出し・すべてのメニュー（その場で作るメニューも）の文を集める
+  // 1 つ 1 つは [種類, ブロックかメニューの名前, 文, 値か文の名前]
+  const collectTexts = () => p.evaluate(() => {
+    const cat = vm.runtime._blockInfo.find(c => c.id === 'minecraft');
+    const out = [];
+    let label = 0;
+    for (const b of cat.blocks) {
+      if (b.info !== '---' && b.info.blockType === 'label') {
+        const doc = new DOMParser().parseFromString(b.xml, 'text/xml');
+        out.push(['label', 'label', doc.documentElement.getAttribute('text'), String(label++)]);
+        continue;
+      }
+      if (!b.json) continue;
+      for (const k of Object.keys(b.json)) {
+        if (k.startsWith('message')) out.push(['block', b.json.type, b.json[k], k]);
+        if (k.startsWith('args')) {
+          for (const a of b.json[k]) {
+            if (!a || !a.options) continue;
+            for (const o of (typeof a.options === 'function' ? a.options() : a.options)) out.push(['menu', b.json.type, o[0], o[1]]);
+          }
+        }
+      }
+    }
+    for (const m of cat.menus) for (const a of m.json.args0) if (a.options) for (const o of (typeof a.options === 'function' ? a.options() : a.options)) out.push(['menu', m.json.type, o[0], o[1]]);
+    for (const [name, m] of Object.entries(cat.menuInfo)) {
+      if (typeof m.items === 'function') for (const o of m.items()) out.push(['menu', name, o[0], o[1]]);
+    }
+    return out;
+  });
+  const textsBy = {};
   for (const loc of ['ja', 'ja-Hira', 'en']) {
     await setLocale(loc, EXPECT[loc].title);
     const got = await info();
@@ -459,7 +489,48 @@ try {
       ok(JSON.stringify(got[k]) === JSON.stringify(want[k]), `${loc}: メニュー ${k}`, got[k]);
     }
     ok(got.title === want.title, `${loc}: 動画の題名の初めの値`, got.title);
+    const texts = textsBy[loc] = await collectTexts();
+    const count = kind => texts.filter(t => t[0] === kind).length;
+    ok(count('block') >= 46 && count('label') === 10 && count('menu') > 1500, `${loc}: 文を集めた（ブロック・見出し・メニュー）`, { block: count('block'), label: count('label'), menu: count('menu') });
+    const find = (menu, value) => (texts.find(t => t[0] === 'menu' && t[1].endsWith(menu) && t[3] === value) || [])[2];
+    if (loc === 'ja-Hira') {
+      // ひらがなの画面では、Minecraft のブロックの文・見出し・メニューに、漢字を 1 字も出さない（々〆〇・拡張の漢字もふくむ）
+      const withKanji = texts.filter(t => /\p{Script=Han}/u.test(String(t[2]))).map(t => `${t[1]}: ${t[2]}`);
+      ok(withKanji.length === 0, 'ja-Hira: Minecraft のブロックの文・見出し・メニュー（ブロックの名前・生き物も）に漢字が無い', withKanji.slice(0, 10));
+    }
+    const NAMES = { ja: ['オークの階段', 'ブタ', '村人'], 'ja-Hira': ['オークのかいだん', 'ブタ', 'むらびと'], en: ['Oak Stairs', 'Pig', 'Villager'] }[loc];
+    const gotNames = [find('blockTypes', 'oak_stairs'), find('passiveEntities', 'pig'), find('villagerEntities', 'villager')];
+    ok(JSON.stringify(gotNames) === JSON.stringify(NAMES), `${loc}: ブロックの名前と生き物の名前が、その言語で出る`, gotNames);
     ok(!got.facingCheckbox && !got.underCheckbox, `${loc}: プレーヤーの向き・足元のブロックに、ステージに表示するチェックボックスが無い`, got);
+  }
+  // 訳の抜け: 漢字やひらがなの文が英語と同じになっていたら、その言語の訳が抜けて英語が出ている（決まった例外を除く）
+  {
+    // 英語と同じ文でよいもの（どの言語でも同じ名前）
+    const ALLOW_SAME_AS_EN = new Set(['TNT']);
+    // 同じ所どうしを結ぶ鍵。メニューの見出し（値が空）のように同じ鍵が何度も出るものは、出てきた順の番号を付けて分ける
+    const toMap = list => {
+      const seen = new Map();
+      return new Map(list.map(t => {
+        const base = `${t[0]}|${t[1]}|${t[3]}`;
+        const n = seen.get(base) || 0;
+        seen.set(base, n + 1);
+        return [`${base}#${n}`, t[2]];
+      }));
+    };
+    const maps = Object.fromEntries(Object.entries(textsBy).map(([loc, list]) => [loc, toMap(list)]));
+    const missing = [];
+    for (const [k, en] of maps.en) {
+      const ja = maps.ja.get(k);
+      const hira = maps['ja-Hira'].get(k);
+      if (ja === undefined || hira === undefined) { missing.push(`${k}（ja か ja-Hira に無い）`); continue; }
+      // 英語の単語（2 文字以上）をふくまない文（「%1 %2%3」や「x」など）は、言語でちがわないので比べない
+      if (!/[A-Za-z]{2,}/.test(String(en).replace(/%\d+/g, ''))) continue;
+      // 英語と同じでよいもの（どの言語でも同じ名前）だけを許す。漢字とひらがなの両方とも抜けても見つける
+      if (ALLOW_SAME_AS_EN.has(en)) continue;
+      if (hira === en) missing.push(`ja-Hira: ${k} = ${en}`);
+      if (ja === en) missing.push(`ja: ${k} = ${en}`);
+    }
+    ok(missing.length === 0, '漢字・ひらがなの訳が抜けて、英語が出ている所が無い', missing.slice(0, 10));
   }
   // 訳の無い言語（ドイツ語）: ゲームのルールは英語の「Stop time」になる（前の「Tageszyklus」は意味が逆だったため）
   await p.evaluate(() => window.__store.dispatch({ type: 'scratch-gui/locales/SELECT_LOCALE', locale: 'de' }));
@@ -473,6 +544,11 @@ try {
   ok(JSON.stringify(de.rules && de.rules[1]) === JSON.stringify(['Stop time', 'doDaylightCycle']) &&
     JSON.stringify(de.weather && de.weather[0]) === JSON.stringify(['Clear', 'clear']),
     '訳の無い言語では、英語の「Stop time」「Clear」が出る', { rules: de.rules, weather: de.weather });
+  const deTexts = await collectTexts();
+  const deFind = (menu, value) => (deTexts.find(t => t[0] === 'menu' && t[1].endsWith(menu) && t[3] === value) || [])[2];
+  const deEntities = [deFind('passiveEntities', 'pig'), deFind('villagerEntities', 'villager'), (deTexts.find(t => t[1].endsWith('entityTypes') && String(t[2]).startsWith('━━')) || [])[2]];
+  ok(JSON.stringify(deEntities) === JSON.stringify(['Pig', 'Villager', '━━ Passive mobs ━━']),
+    '訳の無い言語では、生き物の名前と見出しは英語で出る（前は日本語が出ていた）', deEntities);
   await setLocale('ja', 'わたしの作品');
 
   // 11. 古い MOD（stopAll を返さない。2026-11-08 より前の MOD。守りの無い 11-04 より前のものも含む）には、Scratch の側で今までどおり守る
