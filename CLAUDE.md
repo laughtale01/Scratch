@@ -155,7 +155,7 @@ cd minecraft-mod
 ```bash
 cd minecraft-mod
 ./gradlew build
-# 出力: build/libs/minecraftedu-mod-0.2.0-1.20.1.jar（版は build.gradle の version）
+# 出力: build/libs/minecraftedu-mod-0.3.0-1.20.1.jar（版は build.gradle の version）
 ```
 
 ### インストール先
@@ -166,7 +166,7 @@ C:\Users\riyum\AppData\Roaming\.minecraft_1.20.1\mods\
 ### インストールコマンド
 ```bash
 # 先に mods フォルダの古い minecraftedu-mod-*.jar を外す（同じ MOD が 2 つあると正しく読み込めない）
-cp minecraft-mod/build/libs/minecraftedu-mod-0.2.0-1.20.1.jar "/c/Users/riyum/AppData/Roaming/.minecraft_1.20.1/mods/"
+cp minecraft-mod/build/libs/minecraftedu-mod-0.3.0-1.20.1.jar "/c/Users/riyum/AppData/Roaming/.minecraft_1.20.1/mods/"
 ```
 
 ### 必須ファイル（ビルドに必要）
@@ -180,6 +180,7 @@ cp minecraft-mod/build/libs/minecraftedu-mod-0.2.0-1.20.1.jar "/c/Users/riyum/Ap
 ### MODが提供する機能
 - WebSocketサーバー（ポート14711）
 - 縦スラブブロック39種
+- 金ブロックの階段・ハーフブロック（0.3.0 から。tools/make_stairs_slab_data.py で作る）
 - コマンド: setBlock, fillBlocks, teleport, setWeather, setTime, etc.
 
 ## Scratch拡張機能（gui.js内）
@@ -266,7 +267,7 @@ minecraft-mod/src/...     ← MOD側コマンド実装
 ```bash
 cd minecraft-mod
 ./gradlew build
-# 出力: build/libs/minecraftedu-mod-0.2.0-1.20.1.jar（版は build.gradle の version）
+# 出力: build/libs/minecraftedu-mod-0.3.0-1.20.1.jar（版は build.gradle の version）
 ```
 ※ MOD側（CommandExecutor.java等）を変更した場合は必須
 

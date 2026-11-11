@@ -4,6 +4,8 @@ import com.github.minecraftedu.MinecraftEduMod;
 import com.github.minecraftedu.block.VerticalSlabBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -13,7 +15,7 @@ import net.minecraftforge.registries.RegistryObject;
  * この MOD が追加するブロックの登録
  *
  * MinecraftEdu MOD の追加ブロックをまとめて登録する。
- * 今は、向きを選んで置ける縦スラブだけ。
+ * 向きを選んで置ける縦スラブと、Minecraft に無い材料の階段・ハーフブロック（今は金だけ）。
  */
 public class ModBlocks {
 
@@ -368,6 +370,38 @@ public class ModBlocks {
         "waxed_vertical_weathered_cut_copper_slab",
         () -> new VerticalSlabBlock(
             BlockBehaviour.Properties.copy(Blocks.WAXED_WEATHERED_CUT_COPPER)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    // ========================================
+    // 階段とハーフブロック（Minecraft に無い材料のもの。2026-11-10 に金だけ足した）
+    // ========================================
+    // Minecraft の階段（StairBlock）・ハーフブロック（SlabBlock）の仕組みをそのまま使う。
+    // 置き方（上・下・2 まい重ね）や向き・曲がり方は Minecraft の階段・ハーフブロックと同じ。
+    // 見た目とデータのファイルは tools/make_stairs_slab_data.py で作る。
+
+    /**
+     * 金ブロックの階段（シャチホコなど、金の飾りに使う）
+     * 元の金ブロックと同じく、鉄のツルハシ以上でこわすと落ちる
+     */
+    public static final RegistryObject<Block> GOLD_BLOCK_STAIRS = BLOCKS.register(
+        "gold_block_stairs",
+        () -> new StairBlock(
+            () -> Blocks.GOLD_BLOCK.defaultBlockState(),
+            BlockBehaviour.Properties.copy(Blocks.GOLD_BLOCK)
+                .requiresCorrectToolForDrops()
+        )
+    );
+
+    /**
+     * 金ブロックのハーフブロック（2 まい重ねると金ブロックと同じ見た目）
+     * 元の金ブロックと同じく、鉄のツルハシ以上でこわすと落ちる
+     */
+    public static final RegistryObject<Block> GOLD_BLOCK_SLAB = BLOCKS.register(
+        "gold_block_slab",
+        () -> new SlabBlock(
+            BlockBehaviour.Properties.copy(Blocks.GOLD_BLOCK)
                 .requiresCorrectToolForDrops()
         )
     );

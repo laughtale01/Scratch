@@ -180,6 +180,13 @@ print('--- 1. 接続の返事')
 s1, info = open_conn('g1_a')
 check('serverInfo.features に stopAll がある', 'stopAll' in (info.get('features') or []), info)
 check('serverInfo.features に pauseQueue がある', 'pauseQueue' in (info.get('features') or []), info)
+# MOD のブロックの名前の一覧（Scratch は、ここに無い金の階段・ハーフを「MOD が古い」として送らない）。
+# minecraftedu: を付けない形で、金の階段・ハーフと縦スラブが入っていること（形が変わると、新しい MOD でも金が置けなくなる）
+# （Scratch は一覧〔配列〕の文字だけを使うので、一覧であること・どれも文字であることを先に見る）
+mod_blocks = info.get('modBlocks')
+check('serverInfo.modBlocks が名前の一覧で、金の階段・ハーフ・縦スラブがあり、名前に「:」が無い',
+      isinstance(mod_blocks, list) and all(isinstance(n, str) and ':' not in n for n in mod_blocks)
+      and {'gold_block_stairs', 'gold_block_slab', 'vertical_oak_slab'} <= set(mod_blocks), mod_blocks)
 assert wait_queue(s1, 120), '列が空かなかった'
 # はじめの場所を覚えて（表示もする）、プレイヤーを H の空の上へテレポートさせる（着くまで待つ。x・z だけ見る）
 home = get_position(s1)

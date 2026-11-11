@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "minecraftedu:gold_block_stairs",
+      "required": false
+    }
+  ]
+}

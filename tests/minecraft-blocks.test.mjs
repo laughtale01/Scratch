@@ -94,6 +94,8 @@ try {
     window.__sent = [];
     // MOD が返す機能の一覧（stopAll があれば今の守りを持つ MOD。空にすると古い MOD のふり）
     window.__features = ['stopAll', 'pauseQueue'];
+    // MOD が知っている MOD のブロックの名前（接続の返事の serverInfo.modBlocks。null にすると返事に入れない＝0.2.0 までの古い MOD のふり）
+    window.__modBlocks = ['vertical_oak_slab', 'gold_block_stairs', 'gold_block_slab'];
     window.__results = {
       getTargetBlock: { x: 1, y: -61, z: 2, blockType: 'minecraft:grass_block' },
       getBlockType: { blockType: 'minecraftedu:vertical_oak_slab' },
@@ -104,15 +106,22 @@ try {
       constructor(url) {
         this.url = url; this.readyState = 0;
         const open = () => { this.readyState = 1; if (this.onopen) this.onopen(); };
-        // __openSync が true なら、すぐ（同じ処理の続きで）開く（つなぎ直しの間に「つながっていない」瞬間を作らないため）
-        if (window.__openSync) queueMicrotask(open); else setTimeout(open, 10);
+        // __openSync が true なら、すぐ（同じ処理の続きで）開く（つなぎ直しの間に「つながっていない」瞬間を作らないため）。
+        // __openHold が true なら、__releaseOpen() まで開かない（つなぎかけ〔黄〕のままにするため）
+        if (window.__openHold) window.__releaseOpen = open;
+        else if (window.__openSync) queueMicrotask(open); else setTimeout(open, 10);
       }
       send(d) {
         const m = JSON.parse(d);
         if (m.type === 'command') window.__sent.push({ action: m.payload.action, params: m.payload.params, t: performance.now(), port: this.url.split(':')[2].split('/')[0] });
         let r = null;
-        if (m.type === 'connect') {
-          r = { type: 'connect_response', requestId: m.messageId, payload: { success: true, sessionId: 's', serverInfo: { features: window.__features.slice() } } };
+        if (m.type === 'connect' && window.__connectFail) {
+          // __connectFail が true なら、つなぎ始めにエラーの返事を返す（新しい MOD かどうか分からないまま）
+          r = { type: 'connect_response', requestId: m.messageId, payload: { success: false, errorCode: 'X', errorMessage: 'fail' } };
+        } else if (m.type === 'connect') {
+          const serverInfo = { features: window.__features.slice() };
+          if (window.__modBlocks) serverInfo.modBlocks = window.__modBlocks.slice();
+          r = { type: 'connect_response', requestId: m.messageId, payload: { success: true, sessionId: 's', serverInfo } };
         } else if (m.type === 'command') {
           const a = m.payload.action;
           r = { type: 'command_response', requestId: m.messageId, payload: { success: true, action: a, result: window.__results[a] || { message: 'ok' } } };
@@ -244,6 +253,346 @@ try {
   await call('setBlockRelative', { X: -0.5, Y: 1.9, Z: 0.2, BLOCK: 'stone', PLACEMENT: 'bottom', FACING: 'none', OPEN: 'closed' });
   m = await last('setBlock');
   ok(m && m.params.relativeX === -1 && m.params.relativeY === 1 && m.params.relativeZ === 0, '自分から置く: 小数は切り下げる', m && m.params);
+
+  // 2b. MOD が足した階段・ハーフブロック（金）は minecraftedu: を付けて送る（置き方・向きは Minecraft の階段・ハーフと同じ）。
+  //     縦スラブ・Minecraft の金ブロックは今までどおり
+  const GOLD_SENT = [
+    ['setBlock', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs', PLACEMENT: 'top', FACING: 'east', OPEN: 'closed' }, 'setBlock',
+      'minecraftedu:gold_block_stairs[half=top,facing=east]'],
+    ['setBlock', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_slab', PLACEMENT: 'bottom', FACING: 'none', OPEN: 'closed' }, 'setBlock',
+      'minecraftedu:gold_block_slab'],
+    ['setBlockRelative', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_slab', PLACEMENT: 'top', FACING: 'none', OPEN: 'closed' }, 'setBlock',
+      'minecraftedu:gold_block_slab[type=top]'],
+    ['setBlockRange', { X1: 0, Y1: 0, Z1: 0, X2: 1, Y2: 0, Z2: 0, BLOCK: 'gold_block_slab', PLACEMENT: 'double', FACING: 'none', OPEN: 'closed' }, 'fillBlocks',
+      'minecraftedu:gold_block_slab[type=double]'],
+    ['setBlockRange', { X1: 0, Y1: 0, Z1: 0, X2: 1, Y2: 0, Z2: 0, BLOCK: 'gold_block_stairs', PLACEMENT: 'bottom', FACING: 'west', OPEN: 'closed' }, 'fillBlocks',
+      'minecraftedu:gold_block_stairs[facing=west]'],
+    ['setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs' }, 'setBlock', 'minecraftedu:gold_block_stairs'],
+    ['setBlockRangeSimple', { X1: 0, Y1: 0, Z1: 0, X2: 1, Y2: 0, Z2: 0, BLOCK: 'gold_block_slab' }, 'fillBlocks', 'minecraftedu:gold_block_slab'],
+    ['setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block' }, 'setBlock', 'minecraft:gold_block'],
+    ['setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'vertical_gold_block_slab' }, 'setBlock', 'minecraftedu:vertical_gold_block_slab[facing=north]'],
+    ['setBlock', { X: 0, Y: 0, Z: 0, BLOCK: 'bamboo_stairs', PLACEMENT: 'top', FACING: 'east', OPEN: 'closed' }, 'setBlock',
+      'minecraft:bamboo_stairs[half=top,facing=east]']
+  ];
+  for (const [op, args, action, want] of GOLD_SENT) {
+    await clearSent();
+    const r = await call(op, args);
+    m = await last(action);
+    ok(r.ok && m && m.params.blockType === want, `${op} ${args.BLOCK}${args.PLACEMENT ? ` ${args.PLACEMENT}/${args.FACING}` : ''} → ${want}`, { r, m: m && m.params });
+  }
+
+  // 2c. 金の階段・ハーフを知らない MOD（接続の返事の modBlocks に無い）には送らず、帯「このブロックは置けません（MOD が古いため）」で知らせる。
+  //     止まらずに次のブロックへ進み、ほかのブロック（Minecraft のブロック・縦スラブ）は今までどおり送る
+  const NOTICE_TEXTS = ['This block cannot be placed (the MOD is old)', 'このブロックは置けません（MODが古いため）', 'このブロックはおけません（MODがふるいため）'];
+  // 帯（一時停止の帯と同じ入れ物）の文。出ていなければ null
+  const noticeText = () => p.evaluate(() => {
+    const el = [...document.body.children].find(e => e.tagName === 'DIV' && e.getAttribute('role') === 'status' && e.style.zIndex === '10000');
+    return el ? el.textContent : null;
+  });
+  const hideNotice = () => p.evaluate(() => {
+    for (const e of [...document.body.children]) if (e.tagName === 'DIV' && e.getAttribute('role') === 'status' && e.style.zIndex === '10000') e.remove();
+  });
+  // 置く 5 つの処理で、金を 1 つずつ置く（名前と、送るはずの命令）
+  const GOLD_OPS = [
+    ['setBlock', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs', PLACEMENT: 'top', FACING: 'east', OPEN: 'closed' }, 'setBlock'],
+    ['setBlockRelative', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_slab', PLACEMENT: 'top', FACING: 'none', OPEN: 'closed' }, 'setBlock'],
+    ['setBlockRange', { X1: 0, Y1: 0, Z1: 0, X2: 1, Y2: 0, Z2: 0, BLOCK: 'gold_block_slab', PLACEMENT: 'double', FACING: 'none', OPEN: 'closed' }, 'fillBlocks'],
+    ['setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs' }, 'setBlock'],
+    ['setBlockRangeSimple', { X1: 0, Y1: 0, Z1: 0, X2: 1, Y2: 0, Z2: 0, BLOCK: 'gold_block_slab' }, 'fillBlocks']
+  ];
+  // MOD をつなぎ直す（modBlocks を変えて）。同じ場所への［Minecraftにつなぐ］はつなぎ直さないので、先に切る
+  const reconnectWith = async modBlocks => {
+    await call('disconnect', {});
+    await p.evaluate(mb => { window.__modBlocks = mb; }, modBlocks);
+    return connectMod();
+  };
+  ok(await reconnectWith(null), '（準備）古い MOD（返事に modBlocks が無い）につなぐ');
+  for (const [op, args, action] of GOLD_OPS) {
+    await hideNotice();
+    await clearSent();
+    const r = await call(op, args);
+    const notice = await noticeText();
+    ok(r.ok && !(await last(action)) && NOTICE_TEXTS.includes(notice), `古い MOD: ${op} ${args.BLOCK} は送らず、止まらずに帯で知らせる`, { r, notice, sent: await sent() });
+  }
+  for (const [block, want] of [['stone', 'minecraft:stone'], ['vertical_oak_slab', 'minecraftedu:vertical_oak_slab[facing=north]']]) {
+    await hideNotice();
+    await clearSent();
+    const r = await call('setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: block });
+    m = await last('setBlock');
+    ok(r.ok && m && m.params.blockType === want && (await noticeText()) === null, `古い MOD: ${block} は今までどおり送り、帯は出さない`, { r, m: m && m.params });
+  }
+  // 階段だけを知っている MOD: 階段は送り、ハーフは送らない（名前ごとに決める）
+  ok(await reconnectWith(['gold_block_stairs']), '（準備）金の階段だけを知っている MOD につなぐ');
+  await clearSent();
+  await call('setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs' });
+  await call('setBlockSimple', { X: 1, Y: 0, Z: 0, BLOCK: 'gold_block_slab' });
+  const partSent = (await sent()).filter(x => x.action === 'setBlock').map(x => x.params.blockType);
+  ok(JSON.stringify(partSent) === JSON.stringify(['minecraftedu:gold_block_stairs']), '階段だけを知っている MOD: 階段は送り、ハーフは送らない', partSent);
+  // 返事の前に金を置く: 返事を待ってから決める（古い MOD なら送らない・新しい MOD なら返事が来たらすぐ送る）
+  for (const [modBlocks, kind, wantSent] of [[null, '古い MOD', false], [['gold_block_stairs', 'gold_block_slab'], '新しい MOD', true]]) {
+    await call('disconnect', {});
+    await hideNotice();
+    await p.evaluate(mb => { window.__modBlocks = mb; window.__connectHold = true; window.__releaseConnect = null; }, modBlocks);
+    await call('connect', { HOST: '127.0.0.1', PORT: 59999 });
+    ok(await p.waitForFunction(() => vm.runtime.ltMinecraftConnection === 'connected' && typeof window.__releaseConnect === 'function', null, { timeout: 5000 })
+      .then(() => true, () => false), `（準備）${kind}: つながり、返事を待たせている`);
+    await clearSent();
+    await p.evaluate(() => {
+      window.__goldDone = null;
+      vm.runtime._primitives.minecraft_setBlockSimple({ X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs' }, {})
+        .then(() => { window.__goldDone = { ok: true, t: performance.now() }; }, e => { window.__goldDone = { ok: false, error: String(e) }; });
+    });
+    await p.waitForTimeout(200);
+    const before = (await sent()).filter(x => x.action === 'setBlock').length;
+    // 返事の前は、まだ終わっていない（待っている）・帯も出ていない
+    const waiting = await p.evaluate(() => window.__goldDone === null) && (await noticeText()) === null;
+    await p.evaluate(() => { window.__releaseT = performance.now(); window.__releaseConnect(); });
+    const done = await p.waitForFunction(() => window.__goldDone, null, { timeout: 3000 }).then(() => p.evaluate(() => window.__goldDone), () => null);
+    const after = (await sent()).filter(x => x.action === 'setBlock').map(x => x.params.blockType);
+    const took = done && done.t ? Math.round(done.t - await p.evaluate(() => window.__releaseT)) : null;
+    ok(before === 0 && waiting && done && done.ok && took !== null && took >= 0 && took < 500 &&
+      JSON.stringify(after) === JSON.stringify(wantSent ? ['minecraftedu:gold_block_stairs'] : []) &&
+      (wantSent ? (await noticeText()) === null : NOTICE_TEXTS.includes(await noticeText())),
+      `${kind}（返事の前に金を置く）: 返事を待ち、返事が来たらすぐ${wantSent ? '送る' : '送らずに帯で知らせる'}`, { before, done, took, after });
+    await p.evaluate(() => { window.__connectHold = false; });
+  }
+  // 返事を待たせてつなぐ（modBlocks を変えて）。__goldDone は、終わった置く処理の名前の一覧
+  const holdGold = async (modBlocks, label) => {
+    await call('disconnect', {});
+    await hideNotice();
+    await p.evaluate(mb => { window.__modBlocks = mb; window.__connectHold = true; window.__releaseConnect = null; window.__goldDone = []; }, modBlocks);
+    await call('connect', { HOST: '127.0.0.1', PORT: 59999 });
+    ok(await p.waitForFunction(() => vm.runtime.ltMinecraftConnection === 'connected' && typeof window.__releaseConnect === 'function', null, { timeout: 5000 })
+      .then(() => true, () => false), `（準備）${label}: つながり、返事を待たせている`);
+    await clearSent();
+  };
+  // 5 つの置く処理で金を置き始める（返事の前なので、すぐには終わらない）
+  const startGold = () => p.evaluate(ops => {
+    for (const [op, args] of ops) {
+      vm.runtime._primitives['minecraft_' + op](args, {})
+        .then(() => window.__goldDone.push(op), e => window.__goldDone.push(op + ': ' + e));
+    }
+  }, GOLD_OPS.map(([op, args]) => [op, args]));
+  const goldDone = n => p.waitForFunction(k => window.__goldDone.length >= k, n, { timeout: 3000 })
+    .then(() => p.evaluate(() => window.__goldDone.slice()), () => p.evaluate(() => window.__goldDone.slice()));
+  const placed = async () => (await sent()).filter(x => x.action === 'setBlock' || x.action === 'fillBlocks');
+  const NEW_MOD = ['vertical_oak_slab', 'gold_block_stairs', 'gold_block_slab'];
+  // 返事を待っている間に止める（止めるボタン）: 返事が来ても送らない（止めたのにあとから金が置かれないように）
+  await holdGold(NEW_MOD, '待っている間に止める');
+  await startGold();
+  await p.waitForTimeout(100);
+  await p.evaluate(() => vm.runtime.stopAll());
+  await p.evaluate(() => window.__releaseConnect());
+  let gd = await goldDone(5);
+  await p.waitForTimeout(100);
+  let pl = await placed();
+  ok(gd.length === 5 && gd.every(x => !x.includes(':')) && pl.length === 0,
+    '新しい MOD: 返事を待っている間に止めると、返事が来ても 5 つの置く処理とも送らずに終わる', { gd, pl });
+  // 返事を待っている間に、別の場所（番号）へつなぎ直す（新しい接続はすぐ開き、その返事もまだ来ない）:
+  // 前の接続の金を、新しい接続へ送らない（新しい接続が古い MOD なら「なまえが ちがいます」が出てしまうため）
+  await holdGold(NEW_MOD, '待っている間につなぎ直す');
+  await startGold();
+  await p.waitForTimeout(100);
+  await p.evaluate(() => {
+    window.__modBlocks = null;
+    window.__openSync = true;
+    window.__releaseConnect = null;
+    vm.runtime._primitives.minecraft_connect({ HOST: '127.0.0.1', PORT: 59998 }, {});
+  });
+  gd = await goldDone(5);
+  await p.waitForTimeout(100);
+  pl = await placed();
+  ok(gd.length === 5 && gd.every(x => !x.includes(':')) && pl.length === 0 && await p.evaluate(() => vm.runtime.ltMinecraftConnection === 'connected'),
+    '返事を待っている間に別の場所へつなぎ直すと、5 つの置く処理とも新しい接続へ送らない', { gd, pl });
+  await p.evaluate(() => { window.__openSync = false; window.__connectHold = false; if (window.__releaseConnect) window.__releaseConnect(); });
+  // 返事を待っている間に、別の場所へつなぎ直しかけ（新しい接続がまだ開いていない＝つなぎかけ〔黄〕）:
+  // 切れただけのときと同じ道で「つないでいない」で終わり、前の接続の金をどこにも送らない。つなぎかけの間なので、ランプも点滅しない
+  await holdGold(NEW_MOD, '待っている間につなぎ直しかけ');
+  await startGold();
+  await p.evaluate(() => {
+    window.__modBlocks = null;
+    window.__openHold = true;
+    window.__releaseOpen = null;
+    window.__releaseConnect = null;
+    vm.runtime._primitives.minecraft_connect({ HOST: '127.0.0.1', PORT: 59998 }, {});
+  });
+  gd = await goldDone(5);
+  await p.waitForTimeout(100);
+  pl = await placed();
+  const halfState = await p.evaluate(() => ({ conn: vm.runtime.ltMinecraftConnection, need: vm.runtime.ltMinecraftNeedConnection,
+    opening: typeof window.__releaseOpen === 'function' }));
+  const halfLamp = await lampState();
+  ok(gd.length === 5 && gd.every(x => x.includes('Not connected')) && pl.length === 0 && halfState.conn === 'connecting' && halfState.opening &&
+    halfState.need !== true && halfLamp && !halfLamp.blink,
+    '返事を待っている間に別の場所へつなぎ直しかけ（まだ開いていない）だと、5 つの置く処理とも「つないでいない」で終わり、どこにも送らず、ランプも点滅しない',
+    { gd, pl, halfState, halfLamp });
+  await p.evaluate(() => { window.__openHold = false; window.__connectHold = false; if (window.__releaseOpen) window.__releaseOpen(); });
+  ok(await p.waitForFunction(() => vm.runtime.ltMinecraftConnection === 'connected', null, { timeout: 5000 }).then(() => true, () => false),
+    '（あとかたづけ）つなぎかけの接続が開いて、つながる');
+  await p.evaluate(() => { if (window.__releaseConnect) window.__releaseConnect(); });
+  // 返事を待っている間に、同じブロックを別の場所で 2 回動かす（クローンなど。Scratch は args を使い回す）:
+  // 置く場所は、それぞれの呼び出しのときの場所（待っている間に args が書きかわっても、あとの場所にならない）
+  await holdGold(NEW_MOD, '待っている間に同じブロックを 2 回');
+  await p.evaluate(() => {
+    for (const op of ['setBlock', 'setBlockRelative', 'setBlockSimple']) {
+      const args = { X: 1, Y: 0, Z: 0, BLOCK: 'gold_block_stairs', PLACEMENT: 'bottom', FACING: 'none', OPEN: 'closed' };
+      vm.runtime._primitives['minecraft_' + op](args, {}).then(() => window.__goldDone.push(op));
+      args.X = 9;
+      vm.runtime._primitives['minecraft_' + op](args, {}).then(() => window.__goldDone.push(op));
+    }
+  });
+  await p.evaluate(() => window.__releaseConnect());
+  gd = await goldDone(6);
+  const xs = (await placed()).map(x => (x.params.x !== undefined ? x.params.x : x.params.relativeX)).sort((a, b) => a - b);
+  ok(gd.length === 6 && JSON.stringify(xs) === '[1,1,1,9,9,9]',
+    '返事を待っている間に同じブロックを別の場所で 2 回動かしても、それぞれの場所に送る（setBlock・setBlockRelative・setBlockSimple）', { gd, xs });
+  await p.evaluate(() => { window.__connectHold = false; });
+  // 返事が 1 秒来ない: 待ってから、今までどおり送る（分からないまま止めない）
+  await holdGold(NEW_MOD, '返事が来ない');
+  const t0 = Date.now();
+  let rg = await call('setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs' });
+  const waited = Date.now() - t0;
+  m = await last('setBlock');
+  ok(rg.ok && waited >= 900 && m && m.params.blockType === 'minecraftedu:gold_block_stairs',
+    '返事が 1 秒来ないときは、1 秒待ってから今までどおり送る', { rg, waited, m: m && m.params });
+  await p.evaluate(() => { window.__connectHold = false; if (window.__releaseConnect) window.__releaseConnect(); });
+  // エラーの返事（新しい MOD か分からない）: 今までどおり送る
+  await call('disconnect', {});
+  await p.evaluate(() => { window.__connectFail = true; });
+  await call('connect', { HOST: '127.0.0.1', PORT: 59999 });
+  ok(await p.waitForFunction(() => vm.runtime.ltMinecraftConnection === 'connected', null, { timeout: 5000 }).then(() => true, () => false),
+    '（準備）エラーの返事を返す MOD につなぐ');
+  await p.waitForTimeout(200);
+  await clearSent();
+  await hideNotice();
+  const tErr = Date.now();
+  rg = await call('setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_slab' });
+  const errTook = Date.now() - tErr;
+  m = await last('setBlock');
+  // すぐ送る（エラーの返事で「分からない」と決まっているので、1 秒待たない）
+  ok(rg.ok && errTook < 500 && m && m.params.blockType === 'minecraftedu:gold_block_slab' && (await noticeText()) === null,
+    'エラーの返事のあと（MOD が金を知っているか分からない）は、待たずに今までどおり送る', { rg, errTook, m: m && m.params });
+  await p.evaluate(() => { window.__connectFail = false; });
+  // つないでいない: 金も、ほかのブロックと同じく「つないでいない」で終わる
+  await call('disconnect', {});
+  await clearSent();
+  const rGold = await call('setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs' });
+  const rStone = await call('setBlockSimple', { X: 0, Y: 0, Z: 0, BLOCK: 'stone' });
+  ok(!rGold.ok && !rStone.ok && rGold.error === rStone.error && (await sent()).length === 0,
+    'つないでいないときは、金もほかのブロックと同じく「つないでいない」で終わる', { rGold, rStone });
+  // 返事を待っている間に切れた（つなぎ直していない）: ほかのブロックと同じく「つないでいない」で終わり、どこにも送らない
+  await holdGold(NEW_MOD, '待っている間に切れる');
+  await p.evaluate(() => {
+    window.__goldCut = null;
+    vm.runtime._primitives.minecraft_setBlockSimple({ X: 0, Y: 0, Z: 0, BLOCK: 'gold_block_stairs' }, {})
+      .then(() => { window.__goldCut = { ok: true, t: performance.now() }; },
+        e => { window.__goldCut = { ok: false, error: String(e && e.message || e), t: performance.now() }; });
+  });
+  // すぐ切る（返事を 1 秒待ち終える前に切るため、ここでは待たない。置く処理は呼んだ時点で返事を待ち始めている）
+  await p.evaluate(() => { window.__tCut = performance.now(); });
+  await call('disconnect', {});
+  const cut = await p.waitForFunction(() => window.__goldCut, null, { timeout: 3000 }).then(() => p.evaluate(() => window.__goldCut), () => null);
+  const cutTook = cut ? Math.round(cut.t - await p.evaluate(() => window.__tCut)) : null;
+  await p.waitForTimeout(100);
+  const cutNeed = await p.evaluate(() => vm.runtime.ltMinecraftNeedConnection === true);
+  const cutLamp = await lampState();
+  // 切れたらすぐ（1 秒待たずに）終わり、ほかのブロックと同じく「先につないでね」でランプが点滅する
+  ok(cut && !cut.ok && cut.error === rStone.error && cutTook !== null && cutTook >= 0 && cutTook < 500 &&
+    (await placed()).length === 0 && cutNeed && cutLamp && cutLamp.blink === true,
+    '返事を待っている間に切れると、金もほかのブロックと同じく、すぐ「つないでいない」で終わり、ランプが点滅する（どこにも送らない）',
+    { cut, cutTook, cutNeed, cutLamp, stone: rStone.error });
+  await p.evaluate(() => { window.__connectHold = false; });
+  // 返事を待っている間に止めて、すぐ切れる（止めるボタンのあとに［つなぐのをやめる］など）:
+  // 止めたのが先なので、何も言わずに終わり、どこにも送らず、ランプも点滅しない
+  await holdGold(NEW_MOD, '待っている間に止めてから切れる');
+  await startGold();
+  await p.waitForTimeout(100);
+  await p.evaluate(async () => { vm.runtime.stopAll(); await vm.runtime._primitives.minecraft_disconnect({}, {}); });
+  gd = await goldDone(5);
+  await p.waitForTimeout(100);
+  pl = await placed();
+  let quietLamp = await lampState();
+  let quietNeed = await p.evaluate(() => vm.runtime.ltMinecraftNeedConnection === false);
+  ok(gd.length === 5 && gd.every(x => !x.includes(':')) && pl.length === 0 && quietNeed && quietLamp && !quietLamp.blink,
+    '返事を待っている間に止めてから切れると、5 つの置く処理とも何も言わずに終わり、ランプも点滅しない', { gd, pl, quietNeed, quietLamp });
+  await p.evaluate(() => { window.__connectHold = false; });
+  // 本物のスクリプトで金を置く（「lt_gold を受け取ったとき → 置くブロック」を 5 つの置く処理それぞれで 1 本ずつ）:
+  // 置く処理が util（動いているスクリプト）を渡し、待っている間にそのスクリプトだけを止めたら送らないことを確かめる
+  const GOLD_SCRIPT_OPS = [['setBlock', ['X', 'Y', 'Z']], ['setBlockRelative', ['X', 'Y', 'Z']], ['setBlockRange', ['X1', 'Y1', 'Z1', 'X2', 'Y2', 'Z2']],
+    ['setBlockSimple', ['X', 'Y', 'Z']], ['setBlockRangeSimple', ['X1', 'Y1', 'Z1', 'X2', 'Y2', 'Z2']]];
+  const startGoldScripts = () => p.evaluate(ops => {
+    const stage = vm.runtime.getTargetForStage();
+    for (const [op, nums] of ops) {
+      const h = 'lt_gh_' + op;
+      const b = 'lt_gb_' + op;
+      if (stage.blocks.getBlock(h)) continue;
+      stage.blocks.createBlock({ id: h, opcode: 'event_whenbroadcastreceived', next: b, parent: null, inputs: {},
+        fields: { BROADCAST_OPTION: { name: 'BROADCAST_OPTION', value: 'lt_gold', id: 'lt_gold' } }, shadow: false, topLevel: true, x: 0, y: 900 });
+      const inputs = { BLOCK: { name: 'BLOCK', block: b + '_m', shadow: b + '_m' } };
+      for (const n of nums) inputs[n] = { name: n, block: b + '_' + n, shadow: b + '_' + n };
+      stage.blocks.createBlock({ id: b, opcode: 'minecraft_' + op, next: null, parent: h, inputs, fields: {}, shadow: false, topLevel: false });
+      stage.blocks.createBlock({ id: b + '_m', opcode: 'minecraft_menu_blockTypes', next: null, parent: b, inputs: {},
+        fields: { blockTypes: { name: 'blockTypes', value: 'gold_block_stairs' } }, shadow: true, topLevel: false });
+      for (const n of nums) {
+        stage.blocks.createBlock({ id: b + '_' + n, opcode: 'math_number', next: null, parent: b, inputs: {},
+          fields: { NUM: { name: 'NUM', value: '0' } }, shadow: true, topLevel: false });
+      }
+    }
+    window.__goldThreads = vm.runtime.startHats('event_whenbroadcastreceived', { BROADCAST_OPTION: 'lt_gold' });
+    return window.__goldThreads.length;
+  }, GOLD_SCRIPT_OPS);
+  // 5 本とも、MOD の返事を待っている（Promise を待っている）
+  const goldScriptsWaiting = () => p.waitForFunction(() => window.__goldThreads && window.__goldThreads.length === 5 &&
+    window.__goldThreads.every(t => t.status === 1 && vm.runtime.isActiveThread(t)), null, { timeout: 3000 }).then(() => true, () => false);
+  // 別の（金を置かない）スクリプト: 「lt_other を受け取ったとき → 10 秒待つ」
+  const startOtherScript = () => p.evaluate(() => {
+    const stage = vm.runtime.getTargetForStage();
+    if (!stage.blocks.getBlock('lt_oh')) {
+      stage.blocks.createBlock({ id: 'lt_oh', opcode: 'event_whenbroadcastreceived', next: 'lt_ow', parent: null, inputs: {},
+        fields: { BROADCAST_OPTION: { name: 'BROADCAST_OPTION', value: 'lt_other', id: 'lt_other' } }, shadow: false, topLevel: true, x: 0, y: 1100 });
+      stage.blocks.createBlock({ id: 'lt_ow', opcode: 'control_wait', next: null, parent: 'lt_oh',
+        inputs: { DURATION: { name: 'DURATION', block: 'lt_owd', shadow: 'lt_owd' } }, fields: {}, shadow: false, topLevel: false });
+      stage.blocks.createBlock({ id: 'lt_owd', opcode: 'math_positive_number', next: null, parent: 'lt_ow', inputs: {},
+        fields: { NUM: { name: 'NUM', value: '10' } }, shadow: true, topLevel: false });
+    }
+    window.__otherThreads = vm.runtime.startHats('event_whenbroadcastreceived', { BROADCAST_OPTION: 'lt_other' });
+  });
+  for (const [kind, stop, want] of [['止めない', null, 5], ['金を置くスクリプトだけを止める', 'gold', 0], ['別のスクリプトだけを止める', 'other', 5]]) {
+    await holdGold(NEW_MOD, '本物のスクリプト・' + kind);
+    if (stop === 'other') await startOtherScript();
+    ok(await startGoldScripts() === 5 && await goldScriptsWaiting(), `（準備）本物のスクリプト・${kind}: 金を置く 5 本が返事を待っている`);
+    if (stop === 'gold') await p.evaluate(() => { for (const t of window.__goldThreads) vm.runtime._stopThread(t); });
+    if (stop === 'other') await p.evaluate(() => { for (const t of window.__otherThreads) vm.runtime._stopThread(t); });
+    await p.evaluate(() => window.__releaseConnect());
+    if (want) await p.waitForFunction(k => window.__sent.filter(x => x.action === 'setBlock' || x.action === 'fillBlocks').length >= k, want, { timeout: 3000 }).catch(() => {});
+    await p.waitForTimeout(300);
+    pl = await placed();
+    ok(pl.length === want && pl.every(x => x.params.blockType === 'minecraftedu:gold_block_stairs'),
+      `本物のスクリプトで、返事を待っている間に${kind}と、返事が来たら${want ? '5 つの置く処理とも送る' : '5 つの置く処理とも送らない'}`, pl.map(x => x.action));
+    await p.evaluate(() => { window.__connectHold = false; for (const t of (window.__otherThreads || [])) vm.runtime._stopThread(t); });
+  }
+  // 本物のスクリプトで、返事を待っている間に金を置くスクリプトを止めて、すぐ切れる: 送らず、ランプも点滅しない
+  await holdGold(NEW_MOD, '本物のスクリプト・止めてから切れる');
+  ok(await startGoldScripts() === 5 && await goldScriptsWaiting(), '（準備）本物のスクリプト・止めてから切れる: 金を置く 5 本が返事を待っている');
+  const logStart = logs.length;
+  await p.evaluate(async () => {
+    for (const t of window.__goldThreads) vm.runtime._stopThread(t);
+    await vm.runtime._primitives.minecraft_disconnect({}, {});
+  });
+  // 5 本とも判定が動いた（「待っている間に止めたので、送りません」が 5 回出た）のを待ってから見る（判定の前に見て OK にしないため）
+  const stoppedLogs = () => logs.slice(logStart).filter(x => x.includes('待っている間に止めたので、送りません')).length;
+  for (let i = 0; i < 60 && stoppedLogs() < 5; i++) await p.waitForTimeout(50);
+  await p.waitForTimeout(100);
+  pl = await placed();
+  quietLamp = await lampState();
+  quietNeed = await p.evaluate(() => vm.runtime.ltMinecraftNeedConnection === false);
+  ok(stoppedLogs() === 5 && pl.length === 0 && quietNeed && quietLamp && !quietLamp.blink,
+    '本物のスクリプトで、返事を待っている間に止めてから切れると、5 つの置く処理とも「送りません」で終わり、送らず、ランプも点滅しない',
+    { stopped: stoppedLogs(), pl, quietNeed, quietLamp });
+  await p.evaluate(() => { window.__connectHold = false; });
+  // もとにもどす（新しい MOD につなぎ直す）
+  await hideNotice();
+  ok(await reconnectWith(['vertical_oak_slab', 'gold_block_stairs', 'gold_block_slab']), '（準備）新しい MOD につなぎ直す');
   await call('setContainerItem', { X: -1.5, Y: 2.5, Z: 0.5, SLOT: 0, ITEM: 'arrow', COUNT: 1 });
   m = await last('setContainerItem');
   ok(m && m.params.x === -2 && m.params.y === -58 && m.params.z === 0, '入れ物に入れる: 小数は切り下げる', m && m.params);
@@ -573,6 +922,13 @@ try {
     const NAMES = { ja: ['オークの階段', 'ブタ', '村人'], 'ja-Hira': ['オークのかいだん', 'ブタ', 'むらびと'], en: ['Oak Stairs', 'Pig', 'Villager'] }[loc];
     const gotNames = [find('blockTypes', 'oak_stairs'), find('passiveEntities', 'pig'), find('villagerEntities', 'villager')];
     ok(JSON.stringify(gotNames) === JSON.stringify(NAMES), `${loc}: ブロックの名前と生き物の名前が、その言語で出る`, gotNames);
+    // MOD が足した金の階段・ハーフブロックが、すべてのブロックの一覧・建築ブロック・向きのあるブロックのメニューに、その言語の名前で出る
+    const GOLD = { ja: ['金ブロックの階段', '金ブロックのハーフブロック'], 'ja-Hira': ['きんブロックのかいだん', 'きんブロックのハーフブロック'],
+      en: ['Gold Block Stairs', 'Gold Block Slab'] }[loc];
+    for (const menu of ['blockTypes', 'buildingBlocks', 'directionalBlocks']) {
+      const gotGold = [find(menu, 'gold_block_stairs'), find(menu, 'gold_block_slab')];
+      ok(JSON.stringify(gotGold) === JSON.stringify(GOLD), `${loc}: メニュー ${menu} に金の階段・ハーフブロックが、その言語の名前で出る`, gotGold);
+    }
     // 代表の文が、決めたとおりの漢字版・ひらがな版になっている（今の言語の訳の表を直接見る）
     const WANT_MSG = {
       ja: {

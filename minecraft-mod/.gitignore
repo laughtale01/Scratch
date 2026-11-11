@@ -40,3 +40,6 @@ desktop.ini
 *.tmp
 *.bak
 *~
+
+# Python のキャッシュ（tools/make_stairs_slab_data.py を確かめの台本が読み込むとできる）
+__pycache__/

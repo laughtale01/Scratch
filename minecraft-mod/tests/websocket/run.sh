@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # MOD の WebSocket の受け口（SimpleWebSocketServer.java）の試験を流す
 # Minecraft の部品は stubs/ の偽物に差し替え、本物の SimpleWebSocketServer.java をそのままコンパイルして動かす
-# はじめに、縦スラブの名前が ModBlocks・ModItems・loot table・タグでそろっているかと、命令の列（tests/buildqueue）、「埋める」・「周りをきれいにする」の仕事（tests/jobs）、
+# はじめに、MOD のブロック（縦スラブ・金の階段とハーフブロック）の名前が ModBlocks・ModItems・loot table・タグ・名前・見た目でそろっているか（階段・ハーフは、台本の決まりが Minecraft 1.20.1 と同じかも）と、命令の列（tests/buildqueue）、「埋める」・「周りをきれいにする」の仕事（tests/jobs）、
 # Scratch のバンドルの拡張機能（tests/extension）も確かめる
 # 使い方（minecraft-mod で）: mise exec -- bash tests/websocket/run.sh
 set -euo pipefail

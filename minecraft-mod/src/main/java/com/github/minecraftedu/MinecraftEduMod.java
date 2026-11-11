@@ -51,7 +51,7 @@ public class MinecraftEduMod {
         // ブロックとアイテムの登録先を、MOD のイベントバスにつなぐ
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
-        // クリエイティブの持ち物の画面に、縦スラブを並べる
+        // クリエイティブの持ち物の画面に、MOD のブロック（縦スラブ・金の階段とハーフブロック）を並べる
         modEventBus.addListener(this::onBuildCreativeTab);
         // 起動の準備のイベントも MOD のイベントバスに出る（Forge のイベントバスにつないでも呼ばれない）
         modEventBus.addListener(this::onCommonSetup);
@@ -65,7 +65,8 @@ public class MinecraftEduMod {
         MinecraftForge.EVENT_BUS.register(PauseWatch.class);
 
         LOGGER.info("MinecraftEdu Mod initializing...");
-        LOGGER.info("Registered custom blocks: " + ModBlocks.BLOCKS.getEntries().size() + " vertical slabs");
+        LOGGER.info("Registered custom blocks: " + ModBlocks.BLOCKS.getEntries().size()
+            + " (vertical slabs, stairs and slabs)");
     }
 
     /**
@@ -78,7 +79,7 @@ public class MinecraftEduMod {
     }
 
     /**
-     * クリエイティブの持ち物の画面の「建築ブロック」のタブに、縦スラブ 39 種を並べる
+     * クリエイティブの持ち物の画面の「建築ブロック」のタブに、MOD のブロック（縦スラブ 39 種・金の階段とハーフブロック）を並べる
      * （並べないと、ゲームの中では手に取れず、Scratch か /give でしか出せないため）
      */
     private void onBuildCreativeTab(BuildCreativeModeTabContentsEvent event) {

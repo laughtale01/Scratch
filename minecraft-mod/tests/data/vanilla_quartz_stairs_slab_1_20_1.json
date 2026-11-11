@@ -1,0 +1,335 @@
+{
+  "説明": "Minecraft 1.20.1 の石英の階段（quartz_stairs）と石英のハーフブロック（quartz_slab）の元のデータ。クライアントの jar（versions/1.20.1/1.20.1.jar）から写した。tools/make_stairs_slab_data.py の決まりが Minecraft と同じかを、台本とは別の答えで確かめるために使う（check_vertical_slab_data.py）",
+  "blockstates": {
+    "quartz_stairs": {
+      "variants": {
+        "facing=east,half=bottom,shape=inner_left": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "y": 270
+        },
+        "facing=east,half=bottom,shape=inner_right": {
+          "model": "minecraft:block/quartz_stairs_inner"
+        },
+        "facing=east,half=bottom,shape=outer_left": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "y": 270
+        },
+        "facing=east,half=bottom,shape=outer_right": {
+          "model": "minecraft:block/quartz_stairs_outer"
+        },
+        "facing=east,half=bottom,shape=straight": {
+          "model": "minecraft:block/quartz_stairs"
+        },
+        "facing=east,half=top,shape=inner_left": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "x": 180
+        },
+        "facing=east,half=top,shape=inner_right": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "x": 180,
+          "y": 90
+        },
+        "facing=east,half=top,shape=outer_left": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "x": 180
+        },
+        "facing=east,half=top,shape=outer_right": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "x": 180,
+          "y": 90
+        },
+        "facing=east,half=top,shape=straight": {
+          "model": "minecraft:block/quartz_stairs",
+          "uvlock": true,
+          "x": 180
+        },
+        "facing=north,half=bottom,shape=inner_left": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "y": 180
+        },
+        "facing=north,half=bottom,shape=inner_right": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "y": 270
+        },
+        "facing=north,half=bottom,shape=outer_left": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "y": 180
+        },
+        "facing=north,half=bottom,shape=outer_right": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "y": 270
+        },
+        "facing=north,half=bottom,shape=straight": {
+          "model": "minecraft:block/quartz_stairs",
+          "uvlock": true,
+          "y": 270
+        },
+        "facing=north,half=top,shape=inner_left": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "x": 180,
+          "y": 270
+        },
+        "facing=north,half=top,shape=inner_right": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "x": 180
+        },
+        "facing=north,half=top,shape=outer_left": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "x": 180,
+          "y": 270
+        },
+        "facing=north,half=top,shape=outer_right": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "x": 180
+        },
+        "facing=north,half=top,shape=straight": {
+          "model": "minecraft:block/quartz_stairs",
+          "uvlock": true,
+          "x": 180,
+          "y": 270
+        },
+        "facing=south,half=bottom,shape=inner_left": {
+          "model": "minecraft:block/quartz_stairs_inner"
+        },
+        "facing=south,half=bottom,shape=inner_right": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "y": 90
+        },
+        "facing=south,half=bottom,shape=outer_left": {
+          "model": "minecraft:block/quartz_stairs_outer"
+        },
+        "facing=south,half=bottom,shape=outer_right": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "y": 90
+        },
+        "facing=south,half=bottom,shape=straight": {
+          "model": "minecraft:block/quartz_stairs",
+          "uvlock": true,
+          "y": 90
+        },
+        "facing=south,half=top,shape=inner_left": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "x": 180,
+          "y": 90
+        },
+        "facing=south,half=top,shape=inner_right": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "x": 180,
+          "y": 180
+        },
+        "facing=south,half=top,shape=outer_left": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "x": 180,
+          "y": 90
+        },
+        "facing=south,half=top,shape=outer_right": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "x": 180,
+          "y": 180
+        },
+        "facing=south,half=top,shape=straight": {
+          "model": "minecraft:block/quartz_stairs",
+          "uvlock": true,
+          "x": 180,
+          "y": 90
+        },
+        "facing=west,half=bottom,shape=inner_left": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "y": 90
+        },
+        "facing=west,half=bottom,shape=inner_right": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "y": 180
+        },
+        "facing=west,half=bottom,shape=outer_left": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "y": 90
+        },
+        "facing=west,half=bottom,shape=outer_right": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "y": 180
+        },
+        "facing=west,half=bottom,shape=straight": {
+          "model": "minecraft:block/quartz_stairs",
+          "uvlock": true,
+          "y": 180
+        },
+        "facing=west,half=top,shape=inner_left": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "x": 180,
+          "y": 180
+        },
+        "facing=west,half=top,shape=inner_right": {
+          "model": "minecraft:block/quartz_stairs_inner",
+          "uvlock": true,
+          "x": 180,
+          "y": 270
+        },
+        "facing=west,half=top,shape=outer_left": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "x": 180,
+          "y": 180
+        },
+        "facing=west,half=top,shape=outer_right": {
+          "model": "minecraft:block/quartz_stairs_outer",
+          "uvlock": true,
+          "x": 180,
+          "y": 270
+        },
+        "facing=west,half=top,shape=straight": {
+          "model": "minecraft:block/quartz_stairs",
+          "uvlock": true,
+          "x": 180,
+          "y": 180
+        }
+      }
+    },
+    "quartz_slab": {
+      "variants": {
+        "type=bottom": {
+          "model": "minecraft:block/quartz_slab"
+        },
+        "type=double": {
+          "model": "minecraft:block/quartz_block"
+        },
+        "type=top": {
+          "model": "minecraft:block/quartz_slab_top"
+        }
+      }
+    }
+  },
+  "loot_tables": {
+    "quartz_stairs": {
+      "type": "minecraft:block",
+      "pools": [
+        {
+          "bonus_rolls": 0.0,
+          "conditions": [
+            {
+              "condition": "minecraft:survives_explosion"
+            }
+          ],
+          "entries": [
+            {
+              "type": "minecraft:item",
+              "name": "minecraft:quartz_stairs"
+            }
+          ],
+          "rolls": 1.0
+        }
+      ],
+      "random_sequence": "minecraft:blocks/quartz_stairs"
+    },
+    "quartz_slab": {
+      "type": "minecraft:block",
+      "pools": [
+        {
+          "bonus_rolls": 0.0,
+          "entries": [
+            {
+              "type": "minecraft:item",
+              "functions": [
+                {
+                  "add": false,
+                  "conditions": [
+                    {
+                      "block": "minecraft:quartz_slab",
+                      "condition": "minecraft:block_state_property",
+                      "properties": {
+                        "type": "double"
+                      }
+                    }
+                  ],
+                  "count": 2.0,
+                  "function": "minecraft:set_count"
+                },
+                {
+                  "function": "minecraft:explosion_decay"
+                }
+              ],
+              "name": "minecraft:quartz_slab"
+            }
+          ],
+          "rolls": 1.0
+        }
+      ],
+      "random_sequence": "minecraft:blocks/quartz_slab"
+    }
+  },
+  "models": {
+    "quartz_stairs": {
+      "parent": "minecraft:block/stairs",
+      "textures": {
+        "bottom": "minecraft:block/quartz_block_top",
+        "side": "minecraft:block/quartz_block_side",
+        "top": "minecraft:block/quartz_block_top"
+      }
+    },
+    "quartz_stairs_inner": {
+      "parent": "minecraft:block/inner_stairs",
+      "textures": {
+        "bottom": "minecraft:block/quartz_block_top",
+        "side": "minecraft:block/quartz_block_side",
+        "top": "minecraft:block/quartz_block_top"
+      }
+    },
+    "quartz_stairs_outer": {
+      "parent": "minecraft:block/outer_stairs",
+      "textures": {
+        "bottom": "minecraft:block/quartz_block_top",
+        "side": "minecraft:block/quartz_block_side",
+        "top": "minecraft:block/quartz_block_top"
+      }
+    },
+    "quartz_slab": {
+      "parent": "minecraft:block/slab",
+      "textures": {
+        "bottom": "minecraft:block/quartz_block_top",
+        "side": "minecraft:block/quartz_block_side",
+        "top": "minecraft:block/quartz_block_top"
+      }
+    },
+    "quartz_slab_top": {
+      "parent": "minecraft:block/slab_top",
+      "textures": {
+        "bottom": "minecraft:block/quartz_block_top",
+        "side": "minecraft:block/quartz_block_side",
+        "top": "minecraft:block/quartz_block_top"
+      }
+    }
+  },
+  "item_models": {
+    "quartz_stairs": {
+      "parent": "minecraft:block/quartz_stairs"
+    },
+    "quartz_slab": {
+      "parent": "minecraft:block/quartz_slab"
+    }
+  }
+}

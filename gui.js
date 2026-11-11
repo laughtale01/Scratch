@@ -64001,7 +64001,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
 // ブロックカテゴリのデータ定義（モジュールレベル定数）
 const formatMessage = __webpack_require__(/*! format-message */ "../scratch-vm-official/node_modules/format-message/index.js");
-const BUILDING_BLOCKS_DATA = ['oak_planks', 'oak_wood', 'spruce_planks', 'spruce_wood', 'birch_planks', 'birch_wood', 'jungle_planks', 'jungle_wood', 'acacia_planks', 'acacia_wood', 'dark_oak_planks', 'dark_oak_wood', 'mangrove_planks', 'mangrove_wood', 'mangrove_roots', 'cherry_planks', 'cherry_wood', 'bamboo_planks', 'bamboo_mosaic', 'crimson_planks', 'crimson_hyphae', 'warped_planks', 'warped_hyphae', 'stripped_oak_log', 'stripped_oak_wood', 'stripped_spruce_log', 'stripped_spruce_wood', 'stripped_birch_log', 'stripped_birch_wood', 'stripped_jungle_log', 'stripped_jungle_wood', 'stripped_acacia_log', 'stripped_acacia_wood', 'stripped_dark_oak_log', 'stripped_dark_oak_wood', 'stripped_mangrove_log', 'stripped_mangrove_wood', 'stripped_cherry_log', 'stripped_cherry_wood', 'stripped_bamboo_block', 'stripped_crimson_hyphae', 'stripped_crimson_stem', 'stripped_warped_hyphae', 'stripped_warped_stem', 'smooth_stone', 'stone', 'cobblestone', 'mossy_cobblestone', 'andesite', 'polished_andesite', 'diorite', 'polished_diorite', 'granite', 'polished_granite', 'chiseled_deepslate', 'cobbled_deepslate', 'cracked_deepslate_bricks', 'cracked_deepslate_tiles', 'deepslate', 'deepslate_bricks', 'deepslate_tiles', 'polished_deepslate', 'blackstone', 'cracked_polished_blackstone_bricks', 'gilded_blackstone', 'polished_blackstone', 'polished_blackstone_bricks', 'bricks', 'stone_bricks', 'mossy_stone_bricks', 'cracked_stone_bricks', 'chiseled_stone_bricks', 'nether_bricks', 'red_nether_bricks', 'chiseled_nether_bricks', 'cracked_nether_bricks', 'end_stone_bricks', 'mud_bricks', 'prismarine_bricks', 'quartz_bricks', 'sandstone', 'chiseled_sandstone', 'cut_sandstone', 'smooth_sandstone', 'red_sandstone', 'chiseled_red_sandstone', 'cut_red_sandstone', 'smooth_red_sandstone', 'dark_prismarine', 'smooth_quartz', 'chiseled_quartz_block', 'quartz_pillar', 'purpur_block', 'purpur_pillar', 'white_concrete', 'orange_concrete', 'magenta_concrete', 'light_blue_concrete', 'yellow_concrete', 'lime_concrete', 'pink_concrete', 'gray_concrete', 'light_gray_concrete', 'cyan_concrete', 'purple_concrete', 'blue_concrete', 'brown_concrete', 'green_concrete', 'red_concrete', 'black_concrete', 'basalt', 'bone_block', 'calcite', 'chain', 'dirt_path', 'glass_pane', 'iron_bars', 'ladder', 'muddy_mangrove_roots', 'packed_mud', 'polished_basalt', 'powder_snow', 'rooted_dirt', 'terracotta', 'tinted_glass', 'tuff', 'oak_stairs', 'spruce_stairs', 'birch_stairs', 'jungle_stairs', 'acacia_stairs', 'dark_oak_stairs', 'mangrove_stairs', 'cherry_stairs', 'bamboo_stairs', 'bamboo_mosaic_stairs', 'crimson_stairs', 'warped_stairs', 'stone_stairs', 'cobblestone_stairs', 'andesite_stairs', 'polished_andesite_stairs', 'diorite_stairs', 'polished_diorite_stairs', 'granite_stairs', 'polished_granite_stairs', 'cobbled_deepslate_stairs', 'deepslate_brick_stairs', 'deepslate_tile_stairs', 'polished_deepslate_stairs', 'blackstone_stairs', 'polished_blackstone_brick_stairs', 'polished_blackstone_stairs', 'brick_stairs', 'stone_brick_stairs', 'nether_brick_stairs', 'red_nether_brick_stairs', 'end_stone_brick_stairs', 'prismarine_brick_stairs', 'sandstone_stairs', 'smooth_sandstone_stairs', 'red_sandstone_stairs', 'smooth_red_sandstone_stairs', 'cut_copper_stairs', 'exposed_cut_copper_stairs', 'weathered_cut_copper_stairs', 'oxidized_cut_copper_stairs', 'waxed_cut_copper_stairs', 'waxed_exposed_cut_copper_stairs', 'waxed_weathered_cut_copper_stairs', 'waxed_oxidized_cut_copper_stairs', 'prismarine_stairs', 'dark_prismarine_stairs', 'quartz_stairs', 'smooth_quartz_stairs', 'purpur_stairs', 'oak_slab', 'spruce_slab', 'birch_slab', 'jungle_slab', 'acacia_slab', 'dark_oak_slab', 'mangrove_slab', 'cherry_slab', 'bamboo_slab', 'bamboo_mosaic_slab', 'crimson_slab', 'warped_slab', 'smooth_stone_slab', 'stone_slab', 'cobblestone_slab', 'andesite_slab', 'polished_andesite_slab', 'diorite_slab', 'polished_diorite_slab', 'granite_slab', 'polished_granite_slab', 'cobbled_deepslate_slab', 'deepslate_brick_slab', 'deepslate_tile_slab', 'polished_deepslate_slab', 'blackstone_slab', 'polished_blackstone_brick_slab', 'polished_blackstone_slab', 'brick_slab', 'stone_brick_slab', 'nether_brick_slab', 'end_stone_brick_slab', 'prismarine_brick_slab', 'sandstone_slab', 'cut_sandstone_slab', 'smooth_sandstone_slab', 'red_sandstone_slab', 'cut_red_sandstone_slab', 'smooth_red_sandstone_slab', 'cut_copper_slab', 'exposed_cut_copper_slab', 'weathered_cut_copper_slab', 'oxidized_cut_copper_slab', 'waxed_cut_copper_slab', 'waxed_exposed_cut_copper_slab', 'waxed_weathered_cut_copper_slab', 'waxed_oxidized_cut_copper_slab', 'prismarine_slab', 'dark_prismarine_slab', 'quartz_slab', 'smooth_quartz_slab', 'purpur_slab', 'vertical_oak_slab', 'vertical_spruce_slab', 'vertical_birch_slab', 'vertical_jungle_slab', 'vertical_acacia_slab', 'vertical_dark_oak_slab', 'vertical_mangrove_slab', 'vertical_cherry_slab', 'vertical_crimson_slab', 'vertical_warped_slab', 'vertical_smooth_stone_slab', 'vertical_stone_slab', 'vertical_cobblestone_slab', 'vertical_andesite_slab', 'vertical_diorite_slab', 'vertical_granite_slab', 'vertical_brick_slab', 'vertical_stone_brick_slab', 'vertical_sandstone_slab', 'vertical_copper_block_slab', 'waxed_vertical_copper_block_slab', 'vertical_cut_copper_slab', 'waxed_vertical_cut_copper_slab', 'vertical_exposed_cut_copper_slab', 'waxed_vertical_exposed_cut_copper_slab', 'vertical_weathered_cut_copper_slab', 'waxed_vertical_weathered_cut_copper_slab', 'vertical_oxidized_cut_copper_slab', 'waxed_vertical_oxidized_cut_copper_slab', 'vertical_quartz_slab', 'vertical_amethyst_block_slab', 'vertical_coal_block_slab', 'vertical_diamond_block_slab', 'vertical_emerald_block_slab', 'vertical_gold_block_slab', 'vertical_iron_block_slab', 'vertical_lapis_block_slab', 'vertical_netherite_block_slab', 'vertical_redstone_block_slab', 'cobblestone_wall', 'mossy_cobblestone_wall', 'andesite_wall', 'diorite_wall', 'granite_wall', 'cobbled_deepslate_wall', 'deepslate_brick_wall', 'deepslate_tile_wall', 'polished_deepslate_wall', 'blackstone_wall', 'polished_blackstone_brick_wall', 'polished_blackstone_wall', 'brick_wall', 'stone_brick_wall', 'nether_brick_wall', 'red_nether_brick_wall', 'end_stone_brick_wall', 'mud_brick_wall', 'sandstone_wall', 'red_sandstone_wall', 'prismarine_wall', 'oak_fence', 'spruce_fence', 'birch_fence', 'jungle_fence', 'acacia_fence', 'dark_oak_fence', 'mangrove_fence', 'cherry_fence', 'bamboo_fence', 'crimson_fence', 'warped_fence', 'nether_brick_fence', 'oak_fence_gate', 'spruce_fence_gate', 'birch_fence_gate', 'jungle_fence_gate', 'acacia_fence_gate', 'dark_oak_fence_gate', 'mangrove_fence_gate', 'cherry_fence_gate', 'bamboo_fence_gate', 'crimson_fence_gate', 'warped_fence_gate', 'spruce_button', 'birch_button', 'jungle_button', 'acacia_button', 'dark_oak_button', 'mangrove_button', 'cherry_button', 'bamboo_button', 'crimson_button', 'warped_button', 'oak_button', 'spruce_pressure_plate', 'birch_pressure_plate', 'jungle_pressure_plate', 'acacia_pressure_plate', 'dark_oak_pressure_plate', 'mangrove_pressure_plate', 'cherry_pressure_plate', 'bamboo_pressure_plate', 'crimson_pressure_plate', 'warped_pressure_plate', 'oak_pressure_plate', 'oak_door', 'spruce_door', 'birch_door', 'jungle_door', 'acacia_door', 'dark_oak_door', 'mangrove_door', 'cherry_door', 'bamboo_door', 'crimson_door', 'warped_door', 'oak_trapdoor', 'spruce_trapdoor', 'birch_trapdoor', 'jungle_trapdoor', 'acacia_trapdoor', 'dark_oak_trapdoor', 'mangrove_trapdoor', 'cherry_trapdoor', 'bamboo_trapdoor', 'crimson_trapdoor', 'warped_trapdoor', 'white_concrete_powder', 'orange_concrete_powder', 'magenta_concrete_powder', 'light_blue_concrete_powder', 'yellow_concrete_powder', 'lime_concrete_powder', 'pink_concrete_powder', 'gray_concrete_powder', 'light_gray_concrete_powder', 'cyan_concrete_powder', 'purple_concrete_powder', 'blue_concrete_powder', 'brown_concrete_powder', 'green_concrete_powder', 'red_concrete_powder', 'black_concrete_powder', 'white_stained_glass_pane', 'orange_stained_glass_pane', 'magenta_stained_glass_pane', 'light_blue_stained_glass_pane', 'yellow_stained_glass_pane', 'lime_stained_glass_pane', 'pink_stained_glass_pane', 'gray_stained_glass_pane', 'light_gray_stained_glass_pane', 'cyan_stained_glass_pane', 'purple_stained_glass_pane', 'blue_stained_glass_pane', 'brown_stained_glass_pane', 'green_stained_glass_pane', 'red_stained_glass_pane', 'black_stained_glass_pane'];
+const BUILDING_BLOCKS_DATA = ['oak_planks', 'oak_wood', 'spruce_planks', 'spruce_wood', 'birch_planks', 'birch_wood', 'jungle_planks', 'jungle_wood', 'acacia_planks', 'acacia_wood', 'dark_oak_planks', 'dark_oak_wood', 'mangrove_planks', 'mangrove_wood', 'mangrove_roots', 'cherry_planks', 'cherry_wood', 'bamboo_planks', 'bamboo_mosaic', 'crimson_planks', 'crimson_hyphae', 'warped_planks', 'warped_hyphae', 'stripped_oak_log', 'stripped_oak_wood', 'stripped_spruce_log', 'stripped_spruce_wood', 'stripped_birch_log', 'stripped_birch_wood', 'stripped_jungle_log', 'stripped_jungle_wood', 'stripped_acacia_log', 'stripped_acacia_wood', 'stripped_dark_oak_log', 'stripped_dark_oak_wood', 'stripped_mangrove_log', 'stripped_mangrove_wood', 'stripped_cherry_log', 'stripped_cherry_wood', 'stripped_bamboo_block', 'stripped_crimson_hyphae', 'stripped_crimson_stem', 'stripped_warped_hyphae', 'stripped_warped_stem', 'smooth_stone', 'stone', 'cobblestone', 'mossy_cobblestone', 'andesite', 'polished_andesite', 'diorite', 'polished_diorite', 'granite', 'polished_granite', 'chiseled_deepslate', 'cobbled_deepslate', 'cracked_deepslate_bricks', 'cracked_deepslate_tiles', 'deepslate', 'deepslate_bricks', 'deepslate_tiles', 'polished_deepslate', 'blackstone', 'cracked_polished_blackstone_bricks', 'gilded_blackstone', 'polished_blackstone', 'polished_blackstone_bricks', 'bricks', 'stone_bricks', 'mossy_stone_bricks', 'cracked_stone_bricks', 'chiseled_stone_bricks', 'nether_bricks', 'red_nether_bricks', 'chiseled_nether_bricks', 'cracked_nether_bricks', 'end_stone_bricks', 'mud_bricks', 'prismarine_bricks', 'quartz_bricks', 'sandstone', 'chiseled_sandstone', 'cut_sandstone', 'smooth_sandstone', 'red_sandstone', 'chiseled_red_sandstone', 'cut_red_sandstone', 'smooth_red_sandstone', 'dark_prismarine', 'smooth_quartz', 'chiseled_quartz_block', 'quartz_pillar', 'purpur_block', 'purpur_pillar', 'white_concrete', 'orange_concrete', 'magenta_concrete', 'light_blue_concrete', 'yellow_concrete', 'lime_concrete', 'pink_concrete', 'gray_concrete', 'light_gray_concrete', 'cyan_concrete', 'purple_concrete', 'blue_concrete', 'brown_concrete', 'green_concrete', 'red_concrete', 'black_concrete', 'basalt', 'bone_block', 'calcite', 'chain', 'dirt_path', 'glass_pane', 'iron_bars', 'ladder', 'muddy_mangrove_roots', 'packed_mud', 'polished_basalt', 'powder_snow', 'rooted_dirt', 'terracotta', 'tinted_glass', 'tuff', 'oak_stairs', 'spruce_stairs', 'birch_stairs', 'jungle_stairs', 'acacia_stairs', 'dark_oak_stairs', 'mangrove_stairs', 'cherry_stairs', 'bamboo_stairs', 'bamboo_mosaic_stairs', 'crimson_stairs', 'warped_stairs', 'stone_stairs', 'cobblestone_stairs', 'andesite_stairs', 'polished_andesite_stairs', 'diorite_stairs', 'polished_diorite_stairs', 'granite_stairs', 'polished_granite_stairs', 'cobbled_deepslate_stairs', 'deepslate_brick_stairs', 'deepslate_tile_stairs', 'polished_deepslate_stairs', 'blackstone_stairs', 'polished_blackstone_brick_stairs', 'polished_blackstone_stairs', 'brick_stairs', 'stone_brick_stairs', 'nether_brick_stairs', 'red_nether_brick_stairs', 'end_stone_brick_stairs', 'prismarine_brick_stairs', 'sandstone_stairs', 'smooth_sandstone_stairs', 'red_sandstone_stairs', 'smooth_red_sandstone_stairs', 'cut_copper_stairs', 'exposed_cut_copper_stairs', 'weathered_cut_copper_stairs', 'oxidized_cut_copper_stairs', 'waxed_cut_copper_stairs', 'waxed_exposed_cut_copper_stairs', 'waxed_weathered_cut_copper_stairs', 'waxed_oxidized_cut_copper_stairs', 'prismarine_stairs', 'dark_prismarine_stairs', 'quartz_stairs', 'smooth_quartz_stairs', 'purpur_stairs', 'gold_block_stairs', 'oak_slab', 'spruce_slab', 'birch_slab', 'jungle_slab', 'acacia_slab', 'dark_oak_slab', 'mangrove_slab', 'cherry_slab', 'bamboo_slab', 'bamboo_mosaic_slab', 'crimson_slab', 'warped_slab', 'smooth_stone_slab', 'stone_slab', 'cobblestone_slab', 'andesite_slab', 'polished_andesite_slab', 'diorite_slab', 'polished_diorite_slab', 'granite_slab', 'polished_granite_slab', 'cobbled_deepslate_slab', 'deepslate_brick_slab', 'deepslate_tile_slab', 'polished_deepslate_slab', 'blackstone_slab', 'polished_blackstone_brick_slab', 'polished_blackstone_slab', 'brick_slab', 'stone_brick_slab', 'nether_brick_slab', 'end_stone_brick_slab', 'prismarine_brick_slab', 'sandstone_slab', 'cut_sandstone_slab', 'smooth_sandstone_slab', 'red_sandstone_slab', 'cut_red_sandstone_slab', 'smooth_red_sandstone_slab', 'cut_copper_slab', 'exposed_cut_copper_slab', 'weathered_cut_copper_slab', 'oxidized_cut_copper_slab', 'waxed_cut_copper_slab', 'waxed_exposed_cut_copper_slab', 'waxed_weathered_cut_copper_slab', 'waxed_oxidized_cut_copper_slab', 'prismarine_slab', 'dark_prismarine_slab', 'quartz_slab', 'smooth_quartz_slab', 'purpur_slab', 'gold_block_slab', 'vertical_oak_slab', 'vertical_spruce_slab', 'vertical_birch_slab', 'vertical_jungle_slab', 'vertical_acacia_slab', 'vertical_dark_oak_slab', 'vertical_mangrove_slab', 'vertical_cherry_slab', 'vertical_crimson_slab', 'vertical_warped_slab', 'vertical_smooth_stone_slab', 'vertical_stone_slab', 'vertical_cobblestone_slab', 'vertical_andesite_slab', 'vertical_diorite_slab', 'vertical_granite_slab', 'vertical_brick_slab', 'vertical_stone_brick_slab', 'vertical_sandstone_slab', 'vertical_copper_block_slab', 'waxed_vertical_copper_block_slab', 'vertical_cut_copper_slab', 'waxed_vertical_cut_copper_slab', 'vertical_exposed_cut_copper_slab', 'waxed_vertical_exposed_cut_copper_slab', 'vertical_weathered_cut_copper_slab', 'waxed_vertical_weathered_cut_copper_slab', 'vertical_oxidized_cut_copper_slab', 'waxed_vertical_oxidized_cut_copper_slab', 'vertical_quartz_slab', 'vertical_amethyst_block_slab', 'vertical_coal_block_slab', 'vertical_diamond_block_slab', 'vertical_emerald_block_slab', 'vertical_gold_block_slab', 'vertical_iron_block_slab', 'vertical_lapis_block_slab', 'vertical_netherite_block_slab', 'vertical_redstone_block_slab', 'cobblestone_wall', 'mossy_cobblestone_wall', 'andesite_wall', 'diorite_wall', 'granite_wall', 'cobbled_deepslate_wall', 'deepslate_brick_wall', 'deepslate_tile_wall', 'polished_deepslate_wall', 'blackstone_wall', 'polished_blackstone_brick_wall', 'polished_blackstone_wall', 'brick_wall', 'stone_brick_wall', 'nether_brick_wall', 'red_nether_brick_wall', 'end_stone_brick_wall', 'mud_brick_wall', 'sandstone_wall', 'red_sandstone_wall', 'prismarine_wall', 'oak_fence', 'spruce_fence', 'birch_fence', 'jungle_fence', 'acacia_fence', 'dark_oak_fence', 'mangrove_fence', 'cherry_fence', 'bamboo_fence', 'crimson_fence', 'warped_fence', 'nether_brick_fence', 'oak_fence_gate', 'spruce_fence_gate', 'birch_fence_gate', 'jungle_fence_gate', 'acacia_fence_gate', 'dark_oak_fence_gate', 'mangrove_fence_gate', 'cherry_fence_gate', 'bamboo_fence_gate', 'crimson_fence_gate', 'warped_fence_gate', 'spruce_button', 'birch_button', 'jungle_button', 'acacia_button', 'dark_oak_button', 'mangrove_button', 'cherry_button', 'bamboo_button', 'crimson_button', 'warped_button', 'oak_button', 'spruce_pressure_plate', 'birch_pressure_plate', 'jungle_pressure_plate', 'acacia_pressure_plate', 'dark_oak_pressure_plate', 'mangrove_pressure_plate', 'cherry_pressure_plate', 'bamboo_pressure_plate', 'crimson_pressure_plate', 'warped_pressure_plate', 'oak_pressure_plate', 'oak_door', 'spruce_door', 'birch_door', 'jungle_door', 'acacia_door', 'dark_oak_door', 'mangrove_door', 'cherry_door', 'bamboo_door', 'crimson_door', 'warped_door', 'oak_trapdoor', 'spruce_trapdoor', 'birch_trapdoor', 'jungle_trapdoor', 'acacia_trapdoor', 'dark_oak_trapdoor', 'mangrove_trapdoor', 'cherry_trapdoor', 'bamboo_trapdoor', 'crimson_trapdoor', 'warped_trapdoor', 'white_concrete_powder', 'orange_concrete_powder', 'magenta_concrete_powder', 'light_blue_concrete_powder', 'yellow_concrete_powder', 'lime_concrete_powder', 'pink_concrete_powder', 'gray_concrete_powder', 'light_gray_concrete_powder', 'cyan_concrete_powder', 'purple_concrete_powder', 'blue_concrete_powder', 'brown_concrete_powder', 'green_concrete_powder', 'red_concrete_powder', 'black_concrete_powder', 'white_stained_glass_pane', 'orange_stained_glass_pane', 'magenta_stained_glass_pane', 'light_blue_stained_glass_pane', 'yellow_stained_glass_pane', 'lime_stained_glass_pane', 'pink_stained_glass_pane', 'gray_stained_glass_pane', 'light_gray_stained_glass_pane', 'cyan_stained_glass_pane', 'purple_stained_glass_pane', 'blue_stained_glass_pane', 'brown_stained_glass_pane', 'green_stained_glass_pane', 'red_stained_glass_pane', 'black_stained_glass_pane'];
 const LIGHTING_BLOCKS_DATA = ['torch', 'soul_torch', 'lantern', 'soul_lantern', 'glowstone', 'sea_lantern', 'shroomlight', 'jack_o_lantern', 'candle', 'white_candle', 'orange_candle', 'magenta_candle', 'light_blue_candle', 'yellow_candle', 'lime_candle', 'pink_candle', 'gray_candle', 'light_gray_candle', 'cyan_candle', 'purple_candle', 'blue_candle', 'brown_candle', 'green_candle', 'red_candle', 'black_candle', 'campfire', 'soul_campfire', 'redstone_lamp', 'redstone_torch', 'soul_fire'];
 const DECORATION_BLOCKS_DATA = ['white_wool', 'orange_wool', 'magenta_wool', 'light_blue_wool', 'yellow_wool', 'lime_wool', 'pink_wool', 'gray_wool', 'light_gray_wool', 'cyan_wool', 'purple_wool', 'blue_wool', 'brown_wool', 'green_wool', 'red_wool', 'black_wool', 'moss_carpet', 'white_carpet', 'orange_carpet', 'magenta_carpet', 'light_blue_carpet', 'yellow_carpet', 'lime_carpet', 'pink_carpet', 'gray_carpet', 'light_gray_carpet', 'cyan_carpet', 'purple_carpet', 'blue_carpet', 'brown_carpet', 'green_carpet', 'red_carpet', 'black_carpet', 'white_terracotta', 'orange_terracotta', 'magenta_terracotta', 'light_blue_terracotta', 'yellow_terracotta', 'lime_terracotta', 'pink_terracotta', 'gray_terracotta', 'light_gray_terracotta', 'cyan_terracotta', 'purple_terracotta', 'blue_terracotta', 'brown_terracotta', 'green_terracotta', 'red_terracotta', 'black_terracotta', 'white_glazed_terracotta', 'orange_glazed_terracotta', 'blue_glazed_terracotta', 'green_glazed_terracotta', 'magenta_glazed_terracotta', 'light_blue_glazed_terracotta', 'yellow_glazed_terracotta', 'lime_glazed_terracotta', 'pink_glazed_terracotta', 'gray_glazed_terracotta', 'light_gray_glazed_terracotta', 'cyan_glazed_terracotta', 'purple_glazed_terracotta', 'brown_glazed_terracotta', 'red_glazed_terracotta', 'black_glazed_terracotta', 'glass', 'white_stained_glass', 'orange_stained_glass', 'magenta_stained_glass', 'light_blue_stained_glass', 'yellow_stained_glass', 'lime_stained_glass', 'pink_stained_glass', 'gray_stained_glass', 'light_gray_stained_glass', 'cyan_stained_glass', 'purple_stained_glass', 'blue_stained_glass', 'brown_stained_glass', 'green_stained_glass', 'red_stained_glass', 'black_stained_glass', 'white_bed', 'yellow_bed', 'blue_bed', 'green_bed', 'red_bed', 'black_bed', 'orange_bed', 'magenta_bed', 'light_blue_bed', 'lime_bed', 'pink_bed', 'gray_bed', 'light_gray_bed', 'cyan_bed', 'purple_bed', 'brown_bed', 'shulker_box', 'white_shulker_box', 'blue_shulker_box', 'green_shulker_box', 'red_shulker_box', 'orange_shulker_box', 'magenta_shulker_box', 'light_blue_shulker_box', 'yellow_shulker_box', 'lime_shulker_box', 'pink_shulker_box', 'gray_shulker_box', 'light_gray_shulker_box', 'cyan_shulker_box', 'purple_shulker_box', 'brown_shulker_box', 'black_shulker_box', 'bookshelf', 'budding_amethyst', 'dripstone_block', 'flower_pot', 'moss_block', 'smooth_basalt', 'oak_sign', 'spruce_sign', 'birch_sign', 'jungle_sign', 'acacia_sign', 'dark_oak_sign', 'mangrove_sign', 'cherry_sign', 'bamboo_sign', 'crimson_sign', 'warped_sign', 'oak_hanging_sign', 'spruce_hanging_sign', 'birch_hanging_sign', 'jungle_hanging_sign', 'acacia_hanging_sign', 'dark_oak_hanging_sign', 'mangrove_hanging_sign', 'cherry_hanging_sign', 'bamboo_hanging_sign', 'crimson_hanging_sign', 'warped_hanging_sign'];
 const NATURE_BLOCKS_DATA = ['dirt', 'grass_block', 'coarse_dirt', 'podzol', 'mycelium', 'farmland', 'mud', 'sand', 'red_sand', 'gravel', 'soul_sand', 'soul_soil', 'oak_log', 'spruce_log', 'birch_log', 'jungle_log', 'acacia_log', 'dark_oak_log', 'mangrove_log', 'cherry_log', 'crimson_stem', 'warped_stem', 'mushroom_stem', 'oak_leaves', 'spruce_leaves', 'birch_leaves', 'jungle_leaves', 'acacia_leaves', 'dark_oak_leaves', 'mangrove_leaves', 'cherry_leaves', 'azalea_leaves', 'flowering_azalea_leaves', 'poppy', 'dandelion', 'blue_orchid', 'allium', 'oxeye_daisy', 'cornflower', 'lily_of_the_valley', 'lilac', 'rose_bush', 'peony', 'sunflower', 'ice', 'packed_ice', 'snow', 'snow_block', 'water', 'bamboo', 'bamboo_block', 'cactus', 'sugar_cane', 'kelp', 'seagrass', 'grass', 'fern', 'dead_bush', 'vine', 'twisting_vines', 'weeping_vines', 'azalea', 'brain_coral_block', 'brown_mushroom_block', 'bubble_coral_block', 'clay', 'fire_coral_block', 'flowering_azalea', 'hay_block', 'horn_coral_block', 'melon', 'nether_wart_block', 'prismarine', 'pumpkin', 'red_mushroom_block', 'tube_coral_block', 'warped_wart_block'];
@@ -64010,7 +64010,11 @@ const ORE_BLOCKS_DATA = ['coal_ore', 'iron_ore', 'copper_ore', 'gold_ore', 'lapi
 const SPECIAL_BLOCKS_DATA = ['air', 'barrier', 'structure_void', 'light', 'bedrock', 'obsidian', 'crying_obsidian', 'sponge', 'wet_sponge', 'lava', 'end_portal', 'end_portal_frame', 'end_gateway', 'end_rod', 'end_stone', 'netherrack', 'magma_block', 'sculk', 'sculk_vein', 'sculk_sensor', 'sculk_catalyst', 'sculk_shrieker', 'blue_ice', 'command_block', 'dragon_egg', 'jigsaw', 'moving_piston', 'reinforced_deepslate', 'spawner', 'structure_block'];
 
 // 方向性ブロック（置き方・向きの入力を持つブロック：階段、スラブ、ドア、トラップドア、ボタン、フェンスゲート）
-const DIRECTIONAL_BLOCKS_DATA = ['oak_stairs', 'spruce_stairs', 'birch_stairs', 'jungle_stairs', 'acacia_stairs', 'dark_oak_stairs', 'mangrove_stairs', 'cherry_stairs', 'bamboo_stairs', 'bamboo_mosaic_stairs', 'crimson_stairs', 'warped_stairs', 'stone_stairs', 'cobblestone_stairs', 'andesite_stairs', 'polished_andesite_stairs', 'diorite_stairs', 'polished_diorite_stairs', 'granite_stairs', 'polished_granite_stairs', 'cobbled_deepslate_stairs', 'deepslate_brick_stairs', 'deepslate_tile_stairs', 'polished_deepslate_stairs', 'blackstone_stairs', 'polished_blackstone_brick_stairs', 'polished_blackstone_stairs', 'brick_stairs', 'stone_brick_stairs', 'nether_brick_stairs', 'red_nether_brick_stairs', 'end_stone_brick_stairs', 'prismarine_brick_stairs', 'sandstone_stairs', 'smooth_sandstone_stairs', 'red_sandstone_stairs', 'smooth_red_sandstone_stairs', 'cut_copper_stairs', 'exposed_cut_copper_stairs', 'weathered_cut_copper_stairs', 'oxidized_cut_copper_stairs', 'waxed_cut_copper_stairs', 'waxed_exposed_cut_copper_stairs', 'waxed_weathered_cut_copper_stairs', 'waxed_oxidized_cut_copper_stairs', 'prismarine_stairs', 'dark_prismarine_stairs', 'quartz_stairs', 'smooth_quartz_stairs', 'purpur_stairs', 'oak_slab', 'spruce_slab', 'birch_slab', 'jungle_slab', 'acacia_slab', 'dark_oak_slab', 'mangrove_slab', 'cherry_slab', 'bamboo_slab', 'bamboo_mosaic_slab', 'crimson_slab', 'warped_slab', 'smooth_stone_slab', 'stone_slab', 'cobblestone_slab', 'andesite_slab', 'polished_andesite_slab', 'diorite_slab', 'polished_diorite_slab', 'granite_slab', 'polished_granite_slab', 'cobbled_deepslate_slab', 'deepslate_brick_slab', 'deepslate_tile_slab', 'polished_deepslate_slab', 'blackstone_slab', 'polished_blackstone_brick_slab', 'polished_blackstone_slab', 'brick_slab', 'stone_brick_slab', 'nether_brick_slab', 'end_stone_brick_slab', 'prismarine_brick_slab', 'sandstone_slab', 'cut_sandstone_slab', 'smooth_sandstone_slab', 'red_sandstone_slab', 'cut_red_sandstone_slab', 'smooth_red_sandstone_slab', 'cut_copper_slab', 'exposed_cut_copper_slab', 'weathered_cut_copper_slab', 'oxidized_cut_copper_slab', 'waxed_cut_copper_slab', 'waxed_exposed_cut_copper_slab', 'waxed_weathered_cut_copper_slab', 'waxed_oxidized_cut_copper_slab', 'prismarine_slab', 'dark_prismarine_slab', 'quartz_slab', 'smooth_quartz_slab', 'purpur_slab', 'vertical_oak_slab', 'vertical_spruce_slab', 'vertical_birch_slab', 'vertical_jungle_slab', 'vertical_acacia_slab', 'vertical_dark_oak_slab', 'vertical_mangrove_slab', 'vertical_cherry_slab', 'vertical_crimson_slab', 'vertical_warped_slab', 'vertical_smooth_stone_slab', 'vertical_stone_slab', 'vertical_cobblestone_slab', 'vertical_andesite_slab', 'vertical_diorite_slab', 'vertical_granite_slab', 'vertical_brick_slab', 'vertical_stone_brick_slab', 'vertical_sandstone_slab', 'vertical_copper_block_slab', 'waxed_vertical_copper_block_slab', 'vertical_cut_copper_slab', 'waxed_vertical_cut_copper_slab', 'vertical_exposed_cut_copper_slab', 'waxed_vertical_exposed_cut_copper_slab', 'vertical_weathered_cut_copper_slab', 'waxed_vertical_weathered_cut_copper_slab', 'vertical_oxidized_cut_copper_slab', 'waxed_vertical_oxidized_cut_copper_slab', 'vertical_quartz_slab', 'vertical_amethyst_block_slab', 'vertical_coal_block_slab', 'vertical_diamond_block_slab', 'vertical_emerald_block_slab', 'vertical_gold_block_slab', 'vertical_iron_block_slab', 'vertical_lapis_block_slab', 'vertical_netherite_block_slab', 'vertical_redstone_block_slab', 'oak_fence_gate', 'spruce_fence_gate', 'birch_fence_gate', 'jungle_fence_gate', 'acacia_fence_gate', 'dark_oak_fence_gate', 'mangrove_fence_gate', 'cherry_fence_gate', 'bamboo_fence_gate', 'crimson_fence_gate', 'warped_fence_gate', 'oak_button', 'spruce_button', 'birch_button', 'jungle_button', 'acacia_button', 'dark_oak_button', 'mangrove_button', 'cherry_button', 'bamboo_button', 'crimson_button', 'warped_button', 'stone_button', 'oak_door', 'spruce_door', 'birch_door', 'jungle_door', 'acacia_door', 'dark_oak_door', 'mangrove_door', 'cherry_door', 'bamboo_door', 'crimson_door', 'warped_door', 'iron_door', 'oak_trapdoor', 'spruce_trapdoor', 'birch_trapdoor', 'jungle_trapdoor', 'acacia_trapdoor', 'dark_oak_trapdoor', 'mangrove_trapdoor', 'cherry_trapdoor', 'bamboo_trapdoor', 'crimson_trapdoor', 'warped_trapdoor', 'iron_trapdoor'];
+const DIRECTIONAL_BLOCKS_DATA = ['oak_stairs', 'spruce_stairs', 'birch_stairs', 'jungle_stairs', 'acacia_stairs', 'dark_oak_stairs', 'mangrove_stairs', 'cherry_stairs', 'bamboo_stairs', 'bamboo_mosaic_stairs', 'crimson_stairs', 'warped_stairs', 'stone_stairs', 'cobblestone_stairs', 'andesite_stairs', 'polished_andesite_stairs', 'diorite_stairs', 'polished_diorite_stairs', 'granite_stairs', 'polished_granite_stairs', 'cobbled_deepslate_stairs', 'deepslate_brick_stairs', 'deepslate_tile_stairs', 'polished_deepslate_stairs', 'blackstone_stairs', 'polished_blackstone_brick_stairs', 'polished_blackstone_stairs', 'brick_stairs', 'stone_brick_stairs', 'nether_brick_stairs', 'red_nether_brick_stairs', 'end_stone_brick_stairs', 'prismarine_brick_stairs', 'sandstone_stairs', 'smooth_sandstone_stairs', 'red_sandstone_stairs', 'smooth_red_sandstone_stairs', 'cut_copper_stairs', 'exposed_cut_copper_stairs', 'weathered_cut_copper_stairs', 'oxidized_cut_copper_stairs', 'waxed_cut_copper_stairs', 'waxed_exposed_cut_copper_stairs', 'waxed_weathered_cut_copper_stairs', 'waxed_oxidized_cut_copper_stairs', 'prismarine_stairs', 'dark_prismarine_stairs', 'quartz_stairs', 'smooth_quartz_stairs', 'purpur_stairs', 'gold_block_stairs', 'oak_slab', 'spruce_slab', 'birch_slab', 'jungle_slab', 'acacia_slab', 'dark_oak_slab', 'mangrove_slab', 'cherry_slab', 'bamboo_slab', 'bamboo_mosaic_slab', 'crimson_slab', 'warped_slab', 'smooth_stone_slab', 'stone_slab', 'cobblestone_slab', 'andesite_slab', 'polished_andesite_slab', 'diorite_slab', 'polished_diorite_slab', 'granite_slab', 'polished_granite_slab', 'cobbled_deepslate_slab', 'deepslate_brick_slab', 'deepslate_tile_slab', 'polished_deepslate_slab', 'blackstone_slab', 'polished_blackstone_brick_slab', 'polished_blackstone_slab', 'brick_slab', 'stone_brick_slab', 'nether_brick_slab', 'end_stone_brick_slab', 'prismarine_brick_slab', 'sandstone_slab', 'cut_sandstone_slab', 'smooth_sandstone_slab', 'red_sandstone_slab', 'cut_red_sandstone_slab', 'smooth_red_sandstone_slab', 'cut_copper_slab', 'exposed_cut_copper_slab', 'weathered_cut_copper_slab', 'oxidized_cut_copper_slab', 'waxed_cut_copper_slab', 'waxed_exposed_cut_copper_slab', 'waxed_weathered_cut_copper_slab', 'waxed_oxidized_cut_copper_slab', 'prismarine_slab', 'dark_prismarine_slab', 'quartz_slab', 'smooth_quartz_slab', 'purpur_slab', 'gold_block_slab', 'vertical_oak_slab', 'vertical_spruce_slab', 'vertical_birch_slab', 'vertical_jungle_slab', 'vertical_acacia_slab', 'vertical_dark_oak_slab', 'vertical_mangrove_slab', 'vertical_cherry_slab', 'vertical_crimson_slab', 'vertical_warped_slab', 'vertical_smooth_stone_slab', 'vertical_stone_slab', 'vertical_cobblestone_slab', 'vertical_andesite_slab', 'vertical_diorite_slab', 'vertical_granite_slab', 'vertical_brick_slab', 'vertical_stone_brick_slab', 'vertical_sandstone_slab', 'vertical_copper_block_slab', 'waxed_vertical_copper_block_slab', 'vertical_cut_copper_slab', 'waxed_vertical_cut_copper_slab', 'vertical_exposed_cut_copper_slab', 'waxed_vertical_exposed_cut_copper_slab', 'vertical_weathered_cut_copper_slab', 'waxed_vertical_weathered_cut_copper_slab', 'vertical_oxidized_cut_copper_slab', 'waxed_vertical_oxidized_cut_copper_slab', 'vertical_quartz_slab', 'vertical_amethyst_block_slab', 'vertical_coal_block_slab', 'vertical_diamond_block_slab', 'vertical_emerald_block_slab', 'vertical_gold_block_slab', 'vertical_iron_block_slab', 'vertical_lapis_block_slab', 'vertical_netherite_block_slab', 'vertical_redstone_block_slab', 'oak_fence_gate', 'spruce_fence_gate', 'birch_fence_gate', 'jungle_fence_gate', 'acacia_fence_gate', 'dark_oak_fence_gate', 'mangrove_fence_gate', 'cherry_fence_gate', 'bamboo_fence_gate', 'crimson_fence_gate', 'warped_fence_gate', 'oak_button', 'spruce_button', 'birch_button', 'jungle_button', 'acacia_button', 'dark_oak_button', 'mangrove_button', 'cherry_button', 'bamboo_button', 'crimson_button', 'warped_button', 'stone_button', 'oak_door', 'spruce_door', 'birch_door', 'jungle_door', 'acacia_door', 'dark_oak_door', 'mangrove_door', 'cherry_door', 'bamboo_door', 'crimson_door', 'warped_door', 'iron_door', 'oak_trapdoor', 'spruce_trapdoor', 'birch_trapdoor', 'jungle_trapdoor', 'acacia_trapdoor', 'dark_oak_trapdoor', 'mangrove_trapdoor', 'cherry_trapdoor', 'bamboo_trapdoor', 'crimson_trapdoor', 'warped_trapdoor', 'iron_trapdoor'];
+// MOD（minecraftedu:）が足したブロックのうち、縦スラブ（名前の vertical_ で見分ける）でないもの。
+// Minecraft に無い材料の階段・ハーフブロック（minecraft-mod/tools/make_stairs_slab_data.py の MATERIALS と同じ）。
+// ここに無いと minecraft: を付けて送るので、MOD に「なまえが ちがいます」と断られる
+const MOD_STAIRS_SLAB_BLOCKS = ['gold_block_stairs', 'gold_block_slab'];
 
 // エンティティカテゴリのデータ定義（モジュールレベル定数）
 const PASSIVE_ENTITIES = [
@@ -64313,6 +64317,9 @@ class Scratch3MinecraftBlocks {
     this._canStopAll = false;
     // つないだ MOD が「pauseQueue」（一時停止）を受け付けるか（_canStopAll と同じ。features に pauseQueue があれば true）
     this._canPause = false;
+    // つないだ MOD が知っている MOD のブロックの名前（接続の返事の serverInfo.modBlocks。Set）。
+    // null: わからない（つないでいない・返事の前・エラーの返事）。古い MOD（modBlocks が無い）は空の Set
+    this._modBlocks = null;
     // 止めるボタン・「すべてを止める」で止めた回数（はじめの準備が MOD の返事を待っている間に止めたら、あとから送らないため）
     this._stopCount = 0;
     // 古い MOD のとき、一時停止で出す帯（「Minecraftは止まりません（MODが古いため）」）
@@ -65443,6 +65450,71 @@ class Scratch3MinecraftBlocks {
   }
 
   /**
+   * MOD が足した階段・ハーフブロック（MOD_STAIRS_SLAB_BLOCKS。金の階段など）を置く命令を送る。
+   * つないでいる MOD がそのブロックを知らない（古い MOD。接続の返事の modBlocks に無い）ときは送らず、帯で知らせる
+   * （古い MOD に送ると、MOD のチャットに「その ブロックの なまえが ちがいます」と出て、子どもには理由がわからないため）。
+   * ほかのブロック・つないでいないとき・MOD の返事でわからないとき（エラーの返事・1 秒待っても来ない）は、今までどおり送る。
+   * 返事を待っている間に止めた（止めるボタン・「すべてを止める」・このスクリプトだけを止めた）ときは、何も言わずに送らずに終える
+   * （止めたのにあとから世界が変わらないように。止めてから切れたときも、止めたかどうかを先に見るので同じ）。
+   * 「〜を受け取ったとき」などの帽子ブロックのスクリプトが、待っている間にもう一度動いた（やり直した）ときも、前の呼び出しは
+   * 止めたのと同じに送らない（Scratch のやり直しと同じ。新しく動いたほうが置く）。
+   * 返事を待っている間に別の場所へつなぎ直したときも、前の接続の判定を次の接続に使わないよう送らない。ただし終わり方は、
+   * 待つのが終わったときの様子で 2 つに分かれる（どちらでも金は送らない）:
+   *   - 新しい接続がもう開いている: 何も言わずに終える（はじめの準備と同じ）
+   *   - 新しい接続がまだ開いていない（つなぎかけ）: 切れただけのときと同じ道に入り、「つないでいない」で終わる
+   *     （sendCommand がつながっているかを確かめ直すので、どこにも送られない。つなぎかけの間はランプも点滅しない）
+   * 待っている間に切れただけ（つなぎ直していない）のときは、ほかのブロックと同じく「つないでいない」で終わり、
+   * ランプの「先につないでね」も点滅する（ここは、何も言わずに終えるはじめの準備とちがう。子どもが置いたブロックなので知らせる）。
+   * send の中で args を読まないこと（待っている間に、同じブロックを別のスクリプトが動かすと args が書きかわるため。先に決めて渡す）
+   * @param {string} blockName - ブロックの名前（minecraft: などを付けない形）
+   * @param {object} util - Scratch のブロックの util（動いているスクリプトを知るため。無くてもよい）
+   * @param {Function} send - 命令を送る関数（Promise を返す）
+   * @returns {Promise} 送ったときは send() の Promise。送らなかったときは、何もせずに終わる Promise
+   */
+  _sendModBlock(blockName, util, send) {
+    if (!MOD_STAIRS_SLAB_BLOCKS.includes(blockName) || !this.connected) {
+      return send();
+    }
+    const decide = () => {
+      if (this._modBlocks === null || this._modBlocks.has(blockName)) {
+        return send();
+      }
+      console.warn('つないでいる MOD は ' + blockName + ' を知らないので送りません（MOD が古いため）');
+      this._showPauseNotice(formatMessage({
+        id: 'minecraft.modBlockNeedsNewMod',
+        default: 'This block cannot be placed (the MOD is old)',
+        description: 'shown when the Minecraft MOD is too old to know a block added by the MOD (such as gold stairs)'
+      }));
+      return Promise.resolve();
+    };
+    if (this._modBlocks !== null) {
+      return decide();
+    }
+    // つないだ直後で、まだ MOD の返事が来ていなければ、来るまで待つ（長くても 1 秒）
+    const socket = this.socket;
+    const stopCount = this._stopCount;
+    const thread = util && util.thread;
+    return this._waitForModInfo(1000).then(() => {
+      if (this._stopCount !== stopCount || !!(thread && !this.runtime.isActiveThread(thread))) {
+        console.log(blockName + ': 待っている間に止めたので、送りません');
+        return undefined;
+      }
+      if (!this.connected) {
+        // 切れただけ（つなぎ直していない）: ほかのブロックと同じく送ろうとして、「つないでいない」で終わる
+        // （どこにも送られない。ランプの「先につないでね」の点滅も、今までどおり出す）。
+        // 別の場所へつなぎ直しかけ（新しい接続がまだ開いていない）のときもここに来るが、sendCommand が
+        // つながっているかを確かめ直すので、前の接続の金を新しい接続へ送ることはない（つなぎかけの間は点滅もしない）
+        return send();
+      }
+      if (this.socket !== socket) {
+        console.log(blockName + ': 待っている間につなぎ直したので、送りません');
+        return undefined;
+      }
+      return decide();
+    });
+  }
+
+  /**
    * 「まわりを平らな地面にもどす」などの中心の座標を数にする。数でない・空のときは undefined（送らない＝MOD が断る）。
    * 小数は切り下げる（置くブロックとそろえる。MOD は 0 の方へ切り捨てるため）
    * @param {*} value - ブロックの入力
@@ -65536,6 +65608,7 @@ class Scratch3MinecraftBlocks {
           // stopAll を受け付けるかは、接続の返事が来るまで分からない（そのあいだに止めたら送る）
           this._canStopAll = null;
           this._canPause = null;
+          this._modBlocks = null;
           this.connected = true;
           this._connectReject = null;
           this._setConnectionState('connected');
@@ -65614,6 +65687,7 @@ class Scratch3MinecraftBlocks {
     // 次につなぐ MOD が受け付けるかは、その接続の返事で知る
     this._canStopAll = false;
     this._canPause = false;
+    this._modBlocks = null;
     this.pendingRequests.forEach((pending) => {
       pending.reject(this._createCodedError('CONNECTION_CLOSED', 'Connection closed'));
     });
@@ -65641,11 +65715,11 @@ class Scratch3MinecraftBlocks {
   /**
    * 「X: Y: Z: に置く、置き方・向き・あけしめ」ブロック（決まった座標）
    */
-  setBlock(args) {
+  setBlock(args, util) {
     // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
     const blockName = String(args.BLOCK);
     const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
-    const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
+    const namespace = isVerticalSlab || MOD_STAIRS_SLAB_BLOCKS.includes(blockName) ? 'minecraftedu' : 'minecraft';
     let blockType = namespace + ':' + blockName;
     const properties = [];
     const isSlab = blockName.includes('_slab') && !isVerticalSlab;
@@ -65670,23 +65744,25 @@ class Scratch3MinecraftBlocks {
     if (properties.length > 0) {
       blockType += '[' + properties.join(',') + ']';
     }
-    // 小数は切り下げる（まとめて置くブロックと同じ。MOD に小数のまま送ると 0 の方へ切り捨てるので、マイナスの場所で 1 マスずれる）
-    return this.sendCommand('setBlock', {
+    // 小数は切り下げる（まとめて置くブロックと同じ。MOD に小数のまま送ると 0 の方へ切り捨てるので、マイナスの場所で 1 マスずれる）。
+    // 送るものは、MOD の返事を待つ前に決めておく（待っている間に args が書きかわることがあるため）
+    const params = {
       x: Math.floor(Number(args.X)),
       y: Math.floor(Number(args.Y)) - 60,
       z: Math.floor(Number(args.Z)),
       blockType: blockType
-    });
+    };
+    return this._sendModBlock(blockName, util, () => this.sendCommand('setBlock', params));
   }
 
   /**
    * 「プレイヤーから X: Y: Z: ずれたところに置く」ブロック（プレイヤーからの座標）
    */
-  setBlockRelative(args) {
+  setBlockRelative(args, util) {
     // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
     const blockName = String(args.BLOCK);
     const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
-    const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
+    const namespace = isVerticalSlab || MOD_STAIRS_SLAB_BLOCKS.includes(blockName) ? 'minecraftedu' : 'minecraft';
     let blockType = namespace + ':' + blockName;
     const properties = [];
     const isSlab = blockName.includes('_slab') && !isVerticalSlab;
@@ -65711,19 +65787,21 @@ class Scratch3MinecraftBlocks {
     if (properties.length > 0) {
       blockType += '[' + properties.join(',') + ']';
     }
-    return this.sendCommand('setBlock', {
+    // 送るものは、MOD の返事を待つ前に決めておく（待っている間に args が書きかわることがあるため）
+    const params = {
       // 小数は切り下げる（MOD はプレイヤーのいるマスも切り下げで決めるので、それとそろえる）
       relativeX: Math.floor(Number(args.X)),
       relativeY: Math.floor(Number(args.Y)),
       relativeZ: Math.floor(Number(args.Z)),
       blockType: blockType
-    });
+    };
+    return this._sendModBlock(blockName, util, () => this.sendCommand('setBlock', params));
   }
 
   /**
    * ブロック範囲設置（fillBlocksコマンド使用）
    */
-  setBlockRange(args) {
+  setBlockRange(args, util) {
     const x1 = Math.floor(Number(args.X1));
     const x2 = Math.floor(Number(args.X2));
     const y1 = Math.floor(Number(args.Y1)) - 60; // Scratch座標からMinecraft座標に変換
@@ -65733,7 +65811,7 @@ class Scratch3MinecraftBlocks {
     // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
     const blockName = String(args.BLOCK);
     const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
-    const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
+    const namespace = isVerticalSlab || MOD_STAIRS_SLAB_BLOCKS.includes(blockName) ? 'minecraftedu' : 'minecraft';
     let blockType = namespace + ':' + blockName;
     const properties = [];
     const isSlab = blockName.includes('_slab') && !isVerticalSlab;
@@ -65782,52 +65860,54 @@ class Scratch3MinecraftBlocks {
 
     // fillBlocksコマンドでサーバー側に一括処理を依頼
     console.log("\u7BC4\u56F2\u8A2D\u7F6E\u958B\u59CB: ".concat(volume, "\u30D6\u30ED\u30C3\u30AF (").concat(rangeX, "\xD7").concat(rangeY, "\xD7").concat(rangeZ, ")"));
-    return this.sendCommand('fillBlocks', {
-      from: {
-        x: minX,
-        y: minY,
-        z: minZ
-      },
-      to: {
-        x: maxX,
-        y: maxY,
-        z: maxZ
-      },
-      blockType: blockType
-    }).then(() => {
-      console.log("\u7BC4\u56F2\u8A2D\u7F6E\u5B8C\u4E86: ".concat(volume, "\u30D6\u30ED\u30C3\u30AF"));
-    }).catch(error => {
-      console.error('範囲設置エラー:', error);
-      throw error;
-    });
+    return this._sendModBlock(blockName, util, () => this.sendCommand('fillBlocks', {
+        from: {
+          x: minX,
+          y: minY,
+          z: minZ
+        },
+        to: {
+          x: maxX,
+          y: maxY,
+          z: maxZ
+        },
+        blockType: blockType
+      }).then(() => {
+        console.log("\u7BC4\u56F2\u8A2D\u7F6E\u5B8C\u4E86: ".concat(volume, "\u30D6\u30ED\u30C3\u30AF"));
+      }).catch(error => {
+        console.error('範囲設置エラー:', error);
+        throw error;
+      }));
   }
 
   /**
    * 「X: Y: Z: に置く」ブロック（かんたん版：置き方・向きの入力なし）
    */
-  setBlockSimple(args) {
+  setBlockSimple(args, util) {
     // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
     const blockName = String(args.BLOCK);
     const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
-    const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
+    const namespace = isVerticalSlab || MOD_STAIRS_SLAB_BLOCKS.includes(blockName) ? 'minecraftedu' : 'minecraft';
     let blockType = namespace + ':' + blockName;
     // 縦スラブの場合はデフォルトの向きを設定
     if (isVerticalSlab) {
       blockType += '[facing=north]';
     }
-    // 小数は切り下げる（まとめて置くブロックと同じ。MOD に小数のまま送ると 0 の方へ切り捨てるので、マイナスの場所で 1 マスずれる）
-    return this.sendCommand('setBlock', {
+    // 小数は切り下げる（まとめて置くブロックと同じ。MOD に小数のまま送ると 0 の方へ切り捨てるので、マイナスの場所で 1 マスずれる）。
+    // 送るものは、MOD の返事を待つ前に決めておく（待っている間に args が書きかわることがあるため）
+    const params = {
       x: Math.floor(Number(args.X)),
       y: Math.floor(Number(args.Y)) - 60,
       z: Math.floor(Number(args.Z)),
       blockType: blockType
-    });
+    };
+    return this._sendModBlock(blockName, util, () => this.sendCommand('setBlock', params));
   }
 
   /**
    * 「から〜まで でうめる」ブロック（かんたん版：置き方・向きの入力なし）
    */
-  setBlockRangeSimple(args) {
+  setBlockRangeSimple(args, util) {
     const x1 = Math.floor(Number(args.X1));
     const x2 = Math.floor(Number(args.X2));
     const y1 = Math.floor(Number(args.Y1)) - 60;
@@ -65837,7 +65917,7 @@ class Scratch3MinecraftBlocks {
     // 数を返すブロックや変数（初めは 0）が入っても止まらないよう、文字にしてから調べる
     const blockName = String(args.BLOCK);
     const isVerticalSlab = (blockName.startsWith('vertical_') || blockName.startsWith('waxed_vertical_')) && blockName.includes('_slab');
-    const namespace = isVerticalSlab ? 'minecraftedu' : 'minecraft';
+    const namespace = isVerticalSlab || MOD_STAIRS_SLAB_BLOCKS.includes(blockName) ? 'minecraftedu' : 'minecraft';
     let blockType = namespace + ':' + blockName;
     // 縦スラブの場合はデフォルトの向きを設定
     if (isVerticalSlab) {
@@ -65858,11 +65938,11 @@ class Scratch3MinecraftBlocks {
       console.warn('範囲が大きすぎます。最大2,000,000ブロックまでです。');
       return Promise.reject(new Error('範囲が大きすぎます（最大2,000,000ブロック）'));
     }
-    return this.sendCommand('fillBlocks', {
-      from: { x: minX, y: minY, z: minZ },
-      to: { x: maxX, y: maxY, z: maxZ },
-      blockType: blockType
-    });
+    return this._sendModBlock(blockName, util, () => this.sendCommand('fillBlocks', {
+        from: { x: minX, y: minY, z: minZ },
+        to: { x: maxX, y: maxY, z: maxZ },
+        blockType: blockType
+      }));
   }
 
   /**
@@ -66772,7 +66852,7 @@ class Scratch3MinecraftBlocks {
       z: z
     }).then(response => {
       if (response && response.payload && response.payload.result) {
-        // MOD の縦スラブは minecraftedu: が付いて返るので外す（メニューの名前と同じ形にする）
+        // MOD のブロック（縦スラブ・金の階段とハーフブロック）は minecraftedu: が付いて返るので外す（メニューの名前と同じ形にする）
         const name = response.payload.result.blockType;
         return name ? this._plainBlockName(name) : 'air';
       }
@@ -66799,7 +66879,7 @@ class Scratch3MinecraftBlocks {
           y: result.position.y + 60,
           z: result.position.z
         };
-        // MOD の縦スラブは minecraftedu: が付いて返るので外す（メニューの名前と同じ形にする）
+        // MOD のブロック（縦スラブ・金の階段とハーフブロック）は minecraftedu: が付いて返るので外す（メニューの名前と同じ形にする）
         return this._plainBlockName(result.blockType);
       }
       this._lastUnderPos = null;
@@ -66945,6 +67025,8 @@ class Scratch3MinecraftBlocks {
           console.log('Connected with session:', this.sessionId);
           const serverInfo = message.payload.serverInfo || {};
           this._canStopAll = Array.isArray(serverInfo.features) && serverInfo.features.indexOf('stopAll') !== -1;
+          // この MOD が知っている MOD のブロック（0.3.0 から。無ければ古い MOD で、金の階段などを知らない）
+          this._modBlocks = new Set(Array.isArray(serverInfo.modBlocks) ? serverInfo.modBlocks.filter(n => typeof n === 'string') : []);
           // 一時停止を受け付けるかは、この接続の最初の返事で決める（返事をくり返されても、帯を出し直さない・あとから変えない）
           if (this._canPause === null) {
             this._canPause = Array.isArray(serverInfo.features) && serverInfo.features.indexOf('pauseQueue') !== -1;
@@ -267782,6 +267864,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismaryn Trappe",
     "minecraft.block.quartz_stairs": "Kwarts Trappe",
     "minecraft.block.purpur_stairs": "Purpur Trappe",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Gesnyde Koper Trap",
     "minecraft.block.exposed_cut_copper_stairs": "Bloodgestelde Gesnyde Kopertrap",
     "minecraft.block.weathered_cut_copper_stairs": "Verweerde Gesnyde Koper Trappe",
@@ -267834,6 +267917,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kwartsblad",
     "minecraft.block.smooth_quartz_slab": "Gladde Kwarts Blad",
     "minecraft.block.purpur_slab": "Purpur-blad",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Gesnyde Koper Blad",
     "minecraft.block.exposed_cut_copper_slab": "Blootgestelde Gesnyde Koperblad",
     "minecraft.block.weathered_cut_copper_slab": "Verweerde Gesnyde Koper Blad",
@@ -269465,6 +269549,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "درج بريسمارين",
     "minecraft.block.quartz_stairs": "درج كوارتز",
     "minecraft.block.purpur_stairs": "درج بربر",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "درج نحاس مقطع",
     "minecraft.block.exposed_cut_copper_stairs": "درج نحاس مقطع مكشوف",
     "minecraft.block.weathered_cut_copper_stairs": "درج نحاس مقطع معرض للجو",
@@ -269517,6 +269602,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "بلاطة كوارتز",
     "minecraft.block.smooth_quartz_slab": "بلاطة كوارتز ناعمة",
     "minecraft.block.purpur_slab": "بلاطة بربر",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "بلاطة نحاس مقطع",
     "minecraft.block.exposed_cut_copper_slab": "بلاطة نحاس مقطع مكشوف",
     "minecraft.block.weathered_cut_copper_slab": "بلاطة نحاس مقطع معرض للجو",
@@ -273844,6 +273930,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prizmarin pilləkən",
     "minecraft.block.quartz_stairs": "Kvars Pilləkən",
     "minecraft.block.purpur_stairs": "Purpur Pilləkən",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Kəsilmiş Mis Pilləkən",
     "minecraft.block.exposed_cut_copper_stairs": "Müdafiəsiz Qalmış Kəsilmiş Mis Pilləkən",
     "minecraft.block.weathered_cut_copper_stairs": "Solmuş Kəsilmiş Mis Pilləkən",
@@ -273896,6 +273983,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvars Pillə",
     "minecraft.block.smooth_quartz_slab": "Düzgün Kvars Pillə",
     "minecraft.block.purpur_slab": "Purpur Pillə",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Kəsilmiş mis pillə",
     "minecraft.block.exposed_cut_copper_slab": "Müdafiəsiz qalmış kəsilmiş mis pillə",
     "minecraft.block.weathered_cut_copper_slab": "Solmuş kəsilmiş mis pillə",
@@ -275527,6 +275615,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Tangga Prismarine",
     "minecraft.block.quartz_stairs": "Tangga Kuarsa",
     "minecraft.block.purpur_stairs": "Tangga Purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Tangga Tembaga Pahat",
     "minecraft.block.exposed_cut_copper_stairs": "Potongan Tangga Tembaga Terekspos",
     "minecraft.block.weathered_cut_copper_stairs": "Tangga Tembaga Pahat Berkarat",
@@ -275579,6 +275668,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Lempeng Kuarsa",
     "minecraft.block.smooth_quartz_slab": "Lempeng Kuarsa Halus",
     "minecraft.block.purpur_slab": "Lempeng Purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Lempeng Tembaga Pahat",
     "minecraft.block.exposed_cut_copper_slab": "Potongan Lempeng Tembaga Terekspos",
     "minecraft.block.weathered_cut_copper_slab": "Lempeng Tembaga Pahat Berkarat",
@@ -278131,6 +278221,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Прызмарынавыя прыступкі",
     "minecraft.block.quartz_stairs": "Кварцавыя прыступкі",
     "minecraft.block.purpur_stairs": "Пурпуровыя прыступкі",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Прыступкі з разной медзі",
     "minecraft.block.exposed_cut_copper_stairs": "Пацьмянелыя прыступкі з разной медзі",
     "minecraft.block.weathered_cut_copper_stairs": "Прыступкі з выветранай разной медзі",
@@ -278183,6 +278274,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Кварцавая пліта",
     "minecraft.block.smooth_quartz_slab": "Пліта з гладкага кварцу",
     "minecraft.block.purpur_slab": "Пурпуровая пліта",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Пліта з разной медзі",
     "minecraft.block.exposed_cut_copper_slab": "Пацьмянелая пліта з разной медзі",
     "minecraft.block.weathered_cut_copper_slab": "Пліта з выветранай разной медзі",
@@ -279814,6 +279906,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Призмаринови стъпала",
     "minecraft.block.quartz_stairs": "Кварцови стъпала",
     "minecraft.block.purpur_stairs": "Пурпурни стълби",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Стъпала от сечена мед",
     "minecraft.block.exposed_cut_copper_stairs": "Незащитени стъпала от сечена мед",
     "minecraft.block.weathered_cut_copper_stairs": "Ръждясали стъпала от сечена мед",
@@ -279866,6 +279959,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Кварцова плоча",
     "minecraft.block.smooth_quartz_slab": "Плоча от гладък кварц",
     "minecraft.block.purpur_slab": "Пурпурна плоча",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Плоча от сечена мед",
     "minecraft.block.exposed_cut_copper_slab": "Незащитена плоча от сечена мед",
     "minecraft.block.weathered_cut_copper_slab": "Ръждясала плоча от сечена мед",
@@ -281497,6 +281591,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Escales de prismarina",
     "minecraft.block.quartz_stairs": "Escales de quars",
     "minecraft.block.purpur_stairs": "Escales de purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Escales de coure tallat",
     "minecraft.block.exposed_cut_copper_stairs": "Escales de coure tallat exposades",
     "minecraft.block.weathered_cut_copper_stairs": "Escales de coure tallat corroïdes",
@@ -281549,6 +281644,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Llosa de quars",
     "minecraft.block.smooth_quartz_slab": "Llosa de quars llis",
     "minecraft.block.purpur_slab": "Llosa de purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Llosa de coure tallat",
     "minecraft.block.exposed_cut_copper_slab": "Llosa de coure tallat exposada",
     "minecraft.block.weathered_cut_copper_slab": "Llosa de coure tallat corroïda",
@@ -283180,6 +283276,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarínové schody",
     "minecraft.block.quartz_stairs": "Křemenné schody",
     "minecraft.block.purpur_stairs": "Purpurové schody",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Schody z tepané mědi",
     "minecraft.block.exposed_cut_copper_stairs": "Tepané schody s lehkou měděnkou",
     "minecraft.block.weathered_cut_copper_stairs": "Tepané schody pokryté střední měděnkou",
@@ -283232,6 +283329,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Křemenný půlblok",
     "minecraft.block.smooth_quartz_slab": "Půlblok z hladkého křemene",
     "minecraft.block.purpur_slab": "Purpurový půlblok",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Půlblok z tepané mědi",
     "minecraft.block.exposed_cut_copper_slab": "Tepaný půlblok s lehkou měděnkou",
     "minecraft.block.weathered_cut_copper_slab": "Tepaný půlblok pokrytý střední měděnkou",
@@ -284863,6 +284961,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Grisiau Prismarin",
     "minecraft.block.quartz_stairs": "Grisiau Cwarts",
     "minecraft.block.purpur_stairs": "Grisiau Purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Grisiau Copr Toredig",
     "minecraft.block.exposed_cut_copper_stairs": "Grisiau Copr Toredig Wedi Pylu",
     "minecraft.block.weathered_cut_copper_stairs": "Grisiau Copr Toredig Hindreuliedig",
@@ -284915,6 +285014,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Slab Cwarts",
     "minecraft.block.smooth_quartz_slab": "Slab Cwarts Llyfn",
     "minecraft.block.purpur_slab": "Slab Purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Slab Copr Toredig",
     "minecraft.block.exposed_cut_copper_slab": "Slab Copr Toredig Wedi Pylu",
     "minecraft.block.weathered_cut_copper_slab": "Slab Copr Toredig Hindreuliedig",
@@ -286546,6 +286646,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarine-trappe",
     "minecraft.block.quartz_stairs": "Kvartstrappe",
     "minecraft.block.purpur_stairs": "Purpur trappe",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Skåret kobbertrappe",
     "minecraft.block.exposed_cut_copper_stairs": "Blotlagt skåret kobbertrappe",
     "minecraft.block.weathered_cut_copper_stairs": "Forvitret skåret kobbertrappe",
@@ -286598,6 +286699,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvartsflise",
     "minecraft.block.smooth_quartz_slab": "Glat kvartsflise",
     "minecraft.block.purpur_slab": "Purpur-flise",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Skåret kobberplade",
     "minecraft.block.exposed_cut_copper_slab": "Blotlagt skåret kobberplade",
     "minecraft.block.weathered_cut_copper_slab": "Forvitret skåret kobberplade",
@@ -288229,6 +288331,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarintreppe",
     "minecraft.block.quartz_stairs": "Quarztreppe",
     "minecraft.block.purpur_stairs": "Purpurtreppe",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Geschnittene Kupfertreppe",
     "minecraft.block.exposed_cut_copper_stairs": "Angelaufene geschnittene Kupfertreppe",
     "minecraft.block.weathered_cut_copper_stairs": "Verwitterte geschnittene Kupfertreppe",
@@ -288281,6 +288384,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Quarzstufe",
     "minecraft.block.smooth_quartz_slab": "Glatte Quarzstufe",
     "minecraft.block.purpur_slab": "Purpurstufe",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Geschnittene Kupferstufe",
     "minecraft.block.exposed_cut_copper_slab": "Angelaufene geschnittene Kupferstufe",
     "minecraft.block.weathered_cut_copper_slab": "Verwitterte geschnittene Kupferstufe",
@@ -289912,6 +290016,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismariinitrepp",
     "minecraft.block.quartz_stairs": "Kvartstrepp",
     "minecraft.block.purpur_stairs": "Purpurtrepp",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Lõigatud vasest trepp",
     "minecraft.block.exposed_cut_copper_stairs": "Pleekinud lõigatud vasest trepp",
     "minecraft.block.weathered_cut_copper_stairs": "Kulunud lõigatud vasest trepp",
@@ -289964,6 +290069,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvartsplaat",
     "minecraft.block.smooth_quartz_slab": "Siledast kvartsist plaat",
     "minecraft.block.purpur_slab": "Purpurplaat",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Lõigatud vasest plaat",
     "minecraft.block.exposed_cut_copper_slab": "Pleekinud lõigatud vasest plaat",
     "minecraft.block.weathered_cut_copper_slab": "Kulunud lõigatud vasest plaat",
@@ -291595,6 +291701,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Σκάλες Πρισμαρίνης",
     "minecraft.block.quartz_stairs": "Σκάλες Χαλαζία",
     "minecraft.block.purpur_stairs": "Σκάλες Πέρπουρ",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Σκάλες Κομμένου Χαλκού",
     "minecraft.block.exposed_cut_copper_stairs": "Σκάλες Εκτεθειμένου Κομμένου Χαλκού",
     "minecraft.block.weathered_cut_copper_stairs": "Σκάλες Φθαρμένου Κομμένου Χαλκού",
@@ -291647,6 +291754,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Πλάκα Χαλαζία",
     "minecraft.block.smooth_quartz_slab": "Πλάκα Λείου Χαλαζία",
     "minecraft.block.purpur_slab": "Πλάκα Πέρπουρ",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Πλάκα Κομμένου Χαλκού",
     "minecraft.block.exposed_cut_copper_slab": "Πλάκα Εκτεθειμένου Κομμένου Χαλκού",
     "minecraft.block.weathered_cut_copper_slab": "Πλάκα Φθαρμένου Κομμένου Χαλκού",
@@ -293335,6 +293443,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarine Stairs",
     "minecraft.block.quartz_stairs": "Quartz Stairs",
     "minecraft.block.purpur_stairs": "Purpur Stairs",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Cut Copper Stairs",
     "minecraft.block.exposed_cut_copper_stairs": "Exposed Cut Copper Stairs",
     "minecraft.block.weathered_cut_copper_stairs": "Weathered Cut Copper Stairs",
@@ -293387,6 +293496,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Quartz Slab",
     "minecraft.block.smooth_quartz_slab": "Smooth Quartz Slab",
     "minecraft.block.purpur_slab": "Purpur Slab",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Cut Copper Slab",
     "minecraft.block.exposed_cut_copper_slab": "Exposed Cut Copper Slab",
     "minecraft.block.weathered_cut_copper_slab": "Weathered Cut Copper Slab",
@@ -293944,6 +294054,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.structure_block": "Structure Block",
     "minecraft.connect": "connect to Minecraft host [HOST] port [PORT]",
     "minecraft.pauseNotSupported": "Minecraft does not pause (the MOD is old)",
+    "minecraft.modBlockNeedsNewMod": "This block cannot be placed (the MOD is old)",
     "minecraft.disconnect": "disconnect",
     "minecraft.chat": "say [MESSAGE]",
     "minecraft.teleport": "teleport to X:[X] Y:[Y] Z:[Z]",
@@ -295074,6 +295185,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Escaleras de prismarina",
     "minecraft.block.quartz_stairs": "Escaleras de cuarzo",
     "minecraft.block.purpur_stairs": "Escaleras de purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Escaleras de cobre cortado",
     "minecraft.block.exposed_cut_copper_stairs": "Escaleras de cobre cortado expuesto",
     "minecraft.block.weathered_cut_copper_stairs": "Escaleras de cobre cortado degradado",
@@ -295126,6 +295238,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Losa de cuarzo",
     "minecraft.block.smooth_quartz_slab": "Losa de cuarzo liso",
     "minecraft.block.purpur_slab": "Losa de purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Losa de cobre cortado",
     "minecraft.block.exposed_cut_copper_slab": "Losa de cobre cortado expuesto",
     "minecraft.block.weathered_cut_copper_slab": "Losa de cobre cortado degradado",
@@ -297609,6 +297722,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarina ŝtuparo",
     "minecraft.block.quartz_stairs": "Kvarca ŝtuparo",
     "minecraft.block.purpur_stairs": "Purpura ŝtuparo",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Tranĉita kupra ŝtuparo",
     "minecraft.block.exposed_cut_copper_stairs": "Verdigreta tranĉita kupra ŝtuparo",
     "minecraft.block.weathered_cut_copper_stairs": "Verdigra tranĉita kupra ŝtuparo",
@@ -297661,6 +297775,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvarca ŝtupo",
     "minecraft.block.smooth_quartz_slab": "Glata kvarca ŝtupo",
     "minecraft.block.purpur_slab": "Purpura ŝtupo",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Tranĉita kupra ŝtupo",
     "minecraft.block.exposed_cut_copper_slab": "Verdigreta tranĉita kupra ŝtupo",
     "minecraft.block.weathered_cut_copper_slab": "Verdigra tranĉita kupra ŝtupo",
@@ -299292,6 +299407,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarina eskailerak",
     "minecraft.block.quartz_stairs": "Kuartzozko eskailerak",
     "minecraft.block.purpur_stairs": "Purpurezko eskailerak",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Moztutako kobrezko eskailerak",
     "minecraft.block.exposed_cut_copper_stairs": "Moztutako kobrezko eskailera estalgabetuak",
     "minecraft.block.weathered_cut_copper_stairs": "Moztutako kobrezko eskailera degradatuak",
@@ -299344,6 +299460,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kuartzozko lauza",
     "minecraft.block.smooth_quartz_slab": "Kuartzo leunezko lauza",
     "minecraft.block.purpur_slab": "Purpur lauza",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Moztutako kobrezko lauza",
     "minecraft.block.exposed_cut_copper_slab": "Moztutako kobrezko lauza estalgabetua",
     "minecraft.block.weathered_cut_copper_slab": "Moztutako kobrezko lauza degradatua",
@@ -300975,6 +301092,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "پله منشور دريايی",
     "minecraft.block.quartz_stairs": "پله کوارتز",
     "minecraft.block.purpur_stairs": "پله کبود",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "پله مس برش خورده",
     "minecraft.block.exposed_cut_copper_stairs": "پله مس برش خورده هوا ديده",
     "minecraft.block.weathered_cut_copper_stairs": "پله مس برش خورده هوازده",
@@ -301027,6 +301145,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "نيمه بلوک کوارتز",
     "minecraft.block.smooth_quartz_slab": "نيمه بلوک کوارتز صاف",
     "minecraft.block.purpur_slab": "قطعه نيمه کبود",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "نيمه مس برش خورده",
     "minecraft.block.exposed_cut_copper_slab": "نيمه مس برش خورده هوا ديده",
     "minecraft.block.weathered_cut_copper_slab": "نيمه مس برش خورده هوازده",
@@ -303511,6 +303630,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Escalier en prismarine",
     "minecraft.block.quartz_stairs": "Escalier en quartz",
     "minecraft.block.purpur_stairs": "Escalier en purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Escalier en cuivre taillé",
     "minecraft.block.exposed_cut_copper_stairs": "Escalier en cuivre taillé exposé",
     "minecraft.block.weathered_cut_copper_stairs": "Escalier en cuivre taillé érodé",
@@ -303563,6 +303683,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Dalle de quartz",
     "minecraft.block.smooth_quartz_slab": "Dalle de quartz lisse",
     "minecraft.block.purpur_slab": "Dalle de purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Dalle de cuivre taillé",
     "minecraft.block.exposed_cut_copper_slab": "Dalle de cuivre taillé exposé",
     "minecraft.block.weathered_cut_copper_slab": "Dalle de cuivre taillé érodé",
@@ -306115,6 +306236,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Staighre Priosmuirínigh",
     "minecraft.block.quartz_stairs": "Staighre Grianchloiche",
     "minecraft.block.purpur_stairs": "Staighre Purpaire",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Staighre Copair Ghearrtha",
     "minecraft.block.exposed_cut_copper_stairs": "Staighre Copair Ghearrtha Nochta",
     "minecraft.block.weathered_cut_copper_stairs": "Staighre Copair Ghearrtha Síonchaite",
@@ -306167,6 +306289,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Leac Ghrianchloiche",
     "minecraft.block.smooth_quartz_slab": "Leac Ghrianchloiche Míne",
     "minecraft.block.purpur_slab": "Leac Purpaire",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Leac Chopair Ghearrtha",
     "minecraft.block.exposed_cut_copper_slab": "Leac Chopair Ghearrtha Nochta",
     "minecraft.block.weathered_cut_copper_slab": "Leaca Copair Gearrtha Aimsire",
@@ -307798,6 +307921,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Staidhre priosaim-mhara",
     "minecraft.block.quartz_stairs": "Staidhre eiteige",
     "minecraft.block.purpur_stairs": "Staidhre purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Staidhre copair gheàrrte",
     "minecraft.block.exposed_cut_copper_stairs": "Staidhre copair luim gheàrrte",
     "minecraft.block.weathered_cut_copper_stairs": "Staidhre copair ànraich gheàrrte",
@@ -307850,6 +307974,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Leac eiteige",
     "minecraft.block.smooth_quartz_slab": "Leac eiteige rèidhe",
     "minecraft.block.purpur_slab": "Leac purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Leac copair gheàrrte",
     "minecraft.block.exposed_cut_copper_slab": "Leac copair luim gheàrrte",
     "minecraft.block.weathered_cut_copper_slab": "Leac copair ànraich gheàrrte",
@@ -309481,6 +309606,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Escaleiras de prismariña",
     "minecraft.block.quartz_stairs": "Escaleiras de cuarzo",
     "minecraft.block.purpur_stairs": "Escaleiras de púrpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Escaleiras de cobre cortado",
     "minecraft.block.exposed_cut_copper_stairs": "Escaleiras de cobre cortado exposto",
     "minecraft.block.weathered_cut_copper_stairs": "Escaleiras de cobre cortado corroído",
@@ -309533,6 +309659,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Lastra de cuarzo",
     "minecraft.block.smooth_quartz_slab": "Lastra de cuarzo liso",
     "minecraft.block.purpur_slab": "Lastra de púrpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Lastra de cobre cortado",
     "minecraft.block.exposed_cut_copper_slab": "Lastra de cobre cortado exposto",
     "minecraft.block.weathered_cut_copper_slab": "Lastra de cobre cortado corroído",
@@ -311164,6 +311291,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "프리즈머린 계단",
     "minecraft.block.quartz_stairs": "석영 계단",
     "minecraft.block.purpur_stairs": "퍼퍼 계단",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "깎인 구리 계단",
     "minecraft.block.exposed_cut_copper_stairs": "약간 녹슨 깎인 구리 계단",
     "minecraft.block.weathered_cut_copper_stairs": "녹슨 깎인 구리 계단",
@@ -311216,6 +311344,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "석영 반 블록",
     "minecraft.block.smooth_quartz_slab": "매끄러운 석영 반 블록",
     "minecraft.block.purpur_slab": "퍼퍼 반 블록",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "깎인 구리 반 블록",
     "minecraft.block.exposed_cut_copper_slab": "약간 녹슨 깎인 구리 반 블록",
     "minecraft.block.weathered_cut_copper_slab": "녹슨 깎인 구리 반 블록",
@@ -313768,6 +313897,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Պրիզմարինե աստիճաններ",
     "minecraft.block.quartz_stairs": "Կվարցե Աստիճաններ",
     "minecraft.block.purpur_stairs": "Պուրպուրե աստիճաներ",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Կտրտված պղինձից աստիճաններ",
     "minecraft.block.exposed_cut_copper_stairs": "Մգացած կտրտված պղնձե աստիճաններ",
     "minecraft.block.weathered_cut_copper_stairs": "Քայքայված կտրտված պղնձից աստիճաններ",
@@ -313820,6 +313950,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Կվարցե Սալիկ",
     "minecraft.block.smooth_quartz_slab": "Հարթ Կվարցե Սալիկ",
     "minecraft.block.purpur_slab": "Պուրպուրե Սալիկ",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Կտրտված պղնձե սալիկ",
     "minecraft.block.exposed_cut_copper_slab": "Մգացած կտրտված պղնձե սալիկ",
     "minecraft.block.weathered_cut_copper_slab": "Քայքայված կտրտված պղնձե սալիկ",
@@ -315451,6 +315582,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "מדרגות פריזמרין",
     "minecraft.block.quartz_stairs": "מדרגות קוורץ",
     "minecraft.block.purpur_stairs": "מדרגות פורפור",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "מדרגות לבני נחושת",
     "minecraft.block.exposed_cut_copper_stairs": "מדרגות לבני נחושת חשופות",
     "minecraft.block.weathered_cut_copper_stairs": "מדרגות לבני נחושת בלויות",
@@ -315503,6 +315635,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "קוורץ חצוי",
     "minecraft.block.smooth_quartz_slab": "קוורץ חלק חצוי",
     "minecraft.block.purpur_slab": "פורפור חצוי",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "לבנת נחושת חצויה",
     "minecraft.block.exposed_cut_copper_slab": "לבנת נחושת חשופה חצויה",
     "minecraft.block.weathered_cut_copper_slab": "לבנת נחושת בלויה חצויה",
@@ -317133,6 +317266,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "प्रिज्मरीन की सीढ़ियाँ",
     "minecraft.block.quartz_stairs": "स्फटिक की सीढ़ियाँ",
     "minecraft.block.purpur_stairs": "परपर की सीढ़ियाँ",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "कटे हुए तांबे की सीढ़ियाँ",
     "minecraft.block.exposed_cut_copper_stairs": "उजागर हुए कटे तांबे की सीढ़ियाँ",
     "minecraft.block.weathered_cut_copper_stairs": "अपक्षीण कटे हुए तांबे की सीढ़ियाँ",
@@ -317185,6 +317319,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "स्फटिक की पटिया",
     "minecraft.block.smooth_quartz_slab": "चिकना स्फटिक की पटिया",
     "minecraft.block.purpur_slab": "परपर की पटिया",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "कटे हुए तांबे की पटिया",
     "minecraft.block.exposed_cut_copper_slab": "उजागर हुए कटे तांबे की पटिया",
     "minecraft.block.weathered_cut_copper_slab": "कटे हुए अपक्षीण तांबे की पटिया",
@@ -318816,6 +318951,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Stube od prizmarina",
     "minecraft.block.quartz_stairs": "Stube od kvarca",
     "minecraft.block.purpur_stairs": "Stube od purpura",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Stepenice od rezanog bakra",
     "minecraft.block.exposed_cut_copper_stairs": "Stube od izloženog rezanog bakra",
     "minecraft.block.weathered_cut_copper_stairs": "Stepenice od rezanog korodiranog bakra",
@@ -318868,6 +319004,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Ploča od kvarca",
     "minecraft.block.smooth_quartz_slab": "Ploča od glatkog kvarca",
     "minecraft.block.purpur_slab": "Ploča od purpura",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Ploča od rezanog bakra",
     "minecraft.block.exposed_cut_copper_slab": "Ploča od izloženog rezanog bakra",
     "minecraft.block.weathered_cut_copper_slab": "Polublok od rezanog korodiranog bakra",
@@ -322342,6 +322479,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Hafsteinströppur",
     "minecraft.block.quartz_stairs": "Kvarströppur",
     "minecraft.block.purpur_stairs": "Purpuratröppur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Skornar kopartröppur",
     "minecraft.block.exposed_cut_copper_stairs": "Óvarnar skornar kopartröppur",
     "minecraft.block.weathered_cut_copper_stairs": "Veðraðar skornar kopartröppur",
@@ -322394,6 +322532,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvarshella",
     "minecraft.block.smooth_quartz_slab": "Slétt kvarshella",
     "minecraft.block.purpur_slab": "Purpurahella",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Skorin koparhella",
     "minecraft.block.exposed_cut_copper_slab": "Óvarin skorin koparhella",
     "minecraft.block.weathered_cut_copper_slab": "Veðruð skorin koparhella",
@@ -324025,6 +324164,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Scalini di prismarino",
     "minecraft.block.quartz_stairs": "Scalini di quarzo",
     "minecraft.block.purpur_stairs": "Scalini di purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Scalini di rame inciso",
     "minecraft.block.exposed_cut_copper_stairs": "Scalini di rame inciso esposto",
     "minecraft.block.weathered_cut_copper_stairs": "Scalini di rame inciso corroso",
@@ -324077,6 +324217,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Lastra di quarzo",
     "minecraft.block.smooth_quartz_slab": "Lastra di quarzo liscio",
     "minecraft.block.purpur_slab": "Lastra di purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Lastra di rame inciso",
     "minecraft.block.exposed_cut_copper_slab": "Lastra di rame inciso esposto",
     "minecraft.block.weathered_cut_copper_slab": "Lastra di rame inciso corroso",
@@ -325707,6 +325848,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "პრიზმარინის საფეხურები",
     "minecraft.block.quartz_stairs": "კვარცის საფეხურები",
     "minecraft.block.purpur_stairs": "პურპურის საფეხურები",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "მოჭრილი სპილენძის საფეხურები",
     "minecraft.block.exposed_cut_copper_stairs": "გამუქებული მოჭრილი სპილენძის საფეხურები",
     "minecraft.block.weathered_cut_copper_stairs": "დაძველებული მოჭრილი სპილენძის საფეხურები",
@@ -325759,6 +325901,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "კვარცის ფილა",
     "minecraft.block.smooth_quartz_slab": "გლუვი კვარცის ფილა",
     "minecraft.block.purpur_slab": "პურპურის ფილა",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "მოჭრილი სპილენძის ფილა",
     "minecraft.block.exposed_cut_copper_slab": "გამუქებული მოჭრილი სპილენძის ფილა",
     "minecraft.block.weathered_cut_copper_slab": "დაძველებული მოჭრილი სპილენძის ფილა",
@@ -327389,6 +327532,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Призмарин баспалдақ",
     "minecraft.block.quartz_stairs": "Кварц баспалдақ",
     "minecraft.block.purpur_stairs": "Пурпур баспалдақ",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Кесілген мыс баспалдақ",
     "minecraft.block.exposed_cut_copper_stairs": "Тозған кесілген мыс баспалдақ",
     "minecraft.block.weathered_cut_copper_stairs": "Көгерген кесілген мыс баспалдақ",
@@ -327441,6 +327585,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Кварц тақта",
     "minecraft.block.smooth_quartz_slab": "Тегіс кварц тақта",
     "minecraft.block.purpur_slab": "Пурпур тақта",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Кесілген мыс тақта",
     "minecraft.block.exposed_cut_copper_slab": "Тозған кесілген мыс тақта",
     "minecraft.block.weathered_cut_copper_slab": "Көгерген кесілген мыс тақта",
@@ -333610,6 +333755,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prizmarīna kāpnes",
     "minecraft.block.quartz_stairs": "Kvarca kāpnes",
     "minecraft.block.purpur_stairs": "Purpur kāpnes",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Šķelta vara pakāpieni",
     "minecraft.block.exposed_cut_copper_stairs": "Atsegti šķelti vara pakāpieni",
     "minecraft.block.weathered_cut_copper_stairs": "Apsūbējuši šķelti vara pakāpieni",
@@ -333662,6 +333808,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvarca plāksne",
     "minecraft.block.smooth_quartz_slab": "Gluda kvarca plāksne",
     "minecraft.block.purpur_slab": "Purpur plāksne",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Šķelta vara plāksne",
     "minecraft.block.exposed_cut_copper_slab": "Atsegta šķelta vara plāksne",
     "minecraft.block.weathered_cut_copper_slab": "Apsūbējusi šķelta vara plāksne",
@@ -335293,6 +335440,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prizmarino laiptai",
     "minecraft.block.quartz_stairs": "Kvarco laiptai",
     "minecraft.block.purpur_stairs": "Purpuro laiptai",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Pjauto vario laiptai",
     "minecraft.block.exposed_cut_copper_stairs": "Paveikto pjauto vario laiptai",
     "minecraft.block.weathered_cut_copper_stairs": "Stipriai paveikto pjauto vario laiptai",
@@ -335345,6 +335493,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvarco pusblokis",
     "minecraft.block.smooth_quartz_slab": "Lygaus kvarco pusblokis",
     "minecraft.block.purpur_slab": "Purpuro pusblokis",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Pjauto vario pusblokis",
     "minecraft.block.exposed_cut_copper_slab": "Paveikto pjauto vario pusblokis",
     "minecraft.block.weathered_cut_copper_slab": "Stipriai paveikto pjauto vario pusblokis",
@@ -336976,6 +337125,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prizmarinlépcső",
     "minecraft.block.quartz_stairs": "Kvarclépcső",
     "minecraft.block.purpur_stairs": "Purpurlépcső",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Vágott rézlépcső",
     "minecraft.block.exposed_cut_copper_stairs": "Megviselt vágott rézlépcső",
     "minecraft.block.weathered_cut_copper_stairs": "Viharvert vágott rézlépcső",
@@ -337028,6 +337178,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvarclap",
     "minecraft.block.smooth_quartz_slab": "Csiszolt kvarclap",
     "minecraft.block.purpur_slab": "Purpurlap",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Vágott rézlap",
     "minecraft.block.exposed_cut_copper_slab": "Megviselt vágott rézlap",
     "minecraft.block.weathered_cut_copper_slab": "Viharvert vágott rézlap",
@@ -339580,6 +339731,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Присмарин шат",
     "minecraft.block.quartz_stairs": "Кварц шат",
     "minecraft.block.purpur_stairs": "Пурпур шат",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Зүсмэл зэс шат",
     "minecraft.block.exposed_cut_copper_stairs": "Өгөршсөн зүсмэл зэс шат",
     "minecraft.block.weathered_cut_copper_stairs": "Исэлдсэн зүсмэл зэс шат",
@@ -339632,6 +339784,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Кварц хавтан",
     "minecraft.block.smooth_quartz_slab": "Гөлгөр кварц хавтан",
     "minecraft.block.purpur_slab": "Пурпур хавтан",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Зүсмэл зэс хавтан",
     "minecraft.block.exposed_cut_copper_slab": "Өгөршсөн зүсмэл зэс хавтан",
     "minecraft.block.weathered_cut_copper_slab": "Исэлдсэн зүсмэл зэс хавтан",
@@ -341263,6 +341416,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarientrap",
     "minecraft.block.quartz_stairs": "Kwartstrap",
     "minecraft.block.purpur_stairs": "Purpurtrap",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Gesneden koperen trap",
     "minecraft.block.exposed_cut_copper_stairs": "Blootgestelde gesneden koperen trap",
     "minecraft.block.weathered_cut_copper_stairs": "Verweerde gesneden koperen trap",
@@ -341315,6 +341469,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kwartsplaat",
     "minecraft.block.smooth_quartz_slab": "Gladde kwartsplaat",
     "minecraft.block.purpur_slab": "Purpurplaat",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Gesneden koperen plaat",
     "minecraft.block.exposed_cut_copper_slab": "Blootgestelde gesneden koperen plaat",
     "minecraft.block.weathered_cut_copper_slab": "Verweerde gesneden koperen plaat",
@@ -343006,6 +343161,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_stairs": "クォーツの階段",
     "minecraft.block.smooth_quartz_stairs": "滑らかなクォーツの階段",
     "minecraft.block.purpur_stairs": "プルパーの階段",
+    "minecraft.block.gold_block_stairs": "金ブロックの階段",
     "minecraft.block.cut_copper_stairs": "切り込み入りの銅の階段",
     "minecraft.block.exposed_cut_copper_stairs": "風化した切り込み入りの銅の階段",
     "minecraft.block.weathered_cut_copper_stairs": "錆びた切り込み入りの銅の階段",
@@ -343058,6 +343214,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "クォーツのハーフブロック",
     "minecraft.block.smooth_quartz_slab": "滑らかなクォーツのハーフブロック",
     "minecraft.block.purpur_slab": "プルプァのハーフブロック",
+    "minecraft.block.gold_block_slab": "金ブロックのハーフブロック",
     "minecraft.block.cut_copper_slab": "切り込み入りの銅のハーフブロック",
     "minecraft.block.exposed_cut_copper_slab": "風化した切り込み入りの銅のハーフブロック",
     "minecraft.block.weathered_cut_copper_slab": "錆びた切り込み入りの銅のハーフブロック",
@@ -343621,6 +343778,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.structure_block": "ストラクチャーブロック",
     "minecraft.connect": "Minecraftにつなぐ [HOST]:[PORT]",
     "minecraft.pauseNotSupported": "Minecraftは止まりません（MODが古いため）",
+    "minecraft.modBlockNeedsNewMod": "このブロックは置けません（MODが古いため）",
     "minecraft.disconnect": "Minecraftとつなぐのをやめる",
     "minecraft.chat": "チャットで [MESSAGE] と言う",
     "minecraft.teleport": "X:[X] Y:[Y] Z:[Z] にテレポートする",
@@ -345212,6 +345370,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.vertical_spruce_slab": "トウヒのスラブ（すいちょく）",
     "minecraft.block.vertical_oak_slab": "オークのスラブ（すいちょく）",
     "minecraft.block.purpur_slab": "プルプァのハーフブロック",
+    "minecraft.block.gold_block_slab": "きんブロックのハーフブロック",
     "minecraft.block.smooth_quartz_slab": "なめらかなクォーツのハーフブロック",
     "minecraft.block.quartz_slab": "クォーツのハーフブロック",
     "minecraft.block.dark_prismarine_slab": "ダークプリズマリンのハーフブロック",
@@ -345264,6 +345423,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.spruce_slab": "トウヒのハーフブロック",
     "minecraft.block.oak_slab": "オークのハーフブロック",
     "minecraft.block.purpur_stairs": "プルパーのかいだん",
+    "minecraft.block.gold_block_stairs": "きんブロックのかいだん",
     "minecraft.block.smooth_quartz_stairs": "なめらかなクォーツのかいだん",
     "minecraft.block.quartz_stairs": "クォーツのかいだん",
     "minecraft.block.dark_prismarine_stairs": "ダークプリズマリンのかいだん",
@@ -345508,6 +345668,7 @@ __webpack_require__.r(__webpack_exports__);
 
     "minecraft.connect": "Minecraftにつなぐ [HOST]:[PORT]",
     "minecraft.pauseNotSupported": "Minecraftはとまりません（MODがふるいため）",
+    "minecraft.modBlockNeedsNewMod": "このブロックはおけません（MODがふるいため）",
     "minecraft.disconnect": "Minecraftとつなぐのをやめる",
     "minecraft.place": "ぶろっく [BLOCK] を [X] [Y] [Z] に おく",
     "minecraft.placeBuilding": "たてもの ぶろっく [BLOCK] を [X] [Y] [Z] に おく",
@@ -346682,6 +346843,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Trapp av prismarin",
     "minecraft.block.quartz_stairs": "Trapp av kvarts",
     "minecraft.block.purpur_stairs": "Trapp av purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Trapp av skåret kobber",
     "minecraft.block.exposed_cut_copper_stairs": "Trapp av utsatt skåret kobber",
     "minecraft.block.weathered_cut_copper_stairs": "Trapp av værbitt skåret kobber",
@@ -346734,6 +346896,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Helle av kvarts",
     "minecraft.block.smooth_quartz_slab": "Helle av jevn kvarts",
     "minecraft.block.purpur_slab": "Helle av purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Helle av skåret kobber",
     "minecraft.block.exposed_cut_copper_slab": "Helle av utsatt skåret kobber",
     "minecraft.block.weathered_cut_copper_slab": "Helle av værbitt skåret kobber",
@@ -348364,6 +348527,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarintrapp",
     "minecraft.block.quartz_stairs": "Kvartstrapp",
     "minecraft.block.purpur_stairs": "Purpurtrapp",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Trapp av skoren kopar",
     "minecraft.block.exposed_cut_copper_stairs": "Utsett trapp av skoren kopar",
     "minecraft.block.weathered_cut_copper_stairs": "Vêrbita trapp av skoren kopar",
@@ -348416,6 +348580,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Helle av kvarts",
     "minecraft.block.smooth_quartz_slab": "Helle av glatt kvart",
     "minecraft.block.purpur_slab": "Purpurhelle",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Heller av skoren kopar",
     "minecraft.block.exposed_cut_copper_slab": "Utsett helle av skoren kopar",
     "minecraft.block.weathered_cut_copper_slab": "Vêrbita helle av skoren kopar",
@@ -350046,6 +350211,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Escalièrs en prismarina",
     "minecraft.block.quartz_stairs": "Escalièrs en qüars",
     "minecraft.block.purpur_stairs": "Escalièrs de porpra",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Escalièrs en coire talhat",
     "minecraft.block.exposed_cut_copper_stairs": "Escalièrs en coire talhat expausat",
     "minecraft.block.weathered_cut_copper_stairs": "Escalièrs en coire talhat corroït",
@@ -350098,6 +350264,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Lausa en qüars",
     "minecraft.block.smooth_quartz_slab": "Lausa en qüars lis",
     "minecraft.block.purpur_slab": "Lausa de porpra",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Lausa en coire talhada",
     "minecraft.block.exposed_cut_copper_slab": "Lausa en coire talhada expausada",
     "minecraft.block.weathered_cut_copper_slab": "Lausa en coire talhada corroïda",
@@ -353571,6 +353738,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "บันไดพริสมารีน",
     "minecraft.block.quartz_stairs": "บันไดควอตซ์",
     "minecraft.block.purpur_stairs": "บันไดเพอร์เพอร์",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "บันไดทองแดงตัด",
     "minecraft.block.exposed_cut_copper_stairs": "บันไดทองแดงตัดลอก",
     "minecraft.block.weathered_cut_copper_stairs": "บันไดทองแดงตัดผุกร่อน",
@@ -353623,6 +353791,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "แผ่นควอตซ์",
     "minecraft.block.smooth_quartz_slab": "แผ่นควอตซ์เรียบ",
     "minecraft.block.purpur_slab": "แผ่นเพอร์เพอร์",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "แผ่นทองแดงตัด",
     "minecraft.block.exposed_cut_copper_slab": "แผ่นทองแดงตัดลอก",
     "minecraft.block.weathered_cut_copper_slab": "แผ่นทองแดงตัดผุกร่อน",
@@ -356175,6 +356344,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Pryzmarynowe schody",
     "minecraft.block.quartz_stairs": "Kwarcowe schody",
     "minecraft.block.purpur_stairs": "Purpurowe schody",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Żłobione miedziane schody",
     "minecraft.block.exposed_cut_copper_stairs": "Zwietrzałe żłobione miedziane schody",
     "minecraft.block.weathered_cut_copper_stairs": "Zaśniedziałe żłobione miedziane schody",
@@ -356227,6 +356397,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kwarcowa płyta",
     "minecraft.block.smooth_quartz_slab": "Gładka kwarcowa płyta",
     "minecraft.block.purpur_slab": "Purpurowa płyta",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Żłobiona miedziana płyta",
     "minecraft.block.exposed_cut_copper_slab": "Zwietrzała żłobiona miedziana płyta",
     "minecraft.block.weathered_cut_copper_slab": "Zaśniedziała żłobiona miedziana płyta",
@@ -357858,6 +358029,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Escadas de prismarinho",
     "minecraft.block.quartz_stairs": "Escadas de quartzo",
     "minecraft.block.purpur_stairs": "Escadas de púrpura",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Escadas de cobre cortado",
     "minecraft.block.exposed_cut_copper_stairs": "Escadas de cobre cortado exposto",
     "minecraft.block.weathered_cut_copper_stairs": "Escadas de cobre cortado corroído",
@@ -357910,6 +358082,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Degrau de quartzo",
     "minecraft.block.smooth_quartz_slab": "Degrau de quartzo liso",
     "minecraft.block.purpur_slab": "Degrau de púrpura",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Degrau de cobre cortado",
     "minecraft.block.exposed_cut_copper_slab": "Degrau de cobre cortado exposto",
     "minecraft.block.weathered_cut_copper_slab": "Degrau de cobre cortado corroído",
@@ -359541,6 +359714,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Escadas de prismarinho",
     "minecraft.block.quartz_stairs": "Escadas de quartzo",
     "minecraft.block.purpur_stairs": "Escadas de púrpura",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Escadas de cobre lapidado",
     "minecraft.block.exposed_cut_copper_stairs": "Escadas de cobre lapidado exposto",
     "minecraft.block.weathered_cut_copper_stairs": "Escadas de cobre lapidado desgastado",
@@ -359593,6 +359767,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Laje de quartzo",
     "minecraft.block.smooth_quartz_slab": "Laje de quartzo liso",
     "minecraft.block.purpur_slab": "Laje de púrpura",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Laje de cobre lapidado",
     "minecraft.block.exposed_cut_copper_slab": "Laje de cobre lapidado exposto",
     "minecraft.block.weathered_cut_copper_slab": "Laje de cobre lapidado desgastado",
@@ -362077,6 +362252,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Trepte de prismarin",
     "minecraft.block.quartz_stairs": "Trepte de cuarț",
     "minecraft.block.purpur_stairs": "Trepte de purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Trepte de cupru tăiate",
     "minecraft.block.exposed_cut_copper_stairs": "Trepte de cupru tăiate expuse",
     "minecraft.block.weathered_cut_copper_stairs": "Trepte de cupru tăiate erodate",
@@ -362129,6 +362305,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Lespede de cuarț",
     "minecraft.block.smooth_quartz_slab": "Lespede de cuarț neted",
     "minecraft.block.purpur_slab": "Lespede de purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Lespede de cupru tăiată",
     "minecraft.block.exposed_cut_copper_slab": "Lespede de cupru tăiată expusă",
     "minecraft.block.weathered_cut_copper_slab": "Lespede de cupru tăiată erodată",
@@ -363760,6 +363937,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Призмариновые ступеньки",
     "minecraft.block.quartz_stairs": "Кварцевые ступеньки",
     "minecraft.block.purpur_stairs": "Пурпуровые ступеньки",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Резные медные ступеньки",
     "minecraft.block.exposed_cut_copper_stairs": "Потемневшие резные медные ступеньки",
     "minecraft.block.weathered_cut_copper_stairs": "Состаренные резные медные ступеньки",
@@ -363812,6 +363990,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Кварцевая плита",
     "minecraft.block.smooth_quartz_slab": "Плита из гладкого кварца",
     "minecraft.block.purpur_slab": "Пурпуровая плита",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Резная медная плита",
     "minecraft.block.exposed_cut_copper_slab": "Потемневшая резная медная плита",
     "minecraft.block.weathered_cut_copper_slab": "Состаренная резная медная плита",
@@ -367217,6 +367396,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Schody z prizmarínu",
     "minecraft.block.quartz_stairs": "Kremenné schody",
     "minecraft.block.purpur_stairs": "Purpurové schody",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Schody z tepanej medi",
     "minecraft.block.exposed_cut_copper_stairs": "Schody zo zájdenej tepanej medi",
     "minecraft.block.weathered_cut_copper_stairs": "Schody zo zelenkavej tepanej medi",
@@ -367269,6 +367449,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kremenný stupienok",
     "minecraft.block.smooth_quartz_slab": "Stupienok z hladkého kremeňa",
     "minecraft.block.purpur_slab": "Purpurový stupienok",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Stupienok z tepanej medi",
     "minecraft.block.exposed_cut_copper_slab": "Stupienok zo zájdenej tepanej medi",
     "minecraft.block.weathered_cut_copper_slab": "Stupienok zo zelenkavej tepanej medi",
@@ -368900,6 +369081,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Stopnice morske prizme",
     "minecraft.block.quartz_stairs": "Stopnice nethernega kremena",
     "minecraft.block.purpur_stairs": "Purpurne stopnice",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Rezane bakrene stopnice",
     "minecraft.block.exposed_cut_copper_stairs": "Izpostavljene rezane bakrene stopnice",
     "minecraft.block.weathered_cut_copper_stairs": "Preperele rezane bakrene stopnice",
@@ -368952,6 +369134,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Plošča nethernega kremena",
     "minecraft.block.smooth_quartz_slab": "Plošča gladkega nethernega kremena",
     "minecraft.block.purpur_slab": "Purpurna plošča",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Rezana bakrena plošča",
     "minecraft.block.exposed_cut_copper_slab": "Izpostavljena rezana bakrena plošča",
     "minecraft.block.weathered_cut_copper_slab": "Preperela rezana bakrena plošča",
@@ -370583,6 +370766,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Cтепенице призмарина",
     "minecraft.block.quartz_stairs": "Степенице од кварца",
     "minecraft.block.purpur_stairs": "Пурпур степенице",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Сечене степенице од бакра",
     "minecraft.block.exposed_cut_copper_stairs": "Изложене степенице од сеченог бакра",
     "minecraft.block.weathered_cut_copper_stairs": "Оксидоване степенице од сеченог бакра",
@@ -370635,6 +370819,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Плоча од кварца",
     "minecraft.block.smooth_quartz_slab": "Глатка плоча од кварца",
     "minecraft.block.purpur_slab": "Пурпур плоча",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Плоча сеченог бакра",
     "minecraft.block.exposed_cut_copper_slab": "Изложена плоча од сеченог бакра",
     "minecraft.block.weathered_cut_copper_slab": "Оксидована плоча од сеченог бакра",
@@ -372266,6 +372451,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismariiniportaat",
     "minecraft.block.quartz_stairs": "Kvartsiportaat",
     "minecraft.block.purpur_stairs": "Purpur-portaat",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Leikatut kupariportaat",
     "minecraft.block.exposed_cut_copper_stairs": "Altistuneet leikatut kupariportaat",
     "minecraft.block.weathered_cut_copper_stairs": "Rapautuneet leikatut kupariportaat",
@@ -372318,6 +372504,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvartsilaatta",
     "minecraft.block.smooth_quartz_slab": "Sileä kvartsilaatta",
     "minecraft.block.purpur_slab": "Purpur-laatta",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Leikattu kuparilaatta",
     "minecraft.block.exposed_cut_copper_slab": "Altistunut leikattu kuparilaatta",
     "minecraft.block.weathered_cut_copper_slab": "Rapautunut leikattu kuparilaatta",
@@ -373949,6 +374136,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prismarintrappa",
     "minecraft.block.quartz_stairs": "Kvartstrappa",
     "minecraft.block.purpur_stairs": "Purpurtrappa",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Skuren koppartrappa",
     "minecraft.block.exposed_cut_copper_stairs": "Exponerad skuren koppartrappa",
     "minecraft.block.weathered_cut_copper_stairs": "Väderbiten skuren koppartrappa",
@@ -374001,6 +374189,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kvartsplatta",
     "minecraft.block.smooth_quartz_slab": "Len kvartsplatta",
     "minecraft.block.purpur_slab": "Purpurplatta",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Skuren kopparplatta",
     "minecraft.block.exposed_cut_copper_slab": "Exponerad skuren kopparplatta",
     "minecraft.block.weathered_cut_copper_slab": "Väderbiten skuren kopparplatta",
@@ -375632,6 +375821,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Cầu thang lăng trụ biển",
     "minecraft.block.quartz_stairs": "Cầu thang thạch anh",
     "minecraft.block.purpur_stairs": "Cầu thang purpur",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Cầu thang đồng được cắt",
     "minecraft.block.exposed_cut_copper_stairs": "Cầu thang đồng được cắt bị ẩm",
     "minecraft.block.weathered_cut_copper_stairs": "Cầu thang đồng được cắt bị phong hóa",
@@ -375684,6 +375874,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Phiến thạch anh",
     "minecraft.block.smooth_quartz_slab": "Phiến thạch anh mịn",
     "minecraft.block.purpur_slab": "Phiến purpur",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Phiến đồng được cắt",
     "minecraft.block.exposed_cut_copper_slab": "Phiến đồng được cắt bị ẩm",
     "minecraft.block.weathered_cut_copper_slab": "Phiến đồng được cắt bị phong hoá",
@@ -377315,6 +377506,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Prizmarin Merdiven",
     "minecraft.block.quartz_stairs": "Kuvars Merdiven",
     "minecraft.block.purpur_stairs": "Purpur Merdiven",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Kesilmiş Bakır Merdiven",
     "minecraft.block.exposed_cut_copper_stairs": "Açıkta Kalmış Kesilmiş Bakır Merdiven",
     "minecraft.block.weathered_cut_copper_stairs": "Yıpranmış Kesilmiş Bakır Merdiven",
@@ -377367,6 +377559,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Kuvars Basamak",
     "minecraft.block.smooth_quartz_slab": "Düz Kuvars Basamak",
     "minecraft.block.purpur_slab": "Purpur Basamak",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Kesilmiş Bakır Basamak",
     "minecraft.block.exposed_cut_copper_slab": "Açıkta Kalmış Kesilmiş Bakır Basamak",
     "minecraft.block.weathered_cut_copper_slab": "Yıpranmış Kesilmiş Bakır Basamak",
@@ -378998,6 +379191,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "Призмаринові сходи",
     "minecraft.block.quartz_stairs": "Кварцові сходи",
     "minecraft.block.purpur_stairs": "Сходи з пурпуру",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "Тесані мідні сходи",
     "minecraft.block.exposed_cut_copper_stairs": "Наражені тесані мідні сходи",
     "minecraft.block.weathered_cut_copper_stairs": "Вивітрені тесані мідні сходи",
@@ -379050,6 +379244,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "Кварцова плита",
     "minecraft.block.smooth_quartz_slab": "Плита з гладкого кварцу",
     "minecraft.block.purpur_slab": "Плита з пурпуру",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "Тесана мідна плита",
     "minecraft.block.exposed_cut_copper_slab": "Наражена тесана мідна плита",
     "minecraft.block.weathered_cut_copper_slab": "Вивітрена тесана мідна плита",
@@ -380681,6 +380876,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "海晶石楼梯",
     "minecraft.block.quartz_stairs": "石英楼梯",
     "minecraft.block.purpur_stairs": "紫珀楼梯",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "切制铜楼梯",
     "minecraft.block.exposed_cut_copper_stairs": "斑驳的切制铜楼梯",
     "minecraft.block.weathered_cut_copper_stairs": "锈蚀的切制铜楼梯",
@@ -380733,6 +380929,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "石英台阶",
     "minecraft.block.smooth_quartz_slab": "平滑石英台阶",
     "minecraft.block.purpur_slab": "紫珀台阶",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "切制铜台阶",
     "minecraft.block.exposed_cut_copper_slab": "斑驳的切制铜台阶",
     "minecraft.block.weathered_cut_copper_slab": "锈蚀的切制铜台阶",
@@ -382364,6 +382561,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.prismarine_stairs": "海磷石階梯",
     "minecraft.block.quartz_stairs": "石英階梯",
     "minecraft.block.purpur_stairs": "紫珀階梯",
+    "minecraft.block.gold_block_stairs": "Gold Block Stairs",
     "minecraft.block.cut_copper_stairs": "切製銅階梯",
     "minecraft.block.exposed_cut_copper_stairs": "斑駁的切製銅階梯",
     "minecraft.block.weathered_cut_copper_stairs": "風化的切製銅階梯",
@@ -382416,6 +382614,7 @@ __webpack_require__.r(__webpack_exports__);
     "minecraft.block.quartz_slab": "石英半磚",
     "minecraft.block.smooth_quartz_slab": "平滑石英半磚",
     "minecraft.block.purpur_slab": "紫珀半磚",
+    "minecraft.block.gold_block_slab": "Gold Block Slab",
     "minecraft.block.cut_copper_slab": "切製銅半磚",
     "minecraft.block.exposed_cut_copper_slab": "斑駁的切製銅半磚",
     "minecraft.block.weathered_cut_copper_slab": "風化的切製銅半磚",
