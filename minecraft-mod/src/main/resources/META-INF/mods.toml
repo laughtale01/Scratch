@@ -14,8 +14,8 @@ authors="MinecraftEdu Team"
 description='''
 Scratch 3.0 から Minecraft を動かすための、教育用の MOD です。
 Scratch のブロックで、ブロックを置く・テレポート・天気や時刻を変えるなどの命令を送れます（自分の PC の Scratch からだけ）。
-縦向きのハーフブロック（縦スラブ）39 種類も追加します。
-Educational MOD to control Minecraft from Scratch 3.0 on the same PC, with 39 vertical slabs.
+縦向きのハーフブロック（縦スラブ）39 種類と、金ブロックの階段・ハーフブロックも追加します。
+Educational MOD to control Minecraft from Scratch 3.0 on the same PC, with 39 vertical slabs and gold block stairs and slabs.
 '''
 
 [[dependencies.minecraftedu]]

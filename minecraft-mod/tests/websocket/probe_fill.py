@@ -671,7 +671,7 @@ def judge(reply, action, expect, kind='command'):
 #  「周りをきれいにする」などが原点の近くで動かないため。こちらなら遠くの何もない所だけで済む）
 WRAP = 4304967296
 # 確かめる MOD の版（build.gradle の version の頭）
-EXPECTED_VERSION = '0.2.0'
+EXPECTED_VERSION = '0.3.0'
 # 長くて変な文字の入った名前（文字の向きを変える記号 U+202E と、色を変える §）と、チャットに出るはずの形
 ODD_NAME = 'minecraft:\u202e\u00a7l' + 'a' * 40 + '\n'
 ODD_NAME_SHOWN = 'minecraft:??l' + 'a' * 19 + '\u2026'

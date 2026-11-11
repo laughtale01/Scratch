@@ -90,7 +90,7 @@ BUILD SUCCESSFUL in Xm Xs
 
 生成されたファイル：
 ```
-build/libs/minecraftedu-mod-0.2.0-1.20.1.jar
+build/libs/minecraftedu-mod-0.3.0-1.20.1.jar
 ```
 
 ## よくあるエラーと対処法
@@ -180,7 +180,7 @@ java -version  # 17.x.x であることを確認
 
 ビルドが成功したら：
 
-1. ✅ `build/libs/minecraftedu-mod-0.2.0-1.20.1.jar` が生成されている
+1. ✅ `build/libs/minecraftedu-mod-0.3.0-1.20.1.jar` が生成されている
 2. ➡️ Minecraft Forgeをインストール
 3. ➡️ JARファイルを `mods` フォルダにコピー
 4. ➡️ Minecraftを起動して動作確認

@@ -359,4 +359,24 @@ public class ModItems {
             new Item.Properties()
         )
     );
+
+    // ========================================
+    // 階段とハーフブロックのアイテム（今は金だけ）
+    // ========================================
+
+    public static final RegistryObject<Item> GOLD_BLOCK_STAIRS = ITEMS.register(
+        "gold_block_stairs",
+        () -> new BlockItem(
+            ModBlocks.GOLD_BLOCK_STAIRS.get(),
+            new Item.Properties()
+        )
+    );
+
+    public static final RegistryObject<Item> GOLD_BLOCK_SLAB = ITEMS.register(
+        "gold_block_slab",
+        () -> new BlockItem(
+            ModBlocks.GOLD_BLOCK_SLAB.get(),
+            new Item.Properties()
+        )
+    );
 }

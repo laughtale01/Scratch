@@ -39,7 +39,7 @@ gradlew.bat build
 ビルドが成功すると、以下にMODファイルが生成されます：
 
 ```
-build/libs/minecraftedu-mod-0.2.0-1.20.1.jar
+build/libs/minecraftedu-mod-0.3.0-1.20.1.jar
 ```
 
 ## インストール方法
@@ -59,13 +59,13 @@ build/libs/minecraftedu-mod-0.2.0-1.20.1.jar
 
 ```bash
 # Windows
-copy build\libs\minecraftedu-mod-0.2.0-1.20.1.jar %APPDATA%\.minecraft\mods\
+copy build\libs\minecraftedu-mod-0.3.0-1.20.1.jar %APPDATA%\.minecraft\mods\
 
 # macOS
-cp build/libs/minecraftedu-mod-0.2.0-1.20.1.jar ~/Library/Application\ Support/minecraft/mods/
+cp build/libs/minecraftedu-mod-0.3.0-1.20.1.jar ~/Library/Application\ Support/minecraft/mods/
 
 # Linux
-cp build/libs/minecraftedu-mod-0.2.0-1.20.1.jar ~/.minecraft/mods/
+cp build/libs/minecraftedu-mod-0.3.0-1.20.1.jar ~/.minecraft/mods/
 ```
 
 ### 3. Minecraftの起動
@@ -116,7 +116,7 @@ src/main/java/com/github/minecraftedu/
 │   ├── CommandExecutor.java
 │   ├── BuildQueue.java            # 世界を変える仕事を届いた順に並べ、少しずつ進める列
 │   └── FillJob.java               # 箱の形の範囲に、続きから置いていく仕事（埋める・周りをきれいにする）
-├── block/                         # 追加ブロック（縦スラブ）
+├── block/                         # 追加ブロック（縦スラブ。金の階段・ハーフは Minecraft の仕組みを使うので、ここには無い）
 │   └── VerticalSlabBlock.java
 └── init/                          # ブロック・アイテムの登録
     ├── ModBlocks.java
@@ -176,6 +176,6 @@ MIT License
 
 ---
 
-**バージョン**: 0.2.0（build.gradle の version）
+**バージョン**: 0.3.0（build.gradle の version。0.3.0 で金ブロックの階段とハーフブロックを足した）
 **対応Minecraft**: 1.20.1
-**最終更新**: 2026-11-04
+**最終更新**: 2026-11-10

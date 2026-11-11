@@ -12,6 +12,14 @@
     {
       "id": "minecraftedu:vertical_emerald_block_slab",
       "required": false
+    },
+    {
+      "id": "minecraftedu:gold_block_slab",
+      "required": false
+    },
+    {
+      "id": "minecraftedu:gold_block_stairs",
+      "required": false
     }
   ]
 }

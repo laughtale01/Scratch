@@ -116,6 +116,14 @@
     {
       "id": "minecraftedu:waxed_vertical_weathered_cut_copper_slab",
       "required": false
+    },
+    {
+      "id": "minecraftedu:gold_block_slab",
+      "required": false
+    },
+    {
+      "id": "minecraftedu:gold_block_stairs",
+      "required": false
     }
   ]
 }

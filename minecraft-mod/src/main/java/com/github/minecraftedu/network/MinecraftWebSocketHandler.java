@@ -2,11 +2,14 @@ package com.github.minecraftedu.network;
 
 import com.github.minecraftedu.MinecraftEduMod;
 import com.github.minecraftedu.commands.CommandExecutor;
+import com.github.minecraftedu.init.ModBlocks;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.block.Block;
+import net.minecraftforge.registries.RegistryObject;
 
 import java.util.UUID;
 
@@ -133,6 +136,14 @@ public class MinecraftWebSocketHandler {
         // 一時停止（pauseQueue・resumeQueue）。無い MOD では、Scratch だけを止める
         features.add("pauseQueue");
         serverInfo.add("features", features);
+        // この MOD が足したブロックの名前（縦スラブ・金の階段とハーフブロックなど。minecraftedu: は付けない）。
+        // Scratch は、ここに無い MOD のブロック（金の階段など）を送らず、「MOD が古い」と知らせる
+        // （古い MOD に送ると「その ブロックの なまえが ちがいます」と出て、子どもには理由がわからないため）
+        JsonArray modBlocks = new JsonArray();
+        for (RegistryObject<Block> block : ModBlocks.BLOCKS.getEntries()) {
+            modBlocks.add(block.getId().getPath());
+        }
+        serverInfo.add("modBlocks", modBlocks);
 
         responsePayload.add("serverInfo", serverInfo);
         response.add("payload", responsePayload);
